@@ -1900,10 +1900,11 @@ async function getSampleFromDB(id) {
 
 async function deleteSampleFromDB(id) {
   if (!db) await openDB();
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const tx = db.transaction('samples', 'readwrite');
     tx.objectStore('samples').delete(id);
     tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e);
   });
 }
 
@@ -2456,7 +2457,9 @@ function saveStateLocal() {
 
 function loadStateLocal() {
   try {
-    const s = JSON.parse(localStorage.getItem('samplerStudioState'));
+    const raw = localStorage.getItem('samplerStudioState');
+    if (!raw) return;
+    const s = JSON.parse(raw);
     if (!s) return;
     state.playMode = s.playMode || 'poly';
     state.fadeTime = s.fadeTime || 2.0;
@@ -3765,7 +3768,7 @@ async function checkForUpdate() {
   const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   if (isLocal) return;
   try {
-    const res = await fetch(location.href + '?_cv=' + Date.now());
+    const res = await fetch(location.origin + location.pathname + '?_cv=' + Date.now());
     const text = await res.text();
     const m = text.match(/const APP_VERSION = '([^']+)'/);
     if (m && m[1] !== APP_VERSION) showUpdateBanner(m[1]);
@@ -4673,9 +4676,14 @@ function doSchedChipAdd(rowId, libIdx, atPos) {
 function doSchedChipDel(rowId, chipIdx) {
   const row = state.door.schedule.find(r => r.id === rowId);
   if (!row) return;
-  // If the currently playing chip is being removed, stop playback
-  if (state.door.activeRowId === rowId && state.door.activeChainIdx === chipIdx) {
-    doAnnStopAll();
+  if (state.door.activeRowId === rowId) {
+    if (state.door.activeChainIdx === chipIdx) {
+      // 再生中のチップを削除 → 停止
+      doAnnStopAll();
+    } else if (state.door.activeChainIdx > chipIdx) {
+      // 再生中より前を削除 → index を1つ戻して位置ズレ防止
+      state.door.activeChainIdx--;
+    }
   }
   row.chain.splice(chipIdx, 1);
   doRenderSchedule();
@@ -5133,7 +5141,9 @@ function doSave() {
 
 function doLoad() {
   try {
-    const s = JSON.parse(localStorage.getItem('samplerStudioDoor'));
+    const raw = localStorage.getItem('samplerStudioDoor');
+    if (!raw) return;
+    const s = JSON.parse(raw);
     if (!s) return;
     if (s.appMode) state.appMode = s.appMode;
     if (s.bgm) {
@@ -5178,6 +5188,8 @@ function doLoad() {
       state.door.duck.depthDb = s.duck.depthDb ?? -6.0;
       state.door.duck.fadeSec = s.duck.fadeSec ?? 0.8;
     }
+    // リロード後に preDuckStarted が残らないようリセット
+    state.door.schedule.forEach(r => { r.preDuckStarted = false; });
   } catch(e) { console.warn('doLoad failed', e); }
 }
 
@@ -5341,10 +5353,10 @@ async function init() {
   window.addEventListener('dragover', e => e.preventDefault());
   window.addEventListener('drop', e => e.preventDefault());
 
-  // ブラウザを閉じる直前に状態を自動保存（手動 SAVE 忘れ防止）
+  // ブラウザを閉じる直前に状態を自動保存（DOOR → SAMPLER の順で優先）
   window.addEventListener('beforeunload', () => {
-    saveStateLocal();
-    doSave();
+    try { doSave(); } catch(e) {}
+    try { saveStateLocal(); } catch(e) {}
   });
 
   // Unlock audio on first interaction (mobile Safari)
