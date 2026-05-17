@@ -37,19 +37,11 @@
   }
   .btn-small:hover { border-color: #4D4D55; background: #1F1F26; }
 
-  /* TABS */
+  /* STATUS BAR (replaces old tab bar) */
   .tabbar {
-    display: flex; gap: 4px; align-items: center; justify-content: space-between;
+    display: flex; gap: 4px; align-items: center; justify-content: flex-end;
+    padding: 2px 4px;
   }
-  .tabs { display: flex; gap: 4px; }
-  .tab {
-    padding: 8px 18px; background: #16161B; border: 0.5px solid #2A2A30;
-    border-radius: 8px 8px 0 0; font-size: 11px; color: #8A8A92;
-    letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 6px;
-  }
-  .tab.active { background: #5DCAA5; color: #04342C; font-weight: 500; border-color: #5DCAA5; }
-  .tab.move { border-color: #7F77DD; color: #AFA9EC; }
-  .tab.move.active { background: #7F77DD; color: #1A1633; }
   .status { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #8A8A92; }
   .midi-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #5A5A60; }
   .midi-led.on { background: #5DCAA5; box-shadow: 0 0 4px #5DCAA5; }
@@ -78,10 +70,11 @@
   .main > * { min-height: 0; min-width: 0; }
   #rightContent {
     min-height: 0; min-width: 0;
-    display: flex; flex-direction: column;
+    display: flex; flex-direction: column; gap: 8px;
     height: 100%; width: 100%;
   }
-  #rightContent > * { flex: 1; min-height: 0; }
+  #rightContent > .pad-grid { flex: 1; min-height: 0; }
+  #rightContent > .hold-strip { flex: 0 0 auto; }
 
   /* LEFT PANEL */
   .left-panel {
@@ -241,7 +234,7 @@
   }
   .badge-row { display: flex; justify-content: center; gap: 4px; margin-top: 3px; }
 
-  /* PAD GRID */
+  /* PAD GRID — A-style channel strip (pad body + separate fader card) */
   .pad-grid {
     background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px;
     padding: 12px; flex: 1; display: flex; flex-direction: column;
@@ -249,61 +242,88 @@
   }
   .pads-inner {
     display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
-    gap: 10px; aspect-ratio: 1;
+    gap: 8px; aspect-ratio: 1;
   }
   .pad {
-    background: #1F1F26; border: 0.5px solid #2D2D35; border-radius: 10px;
-    padding: 10px 26px 10px 10px; display: flex; flex-direction: column;
+    display: flex; gap: 4px; min-width: 0; min-height: 0; position: relative;
+  }
+  .pad-body {
+    flex: 1; background: #1F1F26; border: 0.5px solid #2D2D35; border-radius: 10px;
+    padding: 8px; display: flex; flex-direction: column;
     justify-content: space-between; cursor: pointer; position: relative;
     transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
     min-width: 0; overflow: hidden;
   }
+  .pad-body:hover { background: #25252D; border-color: #4D4D55; }
 
-  /* Per-pad volume fader (right edge) — wider hit zone to avoid mis-tap on pad */
-  .pad-level-track {
-    position: absolute; top: 10px; bottom: 10px; right: 4px;
-    width: 16px; cursor: ns-resize; touch-action: none; z-index: 3;
-    background: transparent;
-    display: flex; justify-content: center; align-items: stretch;
+  /* Separate fader card (channel strip) */
+  .pad-fader-card {
+    width: 22px; background: #16161B; border: 0.5px solid #2D2D35;
+    border-radius: 8px; padding: 6px 3px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: space-between; cursor: ns-resize; touch-action: none;
+    flex-shrink: 0;
   }
-  .pad-level-track::before {
-    content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
-    width: 8px; transform: translateX(-50%);
-    background: #22222A; border-radius: 4px; pointer-events: none;
+  .pad-fader-card:hover { border-color: #5DCAA5; background: #1A1F1D; }
+  .pad-fader-card .vol-label { font-size: 7px; color: #5A5A60; letter-spacing: 0.5px; }
+  .pad-fader-track {
+    width: 6px; flex: 1; background: #22222A; border-radius: 3px;
+    position: relative; margin: 4px 0; pointer-events: none;
   }
-  .pad-level-fill {
-    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-    width: 8px;
-    background: #5DCAA5; border-radius: 4px; pointer-events: none;
+  .pad-fader-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #5DCAA5; border-radius: 3px;
   }
-  .pad.empty .pad-level-track { display: none; }
+  .pad-fader-db {
+    font-size: 8px; color: #5DCAA5; font-weight: 500; min-height: 10px;
+    text-align: center;
+  }
+  .pad.empty .pad-fader-card { display: none; }
+  .pad.empty .pad-body { flex: 1; }
+
+  /* Grip handle — drag-only zone in top-right corner of pad body */
+  .pad-grip {
+    position: absolute; top: 3px; right: 3px;
+    width: 22px; height: 22px;
+    background: rgba(93,202,165,0.12); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: grab; z-index: 4;
+    color: #5DCAA5; font-size: 11px;
+    transition: background 0.1s;
+    -webkit-user-drag: element;
+  }
+  .pad-grip:hover { background: rgba(93,202,165,0.3); }
+  .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
+  .pad.empty .pad-grip { display: none; }
 
   /* Flash effect when assigned key/MIDI is pressed */
-  .pad.flash {
+  .pad-body.flash {
     background: #5DCAA5 !important;
     border-color: #9FE1CB !important;
     box-shadow: 0 0 16px rgba(93,202,165,0.9), inset 0 0 8px rgba(255,255,255,0.2) !important;
     transition: none !important;
   }
-  .pad.flash .pad-num,
-  .pad.flash .pad-name,
-  .pad.flash .pad-time,
-  .pad.flash .pad-shortcuts .badge { color: #04342C !important; }
-  .pad.flash .pad-level-track { background: rgba(4,52,44,0.4); }
-  .pad.flash .pad-level-fill { background: #04342C; }
-  .pad:hover { background: #25252D; border-color: #4D4D55; }
-  .pad.empty {
+  .pad-body.flash .pad-num,
+  .pad-body.flash .pad-name,
+  .pad-body.flash .pad-time,
+  .pad-body.flash .pad-shortcuts .badge { color: #04342C !important; }
+  .pad-body.flash + .pad-fader-card { border-color: #5DCAA5; }
+  .pad-body.empty {
     border-style: dashed; border-color: #3D3D45; color: #5A5A60;
     align-items: center; justify-content: center; gap: 4px;
   }
-  .pad.empty .pad-name-empty { font-size: 9px; color: #5A5A60; }
-  .pad.empty .upload-icon { font-size: 18px; color: #5A5A60; }
-  .pad.playing {
+  .pad-body.empty .pad-name-empty { font-size: 9px; color: #5A5A60; }
+  .pad-body.empty .upload-icon { font-size: 18px; color: #5A5A60; }
+  .pad-body.playing {
     background: #1F2A26; border-color: #5DCAA5;
     box-shadow: 0 0 8px rgba(93,202,165,0.3);
   }
-  .pad.drag-over { background: #2A3A35; border-color: #5DCAA5; border-style: dashed; }
-  .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; }
+  .pad-body.drag-over { background: #2A3A35; border-color: #5DCAA5; border-style: dashed; }
+  .pad-body.drag-target-pad {
+    background: #2A3A35 !important; border-color: #5DCAA5 !important; border-width: 2px !important;
+    box-shadow: 0 0 0 2px rgba(93,202,165,0.4) !important;
+  }
+  .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; padding-right: 26px; }
   .pad-num { color: #5A5A60; letter-spacing: 0.5px; }
   .pad.playing .pad-num { color: #5DCAA5; }
   .pad-name { font-size: 14px; font-weight: 500; color: #E6E6EA; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -355,55 +375,50 @@
     pointer-events: none;
   }
 
-  /* MOVE TAB */
-  .move-wrap { display: grid; grid-template-columns: 170px 1fr; gap: 10px; flex: 1; min-height: 0; }
-  .hold-panel {
-    background: #1A1633; border: 0.5px solid #7F77DD; border-radius: 8px; padding: 12px;
-    display: flex; flex-direction: column;
+  /* Global HOLD strip (always visible below pad grid) */
+  .hold-strip {
+    display: flex; gap: 6px; padding: 6px 8px;
+    background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px;
+    align-items: center;
   }
-  .hold-head { font-size: 10px; color: #AFA9EC; letter-spacing: 2px; text-align: center; margin-bottom: 8px; }
-  .hold-slots { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .hold-strip-label {
+    font-size: 9px; color: #8A8A92; padding: 0 6px;
+    letter-spacing: 1px; flex-shrink: 0;
+  }
+  .hold-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex: 1; }
   .hold-slot {
-    flex: 1; border-radius: 6px; padding: 8px; display: flex; flex-direction: column;
-    justify-content: space-between; min-height: 60px;
+    border-radius: 5px; padding: 6px 8px; min-height: 42px;
+    display: flex; flex-direction: column; gap: 2px;
+    transition: background 0.1s, border-color 0.1s;
   }
   .hold-slot.empty {
-    background: transparent; border: 1.5px dashed #7F77DD;
+    background: transparent; border: 1px dashed #3D3D45;
     align-items: center; justify-content: center;
-    color: #7F77DD; font-size: 9px;
+    color: #5A5A60; font-size: 10px;
   }
-  .hold-slot.empty.dim { border-color: #4D4566; color: #5A5A60; }
   .hold-slot.filled {
-    background: #7F77DD; color: #1A1633;
+    background: #22222A; border: 0.5px solid #2D2D35; cursor: grab;
   }
+  .hold-slot.filled:hover { background: #2A2A33; border-color: #5DCAA5; }
+  .hold-slot.filled:active { cursor: grabbing; }
   .hold-slot.filled .slot-head {
-    display: flex; justify-content: space-between; font-size: 9px; font-weight: 500;
+    font-size: 7px; color: #5A5A60; letter-spacing: 0.5px;
   }
-  .hold-slot.filled .slot-name { font-size: 10px; font-weight: 500; }
-  .hold-slot.filled .slot-from { font-size: 8px; }
-  .hold-slot.drag-over { background: #AFA9EC; }
+  .hold-slot.filled .slot-name {
+    font-size: 11px; color: #E6E6EA; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .hold-slot.drag-target {
+    background: rgba(93,202,165,0.15) !important;
+    border: 2px dashed #5DCAA5 !important;
+  }
 
-  .pad-grid.move-mode { background: #1A1633; border-color: #7F77DD; }
-  .pad.move-mode { background: #16161B; border: 0.5px solid #2D2D35; opacity: 0.45; }
-  .pad.move-mode .pad-num { color: #5A5A60; }
-  .pad.move-mode .grip-icon { color: #7F77DD; }
-  .pad.move-mode.has-sample {
-    background: #1A2A24; border: 1px solid #5DCAA5; opacity: 1;
-    box-shadow: 0 0 0 1px rgba(93,202,165,0.25), 0 2px 6px rgba(93,202,165,0.15);
+  /* BANK row drop-target during drag */
+  .banks.drop-mode { border-color: #5DCAA5; background: #1A1F1D; }
+  .bank-btn.drop-target {
+    border: 2px solid #5DCAA5 !important;
+    box-shadow: 0 0 0 2px rgba(93,202,165,0.4) !important;
   }
-  .pad.move-mode.has-sample .pad-num { color: #5DCAA5; font-weight: 500; }
-  .pad.move-mode.has-sample .pad-name { color: #E6E6EA; }
-  .pad.move-mode.hold-source {
-    background: transparent; border-style: dashed; border-color: #7F77DD; border-width: 2px;
-    opacity: 0.55; box-shadow: none;
-  }
-  .pad.move-mode.hold-source .pad-num { color: #7F77DD; }
-  .pad.move-mode.drag-target {
-    background: #7F77DD !important; border-color: #E6E6EA !important; border-width: 2px !important;
-    box-shadow: 0 0 0 3px rgba(127,119,221,0.4) !important; opacity: 1 !important;
-  }
-  .pad.move-mode.drag-target .pad-name { color: #1A1633; font-weight: 500; }
-  .pad.move-mode.drag-target .pad-num { color: #1A1633; font-weight: 500; }
 
   /* MODAL */
   .modal-overlay {
@@ -535,10 +550,6 @@
   </div>
 
   <div class="tabbar">
-    <div class="tabs">
-      <div class="tab active" data-tab="pads" onclick="switchTab('pads')">PADS</div>
-      <div class="tab move" data-tab="move" onclick="switchTab('move')">MOVE</div>
-    </div>
     <div class="status">
       <span><span class="midi-led" id="midiLed"></span> <span id="midiName">MIDI: 未接続</span></span>
       <span id="bankInfo">BANK 01 / 16</span>
@@ -1325,33 +1336,56 @@ function renderBanks() {
     btn.className = 'bank-btn' + (i === state.currentBank ? ' active' : '') + (hasContent ? ' has-content' : '');
     btn.textContent = i + 1;
     btn.onclick = () => { state.currentBank = i; saveStateLocal(); render(); };
+    btn.ondragover = e => {
+      e.preventDefault();
+      btn.classList.add('drop-target');
+    };
+    btn.ondragleave = () => btn.classList.remove('drop-target');
+    btn.ondrop = e => {
+      e.preventDefault();
+      btn.classList.remove('drop-target');
+      document.querySelector('.banks')?.classList.remove('drop-mode');
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        // Bank drop: park in global HOLD AND switch to that bank
+        if (data.kind === 'pad') {
+          const emptyIdx = state.hold.findIndex(s => !s);
+          if (emptyIdx === -1) { showToast('HOLDが満杯です'); return; }
+          handleMoveDrop(data, { kind: 'hold', holdIdx: emptyIdx });
+          state.currentBank = i;
+          render();
+          showToast(`Bank ${i+1} へ移動。HOLD H${emptyIdx+1} に保留中`);
+        } else if (data.kind === 'hold') {
+          // hold→bank: just switch bank (item stays in hold, accessible)
+          state.currentBank = i;
+          render();
+        }
+      } catch(err){}
+    };
     g.appendChild(btn);
   }
 }
 
 function renderTabs() {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.currentTab));
+  // No tabs in v1.6 — single page layout.
 }
 
-function switchTab(t) {
-  state.currentTab = t;
-  render();
-}
+function switchTab(t) { /* no-op in v1.6 */ }
 
 function renderRight() {
   const r = document.getElementById('rightContent');
-  if (state.currentTab === 'levels') state.currentTab = 'pads'; // legacy fallback
-  if (state.currentTab === 'pads') r.innerHTML = `<div class="pad-grid" id="padGrid"><div class="pads-inner" id="padsInner"></div></div>`;
-  else if (state.currentTab === 'move') r.innerHTML = `<div class="move-wrap">
-    <div class="hold-panel">
-      <div class="hold-head">HOLD</div>
+  // Always render: pad grid + global hold strip at bottom
+  r.innerHTML = `
+    <div class="pad-grid" id="padGrid">
+      <div class="pads-inner" id="padsInner"></div>
+    </div>
+    <div class="hold-strip" id="holdStrip">
+      <span class="hold-strip-label">HOLD</span>
       <div class="hold-slots" id="holdSlots"></div>
     </div>
-    <div class="pad-grid move-mode"><div class="pads-inner" id="padsInner"></div></div>
-  </div>`;
-
-  if (state.currentTab === 'pads' || state.currentTab === 'move') renderPads();
-  if (state.currentTab === 'move') renderHold();
+  `;
+  renderPads();
+  renderHold();
 }
 
 function renderPads() {
@@ -1360,58 +1394,21 @@ function renderPads() {
   inner.innerHTML = '';
   const pads = state.banks[state.currentBank].pads;
   pads.forEach((pad, idx) => {
-    const el = document.createElement('div');
-    el.className = 'pad';
-    if (state.currentTab === 'move') el.classList.add('move-mode');
-    if (!pad.audioBuffer && state.currentTab === 'pads') el.classList.add('empty');
-    if (pad.isPlaying) el.classList.add('playing');
+    const cell = document.createElement('div');
+    cell.className = 'pad';
 
-    // Move mode: detect if pad is empty due to being moved to HOLD
-    const inHold = state.hold.some(h => h && h.bankIdx === state.currentBank && h.padIdx === idx);
-    if (inHold) el.classList.add('hold-source');
-    const hasSample = !!pad.audioBuffer && !inHold;
-    if (state.currentTab === 'move' && hasSample) el.classList.add('has-sample');
-
-    if (state.currentTab === 'move') {
-      if (hasSample) {
-        el.innerHTML = `
-          <div class="pad-head">
-            <span class="pad-num">${idx+1}</span>
-            <span class="grip-icon">⋮⋮</span>
-          </div>
-          <div class="pad-name">${pad.sampleName}</div>
-        `;
-      } else if (inHold) {
-        el.innerHTML = `
-          <div class="pad-head"><span class="pad-num">${idx+1}</span></div>
-          <div class="pad-name" style="color:#7F77DD; font-size:9px;">HOLD中</div>
-        `;
-      } else {
-        el.innerHTML = `<div class="pad-head"><span class="pad-num">${idx+1}</span></div>`;
-      }
-      el.draggable = hasSample;
-      el.ondragstart = e => {
-        e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'pad', bankIdx: state.currentBank, padIdx: idx }));
-      };
-      el.ondragover = e => { e.preventDefault(); el.classList.add('drag-target'); };
-      el.ondragleave = () => el.classList.remove('drag-target');
-      el.ondrop = e => {
-        e.preventDefault();
-        el.classList.remove('drag-target');
-        try {
-          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-          handleMoveDrop(data, { kind: 'pad', bankIdx: state.currentBank, padIdx: idx });
-        } catch(err){}
-      };
-    } else if (state.currentTab === 'pads') {
-      const hasTrim = pad.audioBuffer && ((pad.trimStart||0) > 0 || (pad.trimEnd != null && pad.trimEnd < pad.audioBuffer.duration));
+    if (pad.audioBuffer) {
+      const hasTrim = (pad.trimStart||0) > 0 || (pad.trimEnd != null && pad.trimEnd < pad.audioBuffer.duration);
+      const dispDur = ((pad.trimEnd != null) ? pad.trimEnd : pad.audioBuffer.duration) - (pad.trimStart || 0);
       const levelPct = (pad.level / 1.4) * 100;
-      if (pad.audioBuffer) {
-        const dispDur = ((pad.trimEnd != null) ? pad.trimEnd : pad.audioBuffer.duration) - (pad.trimStart || 0);
-        el.innerHTML = `
+      const db = linToDb(pad.level);
+      const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
+      cell.innerHTML = `
+        <div class="pad-body${pad.isPlaying ? ' playing' : ''}">
+          <span class="pad-grip" draggable="true" title="掴んで移動">⋮⋮</span>
           <div class="pad-head">
             <span class="pad-num">${idx+1}</span>
-            ${pad.isPlaying ? '<span style="color:#5DCAA5;">▶</span>' : ''}
+            ${pad.isPlaying ? '<span style="color:#5DCAA5;">▶</span>' : '<span></span>'}
           </div>
           <div class="pad-name">${pad.sampleName}</div>
           <div class="pad-footer">
@@ -1423,80 +1420,115 @@ function renderPads() {
             </div>
           </div>
           ${hasTrim ? '<div class="trim-badge">TRIMMED</div>' : ''}
-          <div class="pad-edit-icon" title="編集" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">✎</div>
-          <div class="pad-level-track"><div class="pad-level-fill" style="height:${levelPct}%;"></div></div>
-        `;
-      } else {
-        el.innerHTML = `
+        </div>
+        <div class="pad-fader-card" title="ボリューム (右クリックで0dBリセット)">
+          <span class="vol-label">VOL</span>
+          <div class="pad-fader-track"><div class="pad-fader-fill" style="height:${levelPct}%;"></div></div>
+          <span class="pad-fader-db">${dbStr}</span>
+        </div>
+      `;
+    } else {
+      cell.innerHTML = `
+        <div class="pad-body empty">
           <div style="font-size:9px; color:#5A5A60;">PAD ${idx+1}</div>
           <div class="upload-icon">↓</div>
-          <div style="font-size:8px; color:#5A5A60; letter-spacing:1px;">DROP WAV</div>
-          <div class="pad-shortcuts" style="position:absolute; bottom:8px; left:10px; right:18px;">
+          <div style="font-size:8px; color:#5A5A60; letter-spacing:1px;">DROP AUDIO</div>
+          <div class="pad-shortcuts" style="position:absolute; bottom:6px; left:8px; right:8px;">
             <button class="badge midi" onclick="event.stopPropagation();startLearn('pad-${idx}','midi');">N${pad.midiNote ?? '-'}</button>
             <button class="badge key" onclick="event.stopPropagation();startLearn('pad-${idx}','key');">${keyLabel(pad.key)}</button>
           </div>
-        `;
-      }
-      // Click to play (skip if click on level fader)
-      el.onclick = (e) => {
-        if (e.target.closest('.pad-level-track')) return;
-        if (e.target.closest('.pad-edit-icon')) return;
-        if (e.target.closest('.badge')) return;
-        if (pad.audioBuffer) playPad(state.currentBank, idx);
-      };
-      // Right-click to open trim editor
-      el.oncontextmenu = e => {
-        e.preventDefault();
-        if (pad.audioBuffer) openTrimEditor(state.currentBank, idx);
-      };
-      // Drag-drop WAV
-      el.ondragover = e => { e.preventDefault(); el.classList.add('drag-over'); };
-      el.ondragleave = () => el.classList.remove('drag-over');
-      el.ondrop = async e => {
-        e.preventDefault();
-        el.classList.remove('drag-over');
-        const file = e.dataTransfer.files[0];
-        if (file) await loadSampleToPad(state.currentBank, idx, file);
-      };
-      // Bind per-pad level fader
-      if (pad.audioBuffer) {
-        const track = el.querySelector('.pad-level-track');
-        if (track) bindPadLevelFader(track, idx, pad);
-      }
+        </div>
+      `;
     }
-    inner.appendChild(el);
+
+    const body = cell.querySelector('.pad-body');
+
+    body.onclick = (e) => {
+      if (e.target.closest('.pad-grip')) return;
+      if (e.target.closest('.badge')) return;
+      if (pad.audioBuffer) playPad(state.currentBank, idx);
+    };
+
+    body.oncontextmenu = e => {
+      e.preventDefault();
+      if (pad.audioBuffer) openTrimEditor(state.currentBank, idx);
+    };
+
+    body.ondragover = e => {
+      e.preventDefault();
+      const hasFiles = e.dataTransfer.types && [...e.dataTransfer.types].includes('Files');
+      if (hasFiles) body.classList.add('drag-over');
+      else body.classList.add('drag-target-pad');
+    };
+    body.ondragleave = () => { body.classList.remove('drag-over'); body.classList.remove('drag-target-pad'); };
+    body.ondrop = async e => {
+      e.preventDefault();
+      body.classList.remove('drag-over');
+      body.classList.remove('drag-target-pad');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        await loadSampleToPad(state.currentBank, idx, e.dataTransfer.files[0]);
+        return;
+      }
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        handleMoveDrop(data, { kind: 'pad', bankIdx: state.currentBank, padIdx: idx });
+      } catch(err) {}
+    };
+
+    const grip = cell.querySelector('.pad-grip');
+    if (grip && pad.audioBuffer) {
+      grip.ondragstart = e => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'pad', bankIdx: state.currentBank, padIdx: idx }));
+        e.dataTransfer.effectAllowed = 'move';
+        document.body.classList.add('dragging-pad');
+        document.querySelector('.banks')?.classList.add('drop-mode');
+      };
+      grip.ondragend = () => {
+        document.body.classList.remove('dragging-pad');
+        document.querySelector('.banks')?.classList.remove('drop-mode');
+        document.querySelectorAll('.bank-btn.drop-target').forEach(b => b.classList.remove('drop-target'));
+      };
+    }
+
+    if (pad.audioBuffer) {
+      const fader = cell.querySelector('.pad-fader-card');
+      if (fader) bindPadFaderCard(fader, idx, pad);
+    }
+
+    inner.appendChild(cell);
   });
-  // start update loop for time/progress
-  if (state.currentTab === 'pads') startProgressLoop();
+  startProgressLoop();
   resizePads();
 }
 
 function renderPadVisual(padIdx) {
-  // soft update playing state on a single pad
   const inner = document.getElementById('padsInner');
   if (!inner) return;
-  const el = inner.children[padIdx];
-  if (!el) return;
+  const cell = inner.children[padIdx];
+  if (!cell) return;
+  const body = cell.querySelector('.pad-body');
+  if (!body) return;
   const pad = state.banks[state.currentBank].pads[padIdx];
-  el.classList.toggle('playing', pad.isPlaying);
+  body.classList.toggle('playing', pad.isPlaying);
 }
 
-// Brief visual flash when a pad's assigned key or MIDI note is triggered.
-// Works on any pad (including empty) so the user can verify assignments.
 function flashPad(bankIdx, padIdx) {
   if (state.currentBank !== bankIdx) return;
-  if (state.currentTab !== 'pads') return;
   const inner = document.getElementById('padsInner');
   if (!inner) return;
-  const el = inner.children[padIdx];
-  if (!el) return;
-  el.classList.add('flash');
-  setTimeout(() => el.classList.remove('flash'), 180);
+  const cell = inner.children[padIdx];
+  if (!cell) return;
+  const body = cell.querySelector('.pad-body');
+  if (!body) return;
+  body.classList.add('flash');
+  setTimeout(() => body.classList.remove('flash'), 180);
 }
 
-// Per-pad volume fader (right edge of pad)
-function bindPadLevelFader(track, padIdx, pad) {
-  const fill = track.querySelector('.pad-level-fill');
+// Bind the channel-strip volume fader card (separated from pad body)
+function bindPadFaderCard(card, padIdx, pad) {
+  const track = card.querySelector('.pad-fader-track');
+  const fill = card.querySelector('.pad-fader-fill');
+  const dbDisp = card.querySelector('.pad-fader-db');
   const update = (clientY) => {
     const rect = track.getBoundingClientRect();
     const y = clientY - rect.top;
@@ -1504,6 +1536,10 @@ function bindPadLevelFader(track, padIdx, pad) {
     pct = Math.max(0, Math.min(1, pct));
     pad.level = pct * 1.4;
     if (fill) fill.style.height = (pct * 100) + '%';
+    if (dbDisp) {
+      const db = linToDb(pad.level);
+      dbDisp.textContent = (db === -Infinity ? '-∞' : db.toFixed(1));
+    }
     pad.activeSources.forEach(ref => {
       try {
         ref.gain.gain.cancelScheduledValues(ctx.currentTime);
@@ -1511,25 +1547,25 @@ function bindPadLevelFader(track, padIdx, pad) {
       } catch(e){}
     });
   };
-  track.addEventListener('mousedown', e => {
+  card.addEventListener('mousedown', e => {
     e.preventDefault();
     e.stopPropagation();
     activeDrag = { update, end: () => saveStateLocal() };
     update(e.clientY);
   });
-  track.addEventListener('touchstart', e => {
+  card.addEventListener('touchstart', e => {
     e.preventDefault();
     e.stopPropagation();
     activeDrag = { update, end: () => saveStateLocal() };
     if (e.touches[0]) update(e.touches[0].clientY);
   }, { passive: false });
-  track.addEventListener('click', e => e.stopPropagation());
-  // Right-click on level track resets to 0dB (unity)
-  track.addEventListener('contextmenu', e => {
+  card.addEventListener('click', e => e.stopPropagation());
+  card.addEventListener('contextmenu', e => {
     e.preventDefault();
     e.stopPropagation();
     pad.level = 1.0;
     if (fill) fill.style.height = ((1.0/1.4) * 100) + '%';
+    if (dbDisp) dbDisp.textContent = '0.0';
     saveStateLocal();
     showToast(`PAD ${padIdx+1}: 0 dB (リセット)`);
   });
@@ -1540,15 +1576,14 @@ function startProgressLoop() {
   if (progressLoopRunning) return;
   progressLoopRunning = true;
   function loop() {
-    if (state.currentTab !== 'pads') { progressLoopRunning = false; return; }
     const inner = document.getElementById('padsInner');
     if (!inner) { progressLoopRunning = false; return; }
     const pads = state.banks[state.currentBank].pads;
     pads.forEach((pad, idx) => {
-      const el = inner.children[idx];
-      if (!el || !pad.audioBuffer) return;
-      const fill = el.querySelector('.pad-progress-fill');
-      const tnow = el.querySelector('.t-now');
+      const cell = inner.children[idx];
+      if (!cell || !pad.audioBuffer) return;
+      const fill = cell.querySelector('.pad-progress-fill');
+      const tnow = cell.querySelector('.t-now');
       if (pad.isPlaying && pad.activeSources.length > 0) {
         const ref = pad.activeSources[pad.activeSources.length - 1];
         const elapsed = ctx.currentTime - ref.startedAt;
@@ -1945,25 +1980,27 @@ function renderHold() {
     if (item) {
       slot.className = 'hold-slot filled';
       slot.innerHTML = `
-        <div class="slot-head"><span>H${i+1}</span><span>✋</span></div>
-        <div class="slot-name">${item.sampleName}</div>
-        <div class="slot-from">元: PAD ${item.padIdx+1}</div>
+        <span class="slot-head">H${i+1} ← Bank ${(item.bankIdx ?? 0)+1} PAD ${(item.padIdx ?? 0)+1}</span>
+        <span class="slot-name">${item.sampleName || (item.padData && item.padData.sampleName) || '—'}</span>
       `;
       slot.draggable = true;
       slot.ondragstart = e => {
         e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'hold', holdIdx: i }));
+        e.dataTransfer.effectAllowed = 'move';
       };
     } else {
-      slot.className = 'hold-slot empty' + (i > 0 ? ' dim' : '');
-      slot.innerHTML = `<div style="text-align:center;"><div style="font-size:18px;">+</div><div>H${i+1}</div></div>`;
+      slot.className = 'hold-slot empty';
+      slot.innerHTML = `<span>H${i+1}</span>`;
     }
-    slot.ondragover = e => { e.preventDefault(); slot.classList.add('drag-over'); };
-    slot.ondragleave = () => slot.classList.remove('drag-over');
+    slot.ondragover = e => { e.preventDefault(); slot.classList.add('drag-target'); };
+    slot.ondragleave = () => slot.classList.remove('drag-target');
     slot.ondrop = e => {
       e.preventDefault();
-      slot.classList.remove('drag-over');
-      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
-      handleMoveDrop(data, { kind: 'hold', holdIdx: i });
+      slot.classList.remove('drag-target');
+      try {
+        const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+        handleMoveDrop(data, { kind: 'hold', holdIdx: i });
+      } catch(err){}
     };
     c.appendChild(slot);
   }
