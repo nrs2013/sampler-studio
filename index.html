@@ -589,13 +589,13 @@
   }
   .learn-banner.show { display: block; animation: pulse 1s infinite; }
 
-  /* TOAST */
+  /* TOAST — 画面上部に表示（下のボタンと被らないよう） */
   .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
     background: #22222A; color: #E6E6EA; padding: 10px 18px; border-radius: 6px;
     font-size: 12px; z-index: 998; opacity: 0; transition: opacity 0.3s;
     border: 0.5px solid #2A2A30;
-    pointer-events: none; /* CRITICAL: prevent invisible toast from stealing clicks */
+    pointer-events: none; /* prevent invisible toast from stealing clicks */
   }
   .toast.show { opacity: 1; }
 
@@ -3895,9 +3895,13 @@ function doLoad() {
       }
     }
     if (Array.isArray(s.schedule)) {
-      state.door.schedule = s.schedule.map(r => ({
-        id: r.id, time: r.time, chain: Array.isArray(r.chain) ? r.chain : [], played: false,
-      }));
+      state.door.schedule = s.schedule.map(r => {
+        // Normalize legacy "HH:MM:SS" → "HH:MM"
+        let t = r.time || '00:00';
+        const mm = String(t).match(/^(\d{1,2}):(\d{1,2})/);
+        if (mm) t = mm[1].padStart(2,'0') + ':' + mm[2].padStart(2,'0');
+        return { id: r.id, time: t, chain: Array.isArray(r.chain) ? r.chain : [], played: false };
+      });
     }
     if (s.duck) {
       state.door.duck.depthDb = s.duck.depthDb ?? -6.0;
