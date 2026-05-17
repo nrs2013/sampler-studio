@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.9';
+const APP_VERSION = 'v5.10';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -1758,24 +1758,27 @@ function fadeOutAll() {
         g.gain.linearRampToValueAtTime(0.0001, t + sec);
         g.gain.linearRampToValueAtTime(0, t + sec + 0.10);
       } catch(e) {}
-      // フェード完了後：2段で完全無音化してから pause（disconnect しない → 再生経路を壊さない）
+      // フェード完了後：3段で完全無音化してから pause（disconnect しない → 再生経路を壊さない）
       setTimeout(() => {
         // 段1: HTMLAudioElement を muted/volume=0 にする
         if (b.audioElement) {
           try { b.audioElement.volume = 0; } catch(e) {}
           try { b.audioElement.muted = true; } catch(e) {}
         }
-        // 段2: 50ms 待って pause → volume/muted/gain を復元
+        // 段2: 50ms 待って pause を要求
         setTimeout(() => {
           doBgmStop(slot);
-          if (b.audioElement) {
-            try { b.audioElement.volume = 1; } catch(e) {}
-            try { b.audioElement.muted = false; } catch(e) {}
-          }
-          if (g && ctx) {
-            g.gain.cancelScheduledValues(ctx.currentTime);
-            g.gain.setValueAtTime(b.vol, ctx.currentTime);
-          }
+          // 段3: pause 完了後（BGM_STOP_FADE + 余裕）に volume/muted/gain を復元
+          setTimeout(() => {
+            if (b.audioElement) {
+              try { b.audioElement.volume = 1; } catch(e) {}
+              try { b.audioElement.muted = false; } catch(e) {}
+            }
+            if (g && ctx) {
+              g.gain.cancelScheduledValues(ctx.currentTime);
+              g.gain.setValueAtTime(b.vol, ctx.currentTime);
+            }
+          }, BGM_STOP_FADE * 1000 + 50);
         }, 50);
       }, sec * 1000 + 180);
     }
@@ -2585,7 +2588,7 @@ function renderPads() {
             <span class="pad-num">${idx+1}</span>
             ${pad.isPlaying ? '<span style="color:#5DCAA5;">▶</span>' : '<span></span>'}
           </div>
-          <div class="pad-name">${pad.sampleName}</div>
+          <div class="pad-name">${escapeHtml(pad.sampleName || '')}</div>
           <div class="pad-footer">
             <div class="pad-time">
               <span class="t-now">0:00</span>
@@ -2847,7 +2850,7 @@ function openTrimEditor(bankIdx, padIdx) {
     <div class="trim-modal">
       <div class="trim-header">
         <div>
-          <div class="trim-title">PAD ${padIdx+1} ・ ${pad.sampleName}</div>
+          <div class="trim-title">PAD ${padIdx+1} ・ ${escapeHtml(pad.sampleName || '')}</div>
           <div class="trim-subtitle">音の頭・お尻をハンドル(緑＝開始/橙＝終了)でドラッグ調整・ホイールでズーム</div>
         </div>
         <button class="btn-small" onclick="closeTrimEditor()">✕</button>
@@ -3325,7 +3328,7 @@ function renderLevels() {
     el.innerHTML = `
       <div class="level-info">
         <div class="level-info-num">PAD ${idx+1}${pad.midiNote!=null?' · N'+pad.midiNote:''}</div>
-        <div class="level-info-name">${pad.sampleName || '— 空き —'}</div>
+        <div class="level-info-name">${pad.sampleName ? escapeHtml(pad.sampleName) : '— 空き —'}</div>
         <div class="level-info-db"><span class="db-val">${dbDisplay}</span> dB</div>
       </div>
       <div class="level-fader-wrap">
@@ -3399,7 +3402,7 @@ function renderHold() {
       slot.className = 'hold-slot filled';
       slot.innerHTML = `
         <span class="slot-head">H${i+1} ← Bank ${(item.bankIdx ?? 0)+1} PAD ${(item.padIdx ?? 0)+1}</span>
-        <span class="slot-name">${item.sampleName || (item.padData && item.padData.sampleName) || '—'}</span>
+        <span class="slot-name">${escapeHtml(item.sampleName || (item.padData && item.padData.sampleName) || '—')}</span>
       `;
       slot.draggable = true;
       slot.ondragstart = e => {
