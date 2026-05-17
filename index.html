@@ -556,11 +556,13 @@
   }
   .pad:hover .pad-edit-icon { opacity: 0.85; }
   .pad-edit-icon:hover { background: #5DCAA5; color: #04342C; opacity: 1 !important; }
-  .trim-badge {
-    position: absolute; bottom: 4px; left: 8px;
-    font-size: 7px; padding: 1px 4px; background: rgba(93,202,165,0.15);
-    color: #5DCAA5; border-radius: 2px; letter-spacing: 0.5px;
-    border: 0.5px solid rgba(93,202,165,0.3);
+  /* Inline trim indicator placed next to time display, no overlap with shortcuts */
+  .trim-icon {
+    display: inline-flex; align-items: center; gap: 2px;
+    font-size: 9px; color: #5DCAA5;
+    padding: 0 3px; margin-right: 3px;
+    background: rgba(93,202,165,0.12); border-radius: 2px;
+    border: 0.5px solid rgba(93,202,165,0.25);
   }
   .modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
   .modal p { font-size: 12px; color: #8A8A92; margin-bottom: 12px; }
@@ -1578,14 +1580,16 @@ function renderPads() {
           </div>
           <div class="pad-name">${pad.sampleName}</div>
           <div class="pad-footer">
-            <div class="pad-time"><span class="t-now">0:00</span><span>${formatTime(dispDur)}</span></div>
+            <div class="pad-time">
+              <span class="t-now">0:00</span>
+              <span>${hasTrim ? '<span class="trim-icon" title="トリム済み">✂</span>' : ''}${formatTime(dispDur)}</span>
+            </div>
             <div class="pad-progress"><div class="pad-progress-fill"></div></div>
             <div class="pad-shortcuts">
               <button class="badge midi" onclick="event.stopPropagation();startLearn('pad-${idx}','midi');">N${pad.midiNote ?? '-'}</button>
               <button class="badge key" onclick="event.stopPropagation();startLearn('pad-${idx}','key');">${keyLabel(pad.key)}</button>
             </div>
           </div>
-          ${hasTrim ? '<div class="trim-badge">TRIMMED</div>' : ''}
         </div>
         <div class="pad-fader-card" title="ボリューム (右クリックで0dBリセット)">
           <span class="vol-label">VOL</span>
