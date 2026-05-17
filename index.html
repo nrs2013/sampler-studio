@@ -883,9 +883,11 @@
     padding: 5px 10px; font-size: 11px; color: #E6E6EA; cursor: grab;
     transition: all 0.15s;
   }
-  .do-chip:hover { border-color: #5DCAA5; }
+  .do-chip:hover { border-color: rgba(230,230,234,0.5); }
   .do-chip.dragging { opacity: 0.4; }
-  .do-chip.playing { background: #1F1B0F; border-color: #5DCAA5; }
+  /* 再生中：囲み線なしで背景の濃さだけで示す（パステル緑塗り） */
+  .do-chip.playing { background: rgba(93,202,165,0.22); border-color: transparent; }
+  .do-chip.playing .do-chip-label { font-weight: 600; }
   .do-chip.played { opacity: 0.4; }
   /* チップ内の色バッジ（A1〜A4） */
   .do-chip-badge {
