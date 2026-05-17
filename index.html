@@ -13,6 +13,13 @@
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", sans-serif;
     overflow: hidden;
     user-select: none;
+    /* Prevent Magic Mouse / trackpad horizontal swipe from triggering browser back/forward navigation */
+    overscroll-behavior: none;
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: none;
+  }
+  .modal-overlay, .waveform-wrap, .zoom-slider-wrap {
+    overscroll-behavior: contain;
   }
   body { display: flex; flex-direction: column; padding: 12px; gap: 10px; }
 
