@@ -5341,6 +5341,12 @@ async function init() {
   window.addEventListener('dragover', e => e.preventDefault());
   window.addEventListener('drop', e => e.preventDefault());
 
+  // ブラウザを閉じる直前に状態を自動保存（手動 SAVE 忘れ防止）
+  window.addEventListener('beforeunload', () => {
+    saveStateLocal();
+    doSave();
+  });
+
   // Unlock audio on first interaction (mobile Safari)
   const unlock = () => { if (ctx && ctx.state === 'suspended') ctx.resume(); document.body.removeEventListener('click', unlock); };
   document.body.addEventListener('click', unlock);
