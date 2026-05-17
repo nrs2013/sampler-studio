@@ -1428,6 +1428,25 @@ let doBgmGain;
 function initAudio() {
   if (ctx) return;
   ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Auto-recover from OS-initiated suspend (system sleep, audio device change, etc.)
+  // If user pressed PAUSE intentionally (isPaused=true) we leave it suspended.
+  ctx.addEventListener('statechange', () => {
+    if (ctx.state === 'suspended' && !isPaused) {
+      ctx.resume().catch(e => console.warn('AudioContext auto-resume failed', e));
+    }
+    if (ctx.state === 'interrupted') {
+      ctx.resume().catch(e => console.warn('AudioContext interrupted-resume failed', e));
+    }
+  });
+
+  // Recover from tab being put in background then returned
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && ctx && ctx.state === 'suspended' && !isPaused) {
+      ctx.resume().catch(e => console.warn('visibility resume failed', e));
+    }
+  });
+
   masterGain = ctx.createGain();
   masterGain.gain.value = state.masterVol;
 
@@ -1492,7 +1511,8 @@ function dbToLin(db) {
 
 function setMasterVol(lin) {
   state.masterVol = Math.max(0, Math.min(1.4, lin)); // up to +3dB
-  if (masterGain) masterGain.gain.linearRampToValueAtTime(state.masterVol, ctx.currentTime + 0.02);
+  // Anti-zipper: cancel any pending ramps, then smoothly ramp from current to target
+  if (masterGain) safeRamp(masterGain.gain, state.masterVol);
   const db = linToDb(state.masterVol);
   document.getElementById('masterDbVal').textContent = db === -Infinity ? '-∞' : db.toFixed(1);
   const pct = (state.masterVol / 1.4) * 100;
@@ -1504,6 +1524,111 @@ function setMasterVol(lin) {
 // 5ms in / 8ms out — inaudible but eliminates discontinuity clicks.
 const ANTI_CLICK_IN = 0.005;
 const ANTI_CLICK_OUT = 0.008;
+// Volume slider drag — 12ms ramp eliminates zipper noise while remaining responsive
+const ZIPPER_RAMP = 0.012;
+// BGM (HTMLAudioElement) stop/pause anti-click fade
+const BGM_STOP_FADE = 0.025;
+
+// ===========================
+// AUDIO SAFETY HELPERS — anti-click / anti-zipper
+// ===========================
+
+// Smoothly ramp an AudioParam to a target value, cancelling any pending schedule first.
+// Default 12ms ramp = inaudible but eliminates zipper noise on slider drag.
+function safeRamp(audioParam, target, durationSec) {
+  if (!ctx || !audioParam) return;
+  const t = ctx.currentTime;
+  const dur = (durationSec != null) ? Math.max(0.001, durationSec) : ZIPPER_RAMP;
+  try {
+    const cur = audioParam.value;
+    audioParam.cancelScheduledValues(t);
+    audioParam.setValueAtTime(cur, t);
+    audioParam.linearRampToValueAtTime(target, t + dur);
+  } catch(e) {
+    try { audioParam.value = target; } catch(_) {}
+  }
+}
+
+// Fade-out then stop a BufferSource, schedule disconnect of source+gain for cleanup.
+// Eliminates click on stop, prevents node accumulation (memory leak).
+function safeStopBufferSource(src, gainNode, fadeSec) {
+  if (!ctx) {
+    try { if (src) src.stop(); } catch(_){}
+    return;
+  }
+  const t = ctx.currentTime;
+  const fade = (fadeSec != null) ? Math.max(0.001, fadeSec) : ANTI_CLICK_OUT;
+  // Disable onended so caller's onAnded chain doesn't run mid-fade
+  try { if (src) src.onended = null; } catch(e){}
+  if (gainNode && gainNode.gain) {
+    try {
+      const cur = gainNode.gain.value;
+      gainNode.gain.cancelScheduledValues(t);
+      gainNode.gain.setValueAtTime(cur, t);
+      gainNode.gain.linearRampToValueAtTime(0.0001, t + fade);
+    } catch(e){}
+  }
+  try { src.stop(t + fade + 0.003); } catch(e) {
+    try { src.stop(); } catch(_){}
+  }
+  // Defer disconnect for cleanup
+  setTimeout(() => {
+    try { if (src) src.disconnect(); } catch(_){}
+    try { if (gainNode) gainNode.disconnect(); } catch(_){}
+  }, (fade + 0.05) * 1000);
+}
+
+// Connect a source through a gain node, starting silent then ramping to target.
+// Use this for ALL BufferSource playback to eliminate start clicks.
+function connectAndStartBufferSource(src, gainNode, destNode, targetGain, startOffset, durationOpt) {
+  if (!ctx) return;
+  const t = ctx.currentTime;
+  try {
+    gainNode.gain.cancelScheduledValues(t);
+    gainNode.gain.setValueAtTime(0, t);
+    gainNode.gain.linearRampToValueAtTime(targetGain, t + ANTI_CLICK_IN);
+  } catch(e){}
+  src.connect(gainNode);
+  gainNode.connect(destNode);
+  try {
+    if (startOffset != null && durationOpt != null) {
+      src.start(0, startOffset, durationOpt);
+    } else if (startOffset != null) {
+      src.start(0, startOffset);
+    } else {
+      src.start();
+    }
+  } catch(e) { console.warn('start failed', e); }
+}
+
+// Fade-out a BGM (HTMLAudioElement) then pause it. Also restores gain to user volume
+// after pause so the next play() doesn't start at 0.
+function safeBgmFadeAndPause(slot, opts) {
+  if (!ctx) return;
+  const b = _bgmObj(slot);
+  const g = _bgmUserGain(slot);
+  if (!b || !b.audioElement || !g) return;
+  const resetTime = !!(opts && opts.resetTime);
+  const t = ctx.currentTime;
+  try {
+    const cur = g.gain.value;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(cur, t);
+    g.gain.linearRampToValueAtTime(0.0001, t + BGM_STOP_FADE);
+  } catch(e){}
+  setTimeout(() => {
+    try { b.audioElement.pause(); } catch(e){}
+    if (resetTime) { try { b.audioElement.currentTime = 0; } catch(e){} }
+    // Restore gain to user's target volume for next play (instant — no audio flowing now)
+    try {
+      const t2 = ctx.currentTime;
+      g.gain.cancelScheduledValues(t2);
+      g.gain.setValueAtTime(b.vol, t2);
+    } catch(e){}
+    b.isPlaying = false;
+    doRenderBgm(slot);
+  }, BGM_STOP_FADE * 1000 + 5);
+}
 
 function playPad(bankIdx, padIdx, velocity = 1.0) {
   initAudio();
@@ -1544,6 +1669,9 @@ function playPad(bankIdx, padIdx, velocity = 1.0) {
     const i = pad.activeSources.indexOf(ref);
     if (i >= 0) pad.activeSources.splice(i, 1);
     if (pad.activeSources.length === 0) pad.isPlaying = false;
+    // Cleanup nodes to prevent leak (long sessions, repeated triggers)
+    try { source.disconnect(); } catch(e){}
+    try { gain.disconnect(); } catch(e){}
     renderPadVisual(padIdx);
   };
   renderPadVisual(padIdx);
@@ -1552,6 +1680,7 @@ function playPad(bankIdx, padIdx, velocity = 1.0) {
 function stopPad(pad) {
   if (!ctx) { pad.activeSources = []; pad.isPlaying = false; return; }
   const now = ctx.currentTime;
+  const fadeMs = (ANTI_CLICK_OUT + 0.01) * 1000;
   pad.activeSources.forEach(ref => {
     try {
       const currentVal = ref.gain.gain.value;
@@ -1560,6 +1689,12 @@ function stopPad(pad) {
       ref.gain.gain.linearRampToValueAtTime(0, now + ANTI_CLICK_OUT);
       ref.source.stop(now + ANTI_CLICK_OUT + 0.002);
     } catch(e) {}
+    // Schedule node cleanup after fade completes
+    const refSrc = ref.source, refGain = ref.gain;
+    setTimeout(() => {
+      try { refSrc.disconnect(); } catch(e){}
+      try { refGain.disconnect(); } catch(e){}
+    }, fadeMs);
   });
   pad.activeSources = [];
   pad.isPlaying = false;
@@ -3135,12 +3270,18 @@ function previewTrim() {
   const source = ctx.createBufferSource();
   source.buffer = pad.audioBuffer;
   const gain = ctx.createGain();
-  gain.gain.value = pad.level;
-  source.connect(gain).connect(masterGain);
   const dur = (pad.trimEnd ?? pad.audioBuffer.duration) - (pad.trimStart || 0);
-  source.start(0, pad.trimStart || 0, dur);
-  trimPreviewSource = { source, startedAt: ctx.currentTime, duration: dur };
-  source.onended = () => { trimPreviewSource = null; document.getElementById('playhead').style.display = 'none'; trimAnimating = false; };
+  // Anti-click: start silent, ramp to level over 5ms
+  connectAndStartBufferSource(source, gain, masterGain, pad.level, pad.trimStart || 0, dur);
+  trimPreviewSource = { source, gain, startedAt: ctx.currentTime, duration: dur };
+  source.onended = () => {
+    trimPreviewSource = null;
+    document.getElementById('playhead').style.display = 'none';
+    trimAnimating = false;
+    // Cleanup leak
+    try { source.disconnect(); } catch(e){}
+    try { gain.disconnect(); } catch(e){}
+  };
 
   const ph = document.getElementById('playhead');
   ph.style.display = 'block';
@@ -3170,7 +3311,8 @@ function previewTrim() {
 
 function stopTrimPreview() {
   if (trimPreviewSource) {
-    try { trimPreviewSource.source.stop(); } catch(e){}
+    // Anti-click fade-out + cleanup
+    safeStopBufferSource(trimPreviewSource.source, trimPreviewSource.gain);
     trimPreviewSource = null;
   }
   trimAnimating = false;
@@ -3737,7 +3879,17 @@ function doBgmPlay(slot) {
   if (!b.audioElement || !ctx) return;
   if (ctx.state === 'suspended') ctx.resume();
   const g = _bgmUserGain(slot);
-  if (g) g.gain.value = b.vol;
+  if (g) {
+    // Start silent, ramp to target — eliminates click on play start
+    const t = ctx.currentTime;
+    try {
+      g.gain.cancelScheduledValues(t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(b.vol, t + ANTI_CLICK_IN);
+    } catch(e){
+      try { g.gain.value = b.vol; } catch(_){}
+    }
+  }
   b.audioElement.loop = b.loop;
   const p = b.audioElement.play();
   if (p && p.catch) p.catch(err => console.warn('BGM play() err', err));
@@ -3749,20 +3901,33 @@ function doBgmPause(slot) {
   if (!slot) slot = 'door';
   const b = _bgmObj(slot);
   if (!b.audioElement) return;
-  try { b.audioElement.pause(); } catch(e) {}
-  b.isPlaying = false;
-  doRenderBgm(slot);
+  if (!ctx) {
+    try { b.audioElement.pause(); } catch(e) {}
+    b.isPlaying = false;
+    doRenderBgm(slot);
+    return;
+  }
+  // Anti-click: fade out via gain over 25ms, THEN pause the element
+  safeBgmFadeAndPause(slot, { resetTime: false });
 }
 
 function doBgmStop(slot) {
   if (!slot) slot = 'door';
   const b = _bgmObj(slot);
-  if (b.audioElement) {
+  if (!b.audioElement) {
+    b.isPlaying = false;
+    doRenderBgm(slot);
+    return;
+  }
+  if (!ctx) {
     try { b.audioElement.pause(); } catch(e) {}
     try { b.audioElement.currentTime = 0; } catch(e) {}
+    b.isPlaying = false;
+    doRenderBgm(slot);
+    return;
   }
-  b.isPlaying = false;
-  doRenderBgm(slot);
+  // Anti-click: fade out, pause, then reset to start
+  safeBgmFadeAndPause(slot, { resetTime: true });
 }
 
 function doBgmToggleLoop(slot) {
@@ -3785,7 +3950,8 @@ function doBgmSetVol(slot, linear) {
   const b = _bgmObj(slot);
   b.vol = v;
   const g = _bgmUserGain(slot);
-  if (g) g.gain.value = v;
+  // Anti-zipper: smooth ramp (12ms) instead of direct value assign
+  if (g) safeRamp(g.gain, v);
   doRenderBgm(slot);
   doSave();
 }
@@ -4069,19 +4235,14 @@ function doLibSetLevel(slotIdx, linear) {
   v = snapToUnity(v); // 0dB スナップ（どの経路でも効く）
   item.level = v;
   // ---- 全 active source の gain を即時反映 ----
+  // Anti-zipper: 12ms ramp instead of abrupt setValueAtTime
   // プレビュー
   if (state.door.previewSlot === slotIdx && state.door.previewGain && ctx) {
-    try {
-      state.door.previewGain.gain.cancelScheduledValues(ctx.currentTime);
-      state.door.previewGain.gain.setValueAtTime(item.level, ctx.currentTime);
-    } catch(e) {}
+    safeRamp(state.door.previewGain.gain, item.level);
   }
   // チェーン再生中（このスロットを今鳴らしている時）
   if (state.door.activeAnnGain && state.door.activeAnnSlot === slotIdx && ctx) {
-    try {
-      state.door.activeAnnGain.gain.cancelScheduledValues(ctx.currentTime);
-      state.door.activeAnnGain.gain.setValueAtTime(item.level, ctx.currentTime);
-    } catch(e) {}
+    safeRamp(state.door.activeAnnGain.gain, item.level);
   }
   // DOM を直接更新（doRenderLibrary を呼ぶと pointer drag が切れる）
   const grid = document.getElementById('doLibGrid');
@@ -4149,10 +4310,8 @@ function doLibPreview(slotIdx) {
     const src = ctx.createBufferSource();
     src.buffer = item.audioBuffer;
     const g = ctx.createGain();
-    g.gain.value = item.level ?? 1.0;
-    src.connect(g);
-    g.connect(doAnnGain);
-    src.start();
+    // Anti-click: start silent, ramp to level (5ms) — prevents pop on announce start
+    connectAndStartBufferSource(src, g, doAnnGain, item.level ?? 1.0);
     state.door.previewSource = src;
     state.door.previewGain = g;
     src.onended = () => {
@@ -4160,6 +4319,9 @@ function doLibPreview(slotIdx) {
         state.door.previewSlot = null;
         state.door.previewSource = null;
         state.door.previewGain = null;
+        // Cleanup nodes to prevent leak
+        try { src.disconnect(); } catch(e){}
+        try { g.disconnect(); } catch(e){}
         doDuckRelease();
         doRenderLibrary();
       }
@@ -4169,11 +4331,13 @@ function doLibPreview(slotIdx) {
 
 function doLibPreviewStop() {
   if (!state.door.previewSource) return;
-  try { state.door.previewSource.onended = null; } catch(e) {}
-  try { state.door.previewSource.stop(); } catch(e) {}
+  const src = state.door.previewSource;
+  const g = state.door.previewGain;
   state.door.previewSlot = null;
   state.door.previewSource = null;
   state.door.previewGain = null;
+  // Anti-click fade-out then stop (8ms) — prevents pop on preview stop
+  safeStopBufferSource(src, g);
   doDuckRelease();
   doRenderLibrary();
 }
@@ -4695,10 +4859,9 @@ function doPlayNextInChain() {
   const src = ctx.createBufferSource();
   src.buffer = item.audioBuffer;
   const g = ctx.createGain();
-  g.gain.value = item.level ?? 1.0;
-  src.connect(g);
-  g.connect(doAnnGain);
-  src.start();
+  // Anti-click: start at 0, ramp to level over 5ms — eliminates pop on announce start
+  // CRITICAL for production: scheduled announces fire automatically; any click is audible at venue
+  connectAndStartBufferSource(src, g, doAnnGain, item.level ?? 1.0);
   state.door.activeAnnSource = src;
   state.door.activeAnnGain = g;        // フェーダー連動用
   state.door.activeAnnSlot = libIdx;   // どのスロットを鳴らしているか
@@ -4707,6 +4870,9 @@ function doPlayNextInChain() {
       state.door.activeAnnSource = null;
       state.door.activeAnnGain = null;
       state.door.activeAnnSlot = -1;
+      // Cleanup nodes to prevent leak over long sessions
+      try { src.disconnect(); } catch(e){}
+      try { g.disconnect(); } catch(e){}
       // play next
       if (state.door.activeRowId) doPlayNextInChain();
     }
@@ -4728,31 +4894,25 @@ function doEndRow() {
 }
 
 // 影アナを強制停止（チェーン再生＋プレビューの両方）。DUCK も解除。
+// Anti-click: 8ms fade-out + disconnect for both chain and preview sources
 function doAnnStopAll() {
-  // chain playback
+  // chain playback — safe stop with fade
   if (state.door.activeAnnSource) {
-    try { state.door.activeAnnSource.onended = null; } catch(e) {}
-    try { state.door.activeAnnSource.stop(); } catch(e) {}
+    const src = state.door.activeAnnSource;
+    const g = state.door.activeAnnGain;
     state.door.activeAnnSource = null;
     state.door.activeAnnGain = null;
     state.door.activeAnnSlot = -1;
+    safeStopBufferSource(src, g);
   }
-  // preview
+  // preview — safe stop with fade
   if (state.door.previewSource) {
-    try { state.door.previewSource.onended = null; } catch(e) {}
-    try { state.door.previewSource.stop(); } catch(e) {}
+    const src = state.door.previewSource;
+    const g = state.door.previewGain;
     state.door.previewSource = null;
     state.door.previewGain = null;
     state.door.previewSlot = null;
-  }
-  // also cut announce gain briefly to avoid lingering tail
-  if (doAnnGain && ctx) {
-    const t = ctx.currentTime;
-    try {
-      doAnnGain.gain.cancelScheduledValues(t);
-      doAnnGain.gain.setValueAtTime(0.0001, t);
-      doAnnGain.gain.linearRampToValueAtTime(1.0, t + 0.05);
-    } catch(e) {}
+    safeStopBufferSource(src, g);
   }
   state.door.activeRowId = null;
   state.door.activeChainIdx = -1;
