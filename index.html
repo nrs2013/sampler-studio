@@ -1251,7 +1251,7 @@ const state = {
     },
     library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer, level}
     schedule: [], // [{id, time:'HH:MM:SS', chain:[libIdx,...], played:bool}]
-    duck: { depthDb: 0, fadeSec: 0.8 },
+    duck: { depthDb: -6.0, fadeSec: 0.8 },
     // runtime (not persisted)
     activeRowId: null,
     activeChainIdx: -1,
@@ -4461,7 +4461,7 @@ function doLoad() {
       });
     }
     if (s.duck) {
-      state.door.duck.depthDb = s.duck.depthDb ?? 0;
+      state.door.duck.depthDb = s.duck.depthDb ?? -6.0;
       state.door.duck.fadeSec = s.duck.fadeSec ?? 0.8;
     }
   } catch(e) { console.warn('doLoad failed', e); }
