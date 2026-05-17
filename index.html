@@ -70,9 +70,9 @@
   .bank-btn.has-content { color: #E6E6EA; }
   .bank-btn.active.has-content { color: #04342C; }
 
-  /* MAIN */
+  /* MAIN — MASTER は最左、その右に LEFT PANEL、その右に RIGHT CONTENT */
   .main {
-    display: grid; grid-template-columns: 170px 68px 1fr; gap: 10px; flex: 1; min-height: 0;
+    display: grid; grid-template-columns: 68px 170px 1fr; gap: 10px; flex: 1; min-height: 0;
   }
   .main > * { min-height: 0; min-width: 0; }
   #rightContent {
@@ -872,7 +872,7 @@
   /* ミニ VOL フェーダー（横）— ヒットエリア広く＋ew-resize カーソル */
   .do-lib-vol { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
   .do-lib-vol-label { font-size: 9px; color: #8A8A92; letter-spacing: 0.5px; min-width: 22px; }
-  .do-lib-vol-label.playing { color: #5DCAA5; }
+  .do-lib-vol-label.playing { color: #E6E6EA; }
   .do-lib-vol-slider {
     flex: 1; height: 26px; position: relative; cursor: ew-resize;
     z-index: 2; touch-action: none; user-select: none;
@@ -1038,6 +1038,33 @@
   </div>
 
   <div class="main">
+    <!-- MASTER COLUMN (最左、両モード共通) -->
+    <div class="master-column">
+      <div class="master-area">
+        <div class="master-head">
+          <span style="font-size:9px; color:#9DE0C5; letter-spacing:2px;">MASTER</span>
+          <div class="badge-mini">
+            <button class="badge midi" id="masterMidiBadge" onclick="startLearn('master','midi')">CC 7</button>
+            <button class="badge key" id="masterKeyBadge" onclick="startLearn('master','key')">↑↓</button>
+          </div>
+        </div>
+        <div class="master-fader-wrap">
+          <div class="db-scale">
+            <span>+6</span><span>+3</span><span>0</span><span>-6</span><span>-12</span><span>-24</span><span>-∞</span>
+          </div>
+          <div class="fader-track" id="masterFader">
+            <div class="fader-fill" id="masterFill" style="height:70%;"></div>
+            <div class="fader-thumb" id="masterThumb" style="bottom:70%;"></div>
+          </div>
+          <div class="meters">
+            <div class="meter"><div class="meter-fill" id="meterL"></div></div>
+            <div class="meter"><div class="meter-fill" id="meterR"></div></div>
+          </div>
+        </div>
+        <div class="master-value"><span id="masterDbVal">-3.5</span><span class="unit"> dB</span></div>
+      </div>
+    </div>
+
     <div class="left-panel">
       <!-- PLAY MODE -->
       <div class="panel-section" data-sampler-only>
@@ -1131,33 +1158,6 @@
           <button class="badge midi" id="fadeoutMidiBadge" onclick="startLearn('fadeout','midi')">N60</button>
           <button class="badge key" id="fadeoutKeyBadge" onclick="startLearn('fadeout','key')">F</button>
         </div>
-      </div>
-    </div>
-
-    <!-- MASTER COLUMN (両モード共通の専用カラム) -->
-    <div class="master-column">
-      <div class="master-area">
-        <div class="master-head">
-          <span style="font-size:9px; color:#9DE0C5; letter-spacing:2px;">MASTER</span>
-          <div class="badge-mini">
-            <button class="badge midi" id="masterMidiBadge" onclick="startLearn('master','midi')">CC 7</button>
-            <button class="badge key" id="masterKeyBadge" onclick="startLearn('master','key')">↑↓</button>
-          </div>
-        </div>
-        <div class="master-fader-wrap">
-          <div class="db-scale">
-            <span>+6</span><span>+3</span><span>0</span><span>-6</span><span>-12</span><span>-24</span><span>-∞</span>
-          </div>
-          <div class="fader-track" id="masterFader">
-            <div class="fader-fill" id="masterFill" style="height:70%;"></div>
-            <div class="fader-thumb" id="masterThumb" style="bottom:70%;"></div>
-          </div>
-          <div class="meters">
-            <div class="meter"><div class="meter-fill" id="meterL"></div></div>
-            <div class="meter"><div class="meter-fill" id="meterR"></div></div>
-          </div>
-        </div>
-        <div class="master-value"><span id="masterDbVal">-3.5</span><span class="unit"> dB</span></div>
       </div>
     </div>
 
@@ -4101,6 +4101,18 @@ function bindDoDuck() {
       db = snapToZeroDb(db, 0.6);
       state.door.duck.depthDb = db;
       doRenderDuck();
+      // DUCK 中なら即座に新しい深さへ追従（プレビュー／チェーン再生中のリアルタイム調整）
+      if (state.door.duckActive && doBgmDuckGain && ctx) {
+        const targetLin = dbToLin(db);
+        const t = ctx.currentTime;
+        try {
+          doBgmDuckGain.gain.cancelScheduledValues(t);
+          doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+          doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + 0.05);
+        } catch(_){}
+        // フェーダー視覚も追従
+        _animateDuckEffective(state.door.duckEffective, targetLin, 0.05);
+      }
     };
     update(e.clientX);
     const mv = ev => { ev.preventDefault(); update(ev.clientX); };
