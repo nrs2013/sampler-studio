@@ -31,7 +31,7 @@
   }
   .header-left { display: flex; align-items: center; gap: 14px; }
   .logo { display: flex; align-items: center; gap: 10px; }
-  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #9FE1CB; box-shadow: 0 0 6px rgba(159,225,203,0.5); }
+  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #FAC775; box-shadow: 0 0 6px rgba(159,225,203,0.5); }
   .logo-text { font-weight: 500; letter-spacing: 2px; font-size: 14px; }
   .preset-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: #22222A; border-radius: 4px; cursor: text; }
   .preset-chip span:first-child { font-size: 9px; color: #8A8A92; letter-spacing: 1px; }
@@ -51,7 +51,7 @@
   }
   .status { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #8A8A92; }
   .midi-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #5A5A60; }
-  .midi-led.on { background: #5DCAA5; box-shadow: 0 0 4px #5DCAA5; }
+  .midi-led.on { background: #F0C419; box-shadow: 0 0 4px #F0C419; }
 
   /* BANKS */
   .banks {
@@ -66,9 +66,9 @@
     border: none; font-family: inherit;
   }
   .bank-btn:hover { background: #2D2D35; color: #E6E6EA; }
-  .bank-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+  .bank-btn.active { background: #F0C419; color: #412402; font-weight: 500; }
   .bank-btn.has-content { color: #E6E6EA; }
-  .bank-btn.active.has-content { color: #04342C; }
+  .bank-btn.active.has-content { color: #412402; }
 
   /* MAIN */
   .main {
@@ -103,7 +103,7 @@
     font-size: 9px; color: #8A8A92; cursor: pointer; border: none; font-family: inherit;
   }
   .mode-btn:hover { background: #2D2D35; color: #E6E6EA; }
-  .mode-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+  .mode-btn.active { background: #F0C419; color: #412402; font-weight: 500; }
 
   /* MASTER FADER */
   .master-area { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-height: 0; }
@@ -118,7 +118,7 @@
   }
   .fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #5DCAA5, #EF9F27 80%, #E24B4A 95%);
+    background: linear-gradient(to top, #F0C419, #EF9F27 80%, #E24B4A 95%);
     border-radius: 7px;
   }
   .fader-thumb {
@@ -133,7 +133,7 @@
   }
   .meter-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #5DCAA5, #EF9F27 80%, #E24B4A 95%);
+    background: linear-gradient(to top, #F0C419, #EF9F27 80%, #E24B4A 95%);
     transition: height 0.05s linear;
   }
   .master-value { font-size: 14px; font-weight: 500; }
@@ -146,7 +146,7 @@
     font-size: 9px; color: #8A8A92; cursor: pointer; border: none; font-family: inherit;
   }
   .fade-btn:hover { background: #2D2D35; color: #E6E6EA; }
-  .fade-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+  .fade-btn.active { background: #F0C419; color: #412402; font-weight: 500; }
 
   /* CUSTOM FADE TIME INPUT */
   .fade-time-custom { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
@@ -157,7 +157,7 @@
   }
   .fade-time-custom input::-webkit-outer-spin-button,
   .fade-time-custom input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .fade-time-custom input:focus { outline: none; border-color: #5DCAA5; background: #16161B; }
+  .fade-time-custom input:focus { outline: none; border-color: #F0C419; background: #16161B; }
   .fade-time-custom .unit { font-size: 10px; color: #8A8A92; padding-right: 4px; }
 
   /* CURVE PICKER */
@@ -169,7 +169,7 @@
   }
   .curve-btn svg { width: 100%; height: 100%; }
   .curve-btn:hover { background: #2D2D35; color: #E6E6EA; }
-  .curve-btn.active { background: #5DCAA5; color: #04342C; }
+  .curve-btn.active { background: #F0C419; color: #412402; }
 
   /* CURVE EDITOR (manual bezier) */
   .curve-editor {
@@ -180,9 +180,9 @@
   .curve-editor canvas { display: block; width: 100%; height: 100%; }
   .curve-handle {
     position: absolute; width: 12px; height: 12px; border-radius: 50%;
-    background: #5DCAA5; border: 2px solid #0F0F12;
+    background: #F0C419; border: 2px solid #0F0F12;
     transform: translate(-50%, -50%); cursor: grab;
-    box-shadow: 0 0 5px rgba(93,202,165,0.55);
+    box-shadow: 0 0 5px rgba(240,196,25,0.55);
     z-index: 2; touch-action: none;
   }
   .curve-handle.h2 { background: #EF9F27; box-shadow: 0 0 5px rgba(239,159,39,0.55); }
@@ -198,17 +198,17 @@
 
   /* PRIMARY BUTTONS */
   .btn-primary {
-    width: 100%; background: #5DCAA5; border: none; color: #04342C;
+    width: 100%; background: #F0C419; border: none; color: #412402;
     padding: 9px; border-radius: 6px; font-size: 11px; font-weight: 500;
     letter-spacing: 1px; cursor: pointer; display: flex;
     align-items: center; justify-content: center; gap: 5px; font-family: inherit;
   }
-  .btn-primary:hover { background: #6FDEB8; }
+  .btn-primary:hover { background: #FAC775; }
   .btn-primary:active { transform: scale(0.98); }
   .btn-primary.big-fade {
     padding: 16px 12px; font-size: 14px; font-weight: 600;
     letter-spacing: 2px; gap: 8px;
-    box-shadow: 0 2px 10px rgba(93,202,165,0.35);
+    box-shadow: 0 2px 10px rgba(240,196,25,0.35);
   }
   .btn-primary.big-fade i, .btn-primary.big-fade svg { font-size: 18px; }
 
@@ -242,11 +242,11 @@
     background: #22222A; color: #8A8A92; cursor: pointer; border: none;
     font-family: inherit; letter-spacing: 0.5px;
   }
-  .badge.midi { color: #5DCAA5; }
+  .badge.midi { color: #F0C419; }
   .badge.key { color: #E6E6EA; }
   .badge:hover { background: #2D2D35; }
   .badge.learning {
-    background: #5DCAA5; color: #04342C; animation: pulse 1s infinite;
+    background: #F0C419; color: #412402; animation: pulse 1s infinite;
   }
   @keyframes pulse {
     0%, 100% { opacity: 1; }
@@ -284,7 +284,7 @@
     justify-content: space-between; cursor: ns-resize; touch-action: none;
     flex-shrink: 0;
   }
-  .pad-fader-card:hover { border-color: #5DCAA5; background: #1A1F1D; }
+  .pad-fader-card:hover { border-color: #F0C419; background: #1A1F1D; }
   .pad-fader-card .vol-label { font-size: 7px; color: #5A5A60; letter-spacing: 0.5px; }
   .pad-fader-track {
     width: 6px; flex: 1; background: #22222A; border-radius: 3px;
@@ -292,10 +292,10 @@
   }
   .pad-fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #5DCAA5; border-radius: 3px;
+    background: #F0C419; border-radius: 3px;
   }
   .pad-fader-db {
-    font-size: 8px; color: #5DCAA5; font-weight: 500; min-height: 10px;
+    font-size: 8px; color: #F0C419; font-weight: 500; min-height: 10px;
     text-align: center;
   }
   .pad.empty .pad-fader-card { display: none; }
@@ -305,45 +305,45 @@
   .pad-grip {
     position: absolute; top: 3px; right: 3px;
     width: 22px; height: 22px;
-    background: rgba(93,202,165,0.12); border-radius: 4px;
+    background: rgba(240,196,25,0.12); border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     cursor: grab; z-index: 4;
-    color: #5DCAA5; font-size: 11px;
+    color: #F0C419; font-size: 11px;
     transition: background 0.1s;
     -webkit-user-drag: element;
   }
-  .pad-grip:hover { background: rgba(93,202,165,0.3); }
-  .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
+  .pad-grip:hover { background: rgba(240,196,25,0.3); }
+  .pad-grip:active { cursor: grabbing; background: rgba(240,196,25,0.5); }
   .pad.empty .pad-grip { display: none; }
 
   /* Edit (trim) button — next to grip, opens waveform trim modal */
   .pad-edit-btn {
     position: absolute; top: 3px; right: 28px;
     height: 22px; padding: 0 7px;
-    background: rgba(93,202,165,0.12); border-radius: 4px;
+    background: rgba(240,196,25,0.12); border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; z-index: 4;
-    color: #5DCAA5; font-size: 10px;
+    color: #F0C419; font-size: 10px;
     letter-spacing: 1px; font-weight: 500;
     border: none; font-family: inherit;
     transition: background 0.1s;
   }
-  .pad-edit-btn:hover { background: rgba(93,202,165,0.3); }
-  .pad-edit-btn:active { background: rgba(93,202,165,0.5); }
+  .pad-edit-btn:hover { background: rgba(240,196,25,0.3); }
+  .pad-edit-btn:active { background: rgba(240,196,25,0.5); }
   .pad-body.empty .pad-edit-btn { display: none; }
 
   /* Flash effect when assigned key/MIDI is pressed */
   .pad-body.flash {
-    background: #5DCAA5 !important;
-    border-color: #9FE1CB !important;
-    box-shadow: 0 0 16px rgba(93,202,165,0.9), inset 0 0 8px rgba(255,255,255,0.2) !important;
+    background: #F0C419 !important;
+    border-color: #FAC775 !important;
+    box-shadow: 0 0 16px rgba(240,196,25,0.9), inset 0 0 8px rgba(255,255,255,0.2) !important;
     transition: none !important;
   }
   .pad-body.flash .pad-num,
   .pad-body.flash .pad-name,
   .pad-body.flash .pad-time,
-  .pad-body.flash .pad-shortcuts .badge { color: #04342C !important; }
-  .pad-body.flash + .pad-fader-card { border-color: #5DCAA5; }
+  .pad-body.flash .pad-shortcuts .badge { color: #412402 !important; }
+  .pad-body.flash + .pad-fader-card { border-color: #F0C419; }
   .pad-body.empty {
     border-style: dashed; border-color: #3D3D45; color: #5A5A60;
     align-items: center; justify-content: center; gap: 4px;
@@ -351,24 +351,24 @@
   .pad-body.empty .pad-name-empty { font-size: 9px; color: #5A5A60; }
   .pad-body.empty .upload-icon { font-size: 18px; color: #5A5A60; }
   .pad-body.playing {
-    background: #1F2A26; border-color: #5DCAA5;
-    box-shadow: 0 0 8px rgba(93,202,165,0.3);
+    background: #1F2A26; border-color: #F0C419;
+    box-shadow: 0 0 8px rgba(240,196,25,0.3);
   }
-  .pad-body.drag-over { background: #2A3A35; border-color: #5DCAA5; border-style: dashed; }
+  .pad-body.drag-over { background: #2A3A35; border-color: #F0C419; border-style: dashed; }
   .pad-body.drag-target-pad {
-    background: #2A3A35 !important; border-color: #5DCAA5 !important; border-width: 2px !important;
-    box-shadow: 0 0 0 2px rgba(93,202,165,0.4) !important;
+    background: #2A3A35 !important; border-color: #F0C419 !important; border-width: 2px !important;
+    box-shadow: 0 0 0 2px rgba(240,196,25,0.4) !important;
   }
   .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; padding-right: 26px; }
   .pad-num { color: #5A5A60; letter-spacing: 0.5px; }
-  .pad.playing .pad-num { color: #5DCAA5; }
+  .pad.playing .pad-num { color: #F0C419; }
   .pad-name { font-size: 14px; font-weight: 500; color: #E6E6EA; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pad-footer { display: flex; flex-direction: column; gap: 2px; }
   .pad-time {
-    display: flex; justify-content: space-between; font-size: 8px; color: #5DCAA5;
+    display: flex; justify-content: space-between; font-size: 8px; color: #F0C419;
   }
   .pad-progress { height: 2px; background: #0F0F12; border-radius: 1px; overflow: hidden; }
-  .pad-progress-fill { height: 100%; background: #5DCAA5; border-radius: 1px; width: 0%; }
+  .pad-progress-fill { height: 100%; background: #F0C419; border-radius: 1px; width: 0%; }
   .pad-shortcuts {
     display: flex; justify-content: space-between; font-size: 7px;
   }
@@ -387,11 +387,11 @@
   .level-card:hover { background: #25252D; border-color: #4D4D55; }
   .level-card.empty { opacity: 0.35; border-style: dashed; cursor: default; }
   .level-card.empty:hover { background: #1F1F26; }
-  .level-card.playing { background: #1F2A26; border-color: #5DCAA5; box-shadow: 0 0 6px rgba(93,202,165,0.3); }
+  .level-card.playing { background: #1F2A26; border-color: #F0C419; box-shadow: 0 0 6px rgba(240,196,25,0.3); }
   .level-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .level-info-name { font-size: 12px; color: #E6E6EA; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
   .level-info-num { font-size: 9px; color: #5A5A60; letter-spacing: 0.5px; }
-  .level-info-db { font-size: 14px; font-weight: 500; color: #5DCAA5; margin-top: auto; }
+  .level-info-db { font-size: 14px; font-weight: 500; color: #F0C419; margin-top: auto; }
   .level-fader-wrap {
     width: 18px; display: flex; flex-direction: column; align-items: center; gap: 4px;
   }
@@ -402,7 +402,7 @@
   }
   .level-fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #5DCAA5; border-radius: 7px;
+    background: #F0C419; border-radius: 7px;
     pointer-events: none;
   }
   .level-fader-thumb {
@@ -435,7 +435,7 @@
   .hold-slot.filled {
     background: #22222A; border: 0.5px solid #2D2D35; cursor: grab;
   }
-  .hold-slot.filled:hover { background: #2A2A33; border-color: #5DCAA5; }
+  .hold-slot.filled:hover { background: #2A2A33; border-color: #F0C419; }
   .hold-slot.filled:active { cursor: grabbing; }
   .hold-slot.filled .slot-head {
     font-size: 7px; color: #5A5A60; letter-spacing: 0.5px;
@@ -445,15 +445,15 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .hold-slot.drag-target {
-    background: rgba(93,202,165,0.15) !important;
-    border: 2px dashed #5DCAA5 !important;
+    background: rgba(240,196,25,0.15) !important;
+    border: 2px dashed #F0C419 !important;
   }
 
   /* BANK row drop-target during drag */
-  .banks.drop-mode { border-color: #5DCAA5; background: #1A1F1D; }
+  .banks.drop-mode { border-color: #F0C419; background: #1A1F1D; }
   .bank-btn.drop-target {
-    border: 2px solid #5DCAA5 !important;
-    box-shadow: 0 0 0 2px rgba(93,202,165,0.4) !important;
+    border: 2px solid #F0C419 !important;
+    box-shadow: 0 0 0 2px rgba(240,196,25,0.4) !important;
   }
 
   /* MODAL */
@@ -487,22 +487,22 @@
   .zoom-slider {
     width: 100%; -webkit-appearance: none; appearance: none;
     height: 4px; border-radius: 2px;
-    background: linear-gradient(to right, #5DCAA5 var(--fill, 0%), #22222A var(--fill, 0%));
+    background: linear-gradient(to right, #F0C419 var(--fill, 0%), #22222A var(--fill, 0%));
     outline: none; cursor: pointer;
   }
   .zoom-slider::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 16px; height: 16px; border-radius: 50%;
-    background: #5DCAA5; border: 2px solid #0F0F12;
-    cursor: grab; box-shadow: 0 0 0 1px #5DCAA5;
+    background: #F0C419; border: 2px solid #0F0F12;
+    cursor: grab; box-shadow: 0 0 0 1px #F0C419;
   }
   .zoom-slider::-webkit-slider-thumb:active { cursor: grabbing; }
   .zoom-slider::-moz-range-thumb {
     width: 16px; height: 16px; border-radius: 50%;
-    background: #5DCAA5; border: 2px solid #0F0F12; cursor: grab;
+    background: #F0C419; border: 2px solid #0F0F12; cursor: grab;
   }
   .zoom-value {
-    font-size: 13px; color: #5DCAA5; font-weight: 500;
+    font-size: 13px; color: #F0C419; font-weight: 500;
     min-width: 60px; text-align: right;
     font-family: var(--font-mono, monospace);
   }
@@ -511,7 +511,7 @@
     padding: 4px 10px; border-radius: 4px; font-size: 10px;
     cursor: pointer; font-family: inherit; letter-spacing: 1px;
   }
-  .zoom-reset-btn:hover { border-color: #5DCAA5; color: #5DCAA5; }
+  .zoom-reset-btn:hover { border-color: #F0C419; color: #F0C419; }
   .zoom-hint { font-size: 9px; color: #5A5A60; flex-shrink: 0; }
   .waveform-wrap {
     position: relative; background: #0F0F12; border: 0.5px solid #2A2A30;
@@ -537,11 +537,11 @@
   }
   .trim-handle::before {
     content: ''; position: absolute; top: 0; bottom: 0;
-    left: 50%; width: 2px; background: #5DCAA5; transform: translateX(-50%);
+    left: 50%; width: 2px; background: #F0C419; transform: translateX(-50%);
   }
   .trim-handle::after {
-    content: ''; width: 10px; height: 30px; background: #5DCAA5; border-radius: 2px;
-    box-shadow: 0 0 6px rgba(93,202,165,0.5);
+    content: ''; width: 10px; height: 30px; background: #F0C419; border-radius: 2px;
+    box-shadow: 0 0 6px rgba(240,196,25,0.5);
   }
   .trim-handle.end::before, .trim-handle.end::after { background: #EF9F27; box-shadow: 0 0 6px rgba(239,159,39,0.5); }
   .trim-playhead {
@@ -568,14 +568,14 @@
     color: #E6E6EA; font-size: 12px; border: 0.5px solid rgba(255,255,255,0.1);
   }
   .pad:hover .pad-edit-icon { opacity: 0.85; }
-  .pad-edit-icon:hover { background: #5DCAA5; color: #04342C; opacity: 1 !important; }
+  .pad-edit-icon:hover { background: #F0C419; color: #412402; opacity: 1 !important; }
   /* Inline trim indicator placed next to time display, no overlap with shortcuts */
   .trim-icon {
     display: inline-flex; align-items: center; gap: 2px;
-    font-size: 9px; color: #5DCAA5;
+    font-size: 9px; color: #F0C419;
     padding: 0 3px; margin-right: 3px;
-    background: rgba(93,202,165,0.12); border-radius: 2px;
-    border: 0.5px solid rgba(93,202,165,0.25);
+    background: rgba(240,196,25,0.12); border-radius: 2px;
+    border: 0.5px solid rgba(240,196,25,0.25);
   }
   .modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
   .modal p { font-size: 12px; color: #8A8A92; margin-bottom: 12px; }
@@ -584,8 +584,8 @@
   /* LEARN OVERLAY */
   .learn-banner {
     display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-    background: #5DCAA5; color: #04342C; padding: 8px 18px; border-radius: 6px;
-    font-size: 12px; font-weight: 500; z-index: 999; box-shadow: 0 4px 16px rgba(93,202,165,0.4);
+    background: #F0C419; color: #412402; padding: 8px 18px; border-radius: 6px;
+    font-size: 12px; font-weight: 500; z-index: 999; box-shadow: 0 4px 16px rgba(240,196,25,0.4);
   }
   .learn-banner.show { display: block; animation: pulse 1s infinite; }
 
@@ -625,7 +625,7 @@
     border-radius: 4px; cursor: pointer; font-family: inherit;
   }
   .mode-tab:hover { background: #2D2D35; color: #E6E6EA; }
-  .mode-tab.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+  .mode-tab.active { background: #F0C419; color: #412402; font-weight: 500; }
   .mode-tab.door-active { background: #F0C419; color: #412402; font-weight: 500; }
   .app-mode-tabs .status { margin-left: auto; padding-right: 6px; }
   /* Left panel (MASTER / STOP / PAUSE / FADE TIME / FADE CURVE / FADE OUT) is shared across modes.
@@ -676,29 +676,43 @@
     transition: all 0.15s; flex-shrink: 0;
   }
   .do-bgm-btn:hover { background: #2D2D35; }
-  .do-bgm-btn.primary { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
-  .do-bgm-btn.primary:hover { background: #6FDEB8; }
-  .do-bgm-btn.active { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
+  .do-bgm-btn.primary { background: #F0C419; color: #412402; border-color: #F0C419; }
+  .do-bgm-btn.primary:hover { background: #FAC775; }
+  .do-bgm-btn.active { background: #F0C419; color: #412402; border-color: #F0C419; }
   .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
   .do-bgm-time { font-family: inherit; font-size: 10px; color: #8A8A92; }
   .do-bgm-bar { height: 4px; background: #22222A; border-radius: 2px; overflow: hidden; }
-  .do-bgm-bar-fill { height: 100%; background: #5DCAA5; width: 0%; }
+  .do-bgm-bar-fill { height: 100%; background: #F0C419; width: 0%; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
   .do-bgm-vol-label { font-size: 9px; color: #8A8A92; letter-spacing: 1.5px; width: 30px; }
   .do-bgm-vol-slider { flex: 1; height: 4px; background: #22222A; border-radius: 2px; position: relative; cursor: pointer; }
-  .do-bgm-vol-fill { position: absolute; top: 0; left: 0; height: 100%; background: #5DCAA5; border-radius: 2px; pointer-events: none; }
+  .do-bgm-vol-fill { position: absolute; top: 0; left: 0; height: 100%; background: #F0C419; border-radius: 2px; pointer-events: none; }
   .do-bgm-vol-db { font-family: inherit; font-size: 11px; min-width: 42px; text-align: right; color: #E6E6EA; }
 
   /* DUCK */
   .do-duck-row { display: flex; align-items: center; justify-content: space-between; }
   .do-duck-label { font-size: 11px; color: #B0B0B6; }
-  .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #EF9F27; }
+  .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #F0C419; }
   .do-duck-bar { height: 4px; background: #22222A; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
   .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #EF9F27; border-radius: 2px; pointer-events: none; }
   .do-duck-bar.gray .do-duck-bar-fill { background: #5A5A60; }
 
   /* LIBRARY — 半透明枠カード＋ミニフェーダー */
-  .do-lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .do-lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  /* フェーダー部分（下のカード）はドラッグ無効領域 */
+  .do-lib-body { display: flex; flex-direction: column; cursor: grab; }
+  .do-lib-vol-card { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(255,255,255,0.06); cursor: default; }
+  /* ＋ 枠を追加 */
+  .do-lib-slot-add {
+    border: 0.5px dashed rgba(240,196,25,0.5);
+    background: rgba(240,196,25,0.04);
+    border-radius: 6px; padding: 14px 10px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100px; transition: all 0.15s;
+  }
+  .do-lib-slot-add:hover {
+    background: rgba(240,196,25,0.12); border-color: #F0C419;
+  }
   .do-lib-slot {
     border: 0.5px solid #2A2A30; border-radius: 6px; padding: 10px;
     display: flex; flex-direction: column; min-height: 100px; position: relative;
@@ -1400,11 +1414,54 @@ function pauseAll() {
   }
 }
 
+// FADE OUT = パニックストップ：パッド／BGM／影アナ／プレビュー、全部フェードアウトして止める
 function fadeOutAll() {
   initAudio();
+  const sec = Math.max(0.05, state.fadeTime || 2.0);
+  // 1) SAMPLER pads
   state.banks.forEach(b => b.pads.forEach(p => {
-    if (p.isPlaying) fadeOutPad(p, state.fadeTime);
+    if (p.isPlaying) fadeOutPad(p, sec);
   }));
+  // 2) DOOR OPEN: BGM
+  if (state.door && state.door.bgm && state.door.bgm.isPlaying && doBgmGain && ctx) {
+    const t = ctx.currentTime;
+    const startVal = doBgmGain.gain.value;
+    try {
+      doBgmGain.gain.cancelScheduledValues(t);
+      doBgmGain.gain.setValueAtTime(startVal, t);
+      doBgmGain.gain.linearRampToValueAtTime(0.0001, t + sec);
+    } catch(e) {}
+    setTimeout(() => {
+      doBgmStop();
+      if (doBgmGain) doBgmGain.gain.value = state.door.bgm.vol;
+    }, sec * 1000 + 80);
+  }
+  // 3) DOOR OPEN: announce chain + preview
+  if (state.door && (state.door.activeAnnSource || state.door.previewSource) && doAnnGain && ctx) {
+    const t = ctx.currentTime;
+    const startVal = doAnnGain.gain.value;
+    try {
+      doAnnGain.gain.cancelScheduledValues(t);
+      doAnnGain.gain.setValueAtTime(startVal, t);
+      doAnnGain.gain.linearRampToValueAtTime(0.0001, t + sec);
+    } catch(e) {}
+    setTimeout(() => {
+      // hard stop and restore gain
+      try { if (state.door.activeAnnSource) { state.door.activeAnnSource.onended = null; state.door.activeAnnSource.stop(); } } catch(e) {}
+      try { if (state.door.previewSource) { state.door.previewSource.onended = null; state.door.previewSource.stop(); } } catch(e) {}
+      state.door.activeAnnSource = null;
+      state.door.previewSource = null;
+      state.door.previewGain = null;
+      state.door.previewSlot = null;
+      state.door.activeRowId = null;
+      state.door.activeChainIdx = -1;
+      doDuckRelease();
+      if (doAnnGain) doAnnGain.gain.value = 1.0;
+      doRenderLibrary();
+      doRenderSchedule();
+    }, sec * 1000 + 80);
+  }
+  showToast('FADE OUT — 全停止');
 }
 
 // ===========================
@@ -1957,7 +2014,7 @@ function renderPads() {
           <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">EDIT</button>
           <div class="pad-head">
             <span class="pad-num">${idx+1}</span>
-            ${pad.isPlaying ? '<span style="color:#5DCAA5;">▶</span>' : '<span></span>'}
+            ${pad.isPlaying ? '<span style="color:#F0C419;">▶</span>' : '<span></span>'}
           </div>
           <div class="pad-name">${pad.sampleName}</div>
           <div class="pad-footer">
@@ -2266,7 +2323,7 @@ function openTrimEditor(bankIdx, padIdx) {
         <button class="btn-small" onclick="resetTrim()" style="margin-right:auto;">RESET</button>
         <button class="btn-small" onclick="previewTrim()">▶ PREVIEW</button>
         <button class="btn-small" onclick="closeTrimEditor()">CANCEL</button>
-        <button class="btn-small" style="background:#5DCAA5; color:#04342C; border-color:#5DCAA5; font-weight:500;" onclick="applyTrim()">APPLY</button>
+        <button class="btn-small" style="background:#F0C419; color:#412402; border-color:#F0C419; font-weight:500;" onclick="applyTrim()">APPLY</button>
       </div>
     </div>
   `;
@@ -2486,7 +2543,7 @@ function drawWaveform() {
   const endSample = Math.min(ch.length, Math.floor(viewEnd * sampleRate));
   const totalSamples = endSample - startSample;
   const samplesPerPixel = totalSamples / W;
-  c.strokeStyle = '#5DCAA5';
+  c.strokeStyle = '#F0C419';
   c.lineWidth = 1;
   c.beginPath();
   if (samplesPerPixel >= 1) {
@@ -2518,7 +2575,7 @@ function drawWaveform() {
   c.stroke();
   // Draw sample point markers when very zoomed in
   if (samplesPerPixel < 0.5) {
-    c.fillStyle = '#9FE1CB';
+    c.fillStyle = '#FAC775';
     for (let i = startSample; i < endSample; i++) {
       const x = ((i - startSample) / totalSamples) * W;
       const v = ch[i] || 0;
@@ -2970,7 +3027,7 @@ function drawCurveEditor() {
   c.setLineDash([]);
 
   // curve
-  c.strokeStyle = '#5DCAA5';
+  c.strokeStyle = '#F0C419';
   c.lineWidth = 2;
   c.beginPath();
   for (let i = 0; i <= 64; i++) {
@@ -3438,6 +3495,18 @@ function doLibPreview(slotIdx) {
     return;
   }
   if (ctx.state === 'suspended') ctx.resume();
+  // 本番想定で鳴らす：BGMが用意済みなら自動でも再生（DUCKの効きを確認できるように）
+  if (state.door.bgm.audioBuffer && !state.door.bgm.isPlaying) {
+    doBgmPlay();
+  }
+  // Reset announce gain in case it was attenuated by a previous stop
+  if (doAnnGain && ctx) {
+    const t0 = ctx.currentTime;
+    try {
+      doAnnGain.gain.cancelScheduledValues(t0);
+      doAnnGain.gain.setValueAtTime(1.0, t0);
+    } catch(e) {}
+  }
   const src = ctx.createBufferSource();
   src.buffer = item.audioBuffer;
   const g = ctx.createGain();
@@ -3449,6 +3518,9 @@ function doLibPreview(slotIdx) {
   state.door.previewSource = src;
   state.door.previewGain = g;
   doDuckActivate();
+  if (!state.door.bgm.audioBuffer) {
+    showToast('BGM 未読込：DUCK 効果は確認できません（影アナのみ再生）');
+  }
   src.onended = () => {
     if (state.door.previewSource === src) {
       // Natural end
@@ -3477,44 +3549,52 @@ function doRenderLibrary() {
   const grid = document.getElementById('doLibGrid');
   if (!grid) return;
   grid.innerHTML = '';
+  // 配列は最低 4 枠を保証
+  if (!Array.isArray(state.door.library)) state.door.library = [];
+  while (state.door.library.length < 4) state.door.library.push(null);
   let used = 0;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < state.door.library.length; i++) {
     const item = state.door.library[i];
     const isPreviewing = (state.door.previewSlot === i);
     const slot = document.createElement('div');
-    slot.className = 'do-lib-slot slot-' + i + (item ? ' has-content' : ' empty') + (isPreviewing ? ' playing' : '');
+    const colorIdx = i % 4; // 4色を循環
+    slot.className = 'do-lib-slot slot-' + colorIdx + (item ? ' has-content' : ' empty') + (isPreviewing ? ' playing' : '');
     slot.dataset.slot = i;
     if (item) {
       used++;
-      slot.draggable = !isPreviewing; // 再生中はドラッグ不可
+      slot.draggable = false; // ドラッグは body のみ。フェーダー側からはドラッグ不可
       const level = (item.level != null) ? item.level : 1.0;
       const levelPct = (level / 1.4) * 100;
       const db = linToDb(level);
       const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
       const playBtn = isPreviewing
-        ? `<button class="do-lib-act play playing-btn color-${i}" title="停止" onclick="event.stopPropagation(); doLibPreview(${i})">■</button>`
-        : `<button class="do-lib-act play color-${i}" title="試聴 (DUCK連動)" onclick="event.stopPropagation(); doLibPreview(${i})">▶</button>`;
+        ? `<button class="do-lib-act play playing-btn color-${colorIdx}" title="停止" onclick="event.stopPropagation(); doLibPreview(${i})">■</button>`
+        : `<button class="do-lib-act play color-${colorIdx}" title="試聴 (DUCK連動)" onclick="event.stopPropagation(); doLibPreview(${i})">▶</button>`;
       slot.innerHTML = `
-        <div class="do-lib-slot-head">
-          <span class="do-lib-badge color-${i}">A${i+1}</span>
-          <div class="do-lib-actions">
-            ${playBtn}
-            <button class="do-lib-act" title="差替え" onclick="event.stopPropagation(); doLibLoad(${i})">↻</button>
-            <button class="do-lib-act del" title="削除" onclick="event.stopPropagation(); doLibClear(${i})">×</button>
+        <div class="do-lib-body" draggable="${!isPreviewing}">
+          <div class="do-lib-slot-head">
+            <span class="do-lib-badge color-${colorIdx}">A${i+1}</span>
+            <div class="do-lib-actions">
+              ${playBtn}
+              <button class="do-lib-act" title="差替え" onclick="event.stopPropagation(); doLibLoad(${i})">↻</button>
+              <button class="do-lib-act del" title="削除" onclick="event.stopPropagation(); doLibClear(${i})">×</button>
+            </div>
           </div>
+          <div class="do-lib-name">${escapeHtml(item.sampleName)}</div>
+          <div class="do-lib-meta">${item.audioBuffer ? fmtTime(item.audioBuffer.duration) : '--:--'}</div>
         </div>
-        <div class="do-lib-name">${escapeHtml(item.sampleName)}</div>
-        <div class="do-lib-meta">${item.audioBuffer ? fmtTime(item.audioBuffer.duration) : '--:--'}</div>
-        <div class="do-lib-vol">
-          <span class="do-lib-vol-label${isPreviewing ? ' playing' : ''}">VOL</span>
-          <div class="do-lib-vol-slider" data-slot="${i}">
-            <div class="do-lib-vol-fill color-${i}" style="width:${levelPct.toFixed(1)}%;"></div>
-            <div class="do-lib-vol-thumb color-${i}" style="left:${levelPct.toFixed(1)}%;"></div>
+        <div class="do-lib-vol-card">
+          <div class="do-lib-vol">
+            <span class="do-lib-vol-label${isPreviewing ? ' playing' : ''}">VOL</span>
+            <div class="do-lib-vol-slider" data-slot="${i}">
+              <div class="do-lib-vol-fill color-${colorIdx}" style="width:${levelPct.toFixed(1)}%;"></div>
+              <div class="do-lib-vol-thumb color-${colorIdx}" style="left:${levelPct.toFixed(1)}%;"></div>
+            </div>
+            <span class="do-lib-vol-db">${dbStr}</span>
           </div>
-          <span class="do-lib-vol-db">${dbStr}</span>
         </div>
       `;
-      // Volume slider bind
+      // Volume slider bind (ドラッグ親に伝播させない)
       const vol = slot.querySelector('.do-lib-vol-slider');
       vol.addEventListener('pointerdown', e => {
         e.stopPropagation();
@@ -3532,16 +3612,21 @@ function doRenderLibrary() {
         window.addEventListener('pointermove', mv);
         window.addEventListener('pointerup', up);
       });
-      slot.addEventListener('dragstart', e => {
+      // フェーダーカード全体は dragstart を発火させない
+      const volCard = slot.querySelector('.do-lib-vol-card');
+      volCard.addEventListener('dragstart', e => { e.preventDefault(); e.stopPropagation(); });
+      // 本体だけドラッグ可能
+      const body = slot.querySelector('.do-lib-body');
+      body.addEventListener('dragstart', e => {
         if (isPreviewing) { e.preventDefault(); return; }
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'door-lib', slot: i }));
         slot.classList.add('dragging');
       });
-      slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+      body.addEventListener('dragend', () => slot.classList.remove('dragging'));
     } else {
       slot.innerHTML = `
-        <span class="do-lib-badge color-${i}" style="opacity:0.7;">A${i+1}</span>
+        <span class="do-lib-badge color-${colorIdx}" style="opacity:0.7;">A${i+1}</span>
         <div class="do-lib-empty-text">＋ ファイルを追加</div>
       `;
       slot.addEventListener('click', () => doLibLoad(i));
@@ -3572,7 +3657,21 @@ function doRenderLibrary() {
     }
     grid.appendChild(slot);
   }
-  document.getElementById('doLibStatus').textContent = `${used} / 4 used`;
+  // 末尾に「＋ 枠を追加」スロット（最大 8 枠まで）
+  if (state.door.library.length < 8) {
+    const addSlot = document.createElement('div');
+    addSlot.className = 'do-lib-slot do-lib-slot-add';
+    addSlot.innerHTML = `<i class="ti ti-plus" style="font-size:18px;" aria-hidden="true"></i><div style="font-size:11px; margin-top:4px;">枠を追加</div>`;
+    // 上のアイコンは念のためフォールバック
+    addSlot.innerHTML = `<div style="font-size:22px; line-height:1; color:#F0C419;">＋</div><div style="font-size:10px; color:#8A8A92; margin-top:4px; letter-spacing:1px;">枠を追加</div>`;
+    addSlot.addEventListener('click', () => {
+      state.door.library.push(null);
+      doRenderLibrary();
+      doSave();
+    });
+    grid.appendChild(addSlot);
+  }
+  document.getElementById('doLibStatus').textContent = `${used} / ${state.door.library.length} used`;
 }
 
 function escapeHtml(s) {
@@ -3711,7 +3810,7 @@ function doRenderSchedule() {
           const name = it ? escapeHtml(it.sampleName.replace(/\.[^.]+$/, '')) : '<未登録>';
           return `
             <span class="do-chip ${cls}" draggable="true" data-row="${row.id}" data-idx="${ci}" data-lib="${libIdx}">
-              <span class="do-chip-badge color-${(libIdx>=0&&libIdx<4)?libIdx:'missing'}">A${libIdx+1}</span>
+              <span class="do-chip-badge color-${(libIdx>=0)?(libIdx%4):'missing'}">A${libIdx+1}</span>
               <span class="do-chip-label">${name}</span>
               <span class="do-chip-dur">${dur}</span>
               <span class="do-chip-x" onclick="event.stopPropagation(); doSchedChipDel('${row.id}', ${ci})">×</span>
@@ -3856,7 +3955,7 @@ function doTick() {
         nameEl.innerHTML = '<span style="color:#5A5A60;">（チェーン未設定）</span>';
       } else {
         nameEl.innerHTML = nxt.chain.map((idx, i) => {
-          const c = (idx >= 0 && idx < 4) ? idx : 'missing';
+          const c = (idx >= 0) ? (idx % 4) : 'missing';
           return `<span class="do-chip-badge color-${c}">A${idx+1}</span>${i < nxt.chain.length-1 ? '<span style="color:#5A5A60; font-size:11px;">→</span>' : ''}`;
         }).join(' ');
       }
