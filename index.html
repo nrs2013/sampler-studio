@@ -988,7 +988,10 @@
     <div class="do-card" style="flex:1; min-height:0; display:flex; flex-direction:column;">
       <div class="do-sched-head">
         <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
-        <span style="font-size:9px; color:#8A8A92;" id="doSchedStatus">0 件</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="do-bgm-load" id="doAnnStopBtn" onclick="doAnnStopAll()" style="color:#E24B4A; border:0.5px solid rgba(226,75,74,0.4);" title="再生中の影アナを止めて DUCK 解除">■ 影アナ停止</button>
+          <span style="font-size:9px; color:#8A8A92;" id="doSchedStatus">0 件</span>
+        </div>
       </div>
       <div class="do-sched-list" id="doSchedList" style="overflow-y:auto; flex:1; min-height:0;"></div>
       <button class="do-sched-add" onclick="doSchedAdd()">＋ 時刻を追加</button>
@@ -3291,8 +3294,9 @@ function doLibLoad(slotIdx) {
 }
 
 function doLibClear(slotIdx) {
+  // Stop any playback that might use this slot
+  doAnnStopAll();
   state.door.library[slotIdx] = null;
-  // also clean from schedule chains? -> keep references but they show as missing
   doRenderLibrary();
   doRenderSchedule();
   doSave();
@@ -3421,6 +3425,7 @@ function doSchedAdd() {
 }
 
 function doSchedDel(rowId) {
+  if (state.door.activeRowId === rowId) doAnnStopAll();
   state.door.schedule = state.door.schedule.filter(r => r.id !== rowId);
   doRenderSchedule();
   doSave();
@@ -3458,6 +3463,10 @@ function doSchedChipAdd(rowId, libIdx, atPos) {
 function doSchedChipDel(rowId, chipIdx) {
   const row = state.door.schedule.find(r => r.id === rowId);
   if (!row) return;
+  // If the currently playing chip is being removed, stop playback
+  if (state.door.activeRowId === rowId && state.door.activeChainIdx === chipIdx) {
+    doAnnStopAll();
+  }
   row.chain.splice(chipIdx, 1);
   doRenderSchedule();
   doSave();
@@ -3518,7 +3527,9 @@ function doRenderSchedule() {
         ${row.chain.length === 0 ? '<span class="do-chain-drop-hint">＋ ライブラリ A1〜A4 をドロップ</span>' : ''}
       </div>
       <div class="do-sched-actions">
-        <button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>
+        ${state.door.activeRowId === row.id
+          ? `<button class="do-sched-act" title="停止" onclick="doAnnStopAll()" style="color:#E24B4A;">■</button>`
+          : `<button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`}
         <button class="do-sched-act del" title="削除" onclick="doSchedDel('${row.id}')">×</button>
       </div>
     `;
@@ -3707,6 +3718,36 @@ function doEndRow() {
   doSave();
 }
 
+// 影アナを強制停止（チェーン再生＋プレビューの両方）。DUCK も解除。
+function doAnnStopAll() {
+  // chain playback
+  if (state.door.activeAnnSource) {
+    try { state.door.activeAnnSource.onended = null; } catch(e) {}
+    try { state.door.activeAnnSource.stop(); } catch(e) {}
+    state.door.activeAnnSource = null;
+  }
+  // preview
+  if (doLibPreviewSource) {
+    try { doLibPreviewSource.onended = null; } catch(e) {}
+    try { doLibPreviewSource.stop(); } catch(e) {}
+    doLibPreviewSource = null;
+  }
+  // also cut announce gain briefly to avoid lingering tail
+  if (doAnnGain && ctx) {
+    const t = ctx.currentTime;
+    try {
+      doAnnGain.gain.cancelScheduledValues(t);
+      doAnnGain.gain.setValueAtTime(0.0001, t);
+      doAnnGain.gain.linearRampToValueAtTime(1.0, t + 0.05);
+    } catch(e) {}
+  }
+  state.door.activeRowId = null;
+  state.door.activeChainIdx = -1;
+  doDuckRelease();
+  doRenderSchedule();
+  showToast('影アナ停止');
+}
+
 function doDuckActivate() {
   if (!doBgmDuckGain || !ctx) return;
   state.door.duckActive = true;
@@ -3826,6 +3867,7 @@ function doInit() {
   window.doSchedDel = doSchedDel;
   window.doSchedChipDel = doSchedChipDel;
   window.doStartRow = doStartRow;
+  window.doAnnStopAll = doAnnStopAll;
   window.doLibLoad = doLibLoad;
   window.doLibClear = doLibClear;
   window.doLibPreview = doLibPreview;
