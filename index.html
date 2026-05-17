@@ -633,7 +633,7 @@
 
   /* DOOR OPEN PAGE */
   #doorPage { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; }
-  .do-top { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 10px; }
+  .do-top { display: grid; grid-template-columns: minmax(380px, 1.8fr) 1fr 1fr; gap: 10px; }
   /* DUCK 横長ストリップ */
   .do-duck-strip {
     display: flex; align-items: center; gap: 14px;
@@ -671,16 +671,16 @@
     font-size: 9px; color: #8A8A92; letter-spacing: 2px; margin-bottom: 8px;
   }
   /* NOW / NEXT — 黄色テーマで大きく */
-  #doNowCard { border-color: rgba(93,202,165,0.35); padding: 18px 20px; }
+  #doNowCard { border-color: rgba(93,202,165,0.35); padding: 22px 26px; }
   .do-clock-now {
-    font-family: inherit; font-size: 60px; font-weight: 600;
-    color: #FFFFFF; letter-spacing: 1px; line-height: 1;
+    font-family: inherit; font-size: 110px; font-weight: 600;
+    color: #FFFFFF; letter-spacing: 2px; line-height: 1;
   }
   .do-clock-divider { height: 0.5px; background: #2A2A30; margin: 10px 0; }
   .do-clock-next-label { font-size: 9px; color: #8A8A92; letter-spacing: 1.5px; margin-bottom: 3px; }
   .do-clock-next-name { font-size: 12px; color: #E6E6EA; min-height: 14px; display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
   .do-clock-next-eta {
-    font-family: inherit; font-size: 26px; font-weight: 600;
+    font-family: inherit; font-size: 34px; font-weight: 600;
     color: #E6E6EA; margin-top: 4px;
   }
   .do-status-badge {
@@ -1212,8 +1212,9 @@
     <div class="do-card do-duck-strip">
       <span class="do-card-head" style="margin:0;">DUCK 設定</span>
       <span class="do-duck-label">下げ幅</span>
-      <div class="do-duck-bar" id="doDuckDepthBar" style="flex:1;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div></div>
-      <span class="do-duck-value" id="doDuckDepthVal">-6.0 dB</span>
+      <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div></div>
+      <span class="do-duck-value" id="doDuckDepthVal" style="min-width:60px;">-6.0 dB</span>
+      <span style="width:24px;"></span>
       <span class="do-duck-label">フェード</span>
       <input type="number" id="doDuckFadeInput" min="0" max="30" step="0.1" value="0.8" class="do-duck-fade-input">
       <span style="font-size:11px; color:#8A8A92;">秒</span>
