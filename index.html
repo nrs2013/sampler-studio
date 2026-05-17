@@ -1248,6 +1248,7 @@ const state = {
     activeChainIdx: -1,
     activeAnnSource: null,
     activeAnnGain: null,
+    activeAnnSlot: -1,
     duckActive: false,
     previewSlot: null,
     previewSource: null,
@@ -1493,11 +1494,13 @@ function fadeOutAll() {
       doBgmGain.gain.cancelScheduledValues(t);
       doBgmGain.gain.setValueAtTime(startVal, t);
       doBgmGain.gain.linearRampToValueAtTime(0.0001, t + sec);
+      // アンチクリック：sec から sec+30ms で完全に 0 まで
+      doBgmGain.gain.linearRampToValueAtTime(0, t + sec + 0.03);
     } catch(e) {}
     setTimeout(() => {
       doBgmStop();
       if (doBgmGain) doBgmGain.gain.value = state.door.bgm.vol;
-    }, sec * 1000 + 80);
+    }, sec * 1000 + 120);
   }
   // 3) DOOR OPEN: announce chain + preview
   if (state.door && (state.door.activeAnnSource || state.door.previewSource) && doAnnGain && ctx) {
@@ -1507,12 +1510,16 @@ function fadeOutAll() {
       doAnnGain.gain.cancelScheduledValues(t);
       doAnnGain.gain.setValueAtTime(startVal, t);
       doAnnGain.gain.linearRampToValueAtTime(0.0001, t + sec);
+      // アンチクリック：sec から sec+30ms で完全に 0 まで
+      doAnnGain.gain.linearRampToValueAtTime(0, t + sec + 0.03);
     } catch(e) {}
     setTimeout(() => {
-      // hard stop and restore gain
+      // 完全無音状態で stop（アンチクリック効果）
       try { if (state.door.activeAnnSource) { state.door.activeAnnSource.onended = null; state.door.activeAnnSource.stop(); } } catch(e) {}
       try { if (state.door.previewSource) { state.door.previewSource.onended = null; state.door.previewSource.stop(); } } catch(e) {}
       state.door.activeAnnSource = null;
+      state.door.activeAnnGain = null;
+      state.door.activeAnnSlot = -1;
       state.door.previewSource = null;
       state.door.previewGain = null;
       state.door.previewSlot = null;
@@ -1522,7 +1529,7 @@ function fadeOutAll() {
       if (doAnnGain) doAnnGain.gain.value = 1.0;
       doRenderLibrary();
       doRenderSchedule();
-    }, sec * 1000 + 80);
+    }, sec * 1000 + 120);
   }
   showToast('FADE OUT — 全停止');
 }
@@ -3659,9 +3666,20 @@ function doLibSetLevel(slotIdx, linear) {
   const item = state.door.library[slotIdx];
   if (!item) return;
   item.level = Math.max(0, Math.min(2.0, linear));
-  // 再生中ならリアルタイムにgain反映
-  if (state.door.previewSlot === slotIdx && state.door.previewGain) {
-    state.door.previewGain.gain.value = item.level;
+  // ---- 全 active source の gain を即時反映 ----
+  // プレビュー
+  if (state.door.previewSlot === slotIdx && state.door.previewGain && ctx) {
+    try {
+      state.door.previewGain.gain.cancelScheduledValues(ctx.currentTime);
+      state.door.previewGain.gain.setValueAtTime(item.level, ctx.currentTime);
+    } catch(e) {}
+  }
+  // チェーン再生中（このスロットを今鳴らしている時）
+  if (state.door.activeAnnGain && state.door.activeAnnSlot === slotIdx && ctx) {
+    try {
+      state.door.activeAnnGain.gain.cancelScheduledValues(ctx.currentTime);
+      state.door.activeAnnGain.gain.setValueAtTime(item.level, ctx.currentTime);
+    } catch(e) {}
   }
   // DOM を直接更新（doRenderLibrary を呼ぶと pointer drag が切れる）
   const grid = document.getElementById('doLibGrid');
@@ -4280,9 +4298,13 @@ function doPlayNextInChain() {
   g.connect(doAnnGain);
   src.start();
   state.door.activeAnnSource = src;
+  state.door.activeAnnGain = g;        // フェーダー連動用
+  state.door.activeAnnSlot = libIdx;   // どのスロットを鳴らしているか
   src.onended = () => {
     if (state.door.activeAnnSource === src) {
       state.door.activeAnnSource = null;
+      state.door.activeAnnGain = null;
+      state.door.activeAnnSlot = -1;
       // play next
       if (state.door.activeRowId) doPlayNextInChain();
     }
@@ -4296,6 +4318,8 @@ function doEndRow() {
   state.door.activeRowId = null;
   state.door.activeChainIdx = -1;
   state.door.activeAnnSource = null;
+  state.door.activeAnnGain = null;
+  state.door.activeAnnSlot = -1;
   doDuckRelease();
   doRenderSchedule();
   doSave();
@@ -4308,6 +4332,8 @@ function doAnnStopAll() {
     try { state.door.activeAnnSource.onended = null; } catch(e) {}
     try { state.door.activeAnnSource.stop(); } catch(e) {}
     state.door.activeAnnSource = null;
+    state.door.activeAnnGain = null;
+    state.door.activeAnnSlot = -1;
   }
   // preview
   if (state.door.previewSource) {
