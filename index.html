@@ -1231,7 +1231,7 @@ const state = {
       sampleId: null,
       sampleName: null,
       audioBuffer: null,
-      vol: 0.71,           // 0..1.4 linear (same scale as masterVol)
+      vol: 1.0,            // 0dB（リニア 1.0 = 原音）
       loop: true,
       // runtime (not persisted)
       source: null,
@@ -1242,7 +1242,7 @@ const state = {
     },
     library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer, level}
     schedule: [], // [{id, time:'HH:MM:SS', chain:[libIdx,...], played:bool}]
-    duck: { depthDb: -6.0, fadeSec: 0.8 },
+    duck: { depthDb: 0, fadeSec: 0.8 },
     // runtime (not persisted)
     activeRowId: null,
     activeChainIdx: -1,
@@ -3452,6 +3452,17 @@ function fmtTime(sec) {
   return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }
 
+// 0dB（linear=1.0）付近で吸着するスナップ。snapPct = 全幅に対する吸着幅
+function snapToUnity(linear, snapPct) {
+  if (Math.abs(linear - 1.0) < (snapPct || 0.04)) return 1.0;
+  return linear;
+}
+// 0dB（depthDb=0）付近で吸着
+function snapToZeroDb(db, threshold) {
+  if (Math.abs(db) < (threshold || 0.5)) return 0;
+  return db;
+}
+
 // dB を符号付き文字列に：+3.2 / -∞ / 0.0
 function dbToStr(db) {
   if (!isFinite(db) || db === -Infinity) return '-∞';
@@ -3501,7 +3512,7 @@ function bindDoBgmVol() {
   const update = (clientX) => {
     const rect = slider.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    doBgmSetVol(pct * 2.0);
+    doBgmSetVol(snapToUnity(pct * 2.0));
   };
   slider.addEventListener('pointerdown', e => {
     e.preventDefault();
@@ -3528,7 +3539,10 @@ function bindDoDuck() {
       const r = depthBar.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
       // pct = 1 → 0dB（下げない）／ pct = 0 → -24dB（最大下げ）
-      state.door.duck.depthDb = -((1 - pct) * 24);
+      let db = -((1 - pct) * 24);
+      // 0dB 付近で吸着
+      db = snapToZeroDb(db, 0.6);
+      state.door.duck.depthDb = db;
       doRenderDuck();
     };
     update(e.clientX);
@@ -3836,7 +3850,7 @@ function doRenderLibrary() {
         const update = (cx) => {
           const r = vol.getBoundingClientRect();
           const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
-          doLibSetLevel(i, pct * 2.0);
+          doLibSetLevel(i, snapToUnity(pct * 2.0));
         };
         update(e.clientX);
         const mv = ev => { ev.preventDefault(); update(ev.clientX); };
@@ -4410,7 +4424,7 @@ function doLoad() {
     if (s.bgm) {
       state.door.bgm.sampleId = s.bgm.sampleId || null;
       state.door.bgm.sampleName = s.bgm.sampleName || null;
-      state.door.bgm.vol = s.bgm.vol ?? 0.71;
+      state.door.bgm.vol = s.bgm.vol ?? 1.0;
       state.door.bgm.loop = s.bgm.loop ?? true;
     }
     if (Array.isArray(s.library)) {
@@ -4434,7 +4448,7 @@ function doLoad() {
       });
     }
     if (s.duck) {
-      state.door.duck.depthDb = s.duck.depthDb ?? -6.0;
+      state.door.duck.depthDb = s.duck.depthDb ?? 0;
       state.door.duck.fadeSec = s.duck.fadeSec ?? 0.8;
     }
   } catch(e) { console.warn('doLoad failed', e); }
