@@ -790,7 +790,13 @@
   .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #5DCAA5; }
   .do-duck-bar { height: 4px; background: #14141A; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
   .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #EF9F27; border-radius: 2px; pointer-events: none; }
+  .do-duck-bar-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 18px; height: 18px; background: #EF9F27; border-radius: 50%;
+    pointer-events: none; box-shadow: 0 0 0 1.5px #0C0C12;
+  }
   .do-duck-bar.gray .do-duck-bar-fill { background: #5A5A60; }
+  .do-duck-bar.gray .do-duck-bar-thumb { background: #5A5A60; }
   .do-duck-fade-input {
     background: #14141A; border: 0.5px solid #1E1E24; border-radius: 4px;
     color: #E6E6EA; font-family: inherit; font-size: 12px; font-weight: 500;
@@ -1259,7 +1265,7 @@
     <div class="do-card do-duck-strip">
       <span class="do-card-head" style="margin:0;">DUCK 設定</span>
       <span class="do-duck-label">下げ幅</span>
-      <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div></div>
+      <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div><div class="do-duck-bar-thumb" id="doDuckDepthThumb" style="left:75%;"></div></div>
       <span class="do-duck-value" id="doDuckDepthVal" style="min-width:60px;">-6.0 dB</span>
       <span style="width:24px;"></span>
       <span class="do-duck-label">フェード</span>
@@ -4166,7 +4172,11 @@ function doRenderDuck() {
   document.getElementById('doDuckDepthVal').textContent = dbToStr(d.depthDb) + ' dB';
   // フル(100%) = 0dB / 空(0%) = -24dB（フェーダー風）
   const pct = (24 + d.depthDb) / 24;
-  document.getElementById('doDuckDepthFill').style.width = (Math.max(0, Math.min(1, pct)) * 100) + '%';
+  const pctClamped = Math.max(0, Math.min(1, pct));
+  const pctStr = (pctClamped * 100) + '%';
+  document.getElementById('doDuckDepthFill').style.width = pctStr;
+  const thumb = document.getElementById('doDuckDepthThumb');
+  if (thumb) thumb.style.left = pctStr;
   const inp = document.getElementById('doDuckFadeInput');
   if (inp && document.activeElement !== inp) inp.value = (d.fadeSec ?? 0.8).toFixed(1);
 }
