@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAMPLER STUDIO</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: #0F0F12;
+    color: #E6E6EA;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+  body { display: flex; flex-direction: column; padding: 12px; gap: 10px; }
+
+  /* HEADER */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; border: 0.5px solid #2A2A30; border-radius: 8px;
+    background: #16161B;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #9FE1CB; box-shadow: 0 0 6px rgba(159,225,203,0.5); }
+  .logo-text { font-weight: 500; letter-spacing: 2px; font-size: 14px; }
+  .preset-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: #22222A; border-radius: 4px; cursor: text; }
+  .preset-chip span:first-child { font-size: 9px; color: #8A8A92; letter-spacing: 1px; }
+  .preset-name { font-size: 11px; color: #E6E6EA; background: transparent; border: none; outline: none; color: inherit; font: inherit; width: 160px; }
+  .header-right { display: flex; align-items: center; gap: 6px; }
+  .btn-small {
+    background: transparent; border: 0.5px solid #2D2D35; color: #E6E6EA;
+    padding: 5px 12px; border-radius: 4px; font-size: 10px; letter-spacing: 1px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-small:hover { border-color: #4D4D55; background: #1F1F26; }
+
+  /* TABS */
+  .tabbar {
+    display: flex; gap: 4px; align-items: center; justify-content: space-between;
+  }
+  .tabs { display: flex; gap: 4px; }
+  .tab {
+    padding: 8px 18px; background: #16161B; border: 0.5px solid #2A2A30;
+    border-radius: 8px 8px 0 0; font-size: 11px; color: #8A8A92;
+    letter-spacing: 1px; cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .tab.active { background: #5DCAA5; color: #04342C; font-weight: 500; border-color: #5DCAA5; }
+  .tab.move { border-color: #7F77DD; color: #AFA9EC; }
+  .tab.move.active { background: #7F77DD; color: #1A1633; }
+  .status { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #8A8A92; }
+  .midi-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #5A5A60; }
+  .midi-led.on { background: #5DCAA5; box-shadow: 0 0 4px #5DCAA5; }
+
+  /* BANKS */
+  .banks {
+    display: flex; gap: 6px; padding: 6px; background: #16161B;
+    border: 0.5px solid #2A2A30; border-radius: 8px; align-items: center;
+  }
+  .banks-label { font-size: 10px; color: #8A8A92; padding: 0 8px; letter-spacing: 1px; }
+  .banks-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; flex: 1; }
+  .bank-btn {
+    text-align: center; padding: 5px 0; font-size: 10px;
+    background: #22222A; border-radius: 3px; color: #8A8A92; cursor: pointer;
+    border: none; font-family: inherit;
+  }
+  .bank-btn:hover { background: #2D2D35; color: #E6E6EA; }
+  .bank-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+  .bank-btn.has-content { color: #E6E6EA; }
+  .bank-btn.active.has-content { color: #04342C; }
+
+  /* MAIN */
+  .main {
+    display: grid; grid-template-columns: 170px 1fr; gap: 10px; flex: 1; min-height: 0;
+  }
+  .main > * { min-height: 0; min-width: 0; }
+  #rightContent {
+    min-height: 0; min-width: 0;
+    display: flex; flex-direction: column;
+    height: 100%; width: 100%;
+  }
+  #rightContent > * { flex: 1; min-height: 0; }
+
+  /* LEFT PANEL */
+  .left-panel {
+    background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px;
+    padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  }
+  .panel-section { display: flex; flex-direction: column; gap: 5px; }
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 9px; color: #8A8A92; letter-spacing: 1px;
+  }
+  .section-head .badge-mini { display: flex; gap: 3px; }
+  .divider { height: 0.5px; background: #2A2A30; margin: 2px 0; }
+
+  /* PLAY MODE */
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+  .mode-btn {
+    background: #22222A; padding: 6px 0; text-align: center; border-radius: 4px;
+    font-size: 9px; color: #8A8A92; cursor: pointer; border: none; font-family: inherit;
+  }
+  .mode-btn:hover { background: #2D2D35; color: #E6E6EA; }
+  .mode-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+
+  /* MASTER FADER */
+  .master-area { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-height: 0; }
+  .master-head { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+  .master-fader-wrap { display: flex; gap: 5px; align-items: stretch; flex: 1; min-height: 0; }
+  .db-scale {
+    display: flex; flex-direction: column; justify-content: space-between;
+    font-size: 8px; color: #5A5A60; text-align: right;
+  }
+  .fader-track {
+    position: relative; width: 14px; background: #22222A; border-radius: 7px; cursor: pointer;
+  }
+  .fader-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, #5DCAA5, #EF9F27 80%, #E24B4A 95%);
+    border-radius: 7px;
+  }
+  .fader-thumb {
+    position: absolute; left: -5px; right: -5px; height: 12px;
+    background: #E6E6EA; border-radius: 2px; transform: translateY(50%);
+    pointer-events: none;
+  }
+  .meters { display: flex; gap: 2px; align-items: stretch; }
+  .meter {
+    width: 4px; background: #22222A; border-radius: 2px;
+    position: relative; overflow: hidden;
+  }
+  .meter-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, #5DCAA5, #EF9F27 80%, #E24B4A 95%);
+    transition: height 0.05s linear;
+  }
+  .master-value { font-size: 14px; font-weight: 500; }
+  .master-value .unit { font-size: 9px; color: #8A8A92; }
+
+  /* FADE TIME */
+  .fade-time-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+  .fade-btn {
+    background: #22222A; padding: 6px 0; text-align: center; border-radius: 3px;
+    font-size: 9px; color: #8A8A92; cursor: pointer; border: none; font-family: inherit;
+  }
+  .fade-btn:hover { background: #2D2D35; color: #E6E6EA; }
+  .fade-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+
+  /* CUSTOM FADE TIME INPUT */
+  .fade-time-custom { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+  .fade-time-custom input {
+    flex: 1; background: #0F0F12; border: 0.5px solid #2D2D35; color: #E6E6EA;
+    padding: 6px 8px; border-radius: 4px; font-family: inherit; font-size: 12px;
+    text-align: right; min-width: 0; -moz-appearance: textfield;
+  }
+  .fade-time-custom input::-webkit-outer-spin-button,
+  .fade-time-custom input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .fade-time-custom input:focus { outline: none; border-color: #5DCAA5; background: #16161B; }
+  .fade-time-custom .unit { font-size: 10px; color: #8A8A92; padding-right: 4px; }
+
+  /* CURVE PICKER */
+  .curve-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+  .curve-btn {
+    background: #22222A; border: none; padding: 5px; border-radius: 4px;
+    cursor: pointer; color: #8A8A92; display: flex; align-items: center; justify-content: center;
+    font-family: inherit; aspect-ratio: 1;
+  }
+  .curve-btn svg { width: 100%; height: 100%; }
+  .curve-btn:hover { background: #2D2D35; color: #E6E6EA; }
+  .curve-btn.active { background: #5DCAA5; color: #04342C; }
+
+  /* CURVE EDITOR (manual bezier) */
+  .curve-editor {
+    position: relative; width: 100%; height: 64px; margin-top: 4px;
+    background: #0F0F12; border: 0.5px solid #2A2A30; border-radius: 4px;
+    touch-action: none;
+  }
+  .curve-editor canvas { display: block; width: 100%; height: 100%; }
+  .curve-handle {
+    position: absolute; width: 12px; height: 12px; border-radius: 50%;
+    background: #5DCAA5; border: 2px solid #0F0F12;
+    transform: translate(-50%, -50%); cursor: grab;
+    box-shadow: 0 0 5px rgba(93,202,165,0.55);
+    z-index: 2; touch-action: none;
+  }
+  .curve-handle.h2 { background: #EF9F27; box-shadow: 0 0 5px rgba(239,159,39,0.55); }
+  .curve-handle:active { cursor: grabbing; }
+  .curve-hint {
+    position: absolute; bottom: 2px; right: 4px; font-size: 7px;
+    color: #5A5A60; letter-spacing: 0.5px; pointer-events: none;
+  }
+  .curve-label-row {
+    display: flex; justify-content: space-between; font-size: 8px;
+    color: #5A5A60; letter-spacing: 0.5px; margin-top: 2px;
+  }
+
+  /* PRIMARY BUTTONS */
+  .btn-primary {
+    width: 100%; background: #5DCAA5; border: none; color: #04342C;
+    padding: 9px; border-radius: 6px; font-size: 11px; font-weight: 500;
+    letter-spacing: 1px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; gap: 5px; font-family: inherit;
+  }
+  .btn-primary:hover { background: #6FDEB8; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary.big-fade {
+    padding: 16px 12px; font-size: 14px; font-weight: 600;
+    letter-spacing: 2px; gap: 8px;
+    box-shadow: 0 2px 10px rgba(93,202,165,0.35);
+  }
+  .btn-primary.big-fade i, .btn-primary.big-fade svg { font-size: 18px; }
+
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .btn-outline {
+    background: transparent; border: 0.5px solid; padding: 7px; border-radius: 5px;
+    font-size: 10px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; gap: 4px; font-family: inherit;
+  }
+  .btn-stop { border-color: #E24B4A; color: #E24B4A; }
+  .btn-stop:hover { background: rgba(226,75,74,0.1); }
+  .btn-pause { border-color: #EF9F27; color: #EF9F27; }
+  .btn-pause:hover { background: rgba(239,159,39,0.1); }
+
+  /* LEARN BADGES */
+  .badge {
+    font-size: 8px; padding: 2px 5px; border-radius: 2px;
+    background: #22222A; color: #8A8A92; cursor: pointer; border: none;
+    font-family: inherit; letter-spacing: 0.5px;
+  }
+  .badge.midi { color: #5DCAA5; }
+  .badge.key { color: #E6E6EA; }
+  .badge:hover { background: #2D2D35; }
+  .badge.learning {
+    background: #5DCAA5; color: #04342C; animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .badge-row { display: flex; justify-content: center; gap: 4px; margin-top: 3px; }
+
+  /* PAD GRID */
+  .pad-grid {
+    background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px;
+    padding: 12px; flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; min-height: 0; overflow: hidden;
+  }
+  .pads-inner {
+    display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
+    gap: 10px; aspect-ratio: 1;
+  }
+  .pad {
+    background: #1F1F26; border: 0.5px solid #2D2D35; border-radius: 10px;
+    padding: 10px 16px 10px 10px; display: flex; flex-direction: column;
+    justify-content: space-between; cursor: pointer; position: relative;
+    transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
+    min-width: 0; overflow: hidden;
+  }
+
+  /* Per-pad volume fader (right edge) */
+  .pad-level-track {
+    position: absolute; top: 10px; bottom: 10px; right: 5px;
+    width: 6px; background: #22222A; border-radius: 3px;
+    cursor: ns-resize; touch-action: none; z-index: 3;
+  }
+  .pad-level-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #5DCAA5; border-radius: 3px; pointer-events: none;
+  }
+  .pad.empty .pad-level-track { display: none; }
+
+  /* Flash effect when assigned key/MIDI is pressed */
+  .pad.flash {
+    background: #5DCAA5 !important;
+    border-color: #9FE1CB !important;
+    box-shadow: 0 0 16px rgba(93,202,165,0.9), inset 0 0 8px rgba(255,255,255,0.2) !important;
+    transition: none !important;
+  }
+  .pad.flash .pad-num,
+  .pad.flash .pad-name,
+  .pad.flash .pad-time,
+  .pad.flash .pad-shortcuts .badge { color: #04342C !important; }
+  .pad.flash .pad-level-track { background: rgba(4,52,44,0.4); }
+  .pad.flash .pad-level-fill { background: #04342C; }
+  .pad:hover { background: #25252D; border-color: #4D4D55; }
+  .pad.empty {
+    border-style: dashed; border-color: #3D3D45; color: #5A5A60;
+    align-items: center; justify-content: center; gap: 4px;
+  }
+  .pad.empty .pad-name-empty { font-size: 9px; color: #5A5A60; }
+  .pad.empty .upload-icon { font-size: 18px; color: #5A5A60; }
+  .pad.playing {
+    background: #1F2A26; border-color: #5DCAA5;
+    box-shadow: 0 0 8px rgba(93,202,165,0.3);
+  }
+  .pad.drag-over { background: #2A3A35; border-color: #5DCAA5; border-style: dashed; }
+  .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; }
+  .pad-num { color: #5A5A60; letter-spacing: 0.5px; }
+  .pad.playing .pad-num { color: #5DCAA5; }
+  .pad-name { font-size: 11px; color: #E6E6EA; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pad-footer { display: flex; flex-direction: column; gap: 2px; }
+  .pad-time {
+    display: flex; justify-content: space-between; font-size: 8px; color: #5DCAA5;
+  }
+  .pad-progress { height: 2px; background: #0F0F12; border-radius: 1px; overflow: hidden; }
+  .pad-progress-fill { height: 100%; background: #5DCAA5; border-radius: 1px; width: 0%; }
+  .pad-shortcuts {
+    display: flex; justify-content: space-between; font-size: 7px;
+  }
+  .pad-shortcuts .badge { font-size: 7px; padding: 1px 3px; }
+
+  /* LEVELS TAB */
+  .levels-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr);
+    gap: 8px; flex: 1;
+  }
+  .level-card {
+    background: #1F1F26; border: 0.5px solid #2D2D35; border-radius: 10px;
+    padding: 10px; display: flex; gap: 10px; align-items: stretch;
+    cursor: pointer; transition: all 0.05s; overflow: hidden;
+  }
+  .level-card:hover { background: #25252D; border-color: #4D4D55; }
+  .level-card.empty { opacity: 0.35; border-style: dashed; cursor: default; }
+  .level-card.empty:hover { background: #1F1F26; }
+  .level-card.playing { background: #1F2A26; border-color: #5DCAA5; box-shadow: 0 0 6px rgba(93,202,165,0.3); }
+  .level-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .level-info-name { font-size: 12px; color: #E6E6EA; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .level-info-num { font-size: 9px; color: #5A5A60; letter-spacing: 0.5px; }
+  .level-info-db { font-size: 14px; font-weight: 500; color: #5DCAA5; margin-top: auto; }
+  .level-fader-wrap {
+    width: 18px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .level-fader {
+    position: relative; width: 14px; flex: 1;
+    background: #22222A; border-radius: 7px; cursor: ns-resize;
+    touch-action: none;
+  }
+  .level-fader-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #5DCAA5; border-radius: 7px;
+    pointer-events: none;
+  }
+  .level-fader-thumb {
+    position: absolute; left: -3px; right: -3px; height: 8px;
+    background: #E6E6EA; border-radius: 2px; transform: translateY(50%);
+    pointer-events: none;
+  }
+
+  /* MOVE TAB */
+  .move-wrap { display: grid; grid-template-columns: 170px 1fr; gap: 10px; flex: 1; min-height: 0; }
+  .hold-panel {
+    background: #1A1633; border: 0.5px solid #7F77DD; border-radius: 8px; padding: 12px;
+    display: flex; flex-direction: column;
+  }
+  .hold-head { font-size: 10px; color: #AFA9EC; letter-spacing: 2px; text-align: center; margin-bottom: 8px; }
+  .hold-slots { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .hold-slot {
+    flex: 1; border-radius: 6px; padding: 8px; display: flex; flex-direction: column;
+    justify-content: space-between; min-height: 60px;
+  }
+  .hold-slot.empty {
+    background: transparent; border: 1.5px dashed #7F77DD;
+    align-items: center; justify-content: center;
+    color: #7F77DD; font-size: 9px;
+  }
+  .hold-slot.empty.dim { border-color: #4D4566; color: #5A5A60; }
+  .hold-slot.filled {
+    background: #7F77DD; color: #1A1633;
+  }
+  .hold-slot.filled .slot-head {
+    display: flex; justify-content: space-between; font-size: 9px; font-weight: 500;
+  }
+  .hold-slot.filled .slot-name { font-size: 10px; font-weight: 500; }
+  .hold-slot.filled .slot-from { font-size: 8px; }
+  .hold-slot.drag-over { background: #AFA9EC; }
+
+  .pad-grid.move-mode { background: #1A1633; border-color: #7F77DD; }
+  .pad.move-mode { background: #16161B; border: 0.5px solid #2D2D35; opacity: 0.45; }
+  .pad.move-mode .pad-num { color: #5A5A60; }
+  .pad.move-mode .grip-icon { color: #7F77DD; }
+  .pad.move-mode.has-sample {
+    background: #1A2A24; border: 1px solid #5DCAA5; opacity: 1;
+    box-shadow: 0 0 0 1px rgba(93,202,165,0.25), 0 2px 6px rgba(93,202,165,0.15);
+  }
+  .pad.move-mode.has-sample .pad-num { color: #5DCAA5; font-weight: 500; }
+  .pad.move-mode.has-sample .pad-name { color: #E6E6EA; }
+  .pad.move-mode.hold-source {
+    background: transparent; border-style: dashed; border-color: #7F77DD; border-width: 2px;
+    opacity: 0.55; box-shadow: none;
+  }
+  .pad.move-mode.hold-source .pad-num { color: #7F77DD; }
+  .pad.move-mode.drag-target {
+    background: #7F77DD !important; border-color: #E6E6EA !important; border-width: 2px !important;
+    box-shadow: 0 0 0 3px rgba(127,119,221,0.4) !important; opacity: 1 !important;
+  }
+  .pad.move-mode.drag-target .pad-name { color: #1A1633; font-weight: 500; }
+  .pad.move-mode.drag-target .pad-num { color: #1A1633; font-weight: 500; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none;
+    align-items: center; justify-content: center; z-index: 1000;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #16161B; border: 0.5px solid #2A2A30; border-radius: 12px;
+    padding: 20px; min-width: 300px; max-width: 90vw;
+  }
+
+  /* TRIM EDITOR */
+  .trim-modal { width: 720px; max-width: 90vw; }
+  .trim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .trim-title { font-size: 14px; font-weight: 500; }
+  .trim-subtitle { font-size: 11px; color: #8A8A92; margin-top: 2px; }
+  .waveform-wrap {
+    position: relative; background: #0F0F12; border: 0.5px solid #2A2A30;
+    border-radius: 6px; padding: 10px; margin-bottom: 12px;
+  }
+  .waveform-canvas { display: block; width: 100%; height: 140px; }
+  .trim-overlay {
+    position: absolute; top: 10px; bottom: 10px; pointer-events: none;
+  }
+  .trim-shade {
+    position: absolute; top: 0; bottom: 0; background: rgba(15,15,18,0.7);
+    pointer-events: none;
+  }
+  .trim-handle {
+    position: absolute; top: 0; bottom: 0; width: 14px;
+    cursor: ew-resize; pointer-events: auto; z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .trim-handle::before {
+    content: ''; position: absolute; top: 0; bottom: 0;
+    left: 50%; width: 2px; background: #5DCAA5; transform: translateX(-50%);
+  }
+  .trim-handle::after {
+    content: ''; width: 10px; height: 30px; background: #5DCAA5; border-radius: 2px;
+    box-shadow: 0 0 6px rgba(93,202,165,0.5);
+  }
+  .trim-handle.end::before, .trim-handle.end::after { background: #EF9F27; box-shadow: 0 0 6px rgba(239,159,39,0.5); }
+  .trim-playhead {
+    position: absolute; top: 0; bottom: 0; width: 1.5px; background: #E6E6EA;
+    pointer-events: none; z-index: 1; box-shadow: 0 0 4px #E6E6EA;
+  }
+  .trim-controls {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
+    background: #22222A; border-radius: 6px; padding: 10px; margin-bottom: 12px;
+  }
+  .trim-field { display: flex; flex-direction: column; gap: 3px; }
+  .trim-field-label { font-size: 9px; color: #8A8A92; letter-spacing: 1px; }
+  .trim-field-value { font-size: 14px; font-weight: 500; color: #E6E6EA; }
+  .trim-field input[type="number"] {
+    background: #0F0F12; border: 0.5px solid #2D2D35; color: #E6E6EA;
+    padding: 4px 6px; border-radius: 3px; font-family: inherit; font-size: 12px;
+    width: 100%;
+  }
+  .pad-edit-icon {
+    position: absolute; top: 4px; right: 4px;
+    width: 20px; height: 20px; border-radius: 3px; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0; transition: opacity 0.15s;
+    color: #E6E6EA; font-size: 12px; border: 0.5px solid rgba(255,255,255,0.1);
+  }
+  .pad:hover .pad-edit-icon { opacity: 0.85; }
+  .pad-edit-icon:hover { background: #5DCAA5; color: #04342C; opacity: 1 !important; }
+  .trim-badge {
+    position: absolute; bottom: 4px; left: 8px;
+    font-size: 7px; padding: 1px 4px; background: rgba(93,202,165,0.15);
+    color: #5DCAA5; border-radius: 2px; letter-spacing: 0.5px;
+    border: 0.5px solid rgba(93,202,165,0.3);
+  }
+  .modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+  .modal p { font-size: 12px; color: #8A8A92; margin-bottom: 12px; }
+  .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  /* LEARN OVERLAY */
+  .learn-banner {
+    display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    background: #5DCAA5; color: #04342C; padding: 8px 18px; border-radius: 6px;
+    font-size: 12px; font-weight: 500; z-index: 999; box-shadow: 0 4px 16px rgba(93,202,165,0.4);
+  }
+  .learn-banner.show { display: block; animation: pulse 1s infinite; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #22222A; color: #E6E6EA; padding: 10px 18px; border-radius: 6px;
+    font-size: 12px; z-index: 998; opacity: 0; transition: opacity 0.3s;
+    border: 0.5px solid #2A2A30;
+  }
+  .toast.show { opacity: 1; }
+
+  /* PRESET LIST */
+  .preset-list { max-height: 300px; overflow-y: auto; }
+  .preset-item {
+    padding: 8px 10px; border-radius: 4px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    background: #22222A; margin-bottom: 4px;
+  }
+  .preset-item:hover { background: #2D2D35; }
+  .preset-item-name { font-size: 12px; }
+  .preset-item-date { font-size: 10px; color: #8A8A92; }
+  .preset-delete { color: #E24B4A; cursor: pointer; padding: 2px 6px; font-size: 10px; }
+
+  /* MISC */
+  .empty-grid-msg { text-align: center; padding: 20px; color: #5A5A60; font-size: 11px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <div class="logo-dot"></div>
+        <span class="logo-text">SAMPLER STUDIO</span>
+      </div>
+      <div class="preset-chip">
+        <span>PRESET</span>
+        <input class="preset-name" id="presetName" value="New Preset" />
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-small" onclick="savePreset()">SAVE</button>
+      <button class="btn-small" onclick="openLoadModal()">LOAD</button>
+      <button class="btn-small" onclick="newPreset()">NEW</button>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tabs">
+      <div class="tab active" data-tab="pads" onclick="switchTab('pads')">PADS</div>
+      <div class="tab move" data-tab="move" onclick="switchTab('move')">MOVE</div>
+    </div>
+    <div class="status">
+      <span><span class="midi-led" id="midiLed"></span> <span id="midiName">MIDI: 未接続</span></span>
+      <span id="bankInfo">BANK 01 / 16</span>
+    </div>
+  </div>
+
+  <div class="banks">
+    <span class="banks-label">BANK</span>
+    <div class="banks-grid" id="banksGrid"></div>
+  </div>
+
+  <div class="main">
+    <div class="left-panel">
+      <!-- PLAY MODE -->
+      <div class="panel-section">
+        <div class="section-head">
+          <span>PLAY MODE</span>
+        </div>
+        <div class="mode-grid" id="modeGrid">
+          <button class="mode-btn" data-mode="mono" onclick="setPlayMode('mono')">MONO</button>
+          <button class="mode-btn active" data-mode="poly" onclick="setPlayMode('poly')">POLY</button>
+          <button class="mode-btn" data-mode="xfade" onclick="setPlayMode('xfade')">X-FADE</button>
+          <button class="mode-btn" data-mode="trig" onclick="setPlayMode('trig')">TRIG</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- MASTER -->
+      <div class="master-area">
+        <div class="master-head">
+          <span style="font-size:9px; color:#8A8A92; letter-spacing:2px;">MASTER</span>
+          <div class="badge-mini">
+            <button class="badge midi" id="masterMidiBadge" onclick="startLearn('master','midi')">CC 7</button>
+            <button class="badge key" id="masterKeyBadge" onclick="startLearn('master','key')">↑↓</button>
+          </div>
+        </div>
+        <div class="master-fader-wrap">
+          <div class="db-scale">
+            <span>+6</span><span>+3</span><span>0</span><span>-6</span><span>-12</span><span>-24</span><span>-∞</span>
+          </div>
+          <div class="fader-track" id="masterFader">
+            <div class="fader-fill" id="masterFill" style="height:70%;"></div>
+            <div class="fader-thumb" id="masterThumb" style="bottom:70%;"></div>
+          </div>
+          <div class="meters">
+            <div class="meter"><div class="meter-fill" id="meterL"></div></div>
+            <div class="meter"><div class="meter-fill" id="meterR"></div></div>
+          </div>
+        </div>
+        <div class="master-value"><span id="masterDbVal">-3.5</span><span class="unit"> dB</span></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- FADE TIME -->
+      <div class="panel-section">
+        <div class="section-head">
+          <span>FADE TIME (sec)</span>
+        </div>
+        <div class="fade-time-grid">
+          <button class="fade-btn" data-ft="0.5" onclick="setFadeTime(0.5)">0.5</button>
+          <button class="fade-btn" data-ft="1" onclick="setFadeTime(1)">1</button>
+          <button class="fade-btn active" data-ft="2" onclick="setFadeTime(2)">2</button>
+          <button class="fade-btn" data-ft="3" onclick="setFadeTime(3)">3</button>
+          <button class="fade-btn" data-ft="4" onclick="setFadeTime(4)">4</button>
+        </div>
+        <div class="fade-time-custom">
+          <input type="number" id="fadeTimeInput" min="0" step="0.1" value="2" />
+          <span class="unit">sec</span>
+        </div>
+      </div>
+
+      <!-- FADE CURVE -->
+      <div class="panel-section">
+        <div class="section-head">
+          <span>FADE CURVE</span>
+        </div>
+        <div class="curve-grid">
+          <button class="curve-btn active" data-curve="linear" onclick="setCurve('linear')" title="Linear">
+            <svg viewBox="0 0 24 24"><polyline points="3,3 21,21" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+          <button class="curve-btn" data-curve="exp" onclick="setCurve('exp')" title="Hold then drop">
+            <svg viewBox="0 0 24 24"><path d="M3,3 Q18,3 21,21" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+          <button class="curve-btn" data-curve="log" onclick="setCurve('log')" title="Drop fast then trail">
+            <svg viewBox="0 0 24 24"><path d="M3,3 Q6,21 21,21" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+          <button class="curve-btn" data-curve="scurve" onclick="setCurve('scurve')" title="S-curve smooth">
+            <svg viewBox="0 0 24 24"><path d="M3,3 C3,12 21,12 21,21" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="curve-editor" id="curveEditor">
+          <canvas id="curveCanvas"></canvas>
+          <div class="curve-handle" id="curveH1" title="開始側ハンドル"></div>
+          <div class="curve-handle h2" id="curveH2" title="終了側ハンドル"></div>
+          <span class="curve-hint">ドラッグで微調整</span>
+        </div>
+        <div class="curve-label-row">
+          <span>FULL</span><span>SILENT</span>
+        </div>
+      </div>
+
+      <!-- FADE OUT button (BIG) -->
+      <div class="panel-section">
+        <button class="btn-primary big-fade" onclick="fadeOutAll()">FADE OUT</button>
+        <div class="badge-row">
+          <button class="badge midi" id="fadeoutMidiBadge" onclick="startLearn('fadeout','midi')">N60</button>
+          <button class="badge key" id="fadeoutKeyBadge" onclick="startLearn('fadeout','key')">F</button>
+        </div>
+      </div>
+
+      <!-- STOP / PAUSE -->
+      <div class="panel-section">
+        <div class="btn-row">
+          <div>
+            <button class="btn-outline btn-stop" onclick="stopAll()">■ STOP</button>
+            <div class="badge-row">
+              <button class="badge midi" id="stopMidiBadge" onclick="startLearn('stop','midi')">N62</button>
+              <button class="badge key" id="stopKeyBadge" onclick="startLearn('stop','key')">Esc</button>
+            </div>
+          </div>
+          <div>
+            <button class="btn-outline btn-pause" id="pauseBtn" onclick="pauseAll()">‖ PAUSE</button>
+            <div class="badge-row">
+              <button class="badge midi" id="pauseMidiBadge" onclick="startLearn('pause','midi')">N63</button>
+              <button class="badge key" id="pauseKeyBadge" onclick="startLearn('pause','key')">Space</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right content -->
+    <div id="rightContent"></div>
+  </div>
+
+  <!-- LEARN banner -->
+  <div class="learn-banner" id="learnBanner">LEARN: 割り当てたいキーまたはMIDIを入力してください（Escでキャンセル）</div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal" id="modalContent"></div>
+  </div>
+
+<script>
+'use strict';
+
+// ===========================
+// CONSTANTS / DEFAULTS
+// ===========================
+const NUM_BANKS = 16;
+const PADS_PER_BANK = 16;
+const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
+const KEY_LABELS = ['Q','W','E','R','A','S','D','F','Z','X','C','V','1','2','3','4'];
+const DEFAULT_NOTES = [36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51];
+
+// ===========================
+// STATE
+// ===========================
+// Cubic Bezier preset values: control points c1, c2 for fade curve from (0,1) to (1,0).
+// User can fine-tune c1/c2 via the curve editor canvas.
+const PRESET_BEZIER = {
+  linear: { c1x: 0.333, c1y: 0.667, c2x: 0.667, c2y: 0.333 },
+  exp:    { c1x: 0.500, c1y: 1.000, c2x: 0.900, c2y: 0.500 },
+  log:    { c1x: 0.100, c1y: 0.500, c2x: 0.500, c2y: 0.000 },
+  scurve: { c1x: 0.420, c1y: 1.000, c2x: 0.580, c2y: 0.000 },
+};
+
+const state = {
+  banks: [],
+  currentBank: 0,
+  currentTab: 'pads',
+  playMode: 'poly',
+  fadeTime: 2.0,
+  fadeCurve: 'linear', // 'linear' | 'exp' | 'log' | 'scurve' | 'custom'
+  fadeBezier: { ...PRESET_BEZIER.linear },
+  masterVol: 0.71,
+  presetName: 'New Preset',
+  hold: [null, null, null, null],
+  isLearning: null,
+  trimEditor: null,
+  controlAssign: {
+    master: { midiCC: 7, key: null },
+    fadeout: { midiNote: 60, key: 'KeyF' },
+    stop:    { midiNote: 62, key: 'Escape' },
+    pause:   { midiNote: 63, key: 'Space' },
+  },
+};
+
+function makePad(idx) {
+  return {
+    sampleName: null,
+    audioBuffer: null,
+    sampleId: null,
+    level: 1.0,
+    trimStart: 0,   // seconds
+    trimEnd: null,  // seconds (null = end of sample)
+    key: DEFAULT_KEYS[idx],
+    midiNote: DEFAULT_NOTES[idx],
+    isPlaying: false,
+    activeSources: [], // [{source, gain, startedAt, trimStart, trimDuration}]
+  };
+}
+
+function initBanks() {
+  state.banks = [];
+  for (let b = 0; b < NUM_BANKS; b++) {
+    state.banks.push({
+      name: `Bank ${b+1}`,
+      pads: Array.from({length: PADS_PER_BANK}, (_, i) => makePad(i)),
+    });
+  }
+}
+
+// ===========================
+// AUDIO
+// ===========================
+let ctx;
+let masterGain;
+let analyserL, analyserR;
+let splitter;
+let isPaused = false;
+
+function initAudio() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = ctx.createGain();
+  masterGain.gain.value = state.masterVol;
+
+  splitter = ctx.createChannelSplitter(2);
+  analyserL = ctx.createAnalyser();
+  analyserR = ctx.createAnalyser();
+  analyserL.fftSize = 256;
+  analyserR.fftSize = 256;
+
+  masterGain.connect(splitter);
+  splitter.connect(analyserL, 0);
+  splitter.connect(analyserR, 1);
+  masterGain.connect(ctx.destination);
+
+  meterLoop();
+}
+
+function meterLoop() {
+  if (!ctx) return;
+  const bufL = new Uint8Array(analyserL.fftSize);
+  const bufR = new Uint8Array(analyserR.fftSize);
+  analyserL.getByteTimeDomainData(bufL);
+  analyserR.getByteTimeDomainData(bufR);
+  let pkL = 0, pkR = 0;
+  for (let i = 0; i < bufL.length; i++) {
+    pkL = Math.max(pkL, Math.abs(bufL[i] - 128));
+    pkR = Math.max(pkR, Math.abs(bufR[i] - 128));
+  }
+  const pctL = Math.min(100, (pkL / 128) * 120);
+  const pctR = Math.min(100, (pkR / 128) * 120);
+  document.getElementById('meterL').style.height = pctL + '%';
+  document.getElementById('meterR').style.height = pctR + '%';
+  requestAnimationFrame(meterLoop);
+}
+
+function linToDb(lin) {
+  if (lin <= 0.0001) return -Infinity;
+  return 20 * Math.log10(lin);
+}
+function dbToLin(db) {
+  if (db <= -60) return 0;
+  return Math.pow(10, db / 20);
+}
+
+function setMasterVol(lin) {
+  state.masterVol = Math.max(0, Math.min(1.4, lin)); // up to +3dB
+  if (masterGain) masterGain.gain.linearRampToValueAtTime(state.masterVol, ctx.currentTime + 0.02);
+  const db = linToDb(state.masterVol);
+  document.getElementById('masterDbVal').textContent = db === -Infinity ? '-∞' : db.toFixed(1);
+  const pct = (state.masterVol / 1.4) * 100;
+  document.getElementById('masterFill').style.height = pct + '%';
+  document.getElementById('masterThumb').style.bottom = pct + '%';
+}
+
+function playPad(bankIdx, padIdx, velocity = 1.0) {
+  initAudio();
+  if (ctx.state === 'suspended') ctx.resume();
+  const pad = state.banks[bankIdx].pads[padIdx];
+  if (!pad.audioBuffer) return;
+
+  const mode = state.playMode;
+  if (mode === 'mono') {
+    state.banks[bankIdx].pads.forEach(p => stopPad(p));
+  } else if (mode === 'xfade') {
+    state.banks[bankIdx].pads.forEach(p => {
+      if (p !== pad) fadeOutPad(p, 0.5);
+    });
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = pad.audioBuffer;
+  const gain = ctx.createGain();
+  gain.gain.value = pad.level * velocity;
+  source.connect(gain).connect(masterGain);
+
+  // Apply trim points
+  const ts = pad.trimStart || 0;
+  const te = (pad.trimEnd != null) ? pad.trimEnd : pad.audioBuffer.duration;
+  const trimmedDur = Math.max(0.01, te - ts);
+  const startedAt = ctx.currentTime;
+  source.start(0, ts, trimmedDur);
+
+  pad.isPlaying = true;
+  const ref = { source, gain, startedAt, trimStart: ts, trimDuration: trimmedDur };
+  pad.activeSources.push(ref);
+  source.onended = () => {
+    const i = pad.activeSources.indexOf(ref);
+    if (i >= 0) pad.activeSources.splice(i, 1);
+    if (pad.activeSources.length === 0) pad.isPlaying = false;
+    renderPadVisual(padIdx);
+  };
+  renderPadVisual(padIdx);
+}
+
+function stopPad(pad) {
+  pad.activeSources.forEach(ref => {
+    try { ref.source.stop(); } catch(e) {}
+  });
+  pad.activeSources = [];
+  pad.isPlaying = false;
+}
+
+function fadeOutPad(pad, sec) {
+  const now = ctx.currentTime;
+  pad.activeSources.forEach(ref => {
+    try {
+      const startG = ref.gain.gain.value;
+      ref.gain.gain.cancelScheduledValues(now);
+      ref.gain.gain.setValueAtTime(startG, now);
+      const curve = computeFadeCurve(state.fadeCurve, startG, 0.0001, 96);
+      ref.gain.gain.setValueCurveAtTime(curve, now, Math.max(0.01, sec));
+      setTimeout(() => { try { ref.source.stop(); } catch(e){} }, sec * 1000 + 60);
+    } catch(e) {}
+  });
+}
+
+// Compute a Float32Array of gain values from `from` to `to` using current bezier control points.
+// The bezier goes from (0,1) to (1,0) with control points c1,c2; we sample uniformly in t
+// and use the y component as the gain factor (1 = full, 0 = silent).
+function computeFadeCurve(_type, from, to, points = 96) {
+  const b = state.fadeBezier || PRESET_BEZIER.linear;
+  const arr = new Float32Array(points);
+  for (let i = 0; i < points; i++) {
+    const t = i / (points - 1);
+    const omt = 1 - t;
+    const y = omt*omt*omt*1 + 3*omt*omt*t*b.c1y + 3*omt*t*t*b.c2y + t*t*t*0;
+    let v = from * y + to * (1 - y);
+    if (v <= 0) v = 0.00001;
+    arr[i] = v;
+  }
+  return arr;
+}
+
+function stopAll() {
+  state.banks.forEach(b => b.pads.forEach(p => stopPad(p)));
+  render();
+}
+
+function pauseAll() {
+  initAudio();
+  if (!isPaused) {
+    ctx.suspend();
+    isPaused = true;
+    document.getElementById('pauseBtn').style.background = 'rgba(239,159,39,0.2)';
+  } else {
+    ctx.resume();
+    isPaused = false;
+    document.getElementById('pauseBtn').style.background = '';
+  }
+}
+
+function fadeOutAll() {
+  initAudio();
+  state.banks.forEach(b => b.pads.forEach(p => {
+    if (p.isPlaying) fadeOutPad(p, state.fadeTime);
+  }));
+}
+
+// ===========================
+// SAMPLES (IndexedDB)
+// ===========================
+let db;
+const DB_NAME = 'samplerStudio';
+const DB_VERSION = 1;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('samples')) {
+        d.createObjectStore('samples', { keyPath: 'id' });
+      }
+      if (!d.objectStoreNames.contains('presets')) {
+        d.createObjectStore('presets', { keyPath: 'name' });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror = e => reject(e);
+  });
+}
+
+async function saveSampleToDB(id, arrayBuffer, name) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('samples', 'readwrite');
+    tx.objectStore('samples').put({ id, data: arrayBuffer, name });
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e);
+  });
+}
+
+async function getSampleFromDB(id) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('samples', 'readonly');
+    const req = tx.objectStore('samples').get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = e => reject(e);
+  });
+}
+
+async function deleteSampleFromDB(id) {
+  if (!db) await openDB();
+  return new Promise(resolve => {
+    const tx = db.transaction('samples', 'readwrite');
+    tx.objectStore('samples').delete(id);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+async function loadSampleToPad(bankIdx, padIdx, file) {
+  initAudio();
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+    const id = `b${bankIdx}-p${padIdx}-${Date.now()}`;
+    await saveSampleToDB(id, arrayBuffer, file.name);
+    const pad = state.banks[bankIdx].pads[padIdx];
+    pad.audioBuffer = audioBuffer;
+    pad.sampleName = file.name.replace(/\.[^.]+$/, '');
+    pad.sampleId = id;
+    showToast(`PAD ${padIdx+1}: ${pad.sampleName} 読込完了`);
+    render();
+    saveStateLocal();
+  } catch (e) {
+    showToast('読み込み失敗: ' + e.message);
+  }
+}
+
+// ===========================
+// MIDI
+// ===========================
+let midiAccess;
+async function initMIDI() {
+  if (!navigator.requestMIDIAccess) {
+    document.getElementById('midiName').textContent = 'MIDI: 非対応ブラウザ';
+    return;
+  }
+  try {
+    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+    updateMidiInputs();
+    midiAccess.onstatechange = updateMidiInputs;
+  } catch (e) {
+    document.getElementById('midiName').textContent = 'MIDI: 許可なし';
+  }
+}
+
+function updateMidiInputs() {
+  const inputs = [...midiAccess.inputs.values()];
+  if (inputs.length === 0) {
+    document.getElementById('midiName').textContent = 'MIDI: 未接続';
+    document.getElementById('midiLed').classList.remove('on');
+    return;
+  }
+  document.getElementById('midiName').textContent = 'MIDI: ' + inputs[0].name;
+  document.getElementById('midiLed').classList.add('on');
+  inputs.forEach(inp => { inp.onmidimessage = handleMIDI; });
+}
+
+function handleMIDI(e) {
+  const [status, data1, data2] = e.data;
+  const type = status & 0xF0;
+  // Note On (0x90) with velocity > 0
+  if (type === 0x90 && data2 > 0) {
+    if (state.isLearning && state.isLearning.type === 'midi') {
+      assignLearn({ kind: 'note', value: data1 });
+      return;
+    }
+    // Find pad with this MIDI note in current bank — flash visually for assignment verification
+    const padIdx = state.banks[state.currentBank].pads.findIndex(p => p.midiNote === data1);
+    if (padIdx >= 0) {
+      flashPad(state.currentBank, padIdx);
+      playPad(state.currentBank, padIdx, (data2 / 127));
+      return;
+    }
+    // Check control assignments
+    if (state.controlAssign.fadeout.midiNote === data1) fadeOutAll();
+    if (state.controlAssign.stop.midiNote === data1) stopAll();
+    if (state.controlAssign.pause.midiNote === data1) pauseAll();
+  }
+  // CC
+  if (type === 0xB0) {
+    if (state.isLearning && state.isLearning.type === 'midi') {
+      assignLearn({ kind: 'cc', value: data1 });
+      return;
+    }
+    if (state.controlAssign.master.midiCC === data1) {
+      setMasterVol((data2 / 127) * 1.4);
+    }
+  }
+}
+
+// ===========================
+// KEYBOARD
+// ===========================
+document.addEventListener('keydown', e => {
+  // Ignore when typing in preset name
+  if (e.target.tagName === 'INPUT') return;
+
+  if (state.isLearning && state.isLearning.type === 'key') {
+    if (e.code === 'Escape') {
+      cancelLearn();
+      e.preventDefault();
+      return;
+    }
+    assignLearn({ kind: 'key', value: e.code });
+    e.preventDefault();
+    return;
+  }
+
+  // Control shortcuts
+  if (e.code === state.controlAssign.fadeout.key) { fadeOutAll(); e.preventDefault(); return; }
+  if (e.code === state.controlAssign.stop.key)    { stopAll();    e.preventDefault(); return; }
+  if (e.code === state.controlAssign.pause.key)   { pauseAll();   e.preventDefault(); return; }
+  if (e.code === 'ArrowUp')    { setMasterVol(state.masterVol + 0.03); e.preventDefault(); return; }
+  if (e.code === 'ArrowDown')  { setMasterVol(state.masterVol - 0.03); e.preventDefault(); return; }
+
+  // Pads — flash visually so user can verify assignment even on empty pads
+  const padIdx = state.banks[state.currentBank].pads.findIndex(p => p.key === e.code);
+  if (padIdx >= 0) {
+    flashPad(state.currentBank, padIdx);
+    playPad(state.currentBank, padIdx);
+    e.preventDefault();
+  }
+});
+
+// ===========================
+// LEARN
+// ===========================
+function startLearn(target, type) {
+  state.isLearning = { target, type };
+  document.getElementById('learnBanner').textContent =
+    `LEARN: 「${target}」に割り当てたい${type === 'key' ? 'キー' : 'MIDIノートまたはCC'}を入力（Escでキャンセル）`;
+  document.getElementById('learnBanner').classList.add('show');
+  renderLearnBadges();
+}
+
+function cancelLearn() {
+  state.isLearning = null;
+  document.getElementById('learnBanner').classList.remove('show');
+  renderLearnBadges();
+}
+
+function assignLearn(input) {
+  const { target, type } = state.isLearning;
+  // target is either 'pad-N' or one of 'master','fadeout','stop','pause'
+  if (target.startsWith('pad-')) {
+    const padIdx = parseInt(target.split('-')[1]);
+    const pad = state.banks[state.currentBank].pads[padIdx];
+    if (type === 'key' && input.kind === 'key') {
+      // remove same key from other pads
+      state.banks[state.currentBank].pads.forEach(p => { if (p !== pad && p.key === input.value) p.key = null; });
+      pad.key = input.value;
+    } else if (type === 'midi' && input.kind === 'note') {
+      state.banks[state.currentBank].pads.forEach(p => { if (p !== pad && p.midiNote === input.value) p.midiNote = null; });
+      pad.midiNote = input.value;
+    }
+  } else {
+    const ca = state.controlAssign[target];
+    if (!ca) return;
+    if (type === 'key' && input.kind === 'key') ca.key = input.value;
+    if (type === 'midi') {
+      if (target === 'master' && input.kind === 'cc') ca.midiCC = input.value;
+      else if (input.kind === 'note') ca.midiNote = input.value;
+    }
+  }
+  state.isLearning = null;
+  document.getElementById('learnBanner').classList.remove('show');
+  saveStateLocal();
+  render();
+  showToast('割り当てました');
+}
+
+// ===========================
+// PRESETS
+// ===========================
+async function savePreset() {
+  if (!db) await openDB();
+  const name = document.getElementById('presetName').value || 'Untitled';
+  const presetData = {
+    name,
+    date: new Date().toISOString(),
+    playMode: state.playMode,
+    fadeTime: state.fadeTime,
+    fadeCurve: state.fadeCurve,
+    fadeBezier: state.fadeBezier,
+    masterVol: state.masterVol,
+    controlAssign: state.controlAssign,
+    banks: state.banks.map(b => ({
+      name: b.name,
+      pads: b.pads.map(p => ({
+        sampleName: p.sampleName, sampleId: p.sampleId,
+        level: p.level, key: p.key, midiNote: p.midiNote,
+        trimStart: p.trimStart || 0, trimEnd: p.trimEnd,
+      })),
+    })),
+  };
+  return new Promise(resolve => {
+    const tx = db.transaction('presets', 'readwrite');
+    tx.objectStore('presets').put(presetData);
+    tx.oncomplete = () => { showToast(`プリセット「${name}」を保存`); resolve(); };
+  });
+}
+
+async function loadPresetByName(name) {
+  if (!db) await openDB();
+  return new Promise(resolve => {
+    const tx = db.transaction('presets', 'readonly');
+    const req = tx.objectStore('presets').get(name);
+    req.onsuccess = async () => {
+      const p = req.result;
+      if (!p) return resolve();
+      state.playMode = p.playMode || 'poly';
+      state.fadeTime = p.fadeTime || 2.0;
+      state.fadeCurve = p.fadeCurve || 'linear';
+      state.fadeBezier = p.fadeBezier || { ...PRESET_BEZIER[state.fadeCurve] || PRESET_BEZIER.linear };
+      state.controlAssign = p.controlAssign || state.controlAssign;
+      setMasterVol(p.masterVol);
+      document.getElementById('presetName').value = name;
+      for (let b = 0; b < NUM_BANKS; b++) {
+        const bd = p.banks[b];
+        if (!bd) continue;
+        state.banks[b].name = bd.name;
+        for (let i = 0; i < PADS_PER_BANK; i++) {
+          const sd = bd.pads[i];
+          if (!sd) continue;
+          const pad = state.banks[b].pads[i];
+          pad.sampleName = sd.sampleName;
+          pad.sampleId = sd.sampleId;
+          pad.level = sd.level;
+          pad.key = sd.key;
+          pad.midiNote = sd.midiNote;
+          pad.trimStart = sd.trimStart || 0;
+          pad.trimEnd = (sd.trimEnd != null) ? sd.trimEnd : null;
+          if (sd.sampleId) {
+            const rec = await getSampleFromDB(sd.sampleId);
+            if (rec) {
+              try { pad.audioBuffer = await ctx.decodeAudioData(rec.data.slice(0)); } catch(e){}
+            }
+          }
+        }
+      }
+      // Reflect button states
+      document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === state.playMode));
+      document.querySelectorAll('[data-ft]').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.ft) === state.fadeTime));
+      document.querySelectorAll('[data-curve]').forEach(b => b.classList.toggle('active', b.dataset.curve === state.fadeCurve));
+      drawCurveEditor();
+      render();
+      showToast(`「${name}」を読み込みました`);
+      resolve();
+    };
+  });
+}
+
+async function openLoadModal() {
+  if (!db) await openDB();
+  const tx = db.transaction('presets', 'readonly');
+  const req = tx.objectStore('presets').getAll();
+  req.onsuccess = () => {
+    const presets = req.result;
+    let html = '<h3>プリセット読込</h3>';
+    if (presets.length === 0) {
+      html += '<p>保存されたプリセットはありません</p>';
+    } else {
+      html += '<div class="preset-list">';
+      presets.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      for (const p of presets) {
+        const d = p.date ? new Date(p.date).toLocaleString('ja-JP') : '';
+        html += `<div class="preset-item" onclick="loadPresetByName('${p.name.replace(/'/g,"\\'")}'); closeModal();">
+          <div><div class="preset-item-name">${p.name}</div><div class="preset-item-date">${d}</div></div>
+          <span class="preset-delete" onclick="event.stopPropagation();deletePreset('${p.name.replace(/'/g,"\\'")}');">削除</span>
+        </div>`;
+      }
+      html += '</div>';
+    }
+    html += '<div class="modal-buttons"><button class="btn-small" onclick="closeModal()">閉じる</button></div>';
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('modal').classList.add('open');
+  };
+}
+
+async function deletePreset(name) {
+  if (!confirm(`プリセット「${name}」を削除しますか？`)) return;
+  const tx = db.transaction('presets', 'readwrite');
+  tx.objectStore('presets').delete(name);
+  tx.oncomplete = () => { openLoadModal(); showToast('削除しました'); };
+}
+
+function newPreset() {
+  if (!confirm('全パッドを空にして新規プリセットを作成しますか？（現在の編集は保存されません）')) return;
+  initBanks();
+  state.currentBank = 0;
+  state.playMode = 'poly';
+  state.fadeTime = 2.0;
+  document.getElementById('presetName').value = 'New Preset';
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === 'poly'));
+  document.querySelectorAll('[data-ft]').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.ft) === 2));
+  render();
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+// ===========================
+// LOCAL STATE (auto-save assignments)
+// ===========================
+function saveStateLocal() {
+  try {
+    localStorage.setItem('samplerStudioState', JSON.stringify({
+      playMode: state.playMode,
+      fadeTime: state.fadeTime,
+      fadeCurve: state.fadeCurve,
+      fadeBezier: state.fadeBezier,
+      masterVol: state.masterVol,
+      controlAssign: state.controlAssign,
+      currentBank: state.currentBank,
+    }));
+  } catch(e) {}
+}
+
+function loadStateLocal() {
+  try {
+    const s = JSON.parse(localStorage.getItem('samplerStudioState'));
+    if (!s) return;
+    state.playMode = s.playMode || 'poly';
+    state.fadeTime = s.fadeTime || 2.0;
+    state.fadeCurve = s.fadeCurve || 'linear';
+    state.fadeBezier = s.fadeBezier || { ...PRESET_BEZIER[state.fadeCurve] || PRESET_BEZIER.linear };
+    state.masterVol = s.masterVol ?? 0.71;
+    if (s.controlAssign) state.controlAssign = s.controlAssign;
+    state.currentBank = s.currentBank || 0;
+  } catch(e) {}
+}
+
+// ===========================
+// RENDER
+// ===========================
+function render() {
+  renderBanks();
+  renderTabs();
+  renderRight();
+  renderLearnBadges();
+  document.getElementById('bankInfo').textContent = `BANK ${String(state.currentBank+1).padStart(2,'0')} / 16`;
+}
+
+function renderBanks() {
+  const g = document.getElementById('banksGrid');
+  g.innerHTML = '';
+  for (let i = 0; i < NUM_BANKS; i++) {
+    const hasContent = state.banks[i].pads.some(p => p.audioBuffer);
+    const btn = document.createElement('button');
+    btn.className = 'bank-btn' + (i === state.currentBank ? ' active' : '') + (hasContent ? ' has-content' : '');
+    btn.textContent = i + 1;
+    btn.onclick = () => { state.currentBank = i; saveStateLocal(); render(); };
+    g.appendChild(btn);
+  }
+}
+
+function renderTabs() {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === state.currentTab));
+}
+
+function switchTab(t) {
+  state.currentTab = t;
+  render();
+}
+
+function renderRight() {
+  const r = document.getElementById('rightContent');
+  if (state.currentTab === 'levels') state.currentTab = 'pads'; // legacy fallback
+  if (state.currentTab === 'pads') r.innerHTML = `<div class="pad-grid" id="padGrid"><div class="pads-inner" id="padsInner"></div></div>`;
+  else if (state.currentTab === 'move') r.innerHTML = `<div class="move-wrap">
+    <div class="hold-panel">
+      <div class="hold-head">HOLD</div>
+      <div class="hold-slots" id="holdSlots"></div>
+    </div>
+    <div class="pad-grid move-mode"><div class="pads-inner" id="padsInner"></div></div>
+  </div>`;
+
+  if (state.currentTab === 'pads' || state.currentTab === 'move') renderPads();
+  if (state.currentTab === 'move') renderHold();
+}
+
+function renderPads() {
+  const inner = document.getElementById('padsInner');
+  if (!inner) return;
+  inner.innerHTML = '';
+  const pads = state.banks[state.currentBank].pads;
+  pads.forEach((pad, idx) => {
+    const el = document.createElement('div');
+    el.className = 'pad';
+    if (state.currentTab === 'move') el.classList.add('move-mode');
+    if (!pad.audioBuffer && state.currentTab === 'pads') el.classList.add('empty');
+    if (pad.isPlaying) el.classList.add('playing');
+
+    // Move mode: detect if pad is empty due to being moved to HOLD
+    const inHold = state.hold.some(h => h && h.bankIdx === state.currentBank && h.padIdx === idx);
+    if (inHold) el.classList.add('hold-source');
+    const hasSample = !!pad.audioBuffer && !inHold;
+    if (state.currentTab === 'move' && hasSample) el.classList.add('has-sample');
+
+    if (state.currentTab === 'move') {
+      if (hasSample) {
+        el.innerHTML = `
+          <div class="pad-head">
+            <span class="pad-num">${idx+1}</span>
+            <span class="grip-icon">⋮⋮</span>
+          </div>
+          <div class="pad-name">${pad.sampleName}</div>
+        `;
+      } else if (inHold) {
+        el.innerHTML = `
+          <div class="pad-head"><span class="pad-num">${idx+1}</span></div>
+          <div class="pad-name" style="color:#7F77DD; font-size:9px;">HOLD中</div>
+        `;
+      } else {
+        el.innerHTML = `<div class="pad-head"><span class="pad-num">${idx+1}</span></div>`;
+      }
+      el.draggable = hasSample;
+      el.ondragstart = e => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'pad', bankIdx: state.currentBank, padIdx: idx }));
+      };
+      el.ondragover = e => { e.preventDefault(); el.classList.add('drag-target'); };
+      el.ondragleave = () => el.classList.remove('drag-target');
+      el.ondrop = e => {
+        e.preventDefault();
+        el.classList.remove('drag-target');
+        try {
+          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+          handleMoveDrop(data, { kind: 'pad', bankIdx: state.currentBank, padIdx: idx });
+        } catch(err){}
+      };
+    } else if (state.currentTab === 'pads') {
+      const hasTrim = pad.audioBuffer && ((pad.trimStart||0) > 0 || (pad.trimEnd != null && pad.trimEnd < pad.audioBuffer.duration));
+      const levelPct = (pad.level / 1.4) * 100;
+      if (pad.audioBuffer) {
+        const dispDur = ((pad.trimEnd != null) ? pad.trimEnd : pad.audioBuffer.duration) - (pad.trimStart || 0);
+        el.innerHTML = `
+          <div class="pad-head">
+            <span class="pad-num">${idx+1}</span>
+            ${pad.isPlaying ? '<span style="color:#5DCAA5;">▶</span>' : ''}
+          </div>
+          <div class="pad-name">${pad.sampleName}</div>
+          <div class="pad-footer">
+            <div class="pad-time"><span class="t-now">0:00</span><span>${formatTime(dispDur)}</span></div>
+            <div class="pad-progress"><div class="pad-progress-fill"></div></div>
+            <div class="pad-shortcuts">
+              <button class="badge midi" onclick="event.stopPropagation();startLearn('pad-${idx}','midi');">N${pad.midiNote ?? '-'}</button>
+              <button class="badge key" onclick="event.stopPropagation();startLearn('pad-${idx}','key');">${keyLabel(pad.key)}</button>
+            </div>
+          </div>
+          ${hasTrim ? '<div class="trim-badge">TRIMMED</div>' : ''}
+          <div class="pad-edit-icon" title="編集" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">✎</div>
+          <div class="pad-level-track"><div class="pad-level-fill" style="height:${levelPct}%;"></div></div>
+        `;
+      } else {
+        el.innerHTML = `
+          <div style="font-size:9px; color:#5A5A60;">PAD ${idx+1}</div>
+          <div class="upload-icon">↓</div>
+          <div style="font-size:8px; color:#5A5A60; letter-spacing:1px;">DROP WAV</div>
+          <div class="pad-shortcuts" style="position:absolute; bottom:8px; left:10px; right:18px;">
+            <button class="badge midi" onclick="event.stopPropagation();startLearn('pad-${idx}','midi');">N${pad.midiNote ?? '-'}</button>
+            <button class="badge key" onclick="event.stopPropagation();startLearn('pad-${idx}','key');">${keyLabel(pad.key)}</button>
+          </div>
+        `;
+      }
+      // Click to play (skip if click on level fader)
+      el.onclick = (e) => {
+        if (e.target.closest('.pad-level-track')) return;
+        if (e.target.closest('.pad-edit-icon')) return;
+        if (e.target.closest('.badge')) return;
+        if (pad.audioBuffer) playPad(state.currentBank, idx);
+      };
+      // Right-click to open trim editor
+      el.oncontextmenu = e => {
+        e.preventDefault();
+        if (pad.audioBuffer) openTrimEditor(state.currentBank, idx);
+      };
+      // Drag-drop WAV
+      el.ondragover = e => { e.preventDefault(); el.classList.add('drag-over'); };
+      el.ondragleave = () => el.classList.remove('drag-over');
+      el.ondrop = async e => {
+        e.preventDefault();
+        el.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) await loadSampleToPad(state.currentBank, idx, file);
+      };
+      // Bind per-pad level fader
+      if (pad.audioBuffer) {
+        const track = el.querySelector('.pad-level-track');
+        if (track) bindPadLevelFader(track, idx, pad);
+      }
+    }
+    inner.appendChild(el);
+  });
+  // start update loop for time/progress
+  if (state.currentTab === 'pads') startProgressLoop();
+  resizePads();
+}
+
+function renderPadVisual(padIdx) {
+  // soft update playing state on a single pad
+  const inner = document.getElementById('padsInner');
+  if (!inner) return;
+  const el = inner.children[padIdx];
+  if (!el) return;
+  const pad = state.banks[state.currentBank].pads[padIdx];
+  el.classList.toggle('playing', pad.isPlaying);
+}
+
+// Brief visual flash when a pad's assigned key or MIDI note is triggered.
+// Works on any pad (including empty) so the user can verify assignments.
+function flashPad(bankIdx, padIdx) {
+  if (state.currentBank !== bankIdx) return;
+  if (state.currentTab !== 'pads') return;
+  const inner = document.getElementById('padsInner');
+  if (!inner) return;
+  const el = inner.children[padIdx];
+  if (!el) return;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 180);
+}
+
+// Per-pad volume fader (right edge of pad)
+function bindPadLevelFader(track, padIdx, pad) {
+  const fill = track.querySelector('.pad-level-fill');
+  const update = (clientY) => {
+    const rect = track.getBoundingClientRect();
+    const y = clientY - rect.top;
+    let pct = 1 - (y / rect.height);
+    pct = Math.max(0, Math.min(1, pct));
+    pad.level = pct * 1.4;
+    if (fill) fill.style.height = (pct * 100) + '%';
+    pad.activeSources.forEach(ref => {
+      try {
+        ref.gain.gain.cancelScheduledValues(ctx.currentTime);
+        ref.gain.gain.linearRampToValueAtTime(pad.level, ctx.currentTime + 0.02);
+      } catch(e){}
+    });
+  };
+  track.addEventListener('mousedown', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    activeDrag = { update, end: () => saveStateLocal() };
+    update(e.clientY);
+  });
+  track.addEventListener('touchstart', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    activeDrag = { update, end: () => saveStateLocal() };
+    if (e.touches[0]) update(e.touches[0].clientY);
+  }, { passive: false });
+  track.addEventListener('click', e => e.stopPropagation());
+  // Right-click on level track resets to 0dB (unity)
+  track.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    pad.level = 1.0;
+    if (fill) fill.style.height = ((1.0/1.4) * 100) + '%';
+    saveStateLocal();
+    showToast(`PAD ${padIdx+1}: 0 dB (リセット)`);
+  });
+}
+
+let progressLoopRunning = false;
+function startProgressLoop() {
+  if (progressLoopRunning) return;
+  progressLoopRunning = true;
+  function loop() {
+    if (state.currentTab !== 'pads') { progressLoopRunning = false; return; }
+    const inner = document.getElementById('padsInner');
+    if (!inner) { progressLoopRunning = false; return; }
+    const pads = state.banks[state.currentBank].pads;
+    pads.forEach((pad, idx) => {
+      const el = inner.children[idx];
+      if (!el || !pad.audioBuffer) return;
+      const fill = el.querySelector('.pad-progress-fill');
+      const tnow = el.querySelector('.t-now');
+      if (pad.isPlaying && pad.activeSources.length > 0) {
+        const ref = pad.activeSources[pad.activeSources.length - 1];
+        const elapsed = ctx.currentTime - ref.startedAt;
+        const dur = ref.trimDuration || pad.audioBuffer.duration;
+        const pct = Math.min(100, (elapsed / dur) * 100);
+        if (fill) fill.style.width = pct + '%';
+        if (tnow) tnow.textContent = formatTime(elapsed);
+      } else {
+        if (fill) fill.style.width = '0%';
+        if (tnow) tnow.textContent = '0:00';
+      }
+    });
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+}
+
+// ===========================
+// RESIZE PADS (make them square, fit window)
+// ===========================
+let padsResizeObserver = null;
+function resizePads() {
+  document.querySelectorAll('.pads-inner').forEach(el => {
+    const parent = el.parentElement;
+    if (!parent) return;
+    const cs = getComputedStyle(parent);
+    const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+    const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    const w = parent.clientWidth - padX;
+    const h = parent.clientHeight - padY;
+    if (w <= 0 || h <= 0) return;
+    const size = Math.max(60, Math.min(w, h));
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+  });
+  // Re-observe in case the pad-grid changed
+  if (window.ResizeObserver && !padsResizeObserver) {
+    padsResizeObserver = new ResizeObserver(() => {
+      document.querySelectorAll('.pads-inner').forEach(el => {
+        const parent = el.parentElement;
+        if (!parent) return;
+        const cs = getComputedStyle(parent);
+        const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+        const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+        const w = parent.clientWidth - padX;
+        const h = parent.clientHeight - padY;
+        if (w <= 0 || h <= 0) return;
+        const size = Math.max(60, Math.min(w, h));
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+      });
+    });
+  }
+  if (padsResizeObserver) {
+    document.querySelectorAll('.pad-grid').forEach(g => {
+      try { padsResizeObserver.observe(g); } catch(e){}
+    });
+  }
+}
+window.addEventListener('resize', resizePads);
+
+// ===========================
+// TRIM EDITOR
+// ===========================
+let trimPreviewSource = null;
+let trimAnimating = false;
+
+function openTrimEditor(bankIdx, padIdx) {
+  const pad = state.banks[bankIdx].pads[padIdx];
+  if (!pad.audioBuffer) return;
+  state.trimEditor = { bankIdx, padIdx };
+  const dur = pad.audioBuffer.duration;
+  if (pad.trimEnd == null) pad.trimEnd = dur;
+
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  content.innerHTML = `
+    <div class="trim-modal">
+      <div class="trim-header">
+        <div>
+          <div class="trim-title">PAD ${padIdx+1} ・ ${pad.sampleName}</div>
+          <div class="trim-subtitle">音の頭・お尻をハンドル(緑＝開始/橙＝終了)でドラッグ調整</div>
+        </div>
+        <button class="btn-small" onclick="closeTrimEditor()">✕</button>
+      </div>
+      <div class="waveform-wrap" id="wfWrap">
+        <canvas class="waveform-canvas" id="wfCanvas"></canvas>
+        <div class="trim-shade" id="shadeLeft"></div>
+        <div class="trim-shade" id="shadeRight"></div>
+        <div class="trim-playhead" id="playhead" style="display:none;"></div>
+        <div class="trim-handle" id="handleStart"></div>
+        <div class="trim-handle end" id="handleEnd"></div>
+      </div>
+      <div class="trim-controls">
+        <div class="trim-field">
+          <span class="trim-field-label">START</span>
+          <input type="number" id="trimStartInp" min="0" max="${dur}" step="0.001" value="${pad.trimStart.toFixed(3)}" />
+        </div>
+        <div class="trim-field">
+          <span class="trim-field-label">END</span>
+          <input type="number" id="trimEndInp" min="0" max="${dur}" step="0.001" value="${pad.trimEnd.toFixed(3)}" />
+        </div>
+        <div class="trim-field">
+          <span class="trim-field-label">DURATION</span>
+          <span class="trim-field-value" id="trimDurDisp">${(pad.trimEnd - pad.trimStart).toFixed(3)} s</span>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-small" onclick="resetTrim()" style="margin-right:auto;">RESET</button>
+        <button class="btn-small" onclick="previewTrim()">▶ PREVIEW</button>
+        <button class="btn-small" onclick="closeTrimEditor()">CANCEL</button>
+        <button class="btn-small" style="background:#5DCAA5; color:#04342C; border-color:#5DCAA5; font-weight:500;" onclick="applyTrim()">APPLY</button>
+      </div>
+    </div>
+  `;
+  modal.classList.add('open');
+  requestAnimationFrame(() => {
+    drawWaveform();
+    updateTrimUI();
+    bindTrimHandles();
+    document.getElementById('trimStartInp').addEventListener('change', e => {
+      const v = Math.max(0, Math.min(parseFloat(e.target.value) || 0, pad.trimEnd - 0.01));
+      pad.trimStart = v;
+      updateTrimUI();
+    });
+    document.getElementById('trimEndInp').addEventListener('change', e => {
+      const v = Math.max(pad.trimStart + 0.01, Math.min(parseFloat(e.target.value) || dur, dur));
+      pad.trimEnd = v;
+      updateTrimUI();
+    });
+  });
+}
+
+function closeTrimEditor() {
+  stopTrimPreview();
+  state.trimEditor = null;
+  document.getElementById('modal').classList.remove('open');
+  render();
+}
+
+function resetTrim() {
+  if (!state.trimEditor) return;
+  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+  pad.trimStart = 0;
+  pad.trimEnd = pad.audioBuffer.duration;
+  document.getElementById('trimStartInp').value = '0.000';
+  document.getElementById('trimEndInp').value = pad.trimEnd.toFixed(3);
+  updateTrimUI();
+}
+
+function applyTrim() {
+  saveStateLocal();
+  closeTrimEditor();
+  showToast('トリム適用');
+}
+
+function drawWaveform() {
+  if (!state.trimEditor) return;
+  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+  const canvas = document.getElementById('wfCanvas');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const c = canvas.getContext('2d');
+  c.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  c.fillStyle = '#0F0F12';
+  c.fillRect(0, 0, W, H);
+  // baseline
+  c.strokeStyle = '#2A2A30';
+  c.beginPath(); c.moveTo(0, H/2); c.lineTo(W, H/2); c.stroke();
+  // waveform
+  const ch = pad.audioBuffer.getChannelData(0);
+  const step = Math.max(1, Math.floor(ch.length / W));
+  c.strokeStyle = '#5DCAA5';
+  c.lineWidth = 1;
+  c.beginPath();
+  for (let x = 0; x < W; x++) {
+    let mn = 1, mx = -1;
+    for (let j = 0; j < step; j++) {
+      const v = ch[x * step + j] || 0;
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+    c.moveTo(x + 0.5, (1 - (mx + 1) / 2) * H);
+    c.lineTo(x + 0.5, (1 - (mn + 1) / 2) * H);
+  }
+  c.stroke();
+}
+
+function updateTrimUI() {
+  if (!state.trimEditor) return;
+  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+  const dur = pad.audioBuffer.duration;
+  const wrap = document.getElementById('wfWrap');
+  if (!wrap) return;
+  const rect = wrap.getBoundingClientRect();
+  const padPx = 10; // padding inside wrap
+  const innerW = rect.width - padPx * 2;
+  const startPx = padPx + (pad.trimStart / dur) * innerW;
+  const endPx = padPx + (pad.trimEnd / dur) * innerW;
+
+  const hs = document.getElementById('handleStart');
+  const he = document.getElementById('handleEnd');
+  const sl = document.getElementById('shadeLeft');
+  const sr = document.getElementById('shadeRight');
+  if (hs) hs.style.left = (startPx - 7) + 'px';
+  if (he) he.style.left = (endPx - 7) + 'px';
+  if (sl) { sl.style.left = padPx + 'px'; sl.style.width = (startPx - padPx) + 'px'; }
+  if (sr) { sr.style.left = endPx + 'px'; sr.style.width = (padPx + innerW - endPx) + 'px'; }
+
+  document.getElementById('trimStartInp').value = pad.trimStart.toFixed(3);
+  document.getElementById('trimEndInp').value = pad.trimEnd.toFixed(3);
+  document.getElementById('trimDurDisp').textContent = (pad.trimEnd - pad.trimStart).toFixed(3) + ' s';
+}
+
+function bindTrimHandles() {
+  const wrap = document.getElementById('wfWrap');
+  if (!wrap) return;
+  const hs = document.getElementById('handleStart');
+  const he = document.getElementById('handleEnd');
+  const padPx = 10;
+  const onDragStart = (handle, which) => (e) => {
+    e.preventDefault();
+    const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+    const dur = pad.audioBuffer.duration;
+    const move = (clientX) => {
+      const rect = wrap.getBoundingClientRect();
+      const innerW = rect.width - padPx * 2;
+      const xRel = Math.max(0, Math.min(innerW, clientX - rect.left - padPx));
+      const sec = (xRel / innerW) * dur;
+      if (which === 'start') pad.trimStart = Math.max(0, Math.min(sec, pad.trimEnd - 0.01));
+      else pad.trimEnd = Math.max(pad.trimStart + 0.01, Math.min(sec, dur));
+      updateTrimUI();
+    };
+    activeDrag = {
+      update: (cy) => {}, // unused for X-axis drag
+      end: () => {}
+    };
+    // X-axis drag (manual setup)
+    const mm = ev => move(ev.clientX);
+    const tm = ev => move(ev.touches[0].clientX);
+    const up = () => {
+      window.removeEventListener('mousemove', mm);
+      window.removeEventListener('mouseup', up);
+      window.removeEventListener('touchmove', tm);
+      window.removeEventListener('touchend', up);
+      activeDrag = null;
+    };
+    window.addEventListener('mousemove', mm);
+    window.addEventListener('mouseup', up);
+    window.addEventListener('touchmove', tm, { passive: false });
+    window.addEventListener('touchend', up);
+    if (e.touches) move(e.touches[0].clientX); else move(e.clientX);
+  };
+  hs.addEventListener('mousedown', onDragStart(hs, 'start'));
+  he.addEventListener('mousedown', onDragStart(he, 'end'));
+  hs.addEventListener('touchstart', onDragStart(hs, 'start'), { passive: false });
+  he.addEventListener('touchstart', onDragStart(he, 'end'), { passive: false });
+}
+
+function previewTrim() {
+  if (!state.trimEditor) return;
+  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+  stopTrimPreview();
+  initAudio();
+  const source = ctx.createBufferSource();
+  source.buffer = pad.audioBuffer;
+  const gain = ctx.createGain();
+  gain.gain.value = pad.level;
+  source.connect(gain).connect(masterGain);
+  const dur = (pad.trimEnd ?? pad.audioBuffer.duration) - (pad.trimStart || 0);
+  source.start(0, pad.trimStart || 0, dur);
+  trimPreviewSource = { source, startedAt: ctx.currentTime, duration: dur };
+  source.onended = () => { trimPreviewSource = null; document.getElementById('playhead').style.display = 'none'; trimAnimating = false; };
+
+  const ph = document.getElementById('playhead');
+  ph.style.display = 'block';
+  trimAnimating = true;
+  function animate() {
+    if (!trimPreviewSource || !trimAnimating) return;
+    const wrap = document.getElementById('wfWrap');
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const padPx = 10;
+    const innerW = rect.width - padPx * 2;
+    const elapsed = ctx.currentTime - trimPreviewSource.startedAt;
+    const pos = (pad.trimStart || 0) + elapsed;
+    const totalDur = pad.audioBuffer.duration;
+    const x = padPx + (pos / totalDur) * innerW;
+    ph.style.left = x + 'px';
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function stopTrimPreview() {
+  if (trimPreviewSource) {
+    try { trimPreviewSource.source.stop(); } catch(e){}
+    trimPreviewSource = null;
+  }
+  trimAnimating = false;
+  const ph = document.getElementById('playhead');
+  if (ph) ph.style.display = 'none';
+}
+
+function renderLevels() {
+  const inner = document.getElementById('levelsInner');
+  if (!inner) return;
+  inner.innerHTML = '';
+  const pads = state.banks[state.currentBank].pads;
+  pads.forEach((pad, idx) => {
+    const el = document.createElement('div');
+    el.className = 'level-card' + (pad.audioBuffer ? '' : ' empty') + (pad.isPlaying ? ' playing' : '');
+    const db = linToDb(pad.level);
+    const dbDisplay = db === -Infinity ? '-∞' : db.toFixed(1);
+    const pct = (pad.level / 1.4) * 100;
+    el.dataset.padIdx = idx;
+    el.innerHTML = `
+      <div class="level-info">
+        <div class="level-info-num">PAD ${idx+1}${pad.midiNote!=null?' · N'+pad.midiNote:''}</div>
+        <div class="level-info-name">${pad.sampleName || '— 空き —'}</div>
+        <div class="level-info-db"><span class="db-val">${dbDisplay}</span> dB</div>
+      </div>
+      <div class="level-fader-wrap">
+        <div class="level-fader" data-pad="${idx}">
+          <div class="level-fader-fill" style="height:${pct}%;"></div>
+          <div class="level-fader-thumb" style="bottom:${pct}%;"></div>
+        </div>
+      </div>
+    `;
+    // Click card to play (but not when interacting with fader)
+    el.addEventListener('click', e => {
+      if (e.target.closest('.level-fader')) return;
+      if (pad.audioBuffer) playPad(state.currentBank, idx);
+    });
+    inner.appendChild(el);
+  });
+
+  // Bind faders without re-rendering during drag
+  inner.querySelectorAll('.level-fader').forEach(f => {
+    const padIdx = parseInt(f.dataset.pad);
+    const card = f.closest('.level-card');
+    const fill = f.querySelector('.level-fader-fill');
+    const thumb = f.querySelector('.level-fader-thumb');
+    const dbSpan = card.querySelector('.db-val');
+
+    const update = (clientY) => {
+      const rect = f.getBoundingClientRect();
+      const y = clientY - rect.top;
+      let pct = 1 - (y / rect.height);
+      pct = Math.max(0, Math.min(1, pct));
+      const pad = state.banks[state.currentBank].pads[padIdx];
+      pad.level = pct * 1.4;
+      const pctDisp = pct * 100;
+      fill.style.height = pctDisp + '%';
+      thumb.style.bottom = pctDisp + '%';
+      const db = linToDb(pad.level);
+      dbSpan.textContent = (db === -Infinity ? '-∞' : db.toFixed(1));
+      pad.activeSources.forEach(ref => {
+        try {
+          ref.gain.gain.cancelScheduledValues(ctx.currentTime);
+          ref.gain.gain.linearRampToValueAtTime(pad.level, ctx.currentTime + 0.02);
+        } catch(e){}
+      });
+    };
+
+    const onMouseDown = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      activeDrag = { update, end: () => { saveStateLocal(); } };
+      update(e.clientY);
+    };
+    const onTouchStart = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      activeDrag = { update, end: () => { saveStateLocal(); } };
+      update(e.touches[0].clientY);
+    };
+    f.addEventListener('mousedown', onMouseDown);
+    f.addEventListener('touchstart', onTouchStart, { passive: false });
+  });
+}
+
+function renderHold() {
+  const c = document.getElementById('holdSlots');
+  if (!c) return;
+  c.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const slot = document.createElement('div');
+    const item = state.hold[i];
+    if (item) {
+      slot.className = 'hold-slot filled';
+      slot.innerHTML = `
+        <div class="slot-head"><span>H${i+1}</span><span>✋</span></div>
+        <div class="slot-name">${item.sampleName}</div>
+        <div class="slot-from">元: PAD ${item.padIdx+1}</div>
+      `;
+      slot.draggable = true;
+      slot.ondragstart = e => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'hold', holdIdx: i }));
+      };
+    } else {
+      slot.className = 'hold-slot empty' + (i > 0 ? ' dim' : '');
+      slot.innerHTML = `<div style="text-align:center;"><div style="font-size:18px;">+</div><div>H${i+1}</div></div>`;
+    }
+    slot.ondragover = e => { e.preventDefault(); slot.classList.add('drag-over'); };
+    slot.ondragleave = () => slot.classList.remove('drag-over');
+    slot.ondrop = e => {
+      e.preventDefault();
+      slot.classList.remove('drag-over');
+      const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+      handleMoveDrop(data, { kind: 'hold', holdIdx: i });
+    };
+    c.appendChild(slot);
+  }
+}
+
+function handleMoveDrop(from, to) {
+  // Move/swap pad content
+  if (from.kind === 'pad' && to.kind === 'hold') {
+    // Move pad to hold (the pad becomes empty in MOVE-mode-only visual sense; we keep the content in HOLD)
+    if (state.hold[to.holdIdx]) return showToast('そのHOLDは埋まっています');
+    const pad = state.banks[from.bankIdx].pads[from.padIdx];
+    state.hold[to.holdIdx] = { bankIdx: from.bankIdx, padIdx: from.padIdx, sampleName: pad.sampleName, padData: clonePadData(pad) };
+    clearPadData(pad);
+  } else if (from.kind === 'hold' && to.kind === 'pad') {
+    const item = state.hold[from.holdIdx];
+    const targetPad = state.banks[to.bankIdx].pads[to.padIdx];
+    if (targetPad.sampleName) {
+      // swap: put target into hold slot, item into target
+      const oldContent = clonePadData(targetPad);
+      assignPadData(targetPad, item.padData);
+      state.hold[from.holdIdx] = { bankIdx: to.bankIdx, padIdx: to.padIdx, sampleName: oldContent.sampleName, padData: oldContent };
+    } else {
+      assignPadData(targetPad, item.padData);
+      state.hold[from.holdIdx] = null;
+    }
+  } else if (from.kind === 'pad' && to.kind === 'pad') {
+    // direct swap
+    const a = state.banks[from.bankIdx].pads[from.padIdx];
+    const b = state.banks[to.bankIdx].pads[to.padIdx];
+    const tmp = clonePadData(a);
+    assignPadData(a, clonePadData(b));
+    assignPadData(b, tmp);
+  } else if (from.kind === 'hold' && to.kind === 'hold') {
+    // swap holds
+    const t = state.hold[from.holdIdx];
+    state.hold[from.holdIdx] = state.hold[to.holdIdx];
+    state.hold[to.holdIdx] = t;
+  }
+  saveStateLocal();
+  render();
+}
+
+function clonePadData(p) {
+  return {
+    sampleName: p.sampleName, audioBuffer: p.audioBuffer, sampleId: p.sampleId,
+    level: p.level, key: p.key, midiNote: p.midiNote,
+  };
+}
+function assignPadData(target, src) {
+  target.sampleName = src.sampleName;
+  target.audioBuffer = src.audioBuffer;
+  target.sampleId = src.sampleId;
+  target.level = src.level;
+  target.key = src.key;
+  target.midiNote = src.midiNote;
+  stopPad(target);
+}
+function clearPadData(p) {
+  p.sampleName = null; p.audioBuffer = null; p.sampleId = null;
+  stopPad(p);
+}
+
+function keyLabel(code) {
+  if (!code) return '-';
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  return code.replace('Arrow','').replace('Space','␣').replace('Escape','Esc').slice(0,4);
+}
+function formatTime(s) {
+  const m = Math.floor(s/60);
+  const sec = Math.floor(s%60);
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function renderLearnBadges() {
+  // Update badges' text and pulsing
+  const lr = state.isLearning;
+  // master
+  const cm = state.controlAssign;
+  setBadgeText('masterMidiBadge', `CC${cm.master.midiCC ?? '-'}`);
+  setBadgeText('masterKeyBadge', cm.master.key ? keyLabel(cm.master.key) : '↑↓');
+  setBadgeText('fadeoutMidiBadge', `N${cm.fadeout.midiNote ?? '-'}`);
+  setBadgeText('fadeoutKeyBadge', cm.fadeout.key ? keyLabel(cm.fadeout.key) : '-');
+  setBadgeText('stopMidiBadge', `N${cm.stop.midiNote ?? '-'}`);
+  setBadgeText('stopKeyBadge', cm.stop.key ? keyLabel(cm.stop.key) : '-');
+  setBadgeText('pauseMidiBadge', `N${cm.pause.midiNote ?? '-'}`);
+  setBadgeText('pauseKeyBadge', cm.pause.key ? keyLabel(cm.pause.key) : '-');
+  const all = ['masterMidiBadge','masterKeyBadge','fadeoutMidiBadge','fadeoutKeyBadge','stopMidiBadge','stopKeyBadge','pauseMidiBadge','pauseKeyBadge'];
+  all.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('learning'); });
+  if (lr) {
+    const id = `${lr.target}${lr.type === 'midi' ? 'Midi' : 'Key'}Badge`;
+    const el = document.getElementById(id);
+    if (el) el.classList.add('learning');
+  }
+}
+function setBadgeText(id, txt) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = txt;
+}
+
+// ===========================
+// CONTROLS
+// ===========================
+function setPlayMode(m) {
+  state.playMode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  saveStateLocal();
+}
+function setFadeTime(t) {
+  state.fadeTime = t;
+  document.querySelectorAll('[data-ft]').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.ft) === t));
+  const inp = document.getElementById('fadeTimeInput');
+  if (inp) inp.value = (Number.isInteger(t) ? t : t.toFixed(1));
+  saveStateLocal();
+}
+function setCurve(c) {
+  state.fadeCurve = c;
+  if (PRESET_BEZIER[c]) state.fadeBezier = { ...PRESET_BEZIER[c] };
+  document.querySelectorAll('[data-curve]').forEach(b => b.classList.toggle('active', b.dataset.curve === c));
+  drawCurveEditor();
+  saveStateLocal();
+}
+
+// ===========================
+// CURVE EDITOR (manual bezier)
+// ===========================
+function drawCurveEditor() {
+  const canvas = document.getElementById('curveCanvas');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const c = canvas.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  c.clearRect(0, 0, W, H);
+
+  // grid
+  c.strokeStyle = '#2A2A30';
+  c.lineWidth = 0.5;
+  for (let i = 1; i < 4; i++) {
+    c.beginPath();
+    c.moveTo((W/4)*i, 0); c.lineTo((W/4)*i, H); c.stroke();
+    c.beginPath();
+    c.moveTo(0, (H/4)*i); c.lineTo(W, (H/4)*i); c.stroke();
+  }
+
+  const b = state.fadeBezier;
+
+  // dotted handle lines
+  c.strokeStyle = '#3D3D45';
+  c.setLineDash([3, 3]);
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(0, 0);
+  c.lineTo(b.c1x * W, (1 - b.c1y) * H);
+  c.moveTo(W, H);
+  c.lineTo(b.c2x * W, (1 - b.c2y) * H);
+  c.stroke();
+  c.setLineDash([]);
+
+  // curve
+  c.strokeStyle = '#5DCAA5';
+  c.lineWidth = 2;
+  c.beginPath();
+  for (let i = 0; i <= 64; i++) {
+    const t = i / 64;
+    const omt = 1 - t;
+    const x = 3*omt*omt*t*b.c1x + 3*omt*t*t*b.c2x + t*t*t;
+    const y = omt*omt*omt + 3*omt*omt*t*b.c1y + 3*omt*t*t*b.c2y;
+    const px = x * W;
+    const py = (1 - y) * H;
+    if (i === 0) c.moveTo(px, py);
+    else c.lineTo(px, py);
+  }
+  c.stroke();
+
+  // position handles
+  const h1 = document.getElementById('curveH1');
+  const h2 = document.getElementById('curveH2');
+  if (h1) {
+    h1.style.left = (b.c1x * 100) + '%';
+    h1.style.top = ((1 - b.c1y) * 100) + '%';
+  }
+  if (h2) {
+    h2.style.left = (b.c2x * 100) + '%';
+    h2.style.top = ((1 - b.c2y) * 100) + '%';
+  }
+}
+
+function bindCurveEditor() {
+  const editor = document.getElementById('curveEditor');
+  if (!editor) return;
+  const h1 = document.getElementById('curveH1');
+  const h2 = document.getElementById('curveH2');
+
+  const startDrag = (which) => (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const move = (clientX, clientY) => {
+      const rect = editor.getBoundingClientRect();
+      let x = (clientX - rect.left) / rect.width;
+      let y = 1 - (clientY - rect.top) / rect.height;
+      x = Math.max(0, Math.min(1, x));
+      y = Math.max(0, Math.min(1, y));
+      if (which === 1) { state.fadeBezier.c1x = x; state.fadeBezier.c1y = y; }
+      else { state.fadeBezier.c2x = x; state.fadeBezier.c2y = y; }
+      state.fadeCurve = 'custom';
+      document.querySelectorAll('[data-curve]').forEach(b => b.classList.remove('active'));
+      drawCurveEditor();
+    };
+    const mm = ev => move(ev.clientX, ev.clientY);
+    const tm = ev => { if (ev.touches[0]) move(ev.touches[0].clientX, ev.touches[0].clientY); ev.preventDefault(); };
+    const up = () => {
+      window.removeEventListener('mousemove', mm);
+      window.removeEventListener('mouseup', up);
+      window.removeEventListener('touchmove', tm);
+      window.removeEventListener('touchend', up);
+      saveStateLocal();
+    };
+    window.addEventListener('mousemove', mm);
+    window.addEventListener('mouseup', up);
+    window.addEventListener('touchmove', tm, { passive: false });
+    window.addEventListener('touchend', up);
+  };
+  h1.addEventListener('mousedown', startDrag(1));
+  h1.addEventListener('touchstart', startDrag(1), { passive: false });
+  h2.addEventListener('mousedown', startDrag(2));
+  h2.addEventListener('touchstart', startDrag(2), { passive: false });
+}
+
+// Global drag handler (single source of truth)
+let activeDrag = null;
+window.addEventListener('mousemove', e => {
+  if (activeDrag) activeDrag.update(e.clientY);
+});
+window.addEventListener('mouseup', () => {
+  if (activeDrag) { if (activeDrag.end) activeDrag.end(); activeDrag = null; }
+});
+window.addEventListener('touchmove', e => {
+  if (activeDrag) { activeDrag.update(e.touches[0].clientY); e.preventDefault(); }
+}, { passive: false });
+window.addEventListener('touchend', () => {
+  if (activeDrag) { if (activeDrag.end) activeDrag.end(); activeDrag = null; }
+});
+
+// Master fader drag
+function bindMasterFader() {
+  const fader = document.getElementById('masterFader');
+  const update = (clientY) => {
+    const rect = fader.getBoundingClientRect();
+    const y = clientY - rect.top;
+    let pct = 1 - (y / rect.height);
+    pct = Math.max(0, Math.min(1, pct));
+    setMasterVol(pct * 1.4);
+  };
+  fader.addEventListener('mousedown', e => {
+    e.preventDefault();
+    activeDrag = { update, end: () => saveStateLocal() };
+    update(e.clientY);
+  });
+  fader.addEventListener('touchstart', e => {
+    e.preventDefault();
+    activeDrag = { update, end: () => saveStateLocal() };
+    update(e.touches[0].clientY);
+  }, { passive: false });
+}
+
+// ===========================
+// TOAST
+// ===========================
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ===========================
+// INIT
+// ===========================
+async function init() {
+  initBanks();
+  loadStateLocal();
+  await openDB();
+  initAudio();
+  initMIDI();
+  setMasterVol(state.masterVol);
+  bindMasterFader();
+  document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === state.playMode));
+  document.querySelectorAll('[data-ft]').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.ft) === state.fadeTime));
+  document.querySelectorAll('[data-curve]').forEach(b => b.classList.toggle('active', b.dataset.curve === state.fadeCurve));
+  bindCurveEditor();
+  render();
+  requestAnimationFrame(() => {
+    resizePads();
+    drawCurveEditor();
+  });
+  // call again after a moment in case layout shifts
+  setTimeout(() => { resizePads(); drawCurveEditor(); }, 200);
+
+  // Resize observer for pad grid square sizing
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => { resizePads(); drawCurveEditor(); });
+    ro.observe(document.body);
+  }
+
+  // Preset name change
+  document.getElementById('presetName').addEventListener('change', e => { state.presetName = e.target.value; });
+
+  // Custom fade time input
+  const ftInput = document.getElementById('fadeTimeInput');
+  if (ftInput) {
+    ftInput.value = (Number.isInteger(state.fadeTime) ? state.fadeTime : state.fadeTime.toFixed(1));
+    const applyFt = () => {
+      let v = parseFloat(ftInput.value);
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 600) v = 600; // 10 min cap
+      state.fadeTime = v;
+      // Highlight a preset button only if value matches exactly
+      document.querySelectorAll('[data-ft]').forEach(b => b.classList.toggle('active', parseFloat(b.dataset.ft) === v));
+      saveStateLocal();
+    };
+    ftInput.addEventListener('input', applyFt);
+    ftInput.addEventListener('change', applyFt);
+  }
+
+  // Prevent global drag-drop default
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => e.preventDefault());
+
+  // Unlock audio on first interaction (mobile Safari)
+  const unlock = () => { if (ctx && ctx.state === 'suspended') ctx.resume(); document.body.removeEventListener('click', unlock); };
+  document.body.addEventListener('click', unlock);
+}
+
+init();
+</script>
+</body>
+</html>
