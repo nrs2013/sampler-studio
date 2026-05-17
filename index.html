@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.11';
+const APP_VERSION = 'v5.12';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -4061,7 +4061,7 @@ function fmtTime(sec) {
 
 // 0dB（linear=1.0）付近で吸着するスナップ。デフォルト幅広めの ±0.10（≒ ±0.8dB）
 function snapToUnity(linear, snapPct) {
-  if (Math.abs(linear - 1.0) < (snapPct || 0.10)) return 1.0;
+  if (Math.abs(linear - 1.0) < (snapPct || 0.04)) return 1.0;
   return linear;
 }
 // 0dB（depthDb=0）付近で吸着。デフォルト ±1.0dB
