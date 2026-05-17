@@ -633,7 +633,35 @@
 
   /* DOOR OPEN PAGE */
   #doorPage { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; }
-  .do-top { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; }
+  .do-top { display: grid; grid-template-columns: 220px 1fr 1fr; gap: 10px; }
+  /* DUCK 横長ストリップ */
+  .do-duck-strip {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 14px; flex-wrap: wrap;
+  }
+  /* BGM タグ */
+  .do-bgm-tag {
+    padding: 3px 10px; font-size: 10px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
+  }
+  .do-bgm-tag.tag-door { background: rgba(93,202,165,0.2); color: #5DCAA5; }
+  .do-bgm-tag.tag-workout { background: rgba(133,183,235,0.2); color: #85B7EB; }
+  .do-bgm-sub { font-size: 10px; color: #8A8A92; }
+  .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* WORKOUT 用色違いボタン／フィル */
+  .do-bgm-btn.primary.door { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
+  .do-bgm-btn.primary.door:hover { background: #6FDEB8; }
+  .do-bgm-btn.primary.workout { background: #85B7EB; color: #042C53; border-color: #85B7EB; }
+  .do-bgm-btn.primary.workout:hover { background: #B5D4F4; }
+  .do-bgm-btn.active.door { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
+  .do-bgm-btn.active.workout { background: #85B7EB; color: #042C53; border-color: #85B7EB; }
+  .do-bgm-bar-fill.door { background: #5DCAA5; }
+  .do-bgm-bar-fill.workout { background: #85B7EB; }
+  .do-bgm-vol-fill.door { background: #5DCAA5; }
+  .do-bgm-vol-fill.workout { background: #85B7EB; }
+  .do-bgm-vol-thumb.door { background: #5DCAA5; }
+  .do-bgm-vol-thumb.workout { background: #85B7EB; }
+  /* BGMカード共通 */
+  .do-bgm-card { padding: 12px; }
   .do-card {
     background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px; padding: 12px;
     transition: border-color 0.15s, background 0.15s;
@@ -1106,49 +1134,90 @@
         <div class="do-clock-next-name" id="doNextName">予定なし</div>
         <div class="do-clock-next-eta" id="doNextEta">--:--</div>
       </div>
-      <!-- BGM -->
-      <div class="do-card" id="doBgmCard">
+      <!-- DOOR OPEN BGM -->
+      <div class="do-card do-bgm-card" id="doBgmCardDoor" data-slot="door">
         <div class="do-bgm-row">
-          <span class="do-card-head" style="margin:0;">BGM</span>
-          <span class="do-bgm-name" id="doBgmName">— ファイル未読込</span>
-          <button class="do-bgm-load" onclick="doBgmLoad()" title="WAV / MP3 / M4A / OGG / FLAC / AAC 対応">LOAD</button>
-          <button class="do-bgm-load" onclick="doBgmClear()" style="margin-left:4px;">CLEAR</button>
+          <span class="do-bgm-tag tag-door">DOOR OPEN</span>
+          <span class="do-bgm-sub">客入れ</span>
+          <button class="do-bgm-load" onclick="doBgmLoad('door')" title="WAV / MP3 / M4A / OGG / FLAC / AAC 対応">LOAD</button>
+          <button class="do-bgm-load" onclick="doBgmClear('door')" style="margin-left:4px;">CLEAR</button>
         </div>
+        <div class="do-bgm-name-row"><span class="do-bgm-name" id="doBgmNameDoor">— ファイル未読込</span></div>
         <div class="do-bgm-controls">
-          <button class="do-bgm-btn primary" id="doBgmPlayBtn" onclick="doBgmTogglePlay()">▶</button>
-          <button class="do-bgm-btn" onclick="doBgmStop()" title="停止">■</button>
-          <button class="do-bgm-btn active" id="doBgmLoopBtn" onclick="doBgmToggleLoop()" title="ループ">⟲</button>
-          <div class="do-bgm-progress">
-            <div class="do-bgm-time" id="doBgmTime">--:-- / --:--</div>
-            <div class="do-bgm-bar"><div class="do-bgm-bar-fill" id="doBgmBarFill"></div></div>
-          </div>
+          <button class="do-bgm-btn primary door" id="doBgmPlayBtnDoor" onclick="doBgmTogglePlay('door')" title="再生／一時停止">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" id="doBgmPlayIconDoor"><polygon points="7,5 19,12 7,19"/></svg>
+          </button>
+          <button class="do-bgm-btn" onclick="doBgmStop('door')" title="停止">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          </button>
+          <button class="do-bgm-btn active door" id="doBgmLoopBtnDoor" onclick="doBgmToggleLoop('door')" title="ループ">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="17 1 21 5 17 9"/>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+              <polyline points="7 23 3 19 7 15"/>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+            </svg>
+          </button>
         </div>
+        <div class="do-bgm-bar"><div class="do-bgm-bar-fill door" id="doBgmBarFillDoor"></div></div>
+        <div class="do-bgm-time" id="doBgmTimeDoor">--:-- / --:--</div>
         <div class="do-bgm-vol">
           <span class="do-bgm-vol-label">VOL</span>
-          <div class="do-bgm-vol-slider" id="doBgmVolSlider">
-            <div class="do-bgm-vol-fill" id="doBgmVolFill" style="width:35%;"></div>
-            <div class="do-bgm-vol-thumb" id="doBgmVolThumb" style="left:35%;"></div>
+          <div class="do-bgm-vol-slider door" id="doBgmVolSliderDoor">
+            <div class="do-bgm-vol-fill door" id="doBgmVolFillDoor" style="width:50%;"></div>
+            <div class="do-bgm-vol-thumb door" id="doBgmVolThumbDoor" style="left:50%;"></div>
           </div>
-          <span class="do-bgm-vol-db" id="doBgmVolDb">-3.5</span>
+          <span class="do-bgm-vol-db" id="doBgmVolDbDoor">0.0</span>
         </div>
       </div>
-      <!-- DUCK -->
-      <div class="do-card">
-        <div class="do-card-head">DUCK 設定</div>
-        <div class="do-duck-row">
-          <span class="do-duck-label">下げ幅</span>
-          <span class="do-duck-value" id="doDuckDepthVal">-6.0 dB</span>
+      <!-- WORKOUT BGM -->
+      <div class="do-card do-bgm-card" id="doBgmCardWorkout" data-slot="workout">
+        <div class="do-bgm-row">
+          <span class="do-bgm-tag tag-workout">WORKOUT</span>
+          <span class="do-bgm-sub">客出し</span>
+          <button class="do-bgm-load" onclick="doBgmLoad('workout')" title="WAV / MP3 / M4A / OGG / FLAC / AAC 対応">LOAD</button>
+          <button class="do-bgm-load" onclick="doBgmClear('workout')" style="margin-left:4px;">CLEAR</button>
         </div>
-        <div class="do-duck-bar" id="doDuckDepthBar"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:30%;"></div></div>
-        <div class="do-duck-row">
-          <span class="do-duck-label">フェード</span>
-          <div style="display:flex; align-items:center; gap:5px;">
-            <input type="number" id="doDuckFadeInput" min="0" max="30" step="0.1" value="0.8" class="do-duck-fade-input">
-            <span style="font-size:11px; color:#8A8A92;">秒</span>
+        <div class="do-bgm-name-row"><span class="do-bgm-name" id="doBgmNameWorkout">— ファイル未読込</span></div>
+        <div class="do-bgm-controls">
+          <button class="do-bgm-btn primary workout" id="doBgmPlayBtnWorkout" onclick="doBgmTogglePlay('workout')" title="再生／一時停止">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" id="doBgmPlayIconWorkout"><polygon points="7,5 19,12 7,19"/></svg>
+          </button>
+          <button class="do-bgm-btn" onclick="doBgmStop('workout')" title="停止">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+          </button>
+          <button class="do-bgm-btn active workout" id="doBgmLoopBtnWorkout" onclick="doBgmToggleLoop('workout')" title="ループ">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="17 1 21 5 17 9"/>
+              <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+              <polyline points="7 23 3 19 7 15"/>
+              <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+            </svg>
+          </button>
+        </div>
+        <div class="do-bgm-bar"><div class="do-bgm-bar-fill workout" id="doBgmBarFillWorkout"></div></div>
+        <div class="do-bgm-time" id="doBgmTimeWorkout">--:-- / --:--</div>
+        <div class="do-bgm-vol">
+          <span class="do-bgm-vol-label">VOL</span>
+          <div class="do-bgm-vol-slider workout" id="doBgmVolSliderWorkout">
+            <div class="do-bgm-vol-fill workout" id="doBgmVolFillWorkout" style="width:50%;"></div>
+            <div class="do-bgm-vol-thumb workout" id="doBgmVolThumbWorkout" style="left:50%;"></div>
           </div>
+          <span class="do-bgm-vol-db" id="doBgmVolDbWorkout">0.0</span>
         </div>
-        <div style="font-size:9px; color:#8A8A92; margin-top:4px;">予定時刻にナレ頭がくるよう逆算します</div>
       </div>
+    </div>
+
+    <!-- DUCK 設定（横長帯） -->
+    <div class="do-card do-duck-strip">
+      <span class="do-card-head" style="margin:0;">DUCK 設定</span>
+      <span class="do-duck-label">下げ幅</span>
+      <div class="do-duck-bar" id="doDuckDepthBar" style="flex:1;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div></div>
+      <span class="do-duck-value" id="doDuckDepthVal">-6.0 dB</span>
+      <span class="do-duck-label">フェード</span>
+      <input type="number" id="doDuckFadeInput" min="0" max="30" step="0.1" value="0.8" class="do-duck-fade-input">
+      <span style="font-size:11px; color:#8A8A92;">秒</span>
+      <span style="font-size:9px; color:#8A8A92; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
     </div>
 
     <!-- LIBRARY -->
@@ -1236,18 +1305,20 @@ const state = {
   // DOOR OPEN MODE
   appMode: 'sampler', // 'sampler' | 'door'
   door: {
+    // 2系統の BGM：door = 客入れ、workout = 客出し
     bgm: {
-      sampleId: null,
-      sampleName: null,
-      audioBuffer: null,
-      vol: 1.0,            // 0dB（リニア 1.0 = 原音）
-      loop: true,
-      // runtime (not persisted)
-      source: null,
-      gain: null,
-      startedAt: 0,
-      pausedAt: 0,
-      isPlaying: false,
+      door: {
+        sampleId: null, sampleName: null, audioBuffer: null,
+        vol: 1.0, loop: true,
+        audioElement: null, mediaSource: null, objectUrl: null, duration: NaN,
+        isPlaying: false,
+      },
+      workout: {
+        sampleId: null, sampleName: null, audioBuffer: null,
+        vol: 1.0, loop: true,
+        audioElement: null, mediaSource: null, objectUrl: null, duration: NaN,
+        isPlaying: false,
+      },
     },
     library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer, level}
     schedule: [], // [{id, time:'HH:MM:SS', chain:[libIdx,...], played:bool}]
@@ -1299,9 +1370,12 @@ let analyserL, analyserR;
 let splitter;
 let isPaused = false;
 // DOOR OPEN gain nodes
-let doBgmGain;       // BGM ユーザー音量
-let doBgmDuckGain;   // DUCK 専用 gain (1.0=通常, 0.5=-6dB ダック中)
-let doAnnGain;       // アナウンス出力
+let doBgmGainDoor;     // ドアオープン BGM ユーザー音量
+let doBgmGainWorkout;  // ワークアウト BGM ユーザー音量
+let doBgmDuckGain;     // 両 BGM 共通の DUCK gain (1.0=通常, 0.5=-6dB ダック中)
+let doAnnGain;         // アナウンス出力
+// 互換用エイリアス（旧コードで doBgmGain を参照しているところ向け）
+let doBgmGain;
 
 function initAudio() {
   if (ctx) return;
@@ -1321,17 +1395,22 @@ function initAudio() {
   masterGain.connect(ctx.destination);
 
   // DOOR OPEN audio chain
-  // BGM source -> doBgmGain (user vol) -> doBgmDuckGain (duck) -> masterGain
-  // Announce source -> doAnnGain (master mix) -> masterGain
-  doBgmGain = ctx.createGain();
-  doBgmGain.gain.value = state.door.bgm.vol;
+  // 各 BGM source -> doBgmGain{Door,Workout} -> doBgmDuckGain -> masterGain
+  // Announce source -> doAnnGain -> masterGain
+  doBgmGainDoor = ctx.createGain();
+  doBgmGainDoor.gain.value = state.door.bgm.door.vol;
+  doBgmGainWorkout = ctx.createGain();
+  doBgmGainWorkout.gain.value = state.door.bgm.workout.vol;
   doBgmDuckGain = ctx.createGain();
   doBgmDuckGain.gain.value = 1.0;
   doAnnGain = ctx.createGain();
   doAnnGain.gain.value = 1.0;
-  doBgmGain.connect(doBgmDuckGain);
+  doBgmGainDoor.connect(doBgmDuckGain);
+  doBgmGainWorkout.connect(doBgmDuckGain);
   doBgmDuckGain.connect(masterGain);
   doAnnGain.connect(masterGain);
+  // 旧コード互換（DOOR 系を doBgmGain でも参照可能に）
+  doBgmGain = doBgmGainDoor;
 
   meterLoop();
 }
@@ -1495,22 +1574,25 @@ function fadeOutAll() {
   state.banks.forEach(b => b.pads.forEach(p => {
     if (p.isPlaying) fadeOutPad(p, sec);
   }));
-  // 2) DOOR OPEN: BGM
-  if (state.door && state.door.bgm && state.door.bgm.isPlaying && doBgmGain && ctx) {
-    const t = ctx.currentTime;
-    const startVal = doBgmGain.gain.value;
-    try {
-      doBgmGain.gain.cancelScheduledValues(t);
-      doBgmGain.gain.setValueAtTime(startVal, t);
-      doBgmGain.gain.linearRampToValueAtTime(0.0001, t + sec);
-      // アンチクリック：sec から sec+30ms で完全に 0 まで
-      doBgmGain.gain.linearRampToValueAtTime(0, t + sec + 0.03);
-    } catch(e) {}
-    setTimeout(() => {
-      doBgmStop();
-      if (doBgmGain) doBgmGain.gain.value = state.door.bgm.vol;
-    }, sec * 1000 + 120);
-  }
+  // 2) DOOR OPEN: BGM（DOOR / WORKOUT 両方）
+  BGM_SLOTS.forEach(slot => {
+    const b = _bgmObj(slot);
+    const g = _bgmUserGain(slot);
+    if (b && b.isPlaying && g && ctx) {
+      const t = ctx.currentTime;
+      const startVal = g.gain.value;
+      try {
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(startVal, t);
+        g.gain.linearRampToValueAtTime(0.0001, t + sec);
+        g.gain.linearRampToValueAtTime(0, t + sec + 0.03);
+      } catch(e) {}
+      setTimeout(() => {
+        doBgmStop(slot);
+        if (g) g.gain.value = b.vol;
+      }, sec * 1000 + 120);
+    }
+  });
   // 3) DOOR OPEN: announce chain + preview
   if (state.door && (state.door.activeAnnSource || state.door.previewSource) && doAnnGain && ctx) {
     const t = ctx.currentTime;
@@ -3254,65 +3336,47 @@ function setAppMode(m) {
 }
 
 // ---- BGM ---- (MediaElementSource方式：大容量ファイルでも軽量)
-async function doBgmLoadFile(f) {
+// slot ('door' | 'workout') ベースの BGM 操作
+const BGM_SLOTS = ['door', 'workout'];
+function _bgmObj(slot) { return state.door.bgm[slot]; }
+function _bgmUserGain(slot) { return slot === 'workout' ? doBgmGainWorkout : doBgmGainDoor; }
+function _bgmIdSuffix(slot) { return slot === 'workout' ? 'Workout' : 'Door'; }
+
+async function doBgmLoadFile(slot, f) {
   if (!f) return;
   try {
     if (!ctx) initAudio();
     if (ctx.state === 'suspended') await ctx.resume();
     const arrBuf = await f.arrayBuffer();
-    const id = `door-bgm-${Date.now()}`;
-    // IndexedDB に保存（次回起動時の復元用）
-    try {
-      await saveSampleToDB(id, arrBuf, f.name);
-    } catch(e) {
-      console.warn('saveSampleToDB failed (likely quota):', e);
-      // 保存失敗してもメモリ上では再生可能なので続行
-    }
-    // 既存の再生を停止＆解放
-    _doBgmDetach();
-    // Blob URL を作って HTMLAudioElement に（MP3/WAV/M4A/OGG/FLAC 等を MIME で正しく判定）
+    const id = `door-bgm-${slot}-${Date.now()}`;
+    try { await saveSampleToDB(id, arrBuf, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); }
+    _doBgmDetach(slot);
     const blob = new Blob([arrBuf], { type: guessAudioMime(f.name, f.type) });
     const url = URL.createObjectURL(blob);
     const audio = new Audio();
     audio.src = url;
-    audio.loop = state.door.bgm.loop;
+    const b = _bgmObj(slot);
+    audio.loop = b.loop;
     audio.preload = 'auto';
-    state.door.bgm.sampleId = id;
-    state.door.bgm.sampleName = f.name;
-    state.door.bgm.audioBuffer = null;       // 旧方式は使わない
-    state.door.bgm.audioElement = audio;
-    state.door.bgm.objectUrl = url;
-    state.door.bgm.duration = NaN;
-    audio.addEventListener('loadedmetadata', () => {
-      state.door.bgm.duration = audio.duration;
-      doRenderBgm();
-    });
-    audio.addEventListener('ended', () => {
-      if (!audio.loop) {
-        state.door.bgm.isPlaying = false;
-        doRenderBgm();
-      }
-    });
-    audio.addEventListener('error', (e) => {
-      console.warn('BGM audio element error', e);
-      showToast('BGM 再生エラー: ファイル形式を確認してください');
-    });
-    // Audio Graph に繋ぐ
+    b.sampleId = id; b.sampleName = f.name; b.audioBuffer = null;
+    b.audioElement = audio; b.objectUrl = url; b.duration = NaN;
+    audio.addEventListener('loadedmetadata', () => { b.duration = audio.duration; doRenderBgm(slot); });
+    audio.addEventListener('ended', () => { if (!audio.loop) { b.isPlaying = false; doRenderBgm(slot); } });
+    audio.addEventListener('error', e => { console.warn('BGM error', e); showToast('BGM 再生エラー'); });
     const ms = ctx.createMediaElementSource(audio);
-    ms.connect(doBgmGain);
-    state.door.bgm.mediaSource = ms;
-    doRenderBgm();
+    ms.connect(_bgmUserGain(slot));
+    b.mediaSource = ms;
+    doRenderBgm(slot);
     doSave();
-    showToast(`BGM 読込: ${f.name}（${(arrBuf.byteLength/1024/1024).toFixed(1)} MB）`);
+    showToast(`${slot === 'workout' ? 'WORKOUT' : 'DOOR OPEN'} BGM 読込: ${f.name}（${(arrBuf.byteLength/1024/1024).toFixed(1)} MB）`);
   } catch (err) {
     console.error('BGM 読込失敗', err);
     showToast('BGM 読込失敗: ' + (err && err.message || err));
   }
 }
 
-// BGM の Audio Element / MediaElementSource / Blob URL を切り離して開放
-function _doBgmDetach() {
-  const b = state.door.bgm;
+function _doBgmDetach(slot) {
+  const b = _bgmObj(slot);
   if (b.audioElement) {
     try { b.audioElement.pause(); } catch(e) {}
     try { b.audioElement.src = ''; } catch(e) {}
@@ -3329,129 +3393,151 @@ function _doBgmDetach() {
   b.isPlaying = false;
 }
 
-function doBgmLoad() {
+function doBgmLoad(slot) {
+  if (!slot) slot = 'door';
   const inp = document.getElementById('doFileInput');
   inp.onchange = async (e) => {
     const f = e.target.files[0];
-    await doBgmLoadFile(f);
+    await doBgmLoadFile(slot, f);
     inp.value = '';
   };
   inp.click();
 }
 
-// BGM card に Drag & Drop バインド
+// BGM card に Drag & Drop バインド（2枚それぞれ）
 function bindDoBgmDrop() {
-  const card = document.getElementById('doBgmCard');
-  if (!card) return;
-  card.addEventListener('dragover', e => {
-    const types = [...(e.dataTransfer.types || [])];
-    if (types.includes('Files')) {
+  BGM_SLOTS.forEach(slot => {
+    const card = document.getElementById('doBgmCard' + _bgmIdSuffix(slot));
+    if (!card) return;
+    card.addEventListener('dragover', e => {
+      const types = [...(e.dataTransfer.types || [])];
+      if (types.includes('Files')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        card.classList.add('drop-over');
+      }
+    });
+    card.addEventListener('dragleave', e => {
+      if (e.target === card) card.classList.remove('drop-over');
+    });
+    card.addEventListener('drop', async e => {
       e.preventDefault();
       e.stopPropagation();
-      e.dataTransfer.dropEffect = 'copy';
-      card.classList.add('drop-over');
-    }
-  });
-  card.addEventListener('dragleave', e => {
-    // only remove if leaving the card itself
-    if (e.target === card) card.classList.remove('drop-over');
-  });
-  card.addEventListener('drop', async e => {
-    e.preventDefault();
-    e.stopPropagation();
-    card.classList.remove('drop-over');
-    const f = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (f) await doBgmLoadFile(f);
+      card.classList.remove('drop-over');
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) await doBgmLoadFile(slot, f);
+    });
   });
 }
 
-function doBgmClear() {
-  doBgmStop();
-  _doBgmDetach();
-  state.door.bgm.sampleId = null;
-  state.door.bgm.sampleName = null;
-  state.door.bgm.audioBuffer = null;
-  state.door.bgm.duration = NaN;
-  doRenderBgm();
+function doBgmClear(slot) {
+  if (!slot) slot = 'door';
+  doBgmStop(slot);
+  _doBgmDetach(slot);
+  const b = _bgmObj(slot);
+  b.sampleId = null; b.sampleName = null; b.audioBuffer = null; b.duration = NaN;
+  doRenderBgm(slot);
   doSave();
 }
 
-function doBgmTogglePlay() {
-  const b = state.door.bgm;
-  if (!b.audioElement) {
-    showToast('BGM ファイルを LOAD してください');
-    return;
-  }
-  if (b.isPlaying) doBgmPause(); else doBgmPlay();
+function doBgmTogglePlay(slot) {
+  if (!slot) slot = 'door';
+  const b = _bgmObj(slot);
+  if (!b.audioElement) { showToast('BGM ファイルを LOAD してください'); return; }
+  if (b.isPlaying) doBgmPause(slot); else doBgmPlay(slot);
 }
 
-function doBgmPlay() {
-  const b = state.door.bgm;
+function doBgmPlay(slot) {
+  if (!slot) slot = 'door';
+  const b = _bgmObj(slot);
   if (!b.audioElement || !ctx) return;
   if (ctx.state === 'suspended') ctx.resume();
-  if (doBgmGain) doBgmGain.gain.value = b.vol;
+  const g = _bgmUserGain(slot);
+  if (g) g.gain.value = b.vol;
   b.audioElement.loop = b.loop;
   const p = b.audioElement.play();
   if (p && p.catch) p.catch(err => console.warn('BGM play() err', err));
   b.isPlaying = true;
-  doRenderBgm();
+  doRenderBgm(slot);
 }
 
-function doBgmPause() {
-  const b = state.door.bgm;
+function doBgmPause(slot) {
+  if (!slot) slot = 'door';
+  const b = _bgmObj(slot);
   if (!b.audioElement) return;
   try { b.audioElement.pause(); } catch(e) {}
   b.isPlaying = false;
-  doRenderBgm();
+  doRenderBgm(slot);
 }
 
-function doBgmStop() {
-  const b = state.door.bgm;
+function doBgmStop(slot) {
+  if (!slot) slot = 'door';
+  const b = _bgmObj(slot);
   if (b.audioElement) {
     try { b.audioElement.pause(); } catch(e) {}
     try { b.audioElement.currentTime = 0; } catch(e) {}
   }
   b.isPlaying = false;
-  doRenderBgm();
+  doRenderBgm(slot);
 }
 
-function doBgmToggleLoop() {
-  state.door.bgm.loop = !state.door.bgm.loop;
-  if (state.door.bgm.audioElement) state.door.bgm.audioElement.loop = state.door.bgm.loop;
-  doRenderBgm();
+function doBgmToggleLoop(slot) {
+  if (!slot) slot = 'door';
+  const b = _bgmObj(slot);
+  b.loop = !b.loop;
+  if (b.audioElement) b.audioElement.loop = b.loop;
+  doRenderBgm(slot);
   doSave();
 }
 
-function doBgmSetVol(linear) {
+function doBgmSetVol(slot, linear) {
+  if (typeof slot === 'number' || (typeof slot === 'string' && /^\d/.test(slot))) {
+    // 旧シグネチャ doBgmSetVol(linear) を後方互換に
+    linear = parseFloat(slot); slot = 'door';
+  }
+  if (!slot) slot = 'door';
   let v = Math.max(0, Math.min(2.0, linear));
-  v = snapToUnity(v); // 0dB スナップ（どの経路でも効く）
-  state.door.bgm.vol = v;
-  if (doBgmGain) doBgmGain.gain.value = v;
-  doRenderBgm();
+  v = snapToUnity(v);
+  const b = _bgmObj(slot);
+  b.vol = v;
+  const g = _bgmUserGain(slot);
+  if (g) g.gain.value = v;
+  doRenderBgm(slot);
   doSave();
 }
 
-function doRenderBgm() {
-  const b = state.door.bgm;
-  document.getElementById('doBgmName').textContent = b.sampleName || '— ファイル未読込';
-  const playBtn = document.getElementById('doBgmPlayBtn');
-  playBtn.innerHTML = b.isPlaying ? '‖' : '▶';
-  const loopBtn = document.getElementById('doBgmLoopBtn');
-  loopBtn.classList.toggle('active', b.loop);
+function doRenderBgm(slot) {
+  if (!slot) { BGM_SLOTS.forEach(doRenderBgm); return; }
+  const b = _bgmObj(slot);
+  const sf = _bgmIdSuffix(slot);
+  const nameEl = document.getElementById('doBgmName' + sf);
+  if (nameEl) nameEl.textContent = b.sampleName || '— ファイル未読込';
+  const playBtn = document.getElementById('doBgmPlayBtn' + sf);
+  if (playBtn) {
+    playBtn.innerHTML = b.isPlaying
+      ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>`;
+  }
+  const loopBtn = document.getElementById('doBgmLoopBtn' + sf);
+  if (loopBtn) loopBtn.classList.toggle('active', b.loop);
   const db = linToDb(b.vol);
-  document.getElementById('doBgmVolDb').textContent = dbToStr(db);
+  const dbEl = document.getElementById('doBgmVolDb' + sf);
+  if (dbEl) dbEl.textContent = dbToStr(db);
   const volPct = (b.vol / 2.0) * 100;
-  document.getElementById('doBgmVolFill').style.width = volPct + '%';
-  const bgmThumb = document.getElementById('doBgmVolThumb');
-  if (bgmThumb) bgmThumb.style.left = volPct + '%';
+  const fill = document.getElementById('doBgmVolFill' + sf);
+  const thumb = document.getElementById('doBgmVolThumb' + sf);
+  if (fill) fill.style.width = volPct + '%';
+  if (thumb) thumb.style.left = volPct + '%';
+  const timeEl = document.getElementById('doBgmTime' + sf);
+  const barFill = document.getElementById('doBgmBarFill' + sf);
   if (b.audioElement) {
     const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
     const cur = b.audioElement.currentTime || 0;
-    document.getElementById('doBgmTime').textContent =
-      `${fmtTime(cur)} / ${b.loop ? 'loop' : fmtTime(total)}`;
+    if (timeEl) timeEl.textContent = `${fmtTime(cur)} / ${b.loop ? 'loop' : fmtTime(total)}`;
   } else {
-    document.getElementById('doBgmTime').textContent = '--:-- / --:--';
-    document.getElementById('doBgmBarFill').style.width = '0%';
+    if (timeEl) timeEl.textContent = '--:-- / --:--';
+    if (barFill) barFill.style.width = '0%';
   }
 }
 
@@ -3498,43 +3584,50 @@ function guessAudioMime(name, fallbackType) {
   return map[ext] || 'audio/mpeg';
 }
 
-// BGM progress loop (when DOOR OPEN tab visible)
+// BGM progress loop (when DOOR OPEN tab visible) — 2系統対応
 function doBgmProgressLoop() {
-  const b = state.door.bgm;
-  if (state.appMode === 'door' && b.isPlaying && b.audioElement) {
-    const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
-    const cur = b.audioElement.currentTime || 0;
-    if (total > 0) {
-      const pct = Math.min(100, (cur / total) * 100);
-      const fill = document.getElementById('doBgmBarFill');
-      const time = document.getElementById('doBgmTime');
-      if (fill) fill.style.width = pct + '%';
-      if (time) time.textContent = `${fmtTime(cur)} / ${b.loop ? 'loop' : fmtTime(total)}`;
-    }
+  if (state.appMode === 'door') {
+    BGM_SLOTS.forEach(slot => {
+      const b = _bgmObj(slot);
+      if (b.isPlaying && b.audioElement) {
+        const sf = _bgmIdSuffix(slot);
+        const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
+        const cur = b.audioElement.currentTime || 0;
+        if (total > 0) {
+          const pct = Math.min(100, (cur / total) * 100);
+          const fill = document.getElementById('doBgmBarFill' + sf);
+          const time = document.getElementById('doBgmTime' + sf);
+          if (fill) fill.style.width = pct + '%';
+          if (time) time.textContent = `${fmtTime(cur)} / ${b.loop ? 'loop' : fmtTime(total)}`;
+        }
+      }
+    });
   }
   requestAnimationFrame(doBgmProgressLoop);
 }
 
 // BGM vol slider bind
 function bindDoBgmVol() {
-  const slider = document.getElementById('doBgmVolSlider');
-  if (!slider) return;
-  const update = (clientX) => {
-    const rect = slider.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    doBgmSetVol(snapToUnity(pct * 2.0));
-  };
-  slider.addEventListener('pointerdown', e => {
-    e.preventDefault();
-    try { slider.setPointerCapture(e.pointerId); } catch(err) {}
-    update(e.clientX);
-    const mv = ev => { ev.preventDefault(); update(ev.clientX); };
-    const up = () => {
-      window.removeEventListener('pointermove', mv);
-      window.removeEventListener('pointerup', up);
+  BGM_SLOTS.forEach(slot => {
+    const slider = document.getElementById('doBgmVolSlider' + _bgmIdSuffix(slot));
+    if (!slider) return;
+    const update = (clientX) => {
+      const rect = slider.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      doBgmSetVol(slot, pct * 2.0);
     };
-    window.addEventListener('pointermove', mv);
-    window.addEventListener('pointerup', up);
+    slider.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      try { slider.setPointerCapture(e.pointerId); } catch(err) {}
+      update(e.clientX);
+      const mv = ev => { ev.preventDefault(); update(ev.clientX); };
+      const up = () => {
+        window.removeEventListener('pointermove', mv);
+        window.removeEventListener('pointerup', up);
+      };
+      window.addEventListener('pointermove', mv);
+      window.addEventListener('pointerup', up);
+    });
   });
 }
 
@@ -3746,10 +3839,9 @@ function doLibPreview(slotIdx) {
     return;
   }
   if (ctx.state === 'suspended') ctx.resume();
-  // 本番想定で鳴らす：BGMが用意済みなら自動再生（DUCKの効きを確認できる）
-  if (state.door.bgm.audioElement && !state.door.bgm.isPlaying) {
-    doBgmPlay();
-  }
+  // 本番想定で鳴らす：DOOR BGM が用意済みなら自動再生（DUCKの効きを確認できる）
+  const doorB = state.door.bgm.door;
+  if (doorB.audioElement && !doorB.isPlaying) doBgmPlay('door');
   if (doAnnGain && ctx) {
     const t0 = ctx.currentTime;
     try {
@@ -3763,7 +3855,7 @@ function doLibPreview(slotIdx) {
   state.door.previewSource = null;
   state.door.previewGain = null;
   doRenderLibrary();
-  if (!state.door.bgm.audioElement) {
+  if (!doorB.audioElement && !state.door.bgm.workout.audioElement) {
     showToast('BGM 未読込：DUCK 効果は確認できません（影アナのみ再生）');
   }
   // 2. フェード完了後にナレ再生
@@ -4413,10 +4505,18 @@ function doSave() {
     localStorage.setItem('samplerStudioDoor', JSON.stringify({
       appMode: state.appMode,
       bgm: {
-        sampleId: state.door.bgm.sampleId,
-        sampleName: state.door.bgm.sampleName,
-        vol: state.door.bgm.vol,
-        loop: state.door.bgm.loop,
+        door: {
+          sampleId: state.door.bgm.door.sampleId,
+          sampleName: state.door.bgm.door.sampleName,
+          vol: state.door.bgm.door.vol,
+          loop: state.door.bgm.door.loop,
+        },
+        workout: {
+          sampleId: state.door.bgm.workout.sampleId,
+          sampleName: state.door.bgm.workout.sampleName,
+          vol: state.door.bgm.workout.vol,
+          loop: state.door.bgm.workout.loop,
+        },
       },
       library: state.door.library.map(it => it ? ({
         sampleId: it.sampleId, sampleName: it.sampleName, level: it.level ?? 1.0,
@@ -4435,10 +4535,22 @@ function doLoad() {
     if (!s) return;
     if (s.appMode) state.appMode = s.appMode;
     if (s.bgm) {
-      state.door.bgm.sampleId = s.bgm.sampleId || null;
-      state.door.bgm.sampleName = s.bgm.sampleName || null;
-      state.door.bgm.vol = s.bgm.vol ?? 1.0;
-      state.door.bgm.loop = s.bgm.loop ?? true;
+      // 新形式: { door: {...}, workout: {...} }
+      if (s.bgm.door || s.bgm.workout) {
+        ['door','workout'].forEach(slot => {
+          const sd = s.bgm[slot] || {};
+          state.door.bgm[slot].sampleId = sd.sampleId || null;
+          state.door.bgm[slot].sampleName = sd.sampleName || null;
+          state.door.bgm[slot].vol = sd.vol ?? 1.0;
+          state.door.bgm[slot].loop = sd.loop ?? true;
+        });
+      } else {
+        // 旧形式 (v3.x): 単一 BGM → DOOR に移行
+        state.door.bgm.door.sampleId = s.bgm.sampleId || null;
+        state.door.bgm.door.sampleName = s.bgm.sampleName || null;
+        state.door.bgm.door.vol = s.bgm.vol ?? 1.0;
+        state.door.bgm.door.loop = s.bgm.loop ?? true;
+      }
     }
     if (Array.isArray(s.library)) {
       for (let i = 0; i < 4; i++) {
@@ -4469,33 +4581,31 @@ function doLoad() {
 
 async function doRestoreAudioBuffers() {
   if (!db || !ctx) return;
-  // BGM — MediaElementSource 方式で復元（重いファイルでも軽量）
-  if (state.door.bgm.sampleId) {
+  // BGM 復元（DOOR / WORKOUT 両方）
+  for (const slot of BGM_SLOTS) {
+    const b = _bgmObj(slot);
+    if (!b.sampleId) continue;
     try {
-      const rec = await getSampleFromDB(state.door.bgm.sampleId);
+      const rec = await getSampleFromDB(b.sampleId);
       if (rec && rec.data) {
-        _doBgmDetach();
-        // ファイル名・rec.type から MIME を推測
-        const mime = guessAudioMime(rec.name || state.door.bgm.sampleName, rec.type);
+        _doBgmDetach(slot);
+        const mime = guessAudioMime(rec.name || b.sampleName, rec.type);
         const blob = new Blob([rec.data], { type: mime });
         const url = URL.createObjectURL(blob);
         const audio = new Audio();
         audio.src = url;
-        audio.loop = state.door.bgm.loop;
+        audio.loop = b.loop;
         audio.preload = 'auto';
-        audio.addEventListener('loadedmetadata', () => {
-          state.door.bgm.duration = audio.duration;
-          doRenderBgm();
-        });
-        audio.addEventListener('error', e => console.warn('BGM restore audio err', e));
-        state.door.bgm.audioElement = audio;
-        state.door.bgm.objectUrl = url;
-        state.door.bgm.duration = NaN;
+        audio.addEventListener('loadedmetadata', () => { b.duration = audio.duration; doRenderBgm(slot); });
+        audio.addEventListener('error', e => console.warn('BGM restore audio err', slot, e));
+        b.audioElement = audio;
+        b.objectUrl = url;
+        b.duration = NaN;
         const ms = ctx.createMediaElementSource(audio);
-        ms.connect(doBgmGain);
-        state.door.bgm.mediaSource = ms;
+        ms.connect(_bgmUserGain(slot));
+        b.mediaSource = ms;
       }
-    } catch(e) { console.warn('BGM restore failed', e); }
+    } catch(e) { console.warn('BGM restore failed', slot, e); }
   }
   // Library
   for (let i = 0; i < 4; i++) {
