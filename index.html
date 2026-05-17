@@ -222,6 +222,17 @@
   .btn-stop:hover { background: rgba(226,75,74,0.1); }
   .btn-pause { border-color: #EF9F27; color: #EF9F27; }
   .btn-pause:hover { background: rgba(239,159,39,0.1); }
+  /* Bigger STOP / PAUSE */
+  .btn-outline.btn-big {
+    padding: 14px 6px; font-size: 13px; font-weight: 500;
+    letter-spacing: 1.5px; border-width: 1px;
+  }
+  /* Huge FADE OUT */
+  .btn-primary.big-fade.huge-fade {
+    padding: 22px 12px; font-size: 16px; font-weight: 600;
+    letter-spacing: 3px; gap: 10px;
+    box-shadow: 0 3px 14px rgba(93,202,165,0.45);
+  }
 
   /* LEARN BADGES */
   .badge {
@@ -599,6 +610,151 @@
 
   /* MISC */
   .empty-grid-msg { text-align: center; padding: 20px; color: #5A5A60; font-size: 11px; }
+
+  /* APP MODE TABS (SAMPLER / DOOR OPEN) */
+  .app-mode-tabs {
+    display: flex; gap: 4px; align-items: center;
+    padding: 6px; background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px;
+  }
+  .mode-tab {
+    background: #22222A; border: none; padding: 8px 22px;
+    font-size: 11px; letter-spacing: 1.5px; color: #8A8A92;
+    border-radius: 4px; cursor: pointer; font-family: inherit;
+  }
+  .mode-tab:hover { background: #2D2D35; color: #E6E6EA; }
+  .mode-tab.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+  .app-mode-tabs .status { margin-left: auto; padding-right: 6px; }
+
+  /* DOOR OPEN PAGE */
+  #doorPage { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; }
+  .do-top { display: grid; grid-template-columns: 200px 1fr 220px; gap: 10px; }
+  .do-card {
+    background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px; padding: 12px;
+  }
+  .do-card-head {
+    font-size: 9px; color: #8A8A92; letter-spacing: 2px; margin-bottom: 8px;
+  }
+  /* NOW / NEXT */
+  .do-clock-now { font-family: 'SF Mono','Courier',monospace; font-size: 28px; font-weight: 500; letter-spacing: 1px; }
+  .do-clock-divider { height: 0.5px; background: #2A2A30; margin: 10px 0; }
+  .do-clock-next-label { font-size: 9px; color: #8A8A92; letter-spacing: 1.5px; margin-bottom: 3px; }
+  .do-clock-next-name { font-size: 12px; color: #E6E6EA; min-height: 14px; }
+  .do-clock-next-eta { font-family: 'SF Mono','Courier',monospace; font-size: 18px; font-weight: 500; color: #5DCAA5; margin-top: 6px; }
+
+  /* BGM */
+  .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .do-bgm-name { font-size: 11px; color: #B0B0B6; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .do-bgm-load { font-size: 9px; color: #8A8A92; cursor: pointer; padding: 4px 10px; background: #22222A; border-radius: 3px; border: none; font-family: inherit; letter-spacing: 1px; }
+  .do-bgm-load:hover { background: #2D2D35; color: #E6E6EA; }
+  .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+  .do-bgm-btn {
+    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid #2D2D35;
+    background: #22222A; color: #E6E6EA; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; font-size: 14px; font-family: inherit;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .do-bgm-btn:hover { background: #2D2D35; }
+  .do-bgm-btn.primary { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
+  .do-bgm-btn.primary:hover { background: #6FDEB8; }
+  .do-bgm-btn.active { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
+  .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+  .do-bgm-time { font-family: 'SF Mono','Courier',monospace; font-size: 10px; color: #8A8A92; }
+  .do-bgm-bar { height: 4px; background: #22222A; border-radius: 2px; overflow: hidden; }
+  .do-bgm-bar-fill { height: 100%; background: #5DCAA5; width: 0%; }
+  .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
+  .do-bgm-vol-label { font-size: 9px; color: #8A8A92; letter-spacing: 1.5px; width: 30px; }
+  .do-bgm-vol-slider { flex: 1; height: 4px; background: #22222A; border-radius: 2px; position: relative; cursor: pointer; }
+  .do-bgm-vol-fill { position: absolute; top: 0; left: 0; height: 100%; background: #5DCAA5; border-radius: 2px; pointer-events: none; }
+  .do-bgm-vol-db { font-family: 'SF Mono','Courier',monospace; font-size: 11px; min-width: 42px; text-align: right; color: #E6E6EA; }
+
+  /* DUCK */
+  .do-duck-row { display: flex; align-items: center; justify-content: space-between; }
+  .do-duck-label { font-size: 11px; color: #B0B0B6; }
+  .do-duck-value { font-family: 'SF Mono','Courier',monospace; font-size: 13px; font-weight: 500; color: #EF9F27; }
+  .do-duck-bar { height: 4px; background: #22222A; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
+  .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #EF9F27; border-radius: 2px; pointer-events: none; }
+  .do-duck-bar.gray .do-duck-bar-fill { background: #5A5A60; }
+
+  /* LIBRARY */
+  .do-lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .do-lib-slot {
+    background: #1A1A20; border: 0.5px solid #2A2A30; border-radius: 6px; padding: 10px;
+    display: flex; flex-direction: column; min-height: 72px; position: relative;
+    transition: border-color 0.15s;
+  }
+  .do-lib-slot.has-content { cursor: grab; }
+  .do-lib-slot:hover { border-color: #5DCAA5; }
+  .do-lib-slot.empty { border-style: dashed; border-color: #2D2D35; align-items: center; justify-content: center; color: #5A5A60; cursor: pointer; }
+  .do-lib-slot.empty:hover { border-color: #5DCAA5; color: #5DCAA5; }
+  .do-lib-slot.dragging { opacity: 0.4; }
+  .do-lib-slot.drop-over { border-color: #5DCAA5; background: rgba(93,202,165,0.05); }
+  .do-lib-slot-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .do-lib-id { font-size: 10px; color: #5DCAA5; letter-spacing: 1px; font-weight: 500; }
+  .do-lib-actions { display: flex; gap: 6px; }
+  .do-lib-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 0 2px; font-size: 11px; font-family: inherit; }
+  .do-lib-act:hover { color: #5DCAA5; }
+  .do-lib-act.del:hover { color: #E24B4A; }
+  .do-lib-name { font-size: 12px; font-weight: 500; color: #E6E6EA; word-break: break-all; line-height: 1.3; }
+  .do-lib-meta { font-size: 9px; color: #8A8A92; margin-top: 3px; font-family: 'SF Mono','Courier',monospace; }
+  .do-lib-empty-text { font-size: 11px; }
+
+  /* SCHEDULE */
+  .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .do-sched-list { display: flex; flex-direction: column; }
+  .do-sched-row {
+    display: grid; grid-template-columns: 110px 1fr 100px;
+    gap: 10px; align-items: center; padding: 10px 8px;
+    border-top: 0.5px solid #2A2A30;
+  }
+  .do-sched-row:first-child { border-top: none; }
+  .do-sched-row.next { background: rgba(93,202,165,0.08); border-top-color: #5DCAA5; border-radius: 4px; }
+  .do-sched-row.done { opacity: 0.35; }
+  .do-sched-row.done .do-sched-time, .do-sched-row.done .do-chip-label { text-decoration: line-through; }
+  .do-sched-row.playing { background: rgba(93,202,165,0.18); border-top-color: #5DCAA5; }
+  .do-sched-time {
+    font-family: 'SF Mono','Courier',monospace; font-size: 14px; font-weight: 500; color: #E6E6EA;
+    background: transparent; border: 0.5px solid transparent; border-radius: 3px;
+    padding: 4px 5px; width: 96px; font-family: 'SF Mono','Courier',monospace;
+  }
+  .do-sched-time:hover { border-color: #2D2D35; background: #16161B; }
+  .do-sched-time:focus { border-color: #5DCAA5; background: #16161B; outline: none; }
+  .do-chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px; padding: 2px; border-radius: 4px; transition: background 0.15s; }
+  .do-chain.drop-over { background: rgba(93,202,165,0.06); outline: 0.5px dashed #5DCAA5; }
+  .do-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #22222A; border: 0.5px solid #2D2D35; border-radius: 4px;
+    padding: 5px 10px; font-size: 11px; color: #E6E6EA; cursor: grab;
+    transition: all 0.15s;
+  }
+  .do-chip:hover { border-color: #5DCAA5; }
+  .do-chip.dragging { opacity: 0.4; }
+  .do-chip.playing { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
+  .do-chip.played { opacity: 0.4; }
+  .do-chip-id { font-size: 9px; color: #5DCAA5; font-weight: 500; }
+  .do-chip.playing .do-chip-id { color: #04342C; }
+  .do-chip-label { font-weight: 500; }
+  .do-chip-dur { font-family: 'SF Mono','Courier',monospace; font-size: 9px; color: #8A8A92; }
+  .do-chip.playing .do-chip-dur { color: #04342C; }
+  .do-chip-x { color: #5A5A60; cursor: pointer; padding: 0 2px; margin-left: 2px; font-size: 12px; }
+  .do-chip-x:hover { color: #E24B4A; }
+  .do-chip.playing .do-chip-x { color: #04342C; }
+  .do-arrow { color: #5A5A60; font-size: 11px; }
+  .do-chain-drop-hint {
+    border: 0.5px dashed #2D2D35; border-radius: 4px;
+    padding: 5px 10px; font-size: 10px; color: #5A5A60;
+  }
+  .do-sched-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .do-sched-act { background: none; border: none; color: #5A5A60; cursor: pointer; font-size: 13px; font-family: inherit; padding: 2px 6px; border-radius: 3px; }
+  .do-sched-act:hover { color: #E6E6EA; background: #22222A; }
+  .do-sched-act.del:hover { color: #E24B4A; }
+  .do-sched-add {
+    border-top: 0.5px dashed #2A2A30; padding: 12px;
+    text-align: center; color: #8A8A92; font-size: 11px; cursor: pointer; letter-spacing: 1px;
+    background: transparent; border-left: none; border-right: none; border-bottom: none;
+    width: 100%; font-family: inherit; margin-top: 6px;
+  }
+  .do-sched-add:hover { color: #5DCAA5; }
+  .do-sched-total { font-size: 9px; color: #5DCAA5; margin: 4px 0 0 118px; font-family: 'SF Mono','Courier',monospace; }
 </style>
 </head>
 <body>
@@ -620,13 +776,16 @@
     </div>
   </div>
 
-  <div class="tabbar">
+  <div class="app-mode-tabs">
+    <button class="mode-tab active" id="modeTabSampler" onclick="setAppMode('sampler')">SAMPLER</button>
+    <button class="mode-tab" id="modeTabDoor" onclick="setAppMode('door')">DOOR OPEN</button>
     <div class="status">
       <span><span class="midi-led" id="midiLed"></span> <span id="midiName">MIDI: 未接続</span></span>
       <span id="bankInfo">BANK 01 / 16</span>
     </div>
   </div>
 
+  <div id="samplerPage" style="display:flex; flex-direction:column; gap:10px; flex:1; min-height:0;">
   <div class="banks">
     <span class="banks-label">BANK</span>
     <div class="banks-grid" id="banksGrid"></div>
@@ -644,6 +803,28 @@
           <button class="mode-btn active" data-mode="poly" onclick="setPlayMode('poly')">POLY</button>
           <button class="mode-btn" data-mode="xfade" onclick="setPlayMode('xfade')">X-FADE</button>
           <button class="mode-btn" data-mode="trig" onclick="setPlayMode('trig')">TRIG</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- STOP / PAUSE -->
+      <div class="panel-section">
+        <div class="btn-row">
+          <div>
+            <button class="btn-outline btn-stop btn-big" onclick="stopAll()">■ STOP</button>
+            <div class="badge-row">
+              <button class="badge midi" id="stopMidiBadge" onclick="startLearn('stop','midi')">N62</button>
+              <button class="badge key" id="stopKeyBadge" onclick="startLearn('stop','key')">Esc</button>
+            </div>
+          </div>
+          <div>
+            <button class="btn-outline btn-pause btn-big" id="pauseBtn" onclick="pauseAll()">‖ PAUSE</button>
+            <div class="badge-row">
+              <button class="badge midi" id="pauseMidiBadge" onclick="startLearn('pause','midi')">N63</button>
+              <button class="badge key" id="pauseKeyBadge" onclick="startLearn('pause','key')">Space</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -724,32 +905,12 @@
         </div>
       </div>
 
-      <!-- FADE OUT button (BIG) -->
+      <!-- FADE OUT button (BIG, at the bottom) -->
       <div class="panel-section">
-        <button class="btn-primary big-fade" onclick="fadeOutAll()">FADE OUT</button>
+        <button class="btn-primary big-fade huge-fade" onclick="fadeOutAll()">FADE OUT</button>
         <div class="badge-row">
           <button class="badge midi" id="fadeoutMidiBadge" onclick="startLearn('fadeout','midi')">N60</button>
           <button class="badge key" id="fadeoutKeyBadge" onclick="startLearn('fadeout','key')">F</button>
-        </div>
-      </div>
-
-      <!-- STOP / PAUSE -->
-      <div class="panel-section">
-        <div class="btn-row">
-          <div>
-            <button class="btn-outline btn-stop" onclick="stopAll()">■ STOP</button>
-            <div class="badge-row">
-              <button class="badge midi" id="stopMidiBadge" onclick="startLearn('stop','midi')">N62</button>
-              <button class="badge key" id="stopKeyBadge" onclick="startLearn('stop','key')">Esc</button>
-            </div>
-          </div>
-          <div>
-            <button class="btn-outline btn-pause" id="pauseBtn" onclick="pauseAll()">‖ PAUSE</button>
-            <div class="badge-row">
-              <button class="badge midi" id="pauseMidiBadge" onclick="startLearn('pause','midi')">N63</button>
-              <button class="badge key" id="pauseKeyBadge" onclick="startLearn('pause','key')">Space</button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -757,6 +918,81 @@
     <!-- Right content -->
     <div id="rightContent"></div>
   </div>
+  </div><!-- /#samplerPage -->
+
+  <!-- DOOR OPEN PAGE -->
+  <div id="doorPage" style="display:none;">
+    <div class="do-top">
+      <!-- NOW / NEXT -->
+      <div class="do-card">
+        <div class="do-card-head">NOW</div>
+        <div class="do-clock-now" id="doClockNow">--:--:--</div>
+        <div class="do-clock-divider"></div>
+        <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
+        <div class="do-clock-next-name" id="doNextName">予定なし</div>
+        <div class="do-clock-next-eta" id="doNextEta">--:--</div>
+      </div>
+      <!-- BGM -->
+      <div class="do-card">
+        <div class="do-bgm-row">
+          <span class="do-card-head" style="margin:0;">BGM</span>
+          <span class="do-bgm-name" id="doBgmName">— ファイル未読込</span>
+          <button class="do-bgm-load" onclick="doBgmLoad()">LOAD</button>
+          <button class="do-bgm-load" onclick="doBgmClear()" style="margin-left:4px;">CLEAR</button>
+        </div>
+        <div class="do-bgm-controls">
+          <button class="do-bgm-btn primary" id="doBgmPlayBtn" onclick="doBgmTogglePlay()">▶</button>
+          <button class="do-bgm-btn" onclick="doBgmStop()" title="停止">■</button>
+          <button class="do-bgm-btn active" id="doBgmLoopBtn" onclick="doBgmToggleLoop()" title="ループ">⟲</button>
+          <div class="do-bgm-progress">
+            <div class="do-bgm-time" id="doBgmTime">--:-- / --:--</div>
+            <div class="do-bgm-bar"><div class="do-bgm-bar-fill" id="doBgmBarFill"></div></div>
+          </div>
+        </div>
+        <div class="do-bgm-vol">
+          <span class="do-bgm-vol-label">VOL</span>
+          <div class="do-bgm-vol-slider" id="doBgmVolSlider"><div class="do-bgm-vol-fill" id="doBgmVolFill" style="width:71%;"></div></div>
+          <span class="do-bgm-vol-db" id="doBgmVolDb">-3.5</span>
+        </div>
+      </div>
+      <!-- DUCK -->
+      <div class="do-card">
+        <div class="do-card-head">DUCK 設定</div>
+        <div class="do-duck-row">
+          <span class="do-duck-label">下げ幅</span>
+          <span class="do-duck-value" id="doDuckDepthVal">-6.0 dB</span>
+        </div>
+        <div class="do-duck-bar" id="doDuckDepthBar"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:30%;"></div></div>
+        <div class="do-duck-row">
+          <span class="do-duck-label">フェード</span>
+          <span class="do-duck-value" style="color:#E6E6EA;" id="doDuckFadeVal">0.8 s</span>
+        </div>
+        <div class="do-duck-bar gray" id="doDuckFadeBar"><div class="do-duck-bar-fill" id="doDuckFadeFill" style="width:40%;"></div></div>
+      </div>
+    </div>
+
+    <!-- LIBRARY -->
+    <div class="do-card">
+      <div class="do-sched-head">
+        <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材プール（4 枠）</span>
+        <span style="font-size:9px; color:#8A8A92;" id="doLibStatus">0 / 4 used</span>
+      </div>
+      <div class="do-lib-grid" id="doLibGrid"></div>
+    </div>
+
+    <!-- SCHEDULE -->
+    <div class="do-card" style="flex:1; min-height:0; display:flex; flex-direction:column;">
+      <div class="do-sched-head">
+        <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
+        <span style="font-size:9px; color:#8A8A92;" id="doSchedStatus">0 件</span>
+      </div>
+      <div class="do-sched-list" id="doSchedList" style="overflow-y:auto; flex:1; min-height:0;"></div>
+      <button class="do-sched-add" onclick="doSchedAdd()">＋ 時刻を追加</button>
+    </div>
+  </div>
+
+  <!-- 隠しファイル input (BGM / LIBRARY 用) -->
+  <input type="file" id="doFileInput" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" style="display:none;">
 
   <!-- LEARN banner -->
   <div class="learn-banner" id="learnBanner">LEARN: 割り当てたいキーまたはMIDIを入力してください（Escでキャンセル）</div>
@@ -812,6 +1048,32 @@ const state = {
     stop:    { midiNote: 62, key: 'Escape' },
     pause:   { midiNote: 63, key: 'Space' },
   },
+  // DOOR OPEN MODE
+  appMode: 'sampler', // 'sampler' | 'door'
+  door: {
+    bgm: {
+      sampleId: null,
+      sampleName: null,
+      audioBuffer: null,
+      vol: 0.71,           // 0..1.4 linear (same scale as masterVol)
+      loop: true,
+      // runtime (not persisted)
+      source: null,
+      gain: null,
+      startedAt: 0,
+      pausedAt: 0,
+      isPlaying: false,
+    },
+    library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer}
+    schedule: [], // [{id, time:'HH:MM:SS', chain:[libIdx,...], played:bool}]
+    duck: { depthDb: -6.0, fadeSec: 0.8 },
+    // runtime (not persisted)
+    activeRowId: null,
+    activeChainIdx: -1,
+    activeAnnSource: null,
+    activeAnnGain: null,
+    duckActive: false,
+  },
 };
 
 function makePad(idx) {
@@ -847,6 +1109,10 @@ let masterGain;
 let analyserL, analyserR;
 let splitter;
 let isPaused = false;
+// DOOR OPEN gain nodes
+let doBgmGain;       // BGM ユーザー音量
+let doBgmDuckGain;   // DUCK 専用 gain (1.0=通常, 0.5=-6dB ダック中)
+let doAnnGain;       // アナウンス出力
 
 function initAudio() {
   if (ctx) return;
@@ -864,6 +1130,19 @@ function initAudio() {
   splitter.connect(analyserL, 0);
   splitter.connect(analyserR, 1);
   masterGain.connect(ctx.destination);
+
+  // DOOR OPEN audio chain
+  // BGM source -> doBgmGain (user vol) -> doBgmDuckGain (duck) -> masterGain
+  // Announce source -> doAnnGain (master mix) -> masterGain
+  doBgmGain = ctx.createGain();
+  doBgmGain.gain.value = state.door.bgm.vol;
+  doBgmDuckGain = ctx.createGain();
+  doBgmDuckGain.gain.value = 1.0;
+  doAnnGain = ctx.createGain();
+  doAnnGain.gain.value = 1.0;
+  doBgmGain.connect(doBgmDuckGain);
+  doBgmDuckGain.connect(masterGain);
+  doAnnGain.connect(masterGain);
 
   meterLoop();
 }
@@ -2710,6 +2989,800 @@ function showToast(msg) {
 // ===========================
 // INIT
 // ===========================
+// ===========================
+// DOOR OPEN MODE
+// ===========================
+
+function setAppMode(m) {
+  state.appMode = m;
+  document.getElementById('samplerPage').style.display = (m === 'sampler') ? 'flex' : 'none';
+  document.getElementById('doorPage').style.display = (m === 'door') ? 'flex' : 'none';
+  document.getElementById('modeTabSampler').classList.toggle('active', m === 'sampler');
+  document.getElementById('modeTabDoor').classList.toggle('active', m === 'door');
+  doSave();
+  if (m === 'door') {
+    doRenderAll();
+  }
+}
+
+// ---- BGM ----
+function doBgmLoad() {
+  const inp = document.getElementById('doFileInput');
+  inp.onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const arrBuf = await f.arrayBuffer();
+      const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+      const id = `door-bgm-${Date.now()}`;
+      await saveSampleToDB(id, arrBuf, f.name);
+      state.door.bgm.sampleId = id;
+      state.door.bgm.sampleName = f.name;
+      state.door.bgm.audioBuffer = audBuf;
+      doBgmStop();
+      doRenderBgm();
+      doSave();
+      showToast(`BGM 読込: ${f.name}`);
+    } catch (err) {
+      showToast('BGM 読込失敗: ' + err.message);
+    }
+    inp.value = '';
+  };
+  inp.click();
+}
+
+function doBgmClear() {
+  doBgmStop();
+  state.door.bgm.sampleId = null;
+  state.door.bgm.sampleName = null;
+  state.door.bgm.audioBuffer = null;
+  doRenderBgm();
+  doSave();
+}
+
+function doBgmTogglePlay() {
+  if (!state.door.bgm.audioBuffer) {
+    showToast('BGM ファイルを LOAD してください');
+    return;
+  }
+  if (state.door.bgm.isPlaying) {
+    doBgmPause();
+  } else {
+    doBgmPlay();
+  }
+}
+
+function doBgmPlay() {
+  const b = state.door.bgm;
+  if (!b.audioBuffer || !ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  const src = ctx.createBufferSource();
+  src.buffer = b.audioBuffer;
+  src.loop = b.loop;
+  src.connect(doBgmGain);
+  doBgmGain.gain.value = b.vol;
+  src.start(0, b.pausedAt || 0);
+  b.source = src;
+  b.startedAt = ctx.currentTime - (b.pausedAt || 0);
+  b.isPlaying = true;
+  src.onended = () => {
+    if (b.source === src) {
+      b.source = null;
+      b.isPlaying = false;
+      b.pausedAt = 0;
+      doRenderBgm();
+    }
+  };
+  doRenderBgm();
+}
+
+function doBgmPause() {
+  const b = state.door.bgm;
+  if (!b.source) return;
+  b.pausedAt = ctx.currentTime - b.startedAt;
+  if (b.audioBuffer && b.loop) b.pausedAt = b.pausedAt % b.audioBuffer.duration;
+  try { b.source.stop(); } catch(e) {}
+  b.source = null;
+  b.isPlaying = false;
+  doRenderBgm();
+}
+
+function doBgmStop() {
+  const b = state.door.bgm;
+  if (b.source) {
+    try { b.source.stop(); } catch(e) {}
+  }
+  b.source = null;
+  b.isPlaying = false;
+  b.pausedAt = 0;
+  doRenderBgm();
+}
+
+function doBgmToggleLoop() {
+  state.door.bgm.loop = !state.door.bgm.loop;
+  if (state.door.bgm.source) state.door.bgm.source.loop = state.door.bgm.loop;
+  doRenderBgm();
+  doSave();
+}
+
+function doBgmSetVol(linear) {
+  const v = Math.max(0, Math.min(1.4, linear));
+  state.door.bgm.vol = v;
+  if (doBgmGain) doBgmGain.gain.value = v;
+  doRenderBgm();
+  doSave();
+}
+
+function doRenderBgm() {
+  const b = state.door.bgm;
+  document.getElementById('doBgmName').textContent = b.sampleName || '— ファイル未読込';
+  const playBtn = document.getElementById('doBgmPlayBtn');
+  playBtn.innerHTML = b.isPlaying ? '‖' : '▶';
+  const loopBtn = document.getElementById('doBgmLoopBtn');
+  loopBtn.classList.toggle('active', b.loop);
+  const db = linToDb(b.vol);
+  const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
+  document.getElementById('doBgmVolDb').textContent = dbStr;
+  document.getElementById('doBgmVolFill').style.width = ((b.vol / 1.4) * 100) + '%';
+  if (b.audioBuffer) {
+    const total = b.audioBuffer.duration;
+    document.getElementById('doBgmTime').textContent =
+      `${fmtTime(b.pausedAt || 0)} / ${b.loop ? 'loop' : fmtTime(total)}`;
+  } else {
+    document.getElementById('doBgmTime').textContent = '--:-- / --:--';
+    document.getElementById('doBgmBarFill').style.width = '0%';
+  }
+}
+
+function fmtTime(sec) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+}
+
+// BGM progress loop (when DOOR OPEN tab visible)
+function doBgmProgressLoop() {
+  const b = state.door.bgm;
+  if (state.appMode === 'door' && b.isPlaying && b.audioBuffer) {
+    let pos = ctx.currentTime - b.startedAt;
+    if (b.loop) pos = pos % b.audioBuffer.duration;
+    const pct = Math.min(100, (pos / b.audioBuffer.duration) * 100);
+    document.getElementById('doBgmBarFill').style.width = pct + '%';
+    document.getElementById('doBgmTime').textContent =
+      `${fmtTime(pos)} / ${b.loop ? 'loop' : fmtTime(b.audioBuffer.duration)}`;
+  }
+  requestAnimationFrame(doBgmProgressLoop);
+}
+
+// BGM vol slider bind
+function bindDoBgmVol() {
+  const slider = document.getElementById('doBgmVolSlider');
+  if (!slider) return;
+  const update = (clientX) => {
+    const rect = slider.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    doBgmSetVol(pct * 1.4);
+  };
+  slider.addEventListener('pointerdown', e => {
+    update(e.clientX);
+    const mv = ev => update(ev.clientX);
+    const up = () => {
+      window.removeEventListener('pointermove', mv);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', mv);
+    window.addEventListener('pointerup', up);
+  });
+}
+
+// DUCK bars bind
+function bindDoDuck() {
+  const depthBar = document.getElementById('doDuckDepthBar');
+  const fadeBar = document.getElementById('doDuckFadeBar');
+  // depth: 0..-24dB
+  depthBar.addEventListener('pointerdown', e => {
+    const update = (cx) => {
+      const r = depthBar.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+      state.door.duck.depthDb = -(pct * 24);
+      doRenderDuck();
+      doSave();
+    };
+    update(e.clientX);
+    const mv = ev => update(ev.clientX);
+    const up = () => {
+      window.removeEventListener('pointermove', mv);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', mv);
+    window.addEventListener('pointerup', up);
+  });
+  // fade: 0..3 sec
+  fadeBar.addEventListener('pointerdown', e => {
+    const update = (cx) => {
+      const r = fadeBar.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+      state.door.duck.fadeSec = pct * 3;
+      doRenderDuck();
+      doSave();
+    };
+    update(e.clientX);
+    const mv = ev => update(ev.clientX);
+    const up = () => {
+      window.removeEventListener('pointermove', mv);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', mv);
+    window.addEventListener('pointerup', up);
+  });
+}
+
+function doRenderDuck() {
+  const d = state.door.duck;
+  document.getElementById('doDuckDepthVal').textContent = d.depthDb.toFixed(1) + ' dB';
+  document.getElementById('doDuckDepthFill').style.width = ((-d.depthDb) / 24 * 100) + '%';
+  document.getElementById('doDuckFadeVal').textContent = d.fadeSec.toFixed(2) + ' s';
+  document.getElementById('doDuckFadeFill').style.width = (d.fadeSec / 3 * 100) + '%';
+}
+
+// ---- LIBRARY ----
+function doLibLoad(slotIdx) {
+  const inp = document.getElementById('doFileInput');
+  inp.onchange = async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const arrBuf = await f.arrayBuffer();
+      const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+      const id = `door-lib-${slotIdx}-${Date.now()}`;
+      await saveSampleToDB(id, arrBuf, f.name);
+      state.door.library[slotIdx] = {
+        sampleId: id,
+        sampleName: f.name,
+        audioBuffer: audBuf,
+      };
+      doRenderLibrary();
+      doRenderSchedule(); // chip dur refresh
+      doSave();
+      showToast(`A${slotIdx+1} 読込: ${f.name}`);
+    } catch (err) {
+      showToast('読込失敗: ' + err.message);
+    }
+    inp.value = '';
+  };
+  inp.click();
+}
+
+function doLibClear(slotIdx) {
+  state.door.library[slotIdx] = null;
+  // also clean from schedule chains? -> keep references but they show as missing
+  doRenderLibrary();
+  doRenderSchedule();
+  doSave();
+}
+
+let doLibPreviewSource = null;
+function doLibPreview(slotIdx) {
+  const item = state.door.library[slotIdx];
+  if (!item || !item.audioBuffer || !ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  if (doLibPreviewSource) {
+    try { doLibPreviewSource.stop(); } catch(e) {}
+    doLibPreviewSource = null;
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = item.audioBuffer;
+  const g = ctx.createGain();
+  g.gain.value = 1.0;
+  src.connect(g);
+  g.connect(masterGain);
+  src.start();
+  doLibPreviewSource = src;
+  src.onended = () => { if (doLibPreviewSource === src) doLibPreviewSource = null; };
+}
+
+function doRenderLibrary() {
+  const grid = document.getElementById('doLibGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  let used = 0;
+  for (let i = 0; i < 4; i++) {
+    const item = state.door.library[i];
+    const slot = document.createElement('div');
+    slot.className = 'do-lib-slot' + (item ? ' has-content' : ' empty');
+    slot.dataset.slot = i;
+    if (item) {
+      used++;
+      slot.draggable = true;
+      slot.innerHTML = `
+        <div class="do-lib-slot-head">
+          <span class="do-lib-id">A${i+1}</span>
+          <div class="do-lib-actions">
+            <button class="do-lib-act" title="プレビュー" onclick="event.stopPropagation(); doLibPreview(${i})">▶</button>
+            <button class="do-lib-act" title="差替え" onclick="event.stopPropagation(); doLibLoad(${i})">↻</button>
+            <button class="do-lib-act del" title="削除" onclick="event.stopPropagation(); doLibClear(${i})">×</button>
+          </div>
+        </div>
+        <div class="do-lib-name">${escapeHtml(item.sampleName)}</div>
+        <div class="do-lib-meta">${item.audioBuffer ? fmtTime(item.audioBuffer.duration) : '--:--'}</div>
+      `;
+      // Drag start: payload = lib slot index
+      slot.addEventListener('dragstart', e => {
+        e.dataTransfer.effectAllowed = 'copy';
+        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'door-lib', slot: i }));
+        slot.classList.add('dragging');
+      });
+      slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+    } else {
+      slot.innerHTML = `
+        <div class="do-lib-id" style="margin-bottom:4px;">A${i+1}</div>
+        <div class="do-lib-empty-text">＋ ファイルを追加</div>
+      `;
+      slot.addEventListener('click', () => doLibLoad(i));
+      // Also accept file drop
+      slot.addEventListener('dragover', e => {
+        if ([...(e.dataTransfer.types||[])].includes('Files')) {
+          e.preventDefault();
+          slot.classList.add('drop-over');
+        }
+      });
+      slot.addEventListener('dragleave', () => slot.classList.remove('drop-over'));
+      slot.addEventListener('drop', async e => {
+        slot.classList.remove('drop-over');
+        const f = e.dataTransfer.files[0];
+        if (!f) return;
+        e.preventDefault();
+        try {
+          const arrBuf = await f.arrayBuffer();
+          const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+          const id = `door-lib-${i}-${Date.now()}`;
+          await saveSampleToDB(id, arrBuf, f.name);
+          state.door.library[i] = { sampleId: id, sampleName: f.name, audioBuffer: audBuf };
+          doRenderLibrary();
+          doRenderSchedule();
+          doSave();
+        } catch(err) { showToast('読込失敗: ' + err.message); }
+      });
+    }
+    grid.appendChild(slot);
+  }
+  document.getElementById('doLibStatus').textContent = `${used} / 4 used`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---- SCHEDULE ----
+function doSchedAdd() {
+  const id = 's_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+  // pick a default time = now + 1 min
+  const now = new Date();
+  now.setMinutes(now.getMinutes() + 1);
+  now.setSeconds(0);
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:00`;
+  state.door.schedule.push({ id, time, chain: [], played: false });
+  state.door.schedule.sort((a,b) => a.time.localeCompare(b.time));
+  doRenderSchedule();
+  doSave();
+}
+
+function doSchedDel(rowId) {
+  state.door.schedule = state.door.schedule.filter(r => r.id !== rowId);
+  doRenderSchedule();
+  doSave();
+}
+
+function doSchedTimeChange(rowId, val) {
+  // normalize HH:MM or HH:MM:SS -> HH:MM:SS
+  let v = val.trim();
+  const m = v.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+  if (!m) { doRenderSchedule(); return; }
+  const hh = Math.min(23, parseInt(m[1])).toString().padStart(2,'0');
+  const mm = Math.min(59, parseInt(m[2])).toString().padStart(2,'0');
+  const ss = Math.min(59, parseInt(m[3] || '0')).toString().padStart(2,'0');
+  const row = state.door.schedule.find(r => r.id === rowId);
+  if (!row) return;
+  row.time = `${hh}:${mm}:${ss}`;
+  row.played = false; // changing time re-arms it
+  state.door.schedule.sort((a,b) => a.time.localeCompare(b.time));
+  doRenderSchedule();
+  doSave();
+}
+
+function doSchedChipAdd(rowId, libIdx, atPos) {
+  const row = state.door.schedule.find(r => r.id === rowId);
+  if (!row) return;
+  if (atPos == null || atPos >= row.chain.length) {
+    row.chain.push(libIdx);
+  } else {
+    row.chain.splice(atPos, 0, libIdx);
+  }
+  doRenderSchedule();
+  doSave();
+}
+
+function doSchedChipDel(rowId, chipIdx) {
+  const row = state.door.schedule.find(r => r.id === rowId);
+  if (!row) return;
+  row.chain.splice(chipIdx, 1);
+  doRenderSchedule();
+  doSave();
+}
+
+function doSchedChipMove(srcRowId, srcChipIdx, dstRowId, dstPos) {
+  const src = state.door.schedule.find(r => r.id === srcRowId);
+  const dst = state.door.schedule.find(r => r.id === dstRowId);
+  if (!src || !dst) return;
+  const [libIdx] = src.chain.splice(srcChipIdx, 1);
+  if (libIdx == null) return;
+  let pos = dstPos;
+  if (src === dst && srcChipIdx < pos) pos--;
+  if (pos == null || pos > dst.chain.length) pos = dst.chain.length;
+  dst.chain.splice(pos, 0, libIdx);
+  doRenderSchedule();
+  doSave();
+}
+
+function doRenderSchedule() {
+  const list = document.getElementById('doSchedList');
+  if (!list) return;
+  list.innerHTML = '';
+  document.getElementById('doSchedStatus').textContent = `${state.door.schedule.length} 件`;
+  state.door.schedule.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'do-sched-row';
+    if (row.played) div.classList.add('done');
+    if (row.id === state.door.activeRowId) div.classList.add('playing');
+    if (!row.played && state.door.activeRowId == null && isNextRow(row)) div.classList.add('next');
+
+    // total duration
+    const total = row.chain.reduce((s, idx) => {
+      const it = state.door.library[idx];
+      return s + (it && it.audioBuffer ? it.audioBuffer.duration : 0);
+    }, 0);
+
+    div.innerHTML = `
+      <input class="do-sched-time" type="text" value="${row.time}" data-row="${row.id}" />
+      <div class="do-chain" data-row="${row.id}">
+        ${row.chain.map((libIdx, ci) => {
+          const it = state.door.library[libIdx];
+          const cls = (state.door.activeRowId === row.id && state.door.activeChainIdx === ci) ? 'playing'
+                    : (state.door.activeRowId === row.id && state.door.activeChainIdx > ci) ? 'played'
+                    : '';
+          const dur = it && it.audioBuffer ? fmtTime(it.audioBuffer.duration) : '--:--';
+          const name = it ? escapeHtml(it.sampleName.replace(/\.[^.]+$/, '')) : '<未登録>';
+          return `
+            <span class="do-chip ${cls}" draggable="true" data-row="${row.id}" data-idx="${ci}" data-lib="${libIdx}">
+              <span class="do-chip-id">A${libIdx+1}</span>
+              <span class="do-chip-label">${name}</span>
+              <span class="do-chip-dur">${dur}</span>
+              <span class="do-chip-x" onclick="event.stopPropagation(); doSchedChipDel('${row.id}', ${ci})">×</span>
+            </span>
+            ${ci < row.chain.length - 1 ? '<span class="do-arrow">→</span>' : ''}
+          `;
+        }).join('')}
+        ${row.chain.length === 0 ? '<span class="do-chain-drop-hint">＋ ライブラリ A1〜A4 をドロップ</span>' : ''}
+      </div>
+      <div class="do-sched-actions">
+        <button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>
+        <button class="do-sched-act del" title="削除" onclick="doSchedDel('${row.id}')">×</button>
+      </div>
+    `;
+
+    // time input
+    const tInput = div.querySelector('.do-sched-time');
+    tInput.addEventListener('change', e => doSchedTimeChange(row.id, e.target.value));
+    tInput.addEventListener('blur', e => doSchedTimeChange(row.id, e.target.value));
+
+    // chain drop area
+    const chain = div.querySelector('.do-chain');
+    chain.addEventListener('dragover', e => {
+      // accept both library payload and chip payload
+      const types = [...(e.dataTransfer.types || [])];
+      if (types.includes('text/plain')) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        chain.classList.add('drop-over');
+      }
+    });
+    chain.addEventListener('dragleave', () => chain.classList.remove('drop-over'));
+    chain.addEventListener('drop', e => {
+      e.preventDefault();
+      chain.classList.remove('drop-over');
+      let data;
+      try { data = JSON.parse(e.dataTransfer.getData('text/plain')); } catch(_) { return; }
+      // compute drop index based on x
+      const rect = chain.getBoundingClientRect();
+      const chips = [...chain.querySelectorAll('.do-chip')];
+      let pos = chips.length;
+      for (let i = 0; i < chips.length; i++) {
+        const r = chips[i].getBoundingClientRect();
+        if (e.clientX < r.left + r.width / 2) { pos = i; break; }
+      }
+      if (data.type === 'door-lib') {
+        doSchedChipAdd(row.id, data.slot, pos);
+      } else if (data.type === 'door-chip') {
+        doSchedChipMove(data.row, data.idx, row.id, pos);
+      }
+    });
+
+    // chip drag
+    chain.querySelectorAll('.do-chip').forEach(chip => {
+      chip.addEventListener('dragstart', e => {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+          type: 'door-chip',
+          row: chip.dataset.row,
+          idx: parseInt(chip.dataset.idx),
+        }));
+        chip.classList.add('dragging');
+      });
+      chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+    });
+
+    list.appendChild(div);
+
+    if (total > 0) {
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'do-sched-total';
+      totalDiv.textContent = `合計 ${fmtTime(total)} — 終了で DUCK 解除`;
+      list.appendChild(totalDiv);
+    }
+  });
+}
+
+function isNextRow(row) {
+  if (row.played) return false;
+  const now = nowSecOfDay();
+  const rs = timeStrToSec(row.time);
+  if (rs < now) return false;
+  // find earliest non-played row in future
+  const cands = state.door.schedule.filter(r => !r.played && timeStrToSec(r.time) >= now);
+  cands.sort((a,b) => timeStrToSec(a.time) - timeStrToSec(b.time));
+  return cands[0] && cands[0].id === row.id;
+}
+
+function nowSecOfDay() {
+  const d = new Date();
+  return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
+}
+
+function timeStrToSec(s) {
+  const m = s.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+  if (!m) return 0;
+  return parseInt(m[1])*3600 + parseInt(m[2])*60 + parseInt(m[3]||'0');
+}
+
+// ---- TIMER / PLAYBACK ----
+let doTickTimer = null;
+function doTick() {
+  // Update clock
+  const d = new Date();
+  const hh = d.getHours().toString().padStart(2,'0');
+  const mm = d.getMinutes().toString().padStart(2,'0');
+  const ss = d.getSeconds().toString().padStart(2,'0');
+  if (state.appMode === 'door') {
+    document.getElementById('doClockNow').textContent = `${hh}:${mm}:${ss}`;
+    // NEXT panel
+    const now = nowSecOfDay();
+    const cands = state.door.schedule.filter(r => !r.played && timeStrToSec(r.time) >= now);
+    cands.sort((a,b) => timeStrToSec(a.time) - timeStrToSec(b.time));
+    if (cands.length > 0) {
+      const nxt = cands[0];
+      document.getElementById('doNextLabel').textContent = `NEXT — ${nxt.time}`;
+      const chainStr = nxt.chain.length === 0 ? '（チェーン未設定）'
+        : nxt.chain.map(i => `A${i+1}`).join(' → ');
+      document.getElementById('doNextName').textContent = chainStr;
+      const eta = timeStrToSec(nxt.time) - now;
+      document.getElementById('doNextEta').textContent = fmtTime(Math.max(0, eta));
+    } else {
+      document.getElementById('doNextLabel').textContent = 'NEXT —';
+      document.getElementById('doNextName').textContent = '予定なし';
+      document.getElementById('doNextEta').textContent = '--:--';
+    }
+  }
+
+  // Fire scheduled rows (works in both modes)
+  if (state.door.activeRowId == null) {
+    const now = nowSecOfDay();
+    for (const row of state.door.schedule) {
+      if (row.played) continue;
+      const rs = timeStrToSec(row.time);
+      // fire if within 1 second past the scheduled time (avoid missing if delayed)
+      if (now >= rs && now <= rs + 2 && row.chain.length > 0) {
+        doStartRow(row.id);
+        break;
+      }
+    }
+  }
+}
+
+function doStartRow(rowId) {
+  const row = state.door.schedule.find(r => r.id === rowId);
+  if (!row || row.chain.length === 0) return;
+  if (state.door.activeRowId) {
+    showToast('別の予定を再生中です');
+    return;
+  }
+  state.door.activeRowId = rowId;
+  state.door.activeChainIdx = -1;
+  doDuckActivate();
+  doPlayNextInChain();
+  doRenderSchedule();
+}
+
+function doPlayNextInChain() {
+  const row = state.door.schedule.find(r => r.id === state.door.activeRowId);
+  if (!row) { doEndRow(); return; }
+  state.door.activeChainIdx++;
+  if (state.door.activeChainIdx >= row.chain.length) {
+    doEndRow();
+    return;
+  }
+  const libIdx = row.chain[state.door.activeChainIdx];
+  const item = state.door.library[libIdx];
+  if (!item || !item.audioBuffer) {
+    // skip and continue
+    doPlayNextInChain();
+    return;
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  const src = ctx.createBufferSource();
+  src.buffer = item.audioBuffer;
+  src.connect(doAnnGain);
+  src.start();
+  state.door.activeAnnSource = src;
+  src.onended = () => {
+    if (state.door.activeAnnSource === src) {
+      state.door.activeAnnSource = null;
+      // play next
+      if (state.door.activeRowId) doPlayNextInChain();
+    }
+  };
+  doRenderSchedule();
+}
+
+function doEndRow() {
+  const row = state.door.schedule.find(r => r.id === state.door.activeRowId);
+  if (row) row.played = true;
+  state.door.activeRowId = null;
+  state.door.activeChainIdx = -1;
+  state.door.activeAnnSource = null;
+  doDuckRelease();
+  doRenderSchedule();
+  doSave();
+}
+
+function doDuckActivate() {
+  if (!doBgmDuckGain || !ctx) return;
+  state.door.duckActive = true;
+  const targetLin = dbToLin(state.door.duck.depthDb); // 0..1
+  const t = ctx.currentTime;
+  const fade = Math.max(0.01, state.door.duck.fadeSec);
+  doBgmDuckGain.gain.cancelScheduledValues(t);
+  doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+  doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + fade);
+}
+
+function doDuckRelease() {
+  if (!doBgmDuckGain || !ctx) return;
+  state.door.duckActive = false;
+  const t = ctx.currentTime;
+  const fade = Math.max(0.01, state.door.duck.fadeSec);
+  doBgmDuckGain.gain.cancelScheduledValues(t);
+  doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+  doBgmDuckGain.gain.linearRampToValueAtTime(1.0, t + fade);
+}
+
+// ---- PERSISTENCE ----
+function doSave() {
+  try {
+    localStorage.setItem('samplerStudioDoor', JSON.stringify({
+      appMode: state.appMode,
+      bgm: {
+        sampleId: state.door.bgm.sampleId,
+        sampleName: state.door.bgm.sampleName,
+        vol: state.door.bgm.vol,
+        loop: state.door.bgm.loop,
+      },
+      library: state.door.library.map(it => it ? ({
+        sampleId: it.sampleId, sampleName: it.sampleName,
+      }) : null),
+      schedule: state.door.schedule.map(r => ({
+        id: r.id, time: r.time, chain: [...r.chain], played: false,
+      })),
+      duck: { ...state.door.duck },
+    }));
+  } catch (e) { console.warn('doSave failed', e); }
+}
+
+function doLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem('samplerStudioDoor'));
+    if (!s) return;
+    if (s.appMode) state.appMode = s.appMode;
+    if (s.bgm) {
+      state.door.bgm.sampleId = s.bgm.sampleId || null;
+      state.door.bgm.sampleName = s.bgm.sampleName || null;
+      state.door.bgm.vol = s.bgm.vol ?? 0.71;
+      state.door.bgm.loop = s.bgm.loop ?? true;
+    }
+    if (Array.isArray(s.library)) {
+      for (let i = 0; i < 4; i++) {
+        const it = s.library[i];
+        state.door.library[i] = it ? { sampleId: it.sampleId, sampleName: it.sampleName, audioBuffer: null } : null;
+      }
+    }
+    if (Array.isArray(s.schedule)) {
+      state.door.schedule = s.schedule.map(r => ({
+        id: r.id, time: r.time, chain: Array.isArray(r.chain) ? r.chain : [], played: false,
+      }));
+    }
+    if (s.duck) {
+      state.door.duck.depthDb = s.duck.depthDb ?? -6.0;
+      state.door.duck.fadeSec = s.duck.fadeSec ?? 0.8;
+    }
+  } catch(e) { console.warn('doLoad failed', e); }
+}
+
+async function doRestoreAudioBuffers() {
+  if (!db || !ctx) return;
+  // BGM
+  if (state.door.bgm.sampleId) {
+    try {
+      const rec = await getSampleFromDB(state.door.bgm.sampleId);
+      if (rec) {
+        const buf = await ctx.decodeAudioData(rec.data.slice(0));
+        state.door.bgm.audioBuffer = buf;
+      }
+    } catch(e) {}
+  }
+  // Library
+  for (let i = 0; i < 4; i++) {
+    const it = state.door.library[i];
+    if (it && it.sampleId) {
+      try {
+        const rec = await getSampleFromDB(it.sampleId);
+        if (rec) {
+          const buf = await ctx.decodeAudioData(rec.data.slice(0));
+          it.audioBuffer = buf;
+        }
+      } catch(e) {}
+    }
+  }
+}
+
+function doRenderAll() {
+  doRenderBgm();
+  doRenderDuck();
+  doRenderLibrary();
+  doRenderSchedule();
+}
+
+function doInit() {
+  doLoad();
+  bindDoBgmVol();
+  bindDoDuck();
+  // start 1Hz tick
+  if (!doTickTimer) {
+    doTickTimer = setInterval(doTick, 1000);
+    doTick();
+  }
+  // BGM progress loop (rAF)
+  requestAnimationFrame(doBgmProgressLoop);
+  // Apply mode (after loading)
+  setAppMode(state.appMode || 'sampler');
+  doRenderAll();
+  // Restore audio buffers from IDB
+  doRestoreAudioBuffers().then(() => {
+    doRenderBgm();
+    doRenderLibrary();
+    doRenderSchedule();
+  }).catch(e => console.warn('door restore err', e));
+}
+
 async function init() {
   initBanks();
   loadStateLocal();
@@ -2769,6 +3842,9 @@ async function init() {
   // Unlock audio on first interaction (mobile Safari)
   const unlock = () => { if (ctx && ctx.state === 'suspended') ctx.resume(); document.body.removeEventListener('click', unlock); };
   document.body.addEventListener('click', unlock);
+
+  // DOOR OPEN MODE init
+  doInit();
 }
 
 init();
