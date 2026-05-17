@@ -732,12 +732,12 @@
   }
   /* 0dB 位置の目印（中央 50%） */
   .do-bgm-vol-slider::after {
-    content: ''; position: absolute; left: 50%; top: 20%; bottom: 20%;
-    width: 2px; background: rgba(255,255,255,0.35); transform: translateX(-50%); pointer-events: none;
+    content: ''; position: absolute; left: 71.43%; top: 20%; bottom: 20%;
+    width: 2px; background: rgba(255,255,255,0.4); transform: translateX(-50%); pointer-events: none;
   }
   .do-lib-vol-slider .vol-0db-mark {
-    position: absolute; left: 50%; top: 20%; bottom: 20%;
-    width: 2px; background: rgba(255,255,255,0.35); transform: translateX(-50%); pointer-events: none;
+    position: absolute; left: 71.43%; top: 20%; bottom: 20%;
+    width: 2px; background: rgba(255,255,255,0.4); transform: translateX(-50%); pointer-events: none;
   }
   .do-bgm-vol-fill {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
@@ -1599,17 +1599,31 @@ function fadeOutAll() {
         g.gain.linearRampToValueAtTime(0.0001, t + sec);
         g.gain.linearRampToValueAtTime(0, t + sec + 0.10);
       } catch(e) {}
-      // フェード完了後：audio element 自身の volume も 0 にしてから pause（プチ音二重防御）
+      // フェード完了後：複数段で完全無音化してから pause（プチ音四重防御）
       setTimeout(() => {
+        // 段1: HTMLAudioElement 自身を muted/volume=0 にする
         if (b.audioElement) {
           try { b.audioElement.volume = 0; } catch(e) {}
+          try { b.audioElement.muted = true; } catch(e) {}
         }
         setTimeout(() => {
-          doBgmStop(slot);
-          if (b.audioElement) {
-            try { b.audioElement.volume = 1; } catch(e) {}
+          // 段2: MediaElementSource を AudioContext から disconnect（経路遮断）
+          if (b.mediaSource) {
+            try { b.mediaSource.disconnect(); } catch(e) {}
           }
-          if (g) g.gain.value = b.vol;
+          // 段3: そこから 50ms 待って audio.pause() — もうどこにも音は出ない
+          setTimeout(() => {
+            doBgmStop(slot);
+            // 復元：次回再生に備えて mediaSource を再接続、volume / muted / gain を戻す
+            if (b.mediaSource && ctx) {
+              try { b.mediaSource.connect(_bgmUserGain(slot)); } catch(e) {}
+            }
+            if (b.audioElement) {
+              try { b.audioElement.volume = 1; } catch(e) {}
+              try { b.audioElement.muted = false; } catch(e) {}
+            }
+            if (g) g.gain.value = b.vol;
+          }, 50);
         }, 60);
       }, sec * 1000 + 180);
     }
@@ -1626,9 +1640,11 @@ function fadeOutAll() {
       doAnnGain.gain.linearRampToValueAtTime(0, t + sec + 0.10);
     } catch(e) {}
     setTimeout(() => {
-      // 完全無音状態で stop（アンチクリック効果）
-      try { if (state.door.activeAnnSource) { state.door.activeAnnSource.onended = null; state.door.activeAnnSource.stop(); } } catch(e) {}
-      try { if (state.door.previewSource) { state.door.previewSource.onended = null; state.door.previewSource.stop(); } } catch(e) {}
+      // disconnect で先にパスを切ってから stop（プチ音防御）
+      try { if (state.door.activeAnnSource) { state.door.activeAnnSource.onended = null; state.door.activeAnnSource.disconnect(); state.door.activeAnnSource.stop(); } } catch(e) {}
+      try { if (state.door.activeAnnGain) { state.door.activeAnnGain.disconnect(); } } catch(e) {}
+      try { if (state.door.previewSource) { state.door.previewSource.onended = null; state.door.previewSource.disconnect(); state.door.previewSource.stop(); } } catch(e) {}
+      try { if (state.door.previewGain) { state.door.previewGain.disconnect(); } } catch(e) {}
       state.door.activeAnnSource = null;
       state.door.activeAnnGain = null;
       state.door.activeAnnSlot = -1;
@@ -3518,7 +3534,7 @@ function doBgmSetVol(slot, linear) {
     linear = parseFloat(slot); slot = 'door';
   }
   if (!slot) slot = 'door';
-  let v = Math.max(0, Math.min(2.0, linear));
+  let v = Math.max(0, Math.min(1.4, linear));
   v = snapToUnity(v);
   const b = _bgmObj(slot);
   b.vol = v;
@@ -3545,7 +3561,7 @@ function doRenderBgm(slot) {
   const db = linToDb(b.vol);
   const dbEl = document.getElementById('doBgmVolDb' + sf);
   if (dbEl) dbEl.textContent = dbToStr(db);
-  const volPct = (b.vol / 2.0) * 100;
+  const volPct = (b.vol / 1.4) * 100;
   const fill = document.getElementById('doBgmVolFill' + sf);
   const thumb = document.getElementById('doBgmVolThumb' + sf);
   if (fill) fill.style.width = volPct + '%';
@@ -3635,7 +3651,7 @@ function bindDoBgmVol() {
     const update = (clientX) => {
       const rect = slider.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      doBgmSetVol(slot, pct * 2.0);
+      doBgmSetVol(slot, pct * 1.4);
     };
     slider.addEventListener('pointerdown', e => {
       e.preventDefault();
@@ -3803,7 +3819,7 @@ function doLibClear(slotIdx) {
 function doLibSetLevel(slotIdx, linear) {
   const item = state.door.library[slotIdx];
   if (!item) return;
-  let v = Math.max(0, Math.min(2.0, linear));
+  let v = Math.max(0, Math.min(1.4, linear));
   v = snapToUnity(v); // 0dB スナップ（どの経路でも効く）
   item.level = v;
   // ---- 全 active source の gain を即時反映 ----
@@ -3829,7 +3845,7 @@ function doLibSetLevel(slotIdx, linear) {
       const fill = slot.querySelector('.do-lib-vol-fill');
       const thumb = slot.querySelector('.do-lib-vol-thumb');
       const dbDisp = slot.querySelector('.do-lib-vol-db');
-      const pct = (item.level / 2.0) * 100;
+      const pct = (item.level / 1.4) * 100;
       if (fill) fill.style.width = pct.toFixed(1) + '%';
       if (thumb) thumb.style.left = pct.toFixed(1) + '%';
       if (dbDisp) {
@@ -3935,7 +3951,7 @@ function doRenderLibrary() {
       used++;
       slot.draggable = false; // ドラッグは body のみ。フェーダー側からはドラッグ不可
       const level = (item.level != null) ? item.level : 1.0;
-      const levelPct = (level / 2.0) * 100;
+      const levelPct = (level / 1.4) * 100;
       const db = linToDb(level);
       const dbStr = dbToStr(db);
       const playBtn = isPreviewing
@@ -3976,7 +3992,7 @@ function doRenderLibrary() {
         const update = (cx) => {
           const r = vol.getBoundingClientRect();
           const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
-          doLibSetLevel(i, snapToUnity(pct * 2.0));
+          doLibSetLevel(i, snapToUnity(pct * 1.4));
         };
         update(e.clientX);
         const mv = ev => { ev.preventDefault(); update(ev.clientX); };
