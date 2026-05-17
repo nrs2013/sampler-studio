@@ -834,6 +834,11 @@ function setMasterVol(lin) {
   document.getElementById('masterThumb').style.bottom = pct + '%';
 }
 
+// Anti-click constants: short fade in/out at start and stop to avoid pops.
+// 5ms in / 8ms out — inaudible but eliminates discontinuity clicks.
+const ANTI_CLICK_IN = 0.005;
+const ANTI_CLICK_OUT = 0.008;
+
 function playPad(bankIdx, padIdx, velocity = 1.0) {
   initAudio();
   if (ctx.state === 'suspended') ctx.resume();
@@ -852,14 +857,18 @@ function playPad(bankIdx, padIdx, velocity = 1.0) {
   const source = ctx.createBufferSource();
   source.buffer = pad.audioBuffer;
   const gain = ctx.createGain();
-  gain.gain.value = pad.level * velocity;
   source.connect(gain).connect(masterGain);
 
-  // Apply trim points
   const ts = pad.trimStart || 0;
   const te = (pad.trimEnd != null) ? pad.trimEnd : pad.audioBuffer.duration;
   const trimmedDur = Math.max(0.01, te - ts);
   const startedAt = ctx.currentTime;
+  const targetGain = pad.level * velocity;
+
+  // Anti-click fade-in: start at 0, ramp to target over 5ms
+  gain.gain.setValueAtTime(0, startedAt);
+  gain.gain.linearRampToValueAtTime(targetGain, startedAt + ANTI_CLICK_IN);
+
   source.start(0, ts, trimmedDur);
 
   pad.isPlaying = true;
@@ -875,8 +884,16 @@ function playPad(bankIdx, padIdx, velocity = 1.0) {
 }
 
 function stopPad(pad) {
+  if (!ctx) { pad.activeSources = []; pad.isPlaying = false; return; }
+  const now = ctx.currentTime;
   pad.activeSources.forEach(ref => {
-    try { ref.source.stop(); } catch(e) {}
+    try {
+      const currentVal = ref.gain.gain.value;
+      ref.gain.gain.cancelScheduledValues(now);
+      ref.gain.gain.setValueAtTime(currentVal, now);
+      ref.gain.gain.linearRampToValueAtTime(0, now + ANTI_CLICK_OUT);
+      ref.source.stop(now + ANTI_CLICK_OUT + 0.002);
+    } catch(e) {}
   });
   pad.activeSources = [];
   pad.isPlaying = false;
