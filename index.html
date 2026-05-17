@@ -593,6 +593,7 @@
     background: #22222A; color: #E6E6EA; padding: 10px 18px; border-radius: 6px;
     font-size: 12px; z-index: 998; opacity: 0; transition: opacity 0.3s;
     border: 0.5px solid #2A2A30;
+    pointer-events: none; /* CRITICAL: prevent invisible toast from stealing clicks */
   }
   .toast.show { opacity: 1; }
 
@@ -750,12 +751,13 @@
   .do-sched-act:hover { color: #E6E6EA; background: #22222A; }
   .do-sched-act.del:hover { color: #E24B4A; }
   .do-sched-add {
-    border-top: 0.5px dashed #2A2A30; padding: 12px;
-    text-align: center; color: #8A8A92; font-size: 11px; cursor: pointer; letter-spacing: 1px;
-    background: transparent; border-left: none; border-right: none; border-bottom: none;
-    width: 100%; font-family: inherit; margin-top: 6px;
+    border: 0.5px dashed #5DCAA5; padding: 14px;
+    text-align: center; color: #5DCAA5; font-size: 12px; cursor: pointer; letter-spacing: 1.5px;
+    background: rgba(93,202,165,0.05); border-radius: 6px;
+    width: 100%; font-family: inherit; margin-top: 8px; font-weight: 500;
+    transition: all 0.15s;
   }
-  .do-sched-add:hover { color: #5DCAA5; }
+  .do-sched-add:hover { background: rgba(93,202,165,0.15); border-style: solid; }
   .do-sched-total { font-size: 9px; color: #5DCAA5; margin: 4px 0 0 118px; font-family: 'SF Mono','Courier',monospace; }
 </style>
 </head>
