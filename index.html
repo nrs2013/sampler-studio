@@ -4094,41 +4094,35 @@ function bindDoBgmVol() {
   });
 }
 
-// DUCK 設定バインド — 深さスライダーは「ライブプレビュー」化
-// 仕様：BGM 再生中ならスライダー操作中は即座に BGM 音量がその深さまで下がる（デモ）
-//       実 DUCK（影アナ再生中）の最中なら、新しい深さがそのまま active duck の値になる
-//       実 DUCK でない時にドラッグ終了したら、BGM は 1.0（フル）に戻る
+// DUCK 設定バインド
+// 仕様：
+//   - スライダーは depthDb の「設定値」だけを変える（数値とバー位置のみ）
+//   - 実 DUCK（影アナ再生中／プレビュー中）でない時は BGM の音量を変えない
+//   - 実 DUCK 中なら、新しい深さがその場で active duck に反映される（リアルタイム）
 function bindDoDuck() {
   const depthBar = document.getElementById('doDuckDepthBar');
-  let dragWasInactive = false;  // ドラッグ開始時点で DUCK が non-active だったか
-  // depth: フル(右まで)=0dB / 空(左)=-24dB（フェーダーらしい挙動）
   depthBar.addEventListener('pointerdown', e => {
     e.preventDefault();
     try { depthBar.setPointerCapture(e.pointerId); } catch(err) {}
-    dragWasInactive = !state.door.duckActive;
-    const applyTarget = (db) => {
-      state.door.duck.depthDb = db;
-      doRenderDuck();
-      if (!doBgmDuckGain || !ctx) return;
-      // 音側：常にライブで追従（DUCK active かどうかに関わらず）
-      const targetLin = dbToLin(db);
-      const t = ctx.currentTime;
-      try {
-        doBgmDuckGain.gain.cancelScheduledValues(t);
-        doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
-        doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + 0.05);
-      } catch(_){}
-      // 視覚側：BGM フェーダーも追従
-      _animateDuckEffective(state.door.duckEffective, targetLin, 0.05);
-    };
     const update = (cx) => {
       const r = depthBar.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
       // pct = 1 → 0dB（下げない）／ pct = 0 → -24dB（最大下げ）
       let db = -((1 - pct) * 24);
-      // 0dB 付近で吸着
       db = snapToZeroDb(db, 0.6);
-      applyTarget(db);
+      state.door.duck.depthDb = db;
+      doRenderDuck();
+      // 実 DUCK 中の時だけ、新しい深さへ即座に追従。それ以外は BGM に触らない。
+      if (state.door.duckActive && doBgmDuckGain && ctx) {
+        const targetLin = dbToLin(db);
+        const t = ctx.currentTime;
+        try {
+          doBgmDuckGain.gain.cancelScheduledValues(t);
+          doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+          doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + 0.05);
+        } catch(_){}
+        _animateDuckEffective(state.door.duckEffective, targetLin, 0.05);
+      }
     };
     update(e.clientX);
     const mv = ev => { ev.preventDefault(); update(ev.clientX); };
@@ -4136,16 +4130,6 @@ function bindDoDuck() {
       window.removeEventListener('pointermove', mv);
       window.removeEventListener('pointerup', up);
       doSave();
-      // 実 DUCK でないなら、ドラッグ終了で BGM を 1.0（フル）に滑らかに戻す
-      if (dragWasInactive && !state.door.duckActive && doBgmDuckGain && ctx) {
-        const t = ctx.currentTime;
-        try {
-          doBgmDuckGain.gain.cancelScheduledValues(t);
-          doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
-          doBgmDuckGain.gain.linearRampToValueAtTime(1.0, t + 0.20);
-        } catch(_){}
-        _animateDuckEffective(state.door.duckEffective, 1.0, 0.20);
-      }
     };
     window.addEventListener('pointermove', mv);
     window.addEventListener('pointerup', up);
