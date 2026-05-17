@@ -1156,8 +1156,12 @@ function handleMIDI(e) {
 // KEYBOARD
 // ===========================
 document.addEventListener('keydown', e => {
-  // Ignore when typing in preset name
-  if (e.target.tagName === 'INPUT') return;
+  // Ignore when typing in INPUT/TEXTAREA fields
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  // If browser shortcut modifiers are held (Cmd/Ctrl/Alt/Meta), let the browser handle it.
+  // This protects Cmd+R (reload), Cmd+T (new tab), Cmd+W (close), Cmd+F (find), etc.
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
 
   if (state.isLearning && state.isLearning.type === 'key') {
     if (e.code === 'Escape') {
