@@ -983,6 +983,9 @@
       <button class="btn-small" onclick="savePreset()">SAVE</button>
       <button class="btn-small" onclick="openLoadModal()">LOAD</button>
       <button class="btn-small" onclick="newPreset()">NEW</button>
+      <span style="width:1px;height:18px;background:#1A1A20;margin:0 4px;"></span>
+      <button class="btn-small" onclick="exportProject()" title="プロジェクト全体（音源＋設定）をZIPに書き出し" style="border-color:#2A3D38;color:#9DE0C5;">📦 EXPORT</button>
+      <button class="btn-small" onclick="openImportDialog()" title=".ssproj.zipを読み込んで完全復元" style="border-color:#2A3D38;color:#9DE0C5;">📂 IMPORT</button>
     </div>
   </div>
 
@@ -1713,6 +1716,215 @@ async function deleteSampleFromDB(id) {
     tx.objectStore('samples').delete(id);
     tx.oncomplete = () => resolve();
   });
+}
+
+// ===========================
+// PROJECT EXPORT / IMPORT (.ssproj.zip)
+// ===========================
+const SSPROJ_VERSION = 1;
+
+function loadJSZip() {
+  return new Promise((resolve, reject) => {
+    if (window.JSZip) return resolve(window.JSZip);
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => resolve(window.JSZip);
+    s.onerror = () => reject(new Error('JSZipライブラリの読み込みに失敗（ネット接続を確認してください）'));
+    document.head.appendChild(s);
+  });
+}
+
+async function _getAllFromStore(name) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(name, 'readonly');
+    const req = tx.objectStore(name).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = e => reject(e);
+  });
+}
+
+async function _clearStore(name) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(name, 'readwrite');
+    tx.objectStore(name).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e);
+  });
+}
+
+async function exportProject() {
+  try {
+    // 最新状態を localStorage にコミット
+    try { saveStateLocal(); } catch(_){}
+    try { if (typeof doSave === 'function') doSave(); } catch(_){}
+
+    showToast('📦 プロジェクト書き出し準備中...');
+    const JSZip = await loadJSZip();
+    const zip = new JSZip();
+
+    const samples = await _getAllFromStore('samples');
+    const presets = await _getAllFromStore('presets');
+
+    const totalBytes = samples.reduce((a,s)=>a+((s.data && s.data.byteLength)||0), 0);
+    const totalMB = (totalBytes/1024/1024).toFixed(1);
+    showToast(`📦 ${samples.length}個の音源を圧縮中...合計${totalMB}MB`);
+
+    const manifest = {
+      version: SSPROJ_VERSION,
+      app: 'SAMPLER STUDIO',
+      exportedAt: new Date().toISOString(),
+      sampleCount: samples.length,
+      presetCount: presets.length,
+      samples: samples.map(s => ({
+        id: s.id,
+        name: s.name || 'unnamed',
+        size: (s.data && s.data.byteLength) || 0,
+      })),
+    };
+
+    zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+    zip.file('presets.json', JSON.stringify(presets, null, 2));
+    zip.file('state.json', JSON.stringify({
+      samplerStudioState: localStorage.getItem('samplerStudioState'),
+      samplerStudioDoor: localStorage.getItem('samplerStudioDoor'),
+    }, null, 2));
+    zip.file('README.txt',
+      'SAMPLER STUDIO プロジェクトファイル\n' +
+      '======================================\n\n' +
+      '出力日時: ' + new Date().toLocaleString('ja-JP') + '\n' +
+      '音源数  : ' + samples.length + '\n' +
+      'プリセット: ' + presets.length + '\n\n' +
+      '【復元方法】\n' +
+      '1. https://nrs2013.github.io/sampler-studio/ をChromeで開く\n' +
+      '2. 右上の「📂 IMPORT」ボタンをクリック\n' +
+      '3. このzipファイルを選択\n' +
+      '4. 自動でリロードされて全データが復元されます\n');
+
+    const audioFolder = zip.folder('audio');
+    for (const s of samples) {
+      if (s.data) audioFolder.file(s.id, s.data);
+    }
+
+    const blob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'STORE',  // 音源は既に圧縮済みなので無圧縮で速度優先
+    }, (meta) => {
+      // 進捗（任意）
+      if (meta.percent && Math.floor(meta.percent) % 20 === 0) {
+        showToast(`📦 圧縮中... ${Math.floor(meta.percent)}%`);
+      }
+    });
+
+    const dateStr = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+    const presetEl = document.getElementById('presetName');
+    const presetName = ((presetEl && presetEl.value) || 'project').trim() || 'project';
+    const safeName = presetName.replace(/[\/\\:*?"<>|]/g, '_');
+    const filename = `${safeName}_${dateStr}.ssproj.zip`;
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    const mb = (blob.size / 1024 / 1024).toFixed(1);
+    showToast(`✅ 書き出し完了: ${filename} (${mb} MB)`);
+  } catch (e) {
+    console.error('exportProject failed', e);
+    showToast('❌ 書き出し失敗: ' + (e.message || e));
+  }
+}
+
+function openImportDialog() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.zip,.ssproj';
+  input.style.display = 'none';
+  input.onchange = async () => {
+    if (input.files && input.files[0]) {
+      await importProject(input.files[0]);
+    }
+    input.remove();
+  };
+  document.body.appendChild(input);
+  input.click();
+}
+
+async function importProject(file) {
+  try {
+    const sizeMB = (file.size/1024/1024).toFixed(1);
+    if (!confirm(
+      `「${file.name}」(${sizeMB} MB) を読み込みます。\n\n` +
+      `⚠️ 現在のプロジェクトデータ（音源・パッド設定・スケジュール）はすべて上書きされます。\n\n` +
+      `続行しますか？`
+    )) {
+      return;
+    }
+
+    showToast('📂 プロジェクト読み込み中... ファイルが大きいと数十秒かかります');
+    const JSZip = await loadJSZip();
+    const zip = await JSZip.loadAsync(file);
+
+    const manifestFile = zip.file('manifest.json');
+    if (!manifestFile) throw new Error('manifest.json が見つかりません（SAMPLER STUDIO 形式ではないかも）');
+    const manifest = JSON.parse(await manifestFile.async('string'));
+
+    if (manifest.app !== 'SAMPLER STUDIO') {
+      throw new Error('SAMPLER STUDIO 形式のファイルではありません');
+    }
+
+    // 既存データをクリア
+    await _clearStore('samples');
+    await _clearStore('presets');
+
+    // 音源復元
+    let restoredSamples = 0;
+    const totalToRestore = (manifest.samples || []).length;
+    for (let i = 0; i < (manifest.samples || []).length; i++) {
+      const sm = manifest.samples[i];
+      const f = zip.file(`audio/${sm.id}`);
+      if (!f) {
+        console.warn('missing audio file in zip:', sm.id);
+        continue;
+      }
+      const buf = await f.async('arraybuffer');
+      await saveSampleToDB(sm.id, buf, sm.name);
+      restoredSamples++;
+      if (i % 5 === 0) showToast(`📂 音源復元中... ${i+1}/${totalToRestore}`);
+    }
+
+    // Presets 復元
+    const presetsFile = zip.file('presets.json');
+    if (presetsFile) {
+      const presets = JSON.parse(await presetsFile.async('string'));
+      if (Array.isArray(presets) && presets.length) {
+        if (!db) await openDB();
+        const tx = db.transaction('presets', 'readwrite');
+        for (const p of presets) tx.objectStore('presets').put(p);
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+      }
+    }
+
+    // localStorage 復元
+    const stateFile = zip.file('state.json');
+    if (stateFile) {
+      const stateJson = JSON.parse(await stateFile.async('string'));
+      if (stateJson.samplerStudioState) localStorage.setItem('samplerStudioState', stateJson.samplerStudioState);
+      if (stateJson.samplerStudioDoor)  localStorage.setItem('samplerStudioDoor',  stateJson.samplerStudioDoor);
+    }
+
+    showToast(`✅ 復元完了: ${restoredSamples}個の音源 / ${manifest.presetCount||0}個のプリセット — 3秒後にリロード`);
+    setTimeout(() => location.reload(), 3000);
+  } catch (e) {
+    console.error('importProject failed', e);
+    showToast('❌ 読み込み失敗: ' + (e.message || e));
+    alert('読み込みに失敗しました:\n\n' + (e.message || e));
+  }
 }
 
 async function loadSampleToPad(bankIdx, padIdx, file) {
