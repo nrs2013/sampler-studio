@@ -3676,7 +3676,7 @@ function doLibPreview(slotIdx) {
   }
   if (ctx.state === 'suspended') ctx.resume();
   // 本番想定で鳴らす：BGMが用意済みなら自動再生（DUCKの効きを確認できる）
-  if (state.door.bgm.audioBuffer && !state.door.bgm.isPlaying) {
+  if (state.door.bgm.audioElement && !state.door.bgm.isPlaying) {
     doBgmPlay();
   }
   if (doAnnGain && ctx) {
@@ -3692,7 +3692,7 @@ function doLibPreview(slotIdx) {
   state.door.previewSource = null;
   state.door.previewGain = null;
   doRenderLibrary();
-  if (!state.door.bgm.audioBuffer) {
+  if (!state.door.bgm.audioElement) {
     showToast('BGM 未読込：DUCK 効果は確認できません（影アナのみ再生）');
   }
   // 2. フェード完了後にナレ再生
