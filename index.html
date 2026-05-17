@@ -1976,10 +1976,19 @@ function bindTrimZoomWheel() {
       drawWaveform();
       updateTrimUI();
     });
+    // Absorb wheel events on the slider itself so Magic Mouse swipes
+    // (horizontal or vertical) don't accidentally change zoom value.
+    slider.addEventListener('wheel', e => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
   }
 
   wrap.addEventListener('wheel', e => {
+    // Always prevent default to keep modal stable (no scroll-up navigation)
     e.preventDefault();
+    // Skip if this is a pure horizontal swipe — only respond to vertical wheel for zoom
+    const absY = Math.abs(e.deltaY);
+    const absX = Math.abs(e.deltaX);
+    if (absY < 1) return;            // pure horizontal swipe → ignore
+    if (absX > absY * 1.5) return;   // diagonal but dominantly horizontal → ignore
     const view = getTrimView();
     if (!view) return;
     const rect = wrap.getBoundingClientRect();
@@ -1988,7 +1997,6 @@ function bindTrimZoomWheel() {
     const xRel = Math.max(0, Math.min(innerW, e.clientX - rect.left - padPx));
     const cursorTime = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
     const curSlider = zoomToSlider(state.trimEditor.zoom || 1);
-    // Wheel step: ~4 slider units per notch (smooth)
     const step = e.deltaY < 0 ? 4 : -4;
     const newSlider = Math.max(0, Math.min(100, curSlider + step));
     setTrimZoom(sliderToZoom(newSlider), cursorTime);
