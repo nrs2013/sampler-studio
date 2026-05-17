@@ -1665,10 +1665,19 @@ function playPad(bankIdx, padIdx, velocity = 1.0) {
   const targetGain = pad.level * velocity;
 
   // Anti-click fade-in: start at 0, ramp to target over 5ms
-  gain.gain.setValueAtTime(0, startedAt);
-  gain.gain.linearRampToValueAtTime(targetGain, startedAt + ANTI_CLICK_IN);
+  try {
+    gain.gain.setValueAtTime(0, startedAt);
+    gain.gain.linearRampToValueAtTime(targetGain, startedAt + ANTI_CLICK_IN);
+  } catch(e) { try { gain.gain.value = targetGain; } catch(_){} }
 
-  source.start(0, ts, trimmedDur);
+  try {
+    source.start(0, ts, trimmedDur);
+  } catch(e) {
+    console.warn('playPad start failed:', e);
+    try { source.disconnect(); } catch(_){}
+    try { gain.disconnect(); } catch(_){}
+    return;
+  }
 
   pad.isPlaying = true;
   const ref = { source, gain, startedAt, trimStart: ts, trimDuration: trimmedDur };
@@ -2310,6 +2319,11 @@ async function loadPresetByName(name) {
     req.onsuccess = async () => {
       const p = req.result;
       if (!p) return resolve();
+      // Anti-click: gracefully fade out any currently playing pads before
+      // overwriting their audio buffers (prevents abrupt artifacts).
+      try { stopAll(); } catch(_){}
+      // Small wait so fade-out (8ms) + disconnect (50ms) completes before mutating state
+      await new Promise(r => setTimeout(r, 80));
       state.playMode = p.playMode || 'poly';
       state.fadeTime = p.fadeTime || 2.0;
       state.fadeCurve = p.fadeCurve || 'linear';
@@ -2386,8 +2400,11 @@ async function deletePreset(name) {
   tx.oncomplete = () => { openLoadModal(); showToast('削除しました'); };
 }
 
-function newPreset() {
+async function newPreset() {
   if (!confirm('全パッドを空にして新規プリセットを作成しますか？（現在の編集は保存されません）')) return;
+  // Anti-click: fade out any active pad playback before wiping state
+  try { stopAll(); } catch(_){}
+  await new Promise(r => setTimeout(r, 80));
   initBanks();
   state.currentBank = 0;
   state.playMode = 'poly';
@@ -3786,7 +3803,8 @@ async function doBgmLoadFile(slot, f) {
     const arrBuf = await f.arrayBuffer();
     const id = `door-bgm-${slot}-${Date.now()}`;
     try { await saveSampleToDB(id, arrBuf, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); }
-    _doBgmDetach(slot);
+    // Anti-click: fade current BGM (if playing) before replacing audio nodes
+    await _doBgmDetachAsync(slot);
     const blob = new Blob([arrBuf], { type: guessAudioMime(f.name, f.type) });
     const url = URL.createObjectURL(blob);
     const audio = new Audio();
@@ -3811,6 +3829,9 @@ async function doBgmLoadFile(slot, f) {
   }
 }
 
+// Detach BGM nodes. If currently playing, performs anti-click fade first (async).
+// Callers that need to swap BGM while music is playing should `await _doBgmDetachAsync(slot)`.
+// Synchronous _doBgmDetach kept for non-playing detach (e.g. CLEAR after stop completed, init).
 function _doBgmDetach(slot) {
   const b = _bgmObj(slot);
   if (b.audioElement) {
@@ -3827,6 +3848,36 @@ function _doBgmDetach(slot) {
     b.objectUrl = null;
   }
   b.isPlaying = false;
+}
+
+// Anti-click safe detach. If BGM is playing, ramp down via gain first (25ms),
+// THEN detach. Returns a promise that resolves after detach completes.
+async function _doBgmDetachAsync(slot) {
+  const b = _bgmObj(slot);
+  if (!b) return;
+  if (b.audioElement && b.isPlaying && ctx) {
+    const g = _bgmUserGain(slot);
+    if (g) {
+      const t = ctx.currentTime;
+      try {
+        const cur = g.gain.value;
+        g.gain.cancelScheduledValues(t);
+        g.gain.setValueAtTime(cur, t);
+        g.gain.linearRampToValueAtTime(0.0001, t + BGM_STOP_FADE);
+      } catch(e){}
+    }
+    // Wait for fade to complete before pausing the element
+    await new Promise(r => setTimeout(r, BGM_STOP_FADE * 1000 + 5));
+    // Restore gain for next play (audio is silent now)
+    if (g) {
+      try {
+        const t2 = ctx.currentTime;
+        g.gain.cancelScheduledValues(t2);
+        g.gain.setValueAtTime(b.vol, t2);
+      } catch(e){}
+    }
+  }
+  _doBgmDetach(slot);
 }
 
 function doBgmLoad(slot) {
@@ -3867,10 +3918,10 @@ function bindDoBgmDrop() {
   });
 }
 
-function doBgmClear(slot) {
+async function doBgmClear(slot) {
   if (!slot) slot = 'door';
-  doBgmStop(slot);
-  _doBgmDetach(slot);
+  // Anti-click: fade-and-detach in proper sequence
+  await _doBgmDetachAsync(slot);
   const b = _bgmObj(slot);
   b.sampleId = null; b.sampleName = null; b.audioBuffer = null; b.duration = NaN;
   doRenderBgm(slot);
