@@ -1381,8 +1381,24 @@ function saveStateLocal() {
       masterVol: state.masterVol,
       controlAssign: state.controlAssign,
       currentBank: state.currentBank,
+      banks: state.banks.map(b => ({
+        name: b.name,
+        pads: b.pads.map(p => ({
+          sampleName: p.sampleName, sampleId: p.sampleId,
+          level: p.level, key: p.key, midiNote: p.midiNote,
+          trimStart: p.trimStart || 0, trimEnd: p.trimEnd ?? null,
+        })),
+      })),
+      hold: state.hold.map(h => h ? ({
+        bankIdx: h.bankIdx, padIdx: h.padIdx, sampleName: h.sampleName,
+        padData: h.padData ? {
+          sampleName: h.padData.sampleName, sampleId: h.padData.sampleId,
+          level: h.padData.level, key: h.padData.key, midiNote: h.padData.midiNote,
+          trimStart: h.padData.trimStart || 0, trimEnd: h.padData.trimEnd ?? null,
+        } : null,
+      }) : null),
     }));
-  } catch(e) {}
+  } catch(e) { console.warn('saveStateLocal failed', e); }
 }
 
 function loadStateLocal() {
@@ -1396,7 +1412,66 @@ function loadStateLocal() {
     state.masterVol = s.masterVol ?? 0.71;
     if (s.controlAssign) state.controlAssign = s.controlAssign;
     state.currentBank = s.currentBank || 0;
-  } catch(e) {}
+
+    // Restore pad metadata (sampleId references; audioBuffers loaded async in init)
+    if (s.banks) {
+      for (let b = 0; b < NUM_BANKS; b++) {
+        const bd = s.banks[b];
+        if (!bd) continue;
+        if (bd.name) state.banks[b].name = bd.name;
+        for (let i = 0; i < PADS_PER_BANK; i++) {
+          const sd = bd.pads && bd.pads[i];
+          if (!sd) continue;
+          const pad = state.banks[b].pads[i];
+          pad.sampleName = sd.sampleName ?? null;
+          pad.sampleId = sd.sampleId ?? null;
+          pad.level = sd.level ?? 1.0;
+          if (sd.key) pad.key = sd.key;
+          if (sd.midiNote != null) pad.midiNote = sd.midiNote;
+          pad.trimStart = sd.trimStart || 0;
+          pad.trimEnd = sd.trimEnd;
+        }
+      }
+    }
+    if (Array.isArray(s.hold)) {
+      state.hold = s.hold.map(h => h || null);
+    }
+  } catch(e) { console.warn('loadStateLocal failed', e); }
+}
+
+// Restore audio buffers from IndexedDB for every pad / HOLD slot that has a sampleId.
+// Called once at startup after openDB() completes.
+async function restoreAudioBuffers() {
+  if (!db || !ctx) return;
+  const tasks = [];
+  for (let b = 0; b < NUM_BANKS; b++) {
+    for (let i = 0; i < PADS_PER_BANK; i++) {
+      const pad = state.banks[b].pads[i];
+      if (pad.sampleId) tasks.push(restoreOne(pad));
+    }
+  }
+  for (let i = 0; i < state.hold.length; i++) {
+    const h = state.hold[i];
+    if (h && h.padData && h.padData.sampleId) tasks.push(restoreOne(h.padData));
+  }
+  await Promise.all(tasks);
+
+  async function restoreOne(target) {
+    try {
+      const rec = await getSampleFromDB(target.sampleId);
+      if (rec && rec.data) {
+        target.audioBuffer = await ctx.decodeAudioData(rec.data.slice(0));
+      } else {
+        // Sample data missing in DB — clear the reference so pad shows as empty
+        target.sampleId = null;
+        target.sampleName = null;
+      }
+    } catch (err) {
+      console.warn('restore failed for', target.sampleId, err);
+      target.sampleId = null;
+      target.sampleName = null;
+    }
+  }
 }
 
 // ===========================
@@ -2596,6 +2671,12 @@ async function init() {
   document.querySelectorAll('[data-curve]').forEach(b => b.classList.toggle('active', b.dataset.curve === state.fadeCurve));
   bindCurveEditor();
   render();
+  // Asynchronously restore audio buffers from IndexedDB.
+  // Pad metadata is shown immediately (with names), audio loads in shortly after.
+  restoreAudioBuffers().then(() => {
+    render();
+    showToast('サンプル復元完了');
+  }).catch(e => console.warn('restore error', e));
   requestAnimationFrame(() => {
     resizePads();
     drawCurveEditor();
