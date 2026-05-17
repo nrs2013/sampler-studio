@@ -3486,14 +3486,15 @@ function bindDoBgmVol() {
 // DUCK 設定バインド
 function bindDoDuck() {
   const depthBar = document.getElementById('doDuckDepthBar');
-  // depth: 0..-24dB（バー、ドラッグで設定）
+  // depth: フル(右まで)=0dB / 空(左)=-24dB（フェーダーらしい挙動）
   depthBar.addEventListener('pointerdown', e => {
     e.preventDefault();
     try { depthBar.setPointerCapture(e.pointerId); } catch(err) {}
     const update = (cx) => {
       const r = depthBar.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
-      state.door.duck.depthDb = -(pct * 24);
+      // pct = 1 → 0dB（下げない）／ pct = 0 → -24dB（最大下げ）
+      state.door.duck.depthDb = -((1 - pct) * 24);
       doRenderDuck();
     };
     update(e.clientX);
@@ -3526,7 +3527,9 @@ function bindDoDuck() {
 function doRenderDuck() {
   const d = state.door.duck;
   document.getElementById('doDuckDepthVal').textContent = dbToStr(d.depthDb) + ' dB';
-  document.getElementById('doDuckDepthFill').style.width = ((-d.depthDb) / 24 * 100) + '%';
+  // フル(100%) = 0dB / 空(0%) = -24dB（フェーダー風）
+  const pct = (24 + d.depthDb) / 24;
+  document.getElementById('doDuckDepthFill').style.width = (Math.max(0, Math.min(1, pct)) * 100) + '%';
   const inp = document.getElementById('doDuckFadeInput');
   if (inp && document.activeElement !== inp) inp.value = (d.fadeSec ?? 0.8).toFixed(1);
 }
@@ -4442,6 +4445,17 @@ function doInit() {
   bindDoBgmDrop();
   bindDoLibDrop();
   bindDoDuck();
+  // ドラッグ系の残留ハイライトをグローバルに掃除
+  const clearDropOver = () => {
+    document.querySelectorAll('.drop-over').forEach(el => el.classList.remove('drop-over'));
+  };
+  document.addEventListener('dragend', clearDropOver);
+  document.addEventListener('drop', clearDropOver, true); // capture: drop が起きたら必ず消す
+  document.addEventListener('mouseleave', clearDropOver);
+  // 念のため、5秒ごとに「ドラッグ中じゃないのに drop-over が残ってる」のを掃除
+  setInterval(() => { if (!window._isDragging) clearDropOver(); }, 5000);
+  document.addEventListener('dragstart', () => { window._isDragging = true; });
+  document.addEventListener('dragend', () => { window._isDragging = false; });
   // expose globals for inline onclick="..." (no duplicate addEventListener — that caused double-add)
   window.doSchedAdd = doSchedAdd;
   window.doSchedDel = doSchedDel;
