@@ -1378,6 +1378,8 @@ const state = {
     activeAnnGain: null,
     activeAnnSlot: -1,
     duckActive: false,
+    duckEffective: 1.0,  // 0..1, BGM fader visual multiplier (1.0 = no duck, 0.5 = -6dB duck)
+    duckAnimRaf: null,   // requestAnimationFrame handle for smooth visual ramp
     previewSlot: null,
     previewSource: null,
     previewGain: null,
@@ -3970,10 +3972,13 @@ function doRenderBgm(slot) {
   }
   const loopBtn = document.getElementById('doBgmLoopBtn' + sf);
   if (loopBtn) loopBtn.classList.toggle('active', b.loop);
-  const db = linToDb(b.vol);
+  // フェーダー視覚は DUCK 連動：実効レベル = b.vol × duckEffective を表示
+  const duckMul = (state.door.duckEffective != null) ? state.door.duckEffective : 1.0;
+  const effective = b.vol * duckMul;
+  const db = linToDb(effective);
   const dbEl = document.getElementById('doBgmVolDb' + sf);
   if (dbEl) dbEl.textContent = dbToStr(db);
-  const volPct = (b.vol / 1.4) * 100;
+  const volPct = (effective / 1.4) * 100;
   const fill = document.getElementById('doBgmVolFill' + sf);
   const thumb = document.getElementById('doBgmVolThumb' + sf);
   if (fill) fill.style.width = volPct + '%';
@@ -4927,9 +4932,12 @@ function doDuckActivate() {
   const targetLin = dbToLin(state.door.duck.depthDb); // 0..1
   const t = ctx.currentTime;
   const fade = Math.max(0.01, state.door.duck.fadeSec);
+  // 音側：duck gain を target まで落とす
   doBgmDuckGain.gain.cancelScheduledValues(t);
   doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
   doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + fade);
+  // 視覚側：BGM フェーダー を duckEffective に合わせて滑らかに下げる
+  _animateDuckEffective(state.door.duckEffective, targetLin, fade);
 }
 
 function doDuckRelease() {
@@ -4937,9 +4945,53 @@ function doDuckRelease() {
   state.door.duckActive = false;
   const t = ctx.currentTime;
   const fade = Math.max(0.01, state.door.duck.fadeSec);
+  // 音側：duck gain を 1.0 に戻す
   doBgmDuckGain.gain.cancelScheduledValues(t);
   doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
   doBgmDuckGain.gain.linearRampToValueAtTime(1.0, t + fade);
+  // 視覚側：BGM フェーダー を元に戻す
+  _animateDuckEffective(state.door.duckEffective, 1.0, fade);
+}
+
+// duckEffective を from → to に fade 秒で滑らかにアニメ。BGM フェーダー視覚を毎フレーム更新。
+function _animateDuckEffective(from, to, fadeSec) {
+  // 既存のアニメをキャンセル
+  if (state.door.duckAnimRaf) {
+    cancelAnimationFrame(state.door.duckAnimRaf);
+    state.door.duckAnimRaf = null;
+  }
+  const startTs = performance.now();
+  const durMs = Math.max(10, fadeSec * 1000);
+  function tick() {
+    const elapsed = performance.now() - startTs;
+    const p = Math.min(1, elapsed / durMs);
+    state.door.duckEffective = from + (to - from) * p;
+    // 両 BGM スロットの視覚を更新
+    BGM_SLOTS.forEach(_doRenderBgmFaderOnly);
+    if (p < 1) {
+      state.door.duckAnimRaf = requestAnimationFrame(tick);
+    } else {
+      state.door.duckEffective = to;
+      state.door.duckAnimRaf = null;
+      BGM_SLOTS.forEach(_doRenderBgmFaderOnly);
+    }
+  }
+  state.door.duckAnimRaf = requestAnimationFrame(tick);
+}
+
+// フェーダー位置と dB 表示だけを更新（DOM 全部再描画しない）— アニメ中の負荷を抑える
+function _doRenderBgmFaderOnly(slot) {
+  const b = _bgmObj(slot);
+  if (!b) return;
+  const sf = _bgmIdSuffix(slot);
+  const effective = b.vol * state.door.duckEffective;
+  const pct = (effective / 1.4) * 100;
+  const fill = document.getElementById('doBgmVolFill' + sf);
+  const thumb = document.getElementById('doBgmVolThumb' + sf);
+  if (fill) fill.style.width = pct + '%';
+  if (thumb) thumb.style.left = pct + '%';
+  const dbEl = document.getElementById('doBgmVolDb' + sf);
+  if (dbEl) dbEl.textContent = dbToStr(linToDb(effective));
 }
 
 // ---- PERSISTENCE ----
