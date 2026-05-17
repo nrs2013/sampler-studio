@@ -671,11 +671,18 @@
     font-size: 9px; color: #8A8A92; letter-spacing: 2px; margin-bottom: 8px;
   }
   /* NOW / NEXT — 黄色テーマで大きく */
-  #doNowCard { border-color: rgba(93,202,165,0.35); padding: 22px 26px; }
+  #doNowCard {
+    border-color: rgba(93,202,165,0.35);
+    padding: 14px 22px;
+    display: flex; align-items: center; gap: 22px;
+  }
+  .now-block { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .now-block.next-block { flex: 1; border-left: 0.5px solid #2A2A30; padding-left: 22px; }
   .do-clock-now {
-    font-family: inherit; font-size: 110px; font-weight: 600;
+    font-family: inherit; font-size: 88px; font-weight: 600;
     color: #FFFFFF; letter-spacing: 2px; line-height: 1;
   }
+  .do-clock-divider { display: none; } /* 横並びでは不要 */
   .do-clock-divider { height: 0.5px; background: #2A2A30; margin: 10px 0; }
   .do-clock-next-label { font-size: 9px; color: #8A8A92; letter-spacing: 1.5px; margin-bottom: 3px; }
   .do-clock-next-name { font-size: 12px; color: #E6E6EA; min-height: 14px; display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
@@ -686,7 +693,7 @@
   .do-status-badge {
     display: inline-block; background: rgba(93,202,165,0.15); color: #5DCAA5;
     padding: 3px 10px; border-radius: 4px; font-size: 11px; letter-spacing: 0.5px;
-    margin-top: 8px;
+    align-self: flex-start;
   }
   .do-status-badge.duck { background: rgba(239,159,39,0.15); color: #EF9F27; }
   .do-status-badge.playing { background: rgba(226,75,74,0.15); color: #E24B4A; }
@@ -1124,15 +1131,18 @@
   <!-- DOOR OPEN PAGE -->
   <div id="doorPage" style="display:none;">
     <div class="do-top">
-      <!-- NOW / NEXT -->
+      <!-- NOW / NEXT — 横並び -->
       <div class="do-card" id="doNowCard">
-        <div class="do-card-head">NOW</div>
-        <div class="do-clock-now" id="doClockNow">--:--</div>
-        <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
-        <div class="do-clock-divider"></div>
-        <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
-        <div class="do-clock-next-name" id="doNextName">予定なし</div>
-        <div class="do-clock-next-eta" id="doNextEta">--:--</div>
+        <div class="now-block">
+          <div class="do-card-head">NOW</div>
+          <div class="do-clock-now" id="doClockNow">--:--</div>
+          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
+        </div>
+        <div class="now-block next-block">
+          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
+          <div class="do-clock-next-name" id="doNextName">予定なし</div>
+          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
+        </div>
       </div>
       <!-- DOOR OPEN BGM -->
       <div class="do-card do-bgm-card" id="doBgmCardDoor" data-slot="door">
