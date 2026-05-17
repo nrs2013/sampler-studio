@@ -296,6 +296,21 @@
   .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
   .pad.empty .pad-grip { display: none; }
 
+  /* Edit (trim) button — next to grip, opens waveform trim modal */
+  .pad-edit-btn {
+    position: absolute; top: 3px; right: 30px;
+    width: 22px; height: 22px;
+    background: rgba(93,202,165,0.12); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 4;
+    color: #5DCAA5; font-size: 12px;
+    border: none; font-family: inherit;
+    transition: background 0.1s;
+  }
+  .pad-edit-btn:hover { background: rgba(93,202,165,0.3); }
+  .pad-edit-btn:active { background: rgba(93,202,165,0.5); }
+  .pad-body.empty .pad-edit-btn { display: none; }
+
   /* Flash effect when assigned key/MIDI is pressed */
   .pad-body.flash {
     background: #5DCAA5 !important;
@@ -432,15 +447,31 @@
   }
 
   /* TRIM EDITOR */
-  .trim-modal { width: 720px; max-width: 90vw; }
+  .trim-modal { width: 760px; max-width: 92vw; }
   .trim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
   .trim-title { font-size: 14px; font-weight: 500; }
   .trim-subtitle { font-size: 11px; color: #8A8A92; margin-top: 2px; }
+  .zoom-bar {
+    display: flex; gap: 4px; margin-bottom: 8px; align-items: center;
+  }
+  .zoom-bar-label { font-size: 9px; color: #8A8A92; letter-spacing: 1px; padding: 0 8px 0 2px; }
+  .zoom-btn {
+    background: #22222A; border: none; color: #8A8A92; cursor: pointer;
+    padding: 5px 10px; border-radius: 4px; font-size: 11px; font-family: inherit;
+  }
+  .zoom-btn:hover { background: #2D2D35; color: #E6E6EA; }
+  .zoom-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
+  .zoom-hint { margin-left: auto; font-size: 9px; color: #5A5A60; }
   .waveform-wrap {
     position: relative; background: #0F0F12; border: 0.5px solid #2A2A30;
-    border-radius: 6px; padding: 10px; margin-bottom: 12px;
+    border-radius: 6px; padding: 10px; margin-bottom: 4px;
   }
-  .waveform-canvas { display: block; width: 100%; height: 140px; }
+  .waveform-canvas { display: block; width: 100%; height: 160px; }
+  .trim-ruler {
+    display: flex; justify-content: space-between; padding: 0 10px;
+    font-size: 9px; color: #5A5A60; letter-spacing: 0.5px; margin-bottom: 12px;
+    font-family: var(--font-mono, monospace);
+  }
   .trim-overlay {
     position: absolute; top: 10px; bottom: 10px; pointer-events: none;
   }
@@ -1423,6 +1454,7 @@ function renderPads() {
       cell.innerHTML = `
         <div class="pad-body${pad.isPlaying ? ' playing' : ''}">
           <span class="pad-grip" draggable="true" title="掴んで移動">⋮⋮</span>
+          <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">✎</button>
           <div class="pad-head">
             <span class="pad-num">${idx+1}</span>
             ${pad.isPlaying ? '<span style="color:#5DCAA5;">▶</span>' : '<span></span>'}
@@ -1462,6 +1494,7 @@ function renderPads() {
 
     body.onclick = (e) => {
       if (e.target.closest('.pad-grip')) return;
+      if (e.target.closest('.pad-edit-btn')) return;
       if (e.target.closest('.badge')) return;
       if (pad.audioBuffer) playPad(state.currentBank, idx);
     };
@@ -1671,9 +1704,14 @@ let trimAnimating = false;
 function openTrimEditor(bankIdx, padIdx) {
   const pad = state.banks[bankIdx].pads[padIdx];
   if (!pad.audioBuffer) return;
-  state.trimEditor = { bankIdx, padIdx };
   const dur = pad.audioBuffer.duration;
   if (pad.trimEnd == null) pad.trimEnd = dur;
+  // Initialize zoom centered on the trim region
+  state.trimEditor = {
+    bankIdx, padIdx,
+    zoom: 1,
+    viewCenter: (pad.trimStart + pad.trimEnd) / 2,
+  };
 
   const modal = document.getElementById('modal');
   const content = document.getElementById('modalContent');
@@ -1682,9 +1720,20 @@ function openTrimEditor(bankIdx, padIdx) {
       <div class="trim-header">
         <div>
           <div class="trim-title">PAD ${padIdx+1} ・ ${pad.sampleName}</div>
-          <div class="trim-subtitle">音の頭・お尻をハンドル(緑＝開始/橙＝終了)でドラッグ調整</div>
+          <div class="trim-subtitle">音の頭・お尻をハンドル(緑＝開始/橙＝終了)でドラッグ調整・ホイールでズーム</div>
         </div>
         <button class="btn-small" onclick="closeTrimEditor()">✕</button>
+      </div>
+      <div class="zoom-bar">
+        <span class="zoom-bar-label">ZOOM</span>
+        <button class="zoom-btn active" data-zoom="1" onclick="setTrimZoom(1)">FIT</button>
+        <button class="zoom-btn" data-zoom="2" onclick="setTrimZoom(2)">2×</button>
+        <button class="zoom-btn" data-zoom="4" onclick="setTrimZoom(4)">4×</button>
+        <button class="zoom-btn" data-zoom="8" onclick="setTrimZoom(8)">8×</button>
+        <button class="zoom-btn" data-zoom="16" onclick="setTrimZoom(16)">16×</button>
+        <button class="zoom-btn" data-zoom="32" onclick="setTrimZoom(32)">32×</button>
+        <button class="zoom-btn" data-zoom="64" onclick="setTrimZoom(64)">64×</button>
+        <span class="zoom-hint">マウスホイール: ズーム / ハンドル付近をダブルクリック: そこにズーム</span>
       </div>
       <div class="waveform-wrap" id="wfWrap">
         <canvas class="waveform-canvas" id="wfCanvas"></canvas>
@@ -1693,6 +1742,11 @@ function openTrimEditor(bankIdx, padIdx) {
         <div class="trim-playhead" id="playhead" style="display:none;"></div>
         <div class="trim-handle" id="handleStart"></div>
         <div class="trim-handle end" id="handleEnd"></div>
+      </div>
+      <div class="trim-ruler">
+        <span id="rulerStart">0.000 s</span>
+        <span id="rulerMid" style="color:#8A8A92;">—</span>
+        <span id="rulerEnd">${dur.toFixed(3)} s</span>
       </div>
       <div class="trim-controls">
         <div class="trim-field">
@@ -1721,16 +1775,93 @@ function openTrimEditor(bankIdx, padIdx) {
     drawWaveform();
     updateTrimUI();
     bindTrimHandles();
+    bindTrimZoomWheel();
     document.getElementById('trimStartInp').addEventListener('change', e => {
       const v = Math.max(0, Math.min(parseFloat(e.target.value) || 0, pad.trimEnd - 0.01));
       pad.trimStart = v;
+      drawWaveform();
       updateTrimUI();
     });
     document.getElementById('trimEndInp').addEventListener('change', e => {
       const v = Math.max(pad.trimStart + 0.01, Math.min(parseFloat(e.target.value) || dur, dur));
       pad.trimEnd = v;
+      drawWaveform();
       updateTrimUI();
     });
+  });
+}
+
+// Compute the visible time range based on current zoom and center
+function getTrimView() {
+  if (!state.trimEditor) return null;
+  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+  const dur = pad.audioBuffer.duration;
+  const zoom = Math.max(1, state.trimEditor.zoom || 1);
+  if (zoom <= 1) return { viewStart: 0, viewEnd: dur, dur };
+  const viewWidth = dur / zoom;
+  let center = state.trimEditor.viewCenter ?? (pad.trimStart + pad.trimEnd) / 2;
+  let viewStart = center - viewWidth / 2;
+  let viewEnd = center + viewWidth / 2;
+  if (viewStart < 0) { viewStart = 0; viewEnd = viewWidth; }
+  if (viewEnd > dur) { viewEnd = dur; viewStart = dur - viewWidth; }
+  return { viewStart, viewEnd, dur };
+}
+
+function setTrimZoom(z) {
+  if (!state.trimEditor) return;
+  state.trimEditor.zoom = z;
+  // Re-center on midpoint of trim region for sensible zoom-in
+  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+  state.trimEditor.viewCenter = (pad.trimStart + pad.trimEnd) / 2;
+  document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === z));
+  drawWaveform();
+  updateTrimUI();
+}
+
+function bindTrimZoomWheel() {
+  const wrap = document.getElementById('wfWrap');
+  if (!wrap) return;
+  wrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const view = getTrimView();
+    if (!view) return;
+    const rect = wrap.getBoundingClientRect();
+    const padPx = 10;
+    const innerW = rect.width - padPx * 2;
+    const xRel = Math.max(0, Math.min(innerW, e.clientX - rect.left - padPx));
+    const cursorTime = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
+    const zoom = state.trimEditor.zoom || 1;
+    const zoomLevels = [1, 2, 4, 8, 16, 32, 64];
+    const idx = zoomLevels.indexOf(zoom);
+    let newZoom;
+    if (e.deltaY < 0) newZoom = zoomLevels[Math.min(zoomLevels.length - 1, idx + 1)] ?? zoom;
+    else newZoom = zoomLevels[Math.max(0, idx - 1)] ?? zoom;
+    state.trimEditor.zoom = newZoom;
+    state.trimEditor.viewCenter = cursorTime;
+    document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === newZoom));
+    drawWaveform();
+    updateTrimUI();
+  }, { passive: false });
+
+  // Double-click on waveform area → zoom in centered on click
+  wrap.addEventListener('dblclick', e => {
+    if (e.target.closest('.trim-handle')) return;
+    const view = getTrimView();
+    if (!view) return;
+    const rect = wrap.getBoundingClientRect();
+    const padPx = 10;
+    const innerW = rect.width - padPx * 2;
+    const xRel = Math.max(0, Math.min(innerW, e.clientX - rect.left - padPx));
+    const cursorTime = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
+    const zoom = state.trimEditor.zoom || 1;
+    const zoomLevels = [1, 2, 4, 8, 16, 32, 64];
+    const idx = zoomLevels.indexOf(zoom);
+    const newZoom = zoomLevels[Math.min(zoomLevels.length - 1, idx + 1)] ?? zoom;
+    state.trimEditor.zoom = newZoom;
+    state.trimEditor.viewCenter = cursorTime;
+    document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === newZoom));
+    drawWaveform();
+    updateTrimUI();
   });
 }
 
@@ -1746,8 +1877,12 @@ function resetTrim() {
   const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
   pad.trimStart = 0;
   pad.trimEnd = pad.audioBuffer.duration;
+  state.trimEditor.zoom = 1;
+  state.trimEditor.viewCenter = pad.audioBuffer.duration / 2;
+  document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === 1));
   document.getElementById('trimStartInp').value = '0.000';
   document.getElementById('trimEndInp').value = pad.trimEnd.toFixed(3);
+  drawWaveform();
   updateTrimUI();
 }
 
@@ -1767,30 +1902,63 @@ function drawWaveform() {
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
   const c = canvas.getContext('2d');
+  c.setTransform(1, 0, 0, 1, 0, 0);
   c.scale(dpr, dpr);
   const W = rect.width, H = rect.height;
   c.fillStyle = '#0F0F12';
   c.fillRect(0, 0, W, H);
-  // baseline
   c.strokeStyle = '#2A2A30';
   c.beginPath(); c.moveTo(0, H/2); c.lineTo(W, H/2); c.stroke();
-  // waveform
+  const view = getTrimView();
+  const { viewStart, viewEnd } = view;
   const ch = pad.audioBuffer.getChannelData(0);
-  const step = Math.max(1, Math.floor(ch.length / W));
+  const sampleRate = pad.audioBuffer.sampleRate;
+  const startSample = Math.max(0, Math.floor(viewStart * sampleRate));
+  const endSample = Math.min(ch.length, Math.floor(viewEnd * sampleRate));
+  const totalSamples = endSample - startSample;
+  const samplesPerPixel = totalSamples / W;
   c.strokeStyle = '#5DCAA5';
   c.lineWidth = 1;
   c.beginPath();
-  for (let x = 0; x < W; x++) {
-    let mn = 1, mx = -1;
-    for (let j = 0; j < step; j++) {
-      const v = ch[x * step + j] || 0;
-      if (v < mn) mn = v;
-      if (v > mx) mx = v;
+  if (samplesPerPixel >= 1) {
+    for (let x = 0; x < W; x++) {
+      let mn = 1, mx = -1;
+      const s0 = startSample + Math.floor(x * samplesPerPixel);
+      const s1 = startSample + Math.floor((x + 1) * samplesPerPixel);
+      for (let j = s0; j < s1 && j < ch.length; j++) {
+        const v = ch[j] || 0;
+        if (v < mn) mn = v;
+        if (v > mx) mx = v;
+      }
+      c.moveTo(x + 0.5, (1 - (mx + 1) / 2) * H);
+      c.lineTo(x + 0.5, (1 - (mn + 1) / 2) * H);
     }
-    c.moveTo(x + 0.5, (1 - (mx + 1) / 2) * H);
-    c.lineTo(x + 0.5, (1 - (mn + 1) / 2) * H);
+  } else {
+    // Highly zoomed: draw connected line through individual samples
+    for (let x = 0; x < W; x++) {
+      const sampleIdx = startSample + (x / W) * totalSamples;
+      const i0 = Math.floor(sampleIdx);
+      const i1 = Math.min(ch.length - 1, i0 + 1);
+      const frac = sampleIdx - i0;
+      const v = (ch[i0] || 0) * (1 - frac) + (ch[i1] || 0) * frac;
+      const py = (1 - (v + 1) / 2) * H;
+      if (x === 0) c.moveTo(x, py);
+      else c.lineTo(x, py);
+    }
   }
   c.stroke();
+  // Draw sample point markers when very zoomed in
+  if (samplesPerPixel < 0.5) {
+    c.fillStyle = '#9FE1CB';
+    for (let i = startSample; i < endSample; i++) {
+      const x = ((i - startSample) / totalSamples) * W;
+      const v = ch[i] || 0;
+      const py = (1 - (v + 1) / 2) * H;
+      c.beginPath();
+      c.arc(x, py, 1.5, 0, Math.PI * 2);
+      c.fill();
+    }
+  }
 }
 
 function updateTrimUI() {
@@ -1800,23 +1968,49 @@ function updateTrimUI() {
   const wrap = document.getElementById('wfWrap');
   if (!wrap) return;
   const rect = wrap.getBoundingClientRect();
-  const padPx = 10; // padding inside wrap
+  const padPx = 10;
   const innerW = rect.width - padPx * 2;
-  const startPx = padPx + (pad.trimStart / dur) * innerW;
-  const endPx = padPx + (pad.trimEnd / dur) * innerW;
+  const view = getTrimView();
+  const { viewStart, viewEnd } = view;
+  const viewSpan = viewEnd - viewStart;
+
+  const timeToPx = (t) => padPx + ((t - viewStart) / viewSpan) * innerW;
+  const startInView = pad.trimStart >= viewStart - viewSpan*0.05 && pad.trimStart <= viewEnd + viewSpan*0.05;
+  const endInView = pad.trimEnd >= viewStart - viewSpan*0.05 && pad.trimEnd <= viewEnd + viewSpan*0.05;
+  const startPx = Math.max(padPx, Math.min(padPx + innerW, timeToPx(pad.trimStart)));
+  const endPx = Math.max(padPx, Math.min(padPx + innerW, timeToPx(pad.trimEnd)));
 
   const hs = document.getElementById('handleStart');
   const he = document.getElementById('handleEnd');
   const sl = document.getElementById('shadeLeft');
   const sr = document.getElementById('shadeRight');
-  if (hs) hs.style.left = (startPx - 7) + 'px';
-  if (he) he.style.left = (endPx - 7) + 'px';
-  if (sl) { sl.style.left = padPx + 'px'; sl.style.width = (startPx - padPx) + 'px'; }
-  if (sr) { sr.style.left = endPx + 'px'; sr.style.width = (padPx + innerW - endPx) + 'px'; }
+  if (hs) {
+    hs.style.left = (startPx - 7) + 'px';
+    hs.style.display = startInView ? 'flex' : 'none';
+  }
+  if (he) {
+    he.style.left = (endPx - 7) + 'px';
+    he.style.display = endInView ? 'flex' : 'none';
+  }
+  if (sl) {
+    sl.style.left = padPx + 'px';
+    sl.style.width = Math.max(0, startPx - padPx) + 'px';
+  }
+  if (sr) {
+    sr.style.left = endPx + 'px';
+    sr.style.width = Math.max(0, padPx + innerW - endPx) + 'px';
+  }
 
   document.getElementById('trimStartInp').value = pad.trimStart.toFixed(3);
   document.getElementById('trimEndInp').value = pad.trimEnd.toFixed(3);
   document.getElementById('trimDurDisp').textContent = (pad.trimEnd - pad.trimStart).toFixed(3) + ' s';
+
+  const rStart = document.getElementById('rulerStart');
+  const rMid = document.getElementById('rulerMid');
+  const rEnd = document.getElementById('rulerEnd');
+  if (rStart) rStart.textContent = viewStart.toFixed(3) + ' s';
+  if (rMid) rMid.textContent = ((viewStart + viewEnd) / 2).toFixed(3) + ' s';
+  if (rEnd) rEnd.textContent = viewEnd.toFixed(3) + ' s';
 }
 
 function bindTrimHandles() {
@@ -1827,22 +2021,21 @@ function bindTrimHandles() {
   const padPx = 10;
   const onDragStart = (handle, which) => (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
     const dur = pad.audioBuffer.duration;
     const move = (clientX) => {
       const rect = wrap.getBoundingClientRect();
       const innerW = rect.width - padPx * 2;
       const xRel = Math.max(0, Math.min(innerW, clientX - rect.left - padPx));
-      const sec = (xRel / innerW) * dur;
-      if (which === 'start') pad.trimStart = Math.max(0, Math.min(sec, pad.trimEnd - 0.01));
-      else pad.trimEnd = Math.max(pad.trimStart + 0.01, Math.min(sec, dur));
+      const view = getTrimView();
+      const sec = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
+      if (which === 'start') pad.trimStart = Math.max(0, Math.min(sec, pad.trimEnd - 0.001));
+      else pad.trimEnd = Math.max(pad.trimStart + 0.001, Math.min(sec, dur));
+      drawWaveform();
       updateTrimUI();
     };
-    activeDrag = {
-      update: (cy) => {}, // unused for X-axis drag
-      end: () => {}
-    };
-    // X-axis drag (manual setup)
+    activeDrag = { update: () => {}, end: () => {} };
     const mm = ev => move(ev.clientX);
     const tm = ev => move(ev.touches[0].clientX);
     const up = () => {
@@ -1891,9 +2084,15 @@ function previewTrim() {
     const innerW = rect.width - padPx * 2;
     const elapsed = ctx.currentTime - trimPreviewSource.startedAt;
     const pos = (pad.trimStart || 0) + elapsed;
-    const totalDur = pad.audioBuffer.duration;
-    const x = padPx + (pos / totalDur) * innerW;
-    ph.style.left = x + 'px';
+    const view = getTrimView();
+    if (view) {
+      const inView = pos >= view.viewStart && pos <= view.viewEnd;
+      ph.style.display = inView ? 'block' : 'none';
+      if (inView) {
+        const x = padPx + ((pos - view.viewStart) / (view.viewEnd - view.viewStart)) * innerW;
+        ph.style.left = x + 'px';
+      }
+    }
     requestAnimationFrame(animate);
   }
   animate();
