@@ -695,6 +695,15 @@
     content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
     height: 6px; background: #22222A; border-radius: 3px; pointer-events: none;
   }
+  /* 0dB 位置の目印（中央 50%） */
+  .do-bgm-vol-slider::after {
+    content: ''; position: absolute; left: 50%; top: 20%; bottom: 20%;
+    width: 2px; background: rgba(255,255,255,0.35); transform: translateX(-50%); pointer-events: none;
+  }
+  .do-lib-vol-slider .vol-0db-mark {
+    position: absolute; left: 50%; top: 20%; bottom: 20%;
+    width: 2px; background: rgba(255,255,255,0.35); transform: translateX(-50%); pointer-events: none;
+  }
   .do-bgm-vol-fill {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
     height: 6px; background: #5DCAA5; border-radius: 3px; pointer-events: none;
@@ -3414,7 +3423,8 @@ function doBgmToggleLoop() {
 }
 
 function doBgmSetVol(linear) {
-  const v = Math.max(0, Math.min(2.0, linear));
+  let v = Math.max(0, Math.min(2.0, linear));
+  v = snapToUnity(v); // 0dB スナップ（どの経路でも効く）
   state.door.bgm.vol = v;
   if (doBgmGain) doBgmGain.gain.value = v;
   doRenderBgm();
@@ -3452,14 +3462,14 @@ function fmtTime(sec) {
   return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
 }
 
-// 0dB（linear=1.0）付近で吸着するスナップ。snapPct = 全幅に対する吸着幅
+// 0dB（linear=1.0）付近で吸着するスナップ。デフォルト幅広めの ±0.10（≒ ±0.8dB）
 function snapToUnity(linear, snapPct) {
-  if (Math.abs(linear - 1.0) < (snapPct || 0.04)) return 1.0;
+  if (Math.abs(linear - 1.0) < (snapPct || 0.10)) return 1.0;
   return linear;
 }
-// 0dB（depthDb=0）付近で吸着
+// 0dB（depthDb=0）付近で吸着。デフォルト ±1.0dB
 function snapToZeroDb(db, threshold) {
-  if (Math.abs(db) < (threshold || 0.5)) return 0;
+  if (Math.abs(db) < (threshold || 1.0)) return 0;
   return db;
 }
 
@@ -3679,7 +3689,9 @@ function doLibClear(slotIdx) {
 function doLibSetLevel(slotIdx, linear) {
   const item = state.door.library[slotIdx];
   if (!item) return;
-  item.level = Math.max(0, Math.min(2.0, linear));
+  let v = Math.max(0, Math.min(2.0, linear));
+  v = snapToUnity(v); // 0dB スナップ（どの経路でも効く）
+  item.level = v;
   // ---- 全 active source の gain を即時反映 ----
   // プレビュー
   if (state.door.previewSlot === slotIdx && state.door.previewGain && ctx) {
@@ -3834,6 +3846,7 @@ function doRenderLibrary() {
             <span class="do-lib-vol-label${isPreviewing ? ' playing' : ''}">VOL</span>
             <div class="do-lib-vol-slider" data-slot="${i}">
               <div class="do-lib-vol-track"></div>
+              <div class="vol-0db-mark"></div>
               <div class="do-lib-vol-fill color-${colorIdx}" style="width:${levelPct.toFixed(1)}%;"></div>
               <div class="do-lib-vol-thumb color-${colorIdx}" style="left:${levelPct.toFixed(1)}%;"></div>
             </div>
