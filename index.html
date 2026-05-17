@@ -646,7 +646,7 @@
   #doNowCard { border-color: rgba(93,202,165,0.35); padding: 18px 20px; }
   .do-clock-now {
     font-family: inherit; font-size: 60px; font-weight: 600;
-    color: #5DCAA5; letter-spacing: 1px; line-height: 1;
+    color: #FFFFFF; letter-spacing: 1px; line-height: 1;
   }
   .do-clock-divider { height: 0.5px; background: #2A2A30; margin: 10px 0; }
   .do-clock-next-label { font-size: 9px; color: #8A8A92; letter-spacing: 1.5px; margin-bottom: 3px; }
@@ -1083,7 +1083,7 @@
         <div class="do-bgm-row">
           <span class="do-card-head" style="margin:0;">BGM</span>
           <span class="do-bgm-name" id="doBgmName">— ファイル未読込</span>
-          <button class="do-bgm-load" onclick="doBgmLoad()">LOAD</button>
+          <button class="do-bgm-load" onclick="doBgmLoad()" title="WAV / MP3 / M4A / OGG / FLAC / AAC 対応">LOAD</button>
           <button class="do-bgm-load" onclick="doBgmClear()" style="margin-left:4px;">CLEAR</button>
         </div>
         <div class="do-bgm-controls">
@@ -1146,7 +1146,7 @@
   </div><!-- /.main -->
 
   <!-- 隠しファイル input (BGM / LIBRARY 用) -->
-  <input type="file" id="doFileInput" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" style="display:none;">
+  <input type="file" id="doFileInput" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.oga,.flac,.opus" style="display:none;">
 
   <!-- LEARN banner -->
   <div class="learn-banner" id="learnBanner">LEARN: 割り当てたいキーまたはMIDIを入力してください（Escでキャンセル）</div>
@@ -3232,8 +3232,8 @@ async function doBgmLoadFile(f) {
     }
     // 既存の再生を停止＆解放
     _doBgmDetach();
-    // Blob URL を作って HTMLAudioElement に
-    const blob = new Blob([arrBuf], { type: f.type || 'audio/wav' });
+    // Blob URL を作って HTMLAudioElement に（MP3/WAV/M4A/OGG/FLAC 等を MIME で正しく判定）
+    const blob = new Blob([arrBuf], { type: guessAudioMime(f.name, f.type) });
     const url = URL.createObjectURL(blob);
     const audio = new Audio();
     audio.src = url;
@@ -3426,6 +3426,23 @@ function dbToStr(db) {
   if (Math.abs(db) < 0.05) return '0.0';
   const f = db.toFixed(1);
   return (db > 0) ? ('+' + f) : f;
+}
+
+// ファイル名・既知 type から audio MIME を推測（mp3 を audio/wav にしない）
+function guessAudioMime(name, fallbackType) {
+  if (fallbackType && /^audio\//i.test(fallbackType)) return fallbackType;
+  const ext = String(name || '').toLowerCase().split('.').pop();
+  const map = {
+    mp3: 'audio/mpeg',
+    wav: 'audio/wav',
+    m4a: 'audio/mp4',
+    aac: 'audio/aac',
+    ogg: 'audio/ogg',
+    oga: 'audio/ogg',
+    flac: 'audio/flac',
+    opus: 'audio/ogg',
+  };
+  return map[ext] || 'audio/mpeg';
 }
 
 // BGM progress loop (when DOOR OPEN tab visible)
@@ -4375,7 +4392,9 @@ async function doRestoreAudioBuffers() {
       const rec = await getSampleFromDB(state.door.bgm.sampleId);
       if (rec && rec.data) {
         _doBgmDetach();
-        const blob = new Blob([rec.data], { type: 'audio/wav' });
+        // ファイル名・rec.type から MIME を推測
+        const mime = guessAudioMime(rec.name || state.door.bgm.sampleName, rec.type);
+        const blob = new Blob([rec.data], { type: mime });
         const url = URL.createObjectURL(blob);
         const audio = new Audio();
         audio.src = url;
