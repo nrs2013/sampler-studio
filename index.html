@@ -628,10 +628,8 @@
   .mode-tab.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
   .mode-tab.door-active { background: #F0C419; color: #412402; font-weight: 500; }
   .app-mode-tabs .status { margin-left: auto; padding-right: 6px; }
-  /* Hide SAMPLER-only controls when DOOR OPEN mode is active */
-  body.mode-door [data-sampler-only] { display: none !important; }
-  /* In DOOR OPEN, the divider just above FADE OUT looks orphan if FADE系 are hidden, so collapse adjacent dividers */
-  body.mode-door .left-panel .divider + .divider { display: none; }
+  /* Left panel (MASTER / STOP / PAUSE / FADE TIME / FADE CURVE / FADE OUT) is shared across modes.
+     Previously we hid PLAY MODE/FADE系 in DOOR mode, but the user wants them visible too. */
 
   /* DOOR OPEN PAGE */
   #doorPage { display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 0; overflow-y: auto; }
@@ -699,44 +697,74 @@
   .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #EF9F27; border-radius: 2px; pointer-events: none; }
   .do-duck-bar.gray .do-duck-bar-fill { background: #5A5A60; }
 
-  /* LIBRARY — 各スロットを 4 色色分け */
+  /* LIBRARY — 半透明枠カード＋ミニフェーダー */
   .do-lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   .do-lib-slot {
-    background: #1A1A20; border: 0.5px solid #2A2A30; border-radius: 6px; padding: 10px;
-    display: flex; flex-direction: column; min-height: 78px; position: relative;
-    border-left-width: 3px; border-left-style: solid;
-    transition: border-color 0.15s;
+    border: 0.5px solid #2A2A30; border-radius: 6px; padding: 10px;
+    display: flex; flex-direction: column; min-height: 100px; position: relative;
+    transition: border-color 0.15s, background 0.15s;
   }
-  /* 色帯：A1=ピンク / A2=青 / A3=緑 / A4=オレンジ */
-  .do-lib-slot.slot-0 { border-left-color: #ED93B1; }
-  .do-lib-slot.slot-1 { border-left-color: #85B7EB; }
-  .do-lib-slot.slot-2 { border-left-color: #97C459; }
-  .do-lib-slot.slot-3 { border-left-color: #EF9F27; }
+  /* 半透明枠：A1=ピンク / A2=青 / A3=緑 / A4=オレンジ */
+  .do-lib-slot.slot-0 { background: rgba(237,147,177,0.06); border-color: rgba(237,147,177,0.5); }
+  .do-lib-slot.slot-1 { background: rgba(133,183,235,0.06); border-color: rgba(133,183,235,0.5); }
+  .do-lib-slot.slot-2 { background: rgba(151,196,89,0.06); border-color: rgba(151,196,89,0.5); }
+  .do-lib-slot.slot-3 { background: rgba(239,159,39,0.06); border-color: rgba(239,159,39,0.5); }
   .do-lib-slot.has-content { cursor: grab; }
-  .do-lib-slot:hover { border-top-color: rgba(240,196,25,0.4); border-right-color: rgba(240,196,25,0.4); border-bottom-color: rgba(240,196,25,0.4); }
-  .do-lib-slot.empty { border-top-style: dashed; border-right-style: dashed; border-bottom-style: dashed; color: #5A5A60; cursor: pointer; }
-  .do-lib-slot.empty.slot-0 { border-left-color: rgba(237,147,177,0.45); }
-  .do-lib-slot.empty.slot-1 { border-left-color: rgba(133,183,235,0.45); }
-  .do-lib-slot.empty.slot-2 { border-left-color: rgba(151,196,89,0.45); }
-  .do-lib-slot.empty.slot-3 { border-left-color: rgba(239,159,39,0.45); }
+  /* 再生中は枠を 1px に強調 */
+  .do-lib-slot.playing.slot-0 { border: 1px solid #ED93B1; }
+  .do-lib-slot.playing.slot-1 { border: 1px solid #85B7EB; }
+  .do-lib-slot.playing.slot-2 { border: 1px solid #97C459; }
+  .do-lib-slot.playing.slot-3 { border: 1px solid #EF9F27; }
+  .do-lib-slot.empty { border-style: dashed; cursor: pointer; }
+  .do-lib-slot.empty.slot-0 { background: rgba(237,147,177,0.03); border-color: rgba(237,147,177,0.35); }
+  .do-lib-slot.empty.slot-1 { background: rgba(133,183,235,0.03); border-color: rgba(133,183,235,0.35); }
+  .do-lib-slot.empty.slot-2 { background: rgba(151,196,89,0.03); border-color: rgba(151,196,89,0.35); }
+  .do-lib-slot.empty.slot-3 { background: rgba(239,159,39,0.03); border-color: rgba(239,159,39,0.35); }
   .do-lib-slot.dragging { opacity: 0.4; }
-  .do-lib-slot.drop-over { border-top-color: #F0C419; border-right-color: #F0C419; border-bottom-color: #F0C419; background: rgba(240,196,25,0.05); }
+  .do-lib-slot.drop-over { border-color: #F0C419; background: rgba(240,196,25,0.08); }
   .do-lib-slot-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
   .do-lib-badge {
     display: inline-block; padding: 2px 7px; border-radius: 3px;
     font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
   }
-  .do-lib-badge.color-0 { background: #ED93B1; color: #4B1528; }
-  .do-lib-badge.color-1 { background: #85B7EB; color: #042C53; }
-  .do-lib-badge.color-2 { background: #97C459; color: #173404; }
-  .do-lib-badge.color-3 { background: #EF9F27; color: #412402; }
-  .do-lib-actions { display: flex; gap: 6px; }
-  .do-lib-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 0 2px; font-size: 11px; font-family: inherit; }
+  /* バッジは色を抑えめに：背景=色の20%、文字=色そのもの */
+  .do-lib-badge.color-0 { background: rgba(237,147,177,0.2); color: #ED93B1; }
+  .do-lib-badge.color-1 { background: rgba(133,183,235,0.2); color: #85B7EB; }
+  .do-lib-badge.color-2 { background: rgba(151,196,89,0.2); color: #97C459; }
+  .do-lib-badge.color-3 { background: rgba(239,159,39,0.2); color: #EF9F27; }
+  .do-lib-actions { display: flex; gap: 4px; align-items: center; }
+  .do-lib-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
   .do-lib-act:hover { color: #F0C419; }
   .do-lib-act.del:hover { color: #E24B4A; }
+  .do-lib-act.play { font-size: 11px; }
+  .do-lib-act.play.playing-btn.color-0 { background: #ED93B1; color: #4B1528; font-weight: 600; padding: 1px 6px; }
+  .do-lib-act.play.playing-btn.color-1 { background: #85B7EB; color: #042C53; font-weight: 600; padding: 1px 6px; }
+  .do-lib-act.play.playing-btn.color-2 { background: #97C459; color: #173404; font-weight: 600; padding: 1px 6px; }
+  .do-lib-act.play.playing-btn.color-3 { background: #EF9F27; color: #412402; font-weight: 600; padding: 1px 6px; }
+  .do-lib-act.play.color-0:hover { color: #ED93B1; }
+  .do-lib-act.play.color-1:hover { color: #85B7EB; }
+  .do-lib-act.play.color-2:hover { color: #97C459; }
+  .do-lib-act.play.color-3:hover { color: #EF9F27; }
   .do-lib-name { font-size: 12px; font-weight: 500; color: #E6E6EA; word-break: break-all; line-height: 1.3; margin-top: 2px; }
   .do-lib-meta { font-size: 10px; color: #8A8A92; margin-top: 3px; font-family: inherit; }
-  .do-lib-empty-text { font-size: 11px; margin-top: 6px; }
+  .do-lib-empty-text { font-size: 11px; margin-top: 6px; color: #5A5A60; }
+
+  /* ミニ VOL フェーダー（横） */
+  .do-lib-vol { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .do-lib-vol-label { font-size: 9px; color: #8A8A92; letter-spacing: 0.5px; min-width: 22px; }
+  .do-lib-vol-label.playing { color: #F0C419; }
+  .do-lib-vol-slider { flex: 1; height: 3px; background: #22222A; border-radius: 2px; position: relative; cursor: pointer; }
+  .do-lib-vol-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 2px; pointer-events: none; }
+  .do-lib-vol-fill.color-0 { background: #ED93B1; }
+  .do-lib-vol-fill.color-1 { background: #85B7EB; }
+  .do-lib-vol-fill.color-2 { background: #97C459; }
+  .do-lib-vol-fill.color-3 { background: #EF9F27; }
+  .do-lib-vol-thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 9px; height: 9px; border-radius: 50%; pointer-events: none; }
+  .do-lib-vol-thumb.color-0 { background: #ED93B1; }
+  .do-lib-vol-thumb.color-1 { background: #85B7EB; }
+  .do-lib-vol-thumb.color-2 { background: #97C459; }
+  .do-lib-vol-thumb.color-3 { background: #EF9F27; }
+  .do-lib-vol-db { font-size: 9px; color: #E6E6EA; min-width: 32px; text-align: right; font-family: inherit; }
 
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -750,8 +778,22 @@
   .do-sched-row.next {
     background: rgba(240,196,25,0.04); border-top: 0.5px solid #F0C419; border-radius: 4px;
   }
-  .do-sched-row.done { opacity: 0.35; }
-  .do-sched-row.done .do-sched-time, .do-sched-row.done .do-chip-label { text-decoration: line-through; }
+  .do-sched-row.done { opacity: 0.4; }
+  /* 取り消し線は廃止。代わりに opacity と「✓ 済」チップで表現 */
+  .do-sched-done-chip {
+    display: inline-block; background: rgba(138,138,146,0.15); color: #8A8A92;
+    padding: 3px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;
+    margin-right: 4px; transition: all 0.15s;
+  }
+  .do-sched-done-chip:hover { background: rgba(240,196,25,0.15); color: #F0C419; }
+  .do-sched-next-chip {
+    display: inline-block; background: rgba(240,196,25,0.15); color: #F0C419;
+    padding: 3px 8px; border-radius: 3px; font-size: 10px; margin-right: 4px;
+  }
+  .do-sched-playing-chip {
+    display: inline-block; background: rgba(226,75,74,0.15); color: #E24B4A;
+    padding: 3px 8px; border-radius: 3px; font-size: 10px; margin-right: 4px;
+  }
   .do-sched-row.playing { background: rgba(240,196,25,0.08); border-top-color: #F0C419; }
   .do-sched-time {
     font-family: inherit; font-size: 18px; font-weight: 600; color: #E6E6EA;
@@ -1121,7 +1163,7 @@ const state = {
       pausedAt: 0,
       isPlaying: false,
     },
-    library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer}
+    library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer, level}
     schedule: [], // [{id, time:'HH:MM:SS', chain:[libIdx,...], played:bool}]
     duck: { depthDb: -6.0, fadeSec: 0.8 },
     // runtime (not persisted)
@@ -1130,6 +1172,9 @@ const state = {
     activeAnnSource: null,
     activeAnnGain: null,
     duckActive: false,
+    previewSlot: null,
+    previewSource: null,
+    previewGain: null,
   },
 };
 
@@ -3336,13 +3381,16 @@ function doLibLoad(slotIdx) {
       const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
       const id = `door-lib-${slotIdx}-${Date.now()}`;
       await saveSampleToDB(id, arrBuf, f.name);
+      // Keep existing level if replacing, else default 1.0
+      const prevLevel = state.door.library[slotIdx]?.level;
       state.door.library[slotIdx] = {
         sampleId: id,
         sampleName: f.name,
         audioBuffer: audBuf,
+        level: (prevLevel != null) ? prevLevel : 1.0,
       };
       doRenderLibrary();
-      doRenderSchedule(); // chip dur refresh
+      doRenderSchedule();
       doSave();
       showToast(`A${slotIdx+1} 読込: ${f.name}`);
     } catch (err) {
@@ -3354,7 +3402,6 @@ function doLibLoad(slotIdx) {
 }
 
 function doLibClear(slotIdx) {
-  // Stop any playback that might use this slot
   doAnnStopAll();
   state.door.library[slotIdx] = null;
   doRenderLibrary();
@@ -3362,24 +3409,68 @@ function doLibClear(slotIdx) {
   doSave();
 }
 
-let doLibPreviewSource = null;
+function doLibSetLevel(slotIdx, linear) {
+  const item = state.door.library[slotIdx];
+  if (!item) return;
+  item.level = Math.max(0, Math.min(1.4, linear));
+  // If currently previewing this slot, update its gain in real time
+  if (state.door.previewSlot === slotIdx && state.door.previewGain) {
+    state.door.previewGain.gain.value = item.level;
+  }
+  doRenderLibrary();
+  doSave();
+}
+
+// プレビュー（▶/■ トグル）。再生中なら停止、未再生なら開始。DUCK 連動。
 function doLibPreview(slotIdx) {
   const item = state.door.library[slotIdx];
   if (!item || !item.audioBuffer || !ctx) return;
-  if (ctx.state === 'suspended') ctx.resume();
-  if (doLibPreviewSource) {
-    try { doLibPreviewSource.stop(); } catch(e) {}
-    doLibPreviewSource = null;
+  // If already previewing this slot → stop
+  if (state.door.previewSlot === slotIdx) {
+    doLibPreviewStop();
+    return;
   }
+  // If previewing another slot → stop it first
+  if (state.door.previewSlot != null) doLibPreviewStop();
+  // If chain playback running → don't allow preview (conflict)
+  if (state.door.activeRowId) {
+    showToast('スケジュール再生中です');
+    return;
+  }
+  if (ctx.state === 'suspended') ctx.resume();
   const src = ctx.createBufferSource();
   src.buffer = item.audioBuffer;
   const g = ctx.createGain();
-  g.gain.value = 1.0;
+  g.gain.value = item.level ?? 1.0;
   src.connect(g);
-  g.connect(masterGain);
+  g.connect(doAnnGain);
   src.start();
-  doLibPreviewSource = src;
-  src.onended = () => { if (doLibPreviewSource === src) doLibPreviewSource = null; };
+  state.door.previewSlot = slotIdx;
+  state.door.previewSource = src;
+  state.door.previewGain = g;
+  doDuckActivate();
+  src.onended = () => {
+    if (state.door.previewSource === src) {
+      // Natural end
+      state.door.previewSlot = null;
+      state.door.previewSource = null;
+      state.door.previewGain = null;
+      doDuckRelease();
+      doRenderLibrary();
+    }
+  };
+  doRenderLibrary();
+}
+
+function doLibPreviewStop() {
+  if (!state.door.previewSource) return;
+  try { state.door.previewSource.onended = null; } catch(e) {}
+  try { state.door.previewSource.stop(); } catch(e) {}
+  state.door.previewSlot = null;
+  state.door.previewSource = null;
+  state.door.previewGain = null;
+  doDuckRelease();
+  doRenderLibrary();
 }
 
 function doRenderLibrary() {
@@ -3389,25 +3480,60 @@ function doRenderLibrary() {
   let used = 0;
   for (let i = 0; i < 4; i++) {
     const item = state.door.library[i];
+    const isPreviewing = (state.door.previewSlot === i);
     const slot = document.createElement('div');
-    slot.className = 'do-lib-slot slot-' + i + (item ? ' has-content' : ' empty');
+    slot.className = 'do-lib-slot slot-' + i + (item ? ' has-content' : ' empty') + (isPreviewing ? ' playing' : '');
     slot.dataset.slot = i;
     if (item) {
       used++;
-      slot.draggable = true;
+      slot.draggable = !isPreviewing; // 再生中はドラッグ不可
+      const level = (item.level != null) ? item.level : 1.0;
+      const levelPct = (level / 1.4) * 100;
+      const db = linToDb(level);
+      const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
+      const playBtn = isPreviewing
+        ? `<button class="do-lib-act play playing-btn color-${i}" title="停止" onclick="event.stopPropagation(); doLibPreview(${i})">■</button>`
+        : `<button class="do-lib-act play color-${i}" title="試聴 (DUCK連動)" onclick="event.stopPropagation(); doLibPreview(${i})">▶</button>`;
       slot.innerHTML = `
         <div class="do-lib-slot-head">
           <span class="do-lib-badge color-${i}">A${i+1}</span>
           <div class="do-lib-actions">
-            <button class="do-lib-act" title="プレビュー" onclick="event.stopPropagation(); doLibPreview(${i})">▶</button>
+            ${playBtn}
             <button class="do-lib-act" title="差替え" onclick="event.stopPropagation(); doLibLoad(${i})">↻</button>
             <button class="do-lib-act del" title="削除" onclick="event.stopPropagation(); doLibClear(${i})">×</button>
           </div>
         </div>
         <div class="do-lib-name">${escapeHtml(item.sampleName)}</div>
         <div class="do-lib-meta">${item.audioBuffer ? fmtTime(item.audioBuffer.duration) : '--:--'}</div>
+        <div class="do-lib-vol">
+          <span class="do-lib-vol-label${isPreviewing ? ' playing' : ''}">VOL</span>
+          <div class="do-lib-vol-slider" data-slot="${i}">
+            <div class="do-lib-vol-fill color-${i}" style="width:${levelPct.toFixed(1)}%;"></div>
+            <div class="do-lib-vol-thumb color-${i}" style="left:${levelPct.toFixed(1)}%;"></div>
+          </div>
+          <span class="do-lib-vol-db">${dbStr}</span>
+        </div>
       `;
+      // Volume slider bind
+      const vol = slot.querySelector('.do-lib-vol-slider');
+      vol.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        const update = (cx) => {
+          const r = vol.getBoundingClientRect();
+          const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+          doLibSetLevel(i, pct * 1.4);
+        };
+        update(e.clientX);
+        const mv = ev => update(ev.clientX);
+        const up = () => {
+          window.removeEventListener('pointermove', mv);
+          window.removeEventListener('pointerup', up);
+        };
+        window.addEventListener('pointermove', mv);
+        window.addEventListener('pointerup', up);
+      });
       slot.addEventListener('dragstart', e => {
+        if (isPreviewing) { e.preventDefault(); return; }
         e.dataTransfer.effectAllowed = 'copy';
         e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'door-lib', slot: i }));
         slot.classList.add('dragging');
@@ -3484,6 +3610,16 @@ function doSchedDel(rowId) {
   state.door.schedule = state.door.schedule.filter(r => r.id !== rowId);
   doRenderSchedule();
   doSave();
+}
+
+// 過去予定（played=true）を「未済」に戻して再発火可能にする
+function doSchedReArm(rowId) {
+  const row = state.door.schedule.find(r => r.id === rowId);
+  if (!row) return;
+  row.played = false;
+  doRenderSchedule();
+  doSave();
+  showToast('予定を未済に戻しました');
 }
 
 function doSchedTimeChange(rowId, val) {
@@ -3587,8 +3723,12 @@ function doRenderSchedule() {
       </div>
       <div class="do-sched-actions">
         ${state.door.activeRowId === row.id
-          ? `<button class="do-sched-act" title="停止" onclick="doAnnStopAll()" style="color:#E24B4A;">■</button>`
-          : `<button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`}
+          ? `<span class="do-sched-playing-chip">● 再生中</span><button class="do-sched-act" title="停止" onclick="doAnnStopAll()" style="color:#E24B4A;">■</button>`
+          : (row.played
+              ? `<span class="do-sched-done-chip" title="クリックで未済に戻す" onclick="doSchedReArm('${row.id}')">✓ 済</span><button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`
+              : (state.door.activeRowId == null && isNextRow(row)
+                  ? `<span class="do-sched-next-chip">● 次</span><button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`
+                  : `<button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`))}
         <button class="do-sched-act del" title="削除" onclick="doSchedDel('${row.id}')">×</button>
       </div>
     `;
@@ -3780,7 +3920,10 @@ function doPlayNextInChain() {
   if (ctx.state === 'suspended') ctx.resume();
   const src = ctx.createBufferSource();
   src.buffer = item.audioBuffer;
-  src.connect(doAnnGain);
+  const g = ctx.createGain();
+  g.gain.value = item.level ?? 1.0;
+  src.connect(g);
+  g.connect(doAnnGain);
   src.start();
   state.door.activeAnnSource = src;
   src.onended = () => {
@@ -3813,10 +3956,12 @@ function doAnnStopAll() {
     state.door.activeAnnSource = null;
   }
   // preview
-  if (doLibPreviewSource) {
-    try { doLibPreviewSource.onended = null; } catch(e) {}
-    try { doLibPreviewSource.stop(); } catch(e) {}
-    doLibPreviewSource = null;
+  if (state.door.previewSource) {
+    try { state.door.previewSource.onended = null; } catch(e) {}
+    try { state.door.previewSource.stop(); } catch(e) {}
+    state.door.previewSource = null;
+    state.door.previewGain = null;
+    state.door.previewSlot = null;
   }
   // also cut announce gain briefly to avoid lingering tail
   if (doAnnGain && ctx) {
@@ -3867,7 +4012,7 @@ function doSave() {
         loop: state.door.bgm.loop,
       },
       library: state.door.library.map(it => it ? ({
-        sampleId: it.sampleId, sampleName: it.sampleName,
+        sampleId: it.sampleId, sampleName: it.sampleName, level: it.level ?? 1.0,
       }) : null),
       schedule: state.door.schedule.map(r => ({
         id: r.id, time: r.time, chain: [...r.chain], played: false,
@@ -3891,7 +4036,12 @@ function doLoad() {
     if (Array.isArray(s.library)) {
       for (let i = 0; i < 4; i++) {
         const it = s.library[i];
-        state.door.library[i] = it ? { sampleId: it.sampleId, sampleName: it.sampleName, audioBuffer: null } : null;
+        state.door.library[i] = it ? {
+          sampleId: it.sampleId,
+          sampleName: it.sampleName,
+          audioBuffer: null,
+          level: (it.level != null) ? it.level : 1.0,
+        } : null;
       }
     }
     if (Array.isArray(s.schedule)) {
@@ -3949,18 +4099,17 @@ function doInit() {
   bindDoBgmVol();
   bindDoBgmDrop();
   bindDoDuck();
-  // explicit binding for the "時刻を追加" button (in case inline onclick fails)
-  const addBtn = document.querySelector('.do-sched-add');
-  if (addBtn) addBtn.addEventListener('click', doSchedAdd);
-  // expose globals for any inline onclick="..." just in case
+  // expose globals for inline onclick="..." (no duplicate addEventListener — that caused double-add)
   window.doSchedAdd = doSchedAdd;
   window.doSchedDel = doSchedDel;
   window.doSchedChipDel = doSchedChipDel;
+  window.doSchedReArm = doSchedReArm;
   window.doStartRow = doStartRow;
   window.doAnnStopAll = doAnnStopAll;
   window.doLibLoad = doLibLoad;
   window.doLibClear = doLibClear;
   window.doLibPreview = doLibPreview;
+  window.doLibSetLevel = doLibSetLevel;
   window.doBgmLoad = doBgmLoad;
   window.doBgmClear = doBgmClear;
   window.doBgmTogglePlay = doBgmTogglePlay;
