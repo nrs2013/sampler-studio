@@ -687,8 +687,23 @@
   .do-bgm-bar-fill { height: 100%; background: #5DCAA5; width: 0%; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
   .do-bgm-vol-label { font-size: 9px; color: #8A8A92; letter-spacing: 1.5px; width: 30px; }
-  .do-bgm-vol-slider { flex: 1; height: 4px; background: #22222A; border-radius: 2px; position: relative; cursor: pointer; }
-  .do-bgm-vol-fill { position: absolute; top: 0; left: 0; height: 100%; background: #5DCAA5; border-radius: 2px; pointer-events: none; }
+  .do-bgm-vol-slider {
+    flex: 1; height: 26px; position: relative; cursor: ew-resize;
+    z-index: 2; touch-action: none; user-select: none;
+  }
+  .do-bgm-vol-slider::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+    height: 6px; background: #22222A; border-radius: 3px; pointer-events: none;
+  }
+  .do-bgm-vol-fill {
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    height: 6px; background: #5DCAA5; border-radius: 3px; pointer-events: none;
+  }
+  .do-bgm-vol-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 20px; height: 20px; background: #5DCAA5; border-radius: 50%;
+    pointer-events: none;
+  }
   .do-bgm-vol-db { font-family: inherit; font-size: 11px; min-width: 42px; text-align: right; color: #E6E6EA; }
 
   /* DUCK */
@@ -739,13 +754,16 @@
   .do-lib-slot.playing.slot-1 { border: 1px solid #85B7EB; }
   .do-lib-slot.playing.slot-2 { border: 1px solid #97C459; }
   .do-lib-slot.playing.slot-3 { border: 1px solid #EF9F27; }
+  /* hover でちょっとだけ白く（緑にはしない） */
+  .do-lib-slot.has-content:hover { border-color: rgba(230,230,234,0.5); }
   .do-lib-slot.empty { border-style: dashed; cursor: pointer; }
+  .do-lib-slot.empty:hover { border-color: rgba(230,230,234,0.4); }
   .do-lib-slot.empty.slot-0 { background: rgba(237,147,177,0.03); border-color: rgba(237,147,177,0.35); }
   .do-lib-slot.empty.slot-1 { background: rgba(133,183,235,0.03); border-color: rgba(133,183,235,0.35); }
   .do-lib-slot.empty.slot-2 { background: rgba(151,196,89,0.03); border-color: rgba(151,196,89,0.35); }
   .do-lib-slot.empty.slot-3 { background: rgba(239,159,39,0.03); border-color: rgba(239,159,39,0.35); }
   .do-lib-slot.dragging { opacity: 0.4; }
-  .do-lib-slot.drop-over { border-color: #5DCAA5; background: rgba(93,202,165,0.08); }
+  .do-lib-slot.drop-over { border-color: rgba(230,230,234,0.7); background: rgba(255,255,255,0.04); }
   .do-lib-slot-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
   .do-lib-badge {
     display: inline-block; padding: 2px 7px; border-radius: 3px;
@@ -778,16 +796,16 @@
   .do-lib-vol-label { font-size: 9px; color: #8A8A92; letter-spacing: 0.5px; min-width: 22px; }
   .do-lib-vol-label.playing { color: #5DCAA5; }
   .do-lib-vol-slider {
-    flex: 1; height: 18px; position: relative; cursor: ew-resize;
+    flex: 1; height: 26px; position: relative; cursor: ew-resize;
     z-index: 2; touch-action: none; user-select: none;
   }
   .do-lib-vol-track {
     position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-    height: 4px; background: #22222A; border-radius: 2px; pointer-events: none;
+    height: 6px; background: #22222A; border-radius: 3px; pointer-events: none;
   }
   .do-lib-vol-fill {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-    height: 4px; border-radius: 2px; pointer-events: none;
+    height: 6px; border-radius: 3px; pointer-events: none;
   }
   .do-lib-vol-fill.color-0 { background: #ED93B1; }
   .do-lib-vol-fill.color-1 { background: #85B7EB; }
@@ -795,8 +813,7 @@
   .do-lib-vol-fill.color-3 { background: #EF9F27; }
   .do-lib-vol-thumb {
     position: absolute; top: 50%; transform: translate(-50%, -50%);
-    width: 14px; height: 14px; border-radius: 50%; pointer-events: none;
-    box-shadow: 0 0 0 2px #16161B;
+    width: 20px; height: 20px; border-radius: 50%; pointer-events: none;
   }
   .do-lib-vol-thumb.color-0 { background: #ED93B1; }
   .do-lib-vol-thumb.color-1 { background: #85B7EB; }
@@ -1097,7 +1114,10 @@
         </div>
         <div class="do-bgm-vol">
           <span class="do-bgm-vol-label">VOL</span>
-          <div class="do-bgm-vol-slider" id="doBgmVolSlider"><div class="do-bgm-vol-fill" id="doBgmVolFill" style="width:71%;"></div></div>
+          <div class="do-bgm-vol-slider" id="doBgmVolSlider">
+            <div class="do-bgm-vol-fill" id="doBgmVolFill" style="width:35%;"></div>
+            <div class="do-bgm-vol-thumb" id="doBgmVolThumb" style="left:35%;"></div>
+          </div>
           <span class="do-bgm-vol-db" id="doBgmVolDb">-3.5</span>
         </div>
       </div>
@@ -3385,7 +3405,7 @@ function doBgmToggleLoop() {
 }
 
 function doBgmSetVol(linear) {
-  const v = Math.max(0, Math.min(1.4, linear));
+  const v = Math.max(0, Math.min(2.0, linear));
   state.door.bgm.vol = v;
   if (doBgmGain) doBgmGain.gain.value = v;
   doRenderBgm();
@@ -3401,7 +3421,10 @@ function doRenderBgm() {
   loopBtn.classList.toggle('active', b.loop);
   const db = linToDb(b.vol);
   document.getElementById('doBgmVolDb').textContent = dbToStr(db);
-  document.getElementById('doBgmVolFill').style.width = ((b.vol / 1.4) * 100) + '%';
+  const volPct = (b.vol / 2.0) * 100;
+  document.getElementById('doBgmVolFill').style.width = volPct + '%';
+  const bgmThumb = document.getElementById('doBgmVolThumb');
+  if (bgmThumb) bgmThumb.style.left = volPct + '%';
   if (b.audioElement) {
     const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
     const cur = b.audioElement.currentTime || 0;
@@ -3469,11 +3492,13 @@ function bindDoBgmVol() {
   const update = (clientX) => {
     const rect = slider.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    doBgmSetVol(pct * 1.4);
+    doBgmSetVol(pct * 2.0);
   };
   slider.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    try { slider.setPointerCapture(e.pointerId); } catch(err) {}
     update(e.clientX);
-    const mv = ev => update(ev.clientX);
+    const mv = ev => { ev.preventDefault(); update(ev.clientX); };
     const up = () => {
       window.removeEventListener('pointermove', mv);
       window.removeEventListener('pointerup', up);
@@ -3631,7 +3656,7 @@ function doLibClear(slotIdx) {
 function doLibSetLevel(slotIdx, linear) {
   const item = state.door.library[slotIdx];
   if (!item) return;
-  item.level = Math.max(0, Math.min(1.4, linear));
+  item.level = Math.max(0, Math.min(2.0, linear));
   // 再生中ならリアルタイムにgain反映
   if (state.door.previewSlot === slotIdx && state.door.previewGain) {
     state.door.previewGain.gain.value = item.level;
@@ -3644,7 +3669,7 @@ function doLibSetLevel(slotIdx, linear) {
       const fill = slot.querySelector('.do-lib-vol-fill');
       const thumb = slot.querySelector('.do-lib-vol-thumb');
       const dbDisp = slot.querySelector('.do-lib-vol-db');
-      const pct = (item.level / 1.4) * 100;
+      const pct = (item.level / 2.0) * 100;
       if (fill) fill.style.width = pct.toFixed(1) + '%';
       if (thumb) thumb.style.left = pct.toFixed(1) + '%';
       if (dbDisp) {
@@ -3751,7 +3776,7 @@ function doRenderLibrary() {
       used++;
       slot.draggable = false; // ドラッグは body のみ。フェーダー側からはドラッグ不可
       const level = (item.level != null) ? item.level : 1.0;
-      const levelPct = (level / 1.4) * 100;
+      const levelPct = (level / 2.0) * 100;
       const db = linToDb(level);
       const dbStr = dbToStr(db);
       const playBtn = isPreviewing
@@ -3791,7 +3816,7 @@ function doRenderLibrary() {
         const update = (cx) => {
           const r = vol.getBoundingClientRect();
           const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
-          doLibSetLevel(i, pct * 1.4);
+          doLibSetLevel(i, pct * 2.0);
         };
         update(e.clientX);
         const mv = ev => { ev.preventDefault(); update(ev.clientX); };
