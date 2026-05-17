@@ -1595,13 +1595,23 @@ function fadeOutAll() {
       try {
         g.gain.cancelScheduledValues(t);
         g.gain.setValueAtTime(startVal, t);
+        // sec で 0.0001 まで、さらに 100ms かけて完全 0 にして耳に届かない領域へ
         g.gain.linearRampToValueAtTime(0.0001, t + sec);
-        g.gain.linearRampToValueAtTime(0, t + sec + 0.03);
+        g.gain.linearRampToValueAtTime(0, t + sec + 0.10);
       } catch(e) {}
+      // フェード完了後：audio element 自身の volume も 0 にしてから pause（プチ音二重防御）
       setTimeout(() => {
-        doBgmStop(slot);
-        if (g) g.gain.value = b.vol;
-      }, sec * 1000 + 120);
+        if (b.audioElement) {
+          try { b.audioElement.volume = 0; } catch(e) {}
+        }
+        setTimeout(() => {
+          doBgmStop(slot);
+          if (b.audioElement) {
+            try { b.audioElement.volume = 1; } catch(e) {}
+          }
+          if (g) g.gain.value = b.vol;
+        }, 60);
+      }, sec * 1000 + 180);
     }
   });
   // 3) DOOR OPEN: announce chain + preview
@@ -1612,8 +1622,8 @@ function fadeOutAll() {
       doAnnGain.gain.cancelScheduledValues(t);
       doAnnGain.gain.setValueAtTime(startVal, t);
       doAnnGain.gain.linearRampToValueAtTime(0.0001, t + sec);
-      // アンチクリック：sec から sec+30ms で完全に 0 まで
-      doAnnGain.gain.linearRampToValueAtTime(0, t + sec + 0.03);
+      // アンチクリック：sec から sec+100ms でしっかり 0 まで
+      doAnnGain.gain.linearRampToValueAtTime(0, t + sec + 0.10);
     } catch(e) {}
     setTimeout(() => {
       // 完全無音状態で stop（アンチクリック効果）
@@ -1631,7 +1641,7 @@ function fadeOutAll() {
       if (doAnnGain) doAnnGain.gain.value = 1.0;
       doRenderLibrary();
       doRenderSchedule();
-    }, sec * 1000 + 120);
+    }, sec * 1000 + 200);
   }
   showToast('FADE OUT — 全停止');
 }
