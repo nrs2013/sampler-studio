@@ -1976,21 +1976,54 @@ function bindTrimZoomWheel() {
       drawWaveform();
       updateTrimUI();
     });
-    // Absorb wheel events on the slider itself so Magic Mouse swipes
-    // (horizontal or vertical) don't accidentally change zoom value.
-    slider.addEventListener('wheel', e => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    // Magic Mouse swipe on slider: horizontal/vertical wheel moves the thumb.
+    // Left swipe (deltaX > 0 in macOS natural scroll = right scroll, so deltaX < 0 = left)
+    // We accept both axes so any swipe gesture nudges the slider.
+    slider.addEventListener('wheel', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+      if (!delta) return;
+      const cur = parseFloat(slider.value) || 0;
+      // 1 wheel unit ≈ 0.3 slider units. Cap step to avoid jumps on big swipes.
+      const stepSize = Math.max(-5, Math.min(5, delta * 0.3));
+      const newVal = Math.max(0, Math.min(100, cur + stepSize));
+      slider.value = newVal;
+      slider.style.setProperty('--fill', newVal + '%');
+      const z = sliderToZoom(newVal);
+      state.trimEditor.zoom = z;
+      const valDisp = document.getElementById('zoomValue');
+      if (valDisp) valDisp.textContent = z.toFixed(1) + '×';
+      drawWaveform();
+      updateTrimUI();
+    }, { passive: false });
   }
 
   wrap.addEventListener('wheel', e => {
-    // Always prevent default to keep modal stable (no scroll-up navigation)
     e.preventDefault();
-    // Skip if this is a pure horizontal swipe — only respond to vertical wheel for zoom
     const absY = Math.abs(e.deltaY);
     const absX = Math.abs(e.deltaX);
-    if (absY < 1) return;            // pure horizontal swipe → ignore
-    if (absX > absY * 1.5) return;   // diagonal but dominantly horizontal → ignore
     const view = getTrimView();
     if (!view) return;
+    const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+    const dur = pad.audioBuffer.duration;
+
+    // Horizontal-dominant swipe = pan the waveform (only meaningful when zoomed)
+    if (absX > absY * 1.2) {
+      if ((state.trimEditor.zoom || 1) <= 1) return;
+      const viewSpan = view.viewEnd - view.viewStart;
+      const panAmount = (e.deltaX / 400) * viewSpan;
+      const halfView = viewSpan / 2;
+      let newCenter = (state.trimEditor.viewCenter ?? (pad.trimStart + pad.trimEnd) / 2) + panAmount;
+      newCenter = Math.max(halfView, Math.min(dur - halfView, newCenter));
+      state.trimEditor.viewCenter = newCenter;
+      drawWaveform();
+      updateTrimUI();
+      return;
+    }
+
+    // Vertical-dominant scroll = zoom
+    if (absY < 1) return;
     const rect = wrap.getBoundingClientRect();
     const padPx = 10;
     const innerW = rect.width - padPx * 2;
