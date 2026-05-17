@@ -72,7 +72,7 @@
 
   /* MAIN */
   .main {
-    display: grid; grid-template-columns: 170px 1fr; gap: 10px; flex: 1; min-height: 0;
+    display: grid; grid-template-columns: 170px 68px 1fr; gap: 10px; flex: 1; min-height: 0;
   }
   .main > * { min-height: 0; min-width: 0; }
   #rightContent {
@@ -87,6 +87,40 @@
   .left-panel {
     background: #0C0C12; border: 0.5px solid #1A1A20; border-radius: 8px;
     padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0;
+  }
+
+  /* MASTER COLUMN (独立カラム — 両モード共通) */
+  .master-column {
+    background: #0C0C12; border: 0.5px solid #2A3D38; border-radius: 8px;
+    padding: 10px 6px; display: flex; flex-direction: column; align-items: center;
+    gap: 6px; min-height: 0; min-width: 0; position: relative;
+  }
+  .master-column::before {
+    content: ''; position: absolute; left: 0; top: 0; right: 0; height: 2px;
+    background: #5DCAA5; border-radius: 8px 8px 0 0;
+  }
+  .master-column .master-area {
+    flex: 1; min-height: 0; width: 100%;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .master-column .master-head {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    width: 100%;
+  }
+  .master-column .master-head > span:first-child {
+    color: #9DE0C5 !important; font-weight: 500;
+  }
+  .master-column .master-head .badge-mini {
+    display: flex; gap: 3px;
+  }
+  .master-column .master-fader-wrap {
+    flex: 1; min-height: 0; display: flex; gap: 5px;
+    align-items: stretch; justify-content: center;
+  }
+  .master-column .fader-track { width: 14px; }
+  .master-column .meter { width: 5px; }
+  .master-column .master-value {
+    text-align: center; font-size: 13px;
   }
   .panel-section { display: flex; flex-direction: column; gap: 5px; }
   .section-head {
@@ -1042,33 +1076,6 @@
 
       <div class="divider"></div>
 
-      <!-- MASTER -->
-      <div class="master-area">
-        <div class="master-head">
-          <span style="font-size:9px; color:#8A8A92; letter-spacing:2px;">MASTER</span>
-          <div class="badge-mini">
-            <button class="badge midi" id="masterMidiBadge" onclick="startLearn('master','midi')">CC 7</button>
-            <button class="badge key" id="masterKeyBadge" onclick="startLearn('master','key')">↑↓</button>
-          </div>
-        </div>
-        <div class="master-fader-wrap">
-          <div class="db-scale">
-            <span>+6</span><span>+3</span><span>0</span><span>-6</span><span>-12</span><span>-24</span><span>-∞</span>
-          </div>
-          <div class="fader-track" id="masterFader">
-            <div class="fader-fill" id="masterFill" style="height:70%;"></div>
-            <div class="fader-thumb" id="masterThumb" style="bottom:70%;"></div>
-          </div>
-          <div class="meters">
-            <div class="meter"><div class="meter-fill" id="meterL"></div></div>
-            <div class="meter"><div class="meter-fill" id="meterR"></div></div>
-          </div>
-        </div>
-        <div class="master-value"><span id="masterDbVal">-3.5</span><span class="unit"> dB</span></div>
-      </div>
-
-      <div class="divider"></div>
-
       <!-- FADE TIME -->
       <div class="panel-section" data-sampler-only>
         <div class="section-head">
@@ -1124,6 +1131,33 @@
           <button class="badge midi" id="fadeoutMidiBadge" onclick="startLearn('fadeout','midi')">N60</button>
           <button class="badge key" id="fadeoutKeyBadge" onclick="startLearn('fadeout','key')">F</button>
         </div>
+      </div>
+    </div>
+
+    <!-- MASTER COLUMN (両モード共通の専用カラム) -->
+    <div class="master-column">
+      <div class="master-area">
+        <div class="master-head">
+          <span style="font-size:9px; color:#9DE0C5; letter-spacing:2px;">MASTER</span>
+          <div class="badge-mini">
+            <button class="badge midi" id="masterMidiBadge" onclick="startLearn('master','midi')">CC 7</button>
+            <button class="badge key" id="masterKeyBadge" onclick="startLearn('master','key')">↑↓</button>
+          </div>
+        </div>
+        <div class="master-fader-wrap">
+          <div class="db-scale">
+            <span>+6</span><span>+3</span><span>0</span><span>-6</span><span>-12</span><span>-24</span><span>-∞</span>
+          </div>
+          <div class="fader-track" id="masterFader">
+            <div class="fader-fill" id="masterFill" style="height:70%;"></div>
+            <div class="fader-thumb" id="masterThumb" style="bottom:70%;"></div>
+          </div>
+          <div class="meters">
+            <div class="meter"><div class="meter-fill" id="meterL"></div></div>
+            <div class="meter"><div class="meter-fill" id="meterR"></div></div>
+          </div>
+        </div>
+        <div class="master-value"><span id="masterDbVal">-3.5</span><span class="unit"> dB</span></div>
       </div>
     </div>
 
