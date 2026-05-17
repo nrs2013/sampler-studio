@@ -672,9 +672,11 @@
   .do-bgm-btn {
     width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #2D2D35;
     background: #22222A; color: #E6E6EA; cursor: pointer; display: flex;
-    align-items: center; justify-content: center; font-size: 20px; font-family: inherit;
+    align-items: center; justify-content: center; font-size: 22px; font-family: inherit;
     transition: all 0.15s; flex-shrink: 0;
   }
+  /* ループのくるっと矢印は他より一回り大きく */
+  #doBgmLoopBtn { font-size: 30px; }
   .do-bgm-btn:hover { background: #2D2D35; }
   .do-bgm-btn.primary { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
   .do-bgm-btn.primary:hover { background: #6FDEB8; }
@@ -771,22 +773,36 @@
   .do-lib-meta { font-size: 10px; color: #8A8A92; margin-top: 3px; font-family: inherit; }
   .do-lib-empty-text { font-size: 11px; margin-top: 6px; color: #5A5A60; }
 
-  /* ミニ VOL フェーダー（横） */
+  /* ミニ VOL フェーダー（横）— ヒットエリア広く＋ew-resize カーソル */
   .do-lib-vol { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
   .do-lib-vol-label { font-size: 9px; color: #8A8A92; letter-spacing: 0.5px; min-width: 22px; }
   .do-lib-vol-label.playing { color: #5DCAA5; }
-  .do-lib-vol-slider { flex: 1; height: 3px; background: #22222A; border-radius: 2px; position: relative; cursor: pointer; }
-  .do-lib-vol-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 2px; pointer-events: none; }
+  .do-lib-vol-slider {
+    flex: 1; height: 18px; position: relative; cursor: ew-resize;
+    z-index: 2; touch-action: none; user-select: none;
+  }
+  .do-lib-vol-track {
+    position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+    height: 4px; background: #22222A; border-radius: 2px; pointer-events: none;
+  }
+  .do-lib-vol-fill {
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    height: 4px; border-radius: 2px; pointer-events: none;
+  }
   .do-lib-vol-fill.color-0 { background: #ED93B1; }
   .do-lib-vol-fill.color-1 { background: #85B7EB; }
   .do-lib-vol-fill.color-2 { background: #97C459; }
   .do-lib-vol-fill.color-3 { background: #EF9F27; }
-  .do-lib-vol-thumb { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 9px; height: 9px; border-radius: 50%; pointer-events: none; }
+  .do-lib-vol-thumb {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 14px; height: 14px; border-radius: 50%; pointer-events: none;
+    box-shadow: 0 0 0 2px #16161B;
+  }
   .do-lib-vol-thumb.color-0 { background: #ED93B1; }
   .do-lib-vol-thumb.color-1 { background: #85B7EB; }
   .do-lib-vol-thumb.color-2 { background: #97C459; }
   .do-lib-vol-thumb.color-3 { background: #EF9F27; }
-  .do-lib-vol-db { font-size: 9px; color: #E6E6EA; min-width: 32px; text-align: right; font-family: inherit; }
+  .do-lib-vol-db { font-size: 10px; color: #E6E6EA; min-width: 36px; text-align: right; font-family: inherit; }
 
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -3185,26 +3201,80 @@ function setAppMode(m) {
   if (typeof resizePads === 'function') setTimeout(resizePads, 30);
 }
 
-// ---- BGM ----
+// ---- BGM ---- (MediaElementSource方式：大容量ファイルでも軽量)
 async function doBgmLoadFile(f) {
   if (!f) return;
   try {
     if (!ctx) initAudio();
     if (ctx.state === 'suspended') await ctx.resume();
     const arrBuf = await f.arrayBuffer();
-    const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
     const id = `door-bgm-${Date.now()}`;
-    await saveSampleToDB(id, arrBuf, f.name);
+    // IndexedDB に保存（次回起動時の復元用）
+    try {
+      await saveSampleToDB(id, arrBuf, f.name);
+    } catch(e) {
+      console.warn('saveSampleToDB failed (likely quota):', e);
+      // 保存失敗してもメモリ上では再生可能なので続行
+    }
+    // 既存の再生を停止＆解放
+    _doBgmDetach();
+    // Blob URL を作って HTMLAudioElement に
+    const blob = new Blob([arrBuf], { type: f.type || 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio();
+    audio.src = url;
+    audio.loop = state.door.bgm.loop;
+    audio.preload = 'auto';
     state.door.bgm.sampleId = id;
     state.door.bgm.sampleName = f.name;
-    state.door.bgm.audioBuffer = audBuf;
-    doBgmStop();
+    state.door.bgm.audioBuffer = null;       // 旧方式は使わない
+    state.door.bgm.audioElement = audio;
+    state.door.bgm.objectUrl = url;
+    state.door.bgm.duration = NaN;
+    audio.addEventListener('loadedmetadata', () => {
+      state.door.bgm.duration = audio.duration;
+      doRenderBgm();
+    });
+    audio.addEventListener('ended', () => {
+      if (!audio.loop) {
+        state.door.bgm.isPlaying = false;
+        doRenderBgm();
+      }
+    });
+    audio.addEventListener('error', (e) => {
+      console.warn('BGM audio element error', e);
+      showToast('BGM 再生エラー: ファイル形式を確認してください');
+    });
+    // Audio Graph に繋ぐ
+    const ms = ctx.createMediaElementSource(audio);
+    ms.connect(doBgmGain);
+    state.door.bgm.mediaSource = ms;
     doRenderBgm();
     doSave();
-    showToast(`BGM 読込: ${f.name}`);
+    showToast(`BGM 読込: ${f.name}（${(arrBuf.byteLength/1024/1024).toFixed(1)} MB）`);
   } catch (err) {
+    console.error('BGM 読込失敗', err);
     showToast('BGM 読込失敗: ' + (err && err.message || err));
   }
+}
+
+// BGM の Audio Element / MediaElementSource / Blob URL を切り離して開放
+function _doBgmDetach() {
+  const b = state.door.bgm;
+  if (b.audioElement) {
+    try { b.audioElement.pause(); } catch(e) {}
+    try { b.audioElement.src = ''; } catch(e) {}
+    b.audioElement = null;
+  }
+  if (b.mediaSource) {
+    try { b.mediaSource.disconnect(); } catch(e) {}
+    b.mediaSource = null;
+  }
+  if (b.objectUrl) {
+    try { URL.revokeObjectURL(b.objectUrl); } catch(e) {}
+    b.objectUrl = null;
+  }
+  b.isPlaying = false;
 }
 
 function doBgmLoad() {
@@ -3245,74 +3315,57 @@ function bindDoBgmDrop() {
 
 function doBgmClear() {
   doBgmStop();
+  _doBgmDetach();
   state.door.bgm.sampleId = null;
   state.door.bgm.sampleName = null;
   state.door.bgm.audioBuffer = null;
+  state.door.bgm.duration = NaN;
   doRenderBgm();
   doSave();
 }
 
 function doBgmTogglePlay() {
-  if (!state.door.bgm.audioBuffer) {
+  const b = state.door.bgm;
+  if (!b.audioElement) {
     showToast('BGM ファイルを LOAD してください');
     return;
   }
-  if (state.door.bgm.isPlaying) {
-    doBgmPause();
-  } else {
-    doBgmPlay();
-  }
+  if (b.isPlaying) doBgmPause(); else doBgmPlay();
 }
 
 function doBgmPlay() {
   const b = state.door.bgm;
-  if (!b.audioBuffer || !ctx) return;
+  if (!b.audioElement || !ctx) return;
   if (ctx.state === 'suspended') ctx.resume();
-  const src = ctx.createBufferSource();
-  src.buffer = b.audioBuffer;
-  src.loop = b.loop;
-  src.connect(doBgmGain);
-  doBgmGain.gain.value = b.vol;
-  src.start(0, b.pausedAt || 0);
-  b.source = src;
-  b.startedAt = ctx.currentTime - (b.pausedAt || 0);
+  if (doBgmGain) doBgmGain.gain.value = b.vol;
+  b.audioElement.loop = b.loop;
+  const p = b.audioElement.play();
+  if (p && p.catch) p.catch(err => console.warn('BGM play() err', err));
   b.isPlaying = true;
-  src.onended = () => {
-    if (b.source === src) {
-      b.source = null;
-      b.isPlaying = false;
-      b.pausedAt = 0;
-      doRenderBgm();
-    }
-  };
   doRenderBgm();
 }
 
 function doBgmPause() {
   const b = state.door.bgm;
-  if (!b.source) return;
-  b.pausedAt = ctx.currentTime - b.startedAt;
-  if (b.audioBuffer && b.loop) b.pausedAt = b.pausedAt % b.audioBuffer.duration;
-  try { b.source.stop(); } catch(e) {}
-  b.source = null;
+  if (!b.audioElement) return;
+  try { b.audioElement.pause(); } catch(e) {}
   b.isPlaying = false;
   doRenderBgm();
 }
 
 function doBgmStop() {
   const b = state.door.bgm;
-  if (b.source) {
-    try { b.source.stop(); } catch(e) {}
+  if (b.audioElement) {
+    try { b.audioElement.pause(); } catch(e) {}
+    try { b.audioElement.currentTime = 0; } catch(e) {}
   }
-  b.source = null;
   b.isPlaying = false;
-  b.pausedAt = 0;
   doRenderBgm();
 }
 
 function doBgmToggleLoop() {
   state.door.bgm.loop = !state.door.bgm.loop;
-  if (state.door.bgm.source) state.door.bgm.source.loop = state.door.bgm.loop;
+  if (state.door.bgm.audioElement) state.door.bgm.audioElement.loop = state.door.bgm.loop;
   doRenderBgm();
   doSave();
 }
@@ -3335,10 +3388,11 @@ function doRenderBgm() {
   const db = linToDb(b.vol);
   document.getElementById('doBgmVolDb').textContent = dbToStr(db);
   document.getElementById('doBgmVolFill').style.width = ((b.vol / 1.4) * 100) + '%';
-  if (b.audioBuffer) {
-    const total = b.audioBuffer.duration;
+  if (b.audioElement) {
+    const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
+    const cur = b.audioElement.currentTime || 0;
     document.getElementById('doBgmTime').textContent =
-      `${fmtTime(b.pausedAt || 0)} / ${b.loop ? 'loop' : fmtTime(total)}`;
+      `${fmtTime(cur)} / ${b.loop ? 'loop' : fmtTime(total)}`;
   } else {
     document.getElementById('doBgmTime').textContent = '--:-- / --:--';
     document.getElementById('doBgmBarFill').style.width = '0%';
@@ -3363,13 +3417,16 @@ function dbToStr(db) {
 // BGM progress loop (when DOOR OPEN tab visible)
 function doBgmProgressLoop() {
   const b = state.door.bgm;
-  if (state.appMode === 'door' && b.isPlaying && b.audioBuffer) {
-    let pos = ctx.currentTime - b.startedAt;
-    if (b.loop) pos = pos % b.audioBuffer.duration;
-    const pct = Math.min(100, (pos / b.audioBuffer.duration) * 100);
-    document.getElementById('doBgmBarFill').style.width = pct + '%';
-    document.getElementById('doBgmTime').textContent =
-      `${fmtTime(pos)} / ${b.loop ? 'loop' : fmtTime(b.audioBuffer.duration)}`;
+  if (state.appMode === 'door' && b.isPlaying && b.audioElement) {
+    const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
+    const cur = b.audioElement.currentTime || 0;
+    if (total > 0) {
+      const pct = Math.min(100, (cur / total) * 100);
+      const fill = document.getElementById('doBgmBarFill');
+      const time = document.getElementById('doBgmTime');
+      if (fill) fill.style.width = pct + '%';
+      if (time) time.textContent = `${fmtTime(cur)} / ${b.loop ? 'loop' : fmtTime(total)}`;
+    }
   }
   requestAnimationFrame(doBgmProgressLoop);
 }
@@ -3683,6 +3740,7 @@ function doRenderLibrary() {
           <div class="do-lib-vol">
             <span class="do-lib-vol-label${isPreviewing ? ' playing' : ''}">VOL</span>
             <div class="do-lib-vol-slider" data-slot="${i}">
+              <div class="do-lib-vol-track"></div>
               <div class="do-lib-vol-fill color-${colorIdx}" style="width:${levelPct.toFixed(1)}%;"></div>
               <div class="do-lib-vol-thumb color-${colorIdx}" style="left:${levelPct.toFixed(1)}%;"></div>
             </div>
@@ -4274,15 +4332,31 @@ function doLoad() {
 
 async function doRestoreAudioBuffers() {
   if (!db || !ctx) return;
-  // BGM
+  // BGM — MediaElementSource 方式で復元（重いファイルでも軽量）
   if (state.door.bgm.sampleId) {
     try {
       const rec = await getSampleFromDB(state.door.bgm.sampleId);
-      if (rec) {
-        const buf = await ctx.decodeAudioData(rec.data.slice(0));
-        state.door.bgm.audioBuffer = buf;
+      if (rec && rec.data) {
+        _doBgmDetach();
+        const blob = new Blob([rec.data], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio();
+        audio.src = url;
+        audio.loop = state.door.bgm.loop;
+        audio.preload = 'auto';
+        audio.addEventListener('loadedmetadata', () => {
+          state.door.bgm.duration = audio.duration;
+          doRenderBgm();
+        });
+        audio.addEventListener('error', e => console.warn('BGM restore audio err', e));
+        state.door.bgm.audioElement = audio;
+        state.door.bgm.objectUrl = url;
+        state.door.bgm.duration = NaN;
+        const ms = ctx.createMediaElementSource(audio);
+        ms.connect(doBgmGain);
+        state.door.bgm.mediaSource = ms;
       }
-    } catch(e) {}
+    } catch(e) { console.warn('BGM restore failed', e); }
   }
   // Library
   for (let i = 0; i < 4; i++) {
