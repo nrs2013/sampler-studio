@@ -670,9 +670,9 @@
   .do-bgm-load:hover { background: #2D2D35; color: #E6E6EA; }
   .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
   .do-bgm-btn {
-    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid #2D2D35;
+    width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #2D2D35;
     background: #22222A; color: #E6E6EA; cursor: pointer; display: flex;
-    align-items: center; justify-content: center; font-size: 14px; font-family: inherit;
+    align-items: center; justify-content: center; font-size: 20px; font-family: inherit;
     transition: all 0.15s; flex-shrink: 0;
   }
   .do-bgm-btn:hover { background: #2D2D35; }
@@ -696,6 +696,14 @@
   .do-duck-bar { height: 4px; background: #22222A; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
   .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #EF9F27; border-radius: 2px; pointer-events: none; }
   .do-duck-bar.gray .do-duck-bar-fill { background: #5A5A60; }
+  .do-duck-fade-input {
+    background: #22222A; border: 0.5px solid #2D2D35; border-radius: 4px;
+    color: #E6E6EA; font-family: inherit; font-size: 12px; font-weight: 500;
+    padding: 4px 6px; width: 60px; text-align: right; outline: none;
+  }
+  .do-duck-fade-input:focus { border-color: #5DCAA5; background: #16161B; }
+  .do-duck-fade-input::-webkit-outer-spin-button,
+  .do-duck-fade-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
   /* LIBRARY — 半透明枠カード＋ミニフェーダー */
   .do-lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
@@ -1073,17 +1081,20 @@
         <div class="do-duck-bar" id="doDuckDepthBar"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:30%;"></div></div>
         <div class="do-duck-row">
           <span class="do-duck-label">フェード</span>
-          <span class="do-duck-value" style="color:#E6E6EA;" id="doDuckFadeVal">0.8 s</span>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <input type="number" id="doDuckFadeInput" min="0" max="30" step="0.1" value="0.8" class="do-duck-fade-input">
+            <span style="font-size:11px; color:#8A8A92;">秒</span>
+          </div>
         </div>
-        <div class="do-duck-bar gray" id="doDuckFadeBar"><div class="do-duck-bar-fill" id="doDuckFadeFill" style="width:40%;"></div></div>
+        <div style="font-size:9px; color:#8A8A92; margin-top:4px;">予定時刻にナレ頭がくるよう逆算します</div>
       </div>
     </div>
 
     <!-- LIBRARY -->
-    <div class="do-card">
+    <div class="do-card" id="doLibCard">
       <div class="do-sched-head">
-        <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材プール（4 枠）</span>
-        <span style="font-size:9px; color:#8A8A92;" id="doLibStatus">0 / 4 used</span>
+        <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材プール（ドロップで追加）</span>
+        <span style="font-size:9px; color:#8A8A92;" id="doLibStatus">0 個</span>
       </div>
       <div class="do-lib-grid" id="doLibGrid"></div>
     </div>
@@ -3322,8 +3333,7 @@ function doRenderBgm() {
   const loopBtn = document.getElementById('doBgmLoopBtn');
   loopBtn.classList.toggle('active', b.loop);
   const db = linToDb(b.vol);
-  const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
-  document.getElementById('doBgmVolDb').textContent = dbStr;
+  document.getElementById('doBgmVolDb').textContent = dbToStr(db);
   document.getElementById('doBgmVolFill').style.width = ((b.vol / 1.4) * 100) + '%';
   if (b.audioBuffer) {
     const total = b.audioBuffer.duration;
@@ -3340,6 +3350,14 @@ function fmtTime(sec) {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+}
+
+// dB を符号付き文字列に：+3.2 / -∞ / 0.0
+function dbToStr(db) {
+  if (!isFinite(db) || db === -Infinity) return '-∞';
+  if (Math.abs(db) < 0.05) return '0.0';
+  const f = db.toFixed(1);
+  return (db > 0) ? ('+' + f) : f;
 }
 
 // BGM progress loop (when DOOR OPEN tab visible)
@@ -3377,54 +3395,52 @@ function bindDoBgmVol() {
   });
 }
 
-// DUCK bars bind
+// DUCK 設定バインド
 function bindDoDuck() {
   const depthBar = document.getElementById('doDuckDepthBar');
-  const fadeBar = document.getElementById('doDuckFadeBar');
-  // depth: 0..-24dB
+  // depth: 0..-24dB（バー、ドラッグで設定）
   depthBar.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    try { depthBar.setPointerCapture(e.pointerId); } catch(err) {}
     const update = (cx) => {
       const r = depthBar.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
       state.door.duck.depthDb = -(pct * 24);
       doRenderDuck();
-      doSave();
     };
     update(e.clientX);
-    const mv = ev => update(ev.clientX);
+    const mv = ev => { ev.preventDefault(); update(ev.clientX); };
     const up = () => {
       window.removeEventListener('pointermove', mv);
       window.removeEventListener('pointerup', up);
+      doSave();
     };
     window.addEventListener('pointermove', mv);
     window.addEventListener('pointerup', up);
   });
-  // fade: 0..3 sec
-  fadeBar.addEventListener('pointerdown', e => {
-    const update = (cx) => {
-      const r = fadeBar.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
-      state.door.duck.fadeSec = pct * 3;
-      doRenderDuck();
+  // fade: 数値入力（0〜30秒）
+  const fadeInp = document.getElementById('doDuckFadeInput');
+  if (fadeInp) {
+    fadeInp.value = (state.door.duck.fadeSec ?? 0.8).toFixed(1);
+    const apply = () => {
+      let v = parseFloat(fadeInp.value);
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 30) v = 30;
+      state.door.duck.fadeSec = v;
+      fadeInp.value = v.toFixed(1);
       doSave();
     };
-    update(e.clientX);
-    const mv = ev => update(ev.clientX);
-    const up = () => {
-      window.removeEventListener('pointermove', mv);
-      window.removeEventListener('pointerup', up);
-    };
-    window.addEventListener('pointermove', mv);
-    window.addEventListener('pointerup', up);
-  });
+    fadeInp.addEventListener('change', apply);
+    fadeInp.addEventListener('blur', apply);
+  }
 }
 
 function doRenderDuck() {
   const d = state.door.duck;
-  document.getElementById('doDuckDepthVal').textContent = d.depthDb.toFixed(1) + ' dB';
+  document.getElementById('doDuckDepthVal').textContent = dbToStr(d.depthDb) + ' dB';
   document.getElementById('doDuckDepthFill').style.width = ((-d.depthDb) / 24 * 100) + '%';
-  document.getElementById('doDuckFadeVal').textContent = d.fadeSec.toFixed(2) + ' s';
-  document.getElementById('doDuckFadeFill').style.width = (d.fadeSec / 3 * 100) + '%';
+  const inp = document.getElementById('doDuckFadeInput');
+  if (inp && document.activeElement !== inp) inp.value = (d.fadeSec ?? 0.8).toFixed(1);
 }
 
 // ---- LIBRARY ----
@@ -3458,6 +3474,61 @@ function doLibLoad(slotIdx) {
   inp.click();
 }
 
+// LIBRARY のエリア全体にファイルがドロップされた時：空きスロットに入れる。なければ末尾に追加
+async function doLibAppendFile(f) {
+  if (!f) return;
+  try {
+    if (!ctx) initAudio();
+    if (ctx.state === 'suspended') await ctx.resume();
+    // 空きスロットを探す
+    let idx = state.door.library.findIndex(it => it == null);
+    if (idx < 0) {
+      state.door.library.push(null);
+      idx = state.door.library.length - 1;
+    }
+    const arrBuf = await f.arrayBuffer();
+    const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+    const id = `door-lib-${idx}-${Date.now()}`;
+    await saveSampleToDB(id, arrBuf, f.name);
+    state.door.library[idx] = {
+      sampleId: id, sampleName: f.name, audioBuffer: audBuf, level: 1.0,
+    };
+    doRenderLibrary();
+    doRenderSchedule();
+    doSave();
+    showToast(`A${idx+1} 追加: ${f.name}`);
+  } catch (err) {
+    showToast('読込失敗: ' + (err && err.message || err));
+  }
+}
+
+// LIBRARY カードへの Drag&Drop バインド
+function bindDoLibDrop() {
+  const card = document.getElementById('doLibCard');
+  if (!card) return;
+  card.addEventListener('dragover', e => {
+    const types = [...(e.dataTransfer.types || [])];
+    if (types.includes('Files')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      card.classList.add('drop-over');
+    }
+  });
+  card.addEventListener('dragleave', e => {
+    if (e.target === card) card.classList.remove('drop-over');
+  });
+  card.addEventListener('drop', async e => {
+    // 既存スロットの drop ハンドラが先に発火して stopPropagation した場合はここまで来ない
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) { card.classList.remove('drop-over'); return; }
+    e.preventDefault();
+    card.classList.remove('drop-over');
+    for (const f of files) {
+      await doLibAppendFile(f);
+    }
+  });
+}
+
 function doLibClear(slotIdx) {
   doAnnStopAll();
   state.door.library[slotIdx] = null;
@@ -3487,7 +3558,7 @@ function doLibSetLevel(slotIdx, linear) {
       if (thumb) thumb.style.left = pct.toFixed(1) + '%';
       if (dbDisp) {
         const db = linToDb(item.level);
-        dbDisp.textContent = db === -Infinity ? '-∞' : db.toFixed(1);
+        dbDisp.textContent = dbToStr(db);
       }
     }
   }
@@ -3513,11 +3584,10 @@ function doLibPreview(slotIdx) {
     return;
   }
   if (ctx.state === 'suspended') ctx.resume();
-  // 本番想定で鳴らす：BGMが用意済みなら自動でも再生（DUCKの効きを確認できるように）
+  // 本番想定で鳴らす：BGMが用意済みなら自動再生（DUCKの効きを確認できる）
   if (state.door.bgm.audioBuffer && !state.door.bgm.isPlaying) {
     doBgmPlay();
   }
-  // Reset announce gain in case it was attenuated by a previous stop
   if (doAnnGain && ctx) {
     const t0 = ctx.currentTime;
     try {
@@ -3525,31 +3595,39 @@ function doLibPreview(slotIdx) {
       doAnnGain.gain.setValueAtTime(1.0, t0);
     } catch(e) {}
   }
-  const src = ctx.createBufferSource();
-  src.buffer = item.audioBuffer;
-  const g = ctx.createGain();
-  g.gain.value = item.level ?? 1.0;
-  src.connect(g);
-  g.connect(doAnnGain);
-  src.start();
-  state.door.previewSlot = slotIdx;
-  state.door.previewSource = src;
-  state.door.previewGain = g;
+  // 1. DUCK 先行開始
   doDuckActivate();
+  state.door.previewSlot = slotIdx;
+  state.door.previewSource = null;
+  state.door.previewGain = null;
+  doRenderLibrary();
   if (!state.door.bgm.audioBuffer) {
     showToast('BGM 未読込：DUCK 効果は確認できません（影アナのみ再生）');
   }
-  src.onended = () => {
-    if (state.door.previewSource === src) {
-      // Natural end
-      state.door.previewSlot = null;
-      state.door.previewSource = null;
-      state.door.previewGain = null;
-      doDuckRelease();
-      doRenderLibrary();
-    }
-  };
-  doRenderLibrary();
+  // 2. フェード完了後にナレ再生
+  const fadeMs = Math.max(0, (state.door.duck.fadeSec ?? 0.8) * 1000);
+  setTimeout(() => {
+    // 中断チェック
+    if (state.door.previewSlot !== slotIdx) return;
+    const src = ctx.createBufferSource();
+    src.buffer = item.audioBuffer;
+    const g = ctx.createGain();
+    g.gain.value = item.level ?? 1.0;
+    src.connect(g);
+    g.connect(doAnnGain);
+    src.start();
+    state.door.previewSource = src;
+    state.door.previewGain = g;
+    src.onended = () => {
+      if (state.door.previewSource === src) {
+        state.door.previewSlot = null;
+        state.door.previewSource = null;
+        state.door.previewGain = null;
+        doDuckRelease();
+        doRenderLibrary();
+      }
+    };
+  }, fadeMs);
 }
 
 function doLibPreviewStop() {
@@ -3584,7 +3662,7 @@ function doRenderLibrary() {
       const level = (item.level != null) ? item.level : 1.0;
       const levelPct = (level / 1.4) * 100;
       const db = linToDb(level);
-      const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
+      const dbStr = dbToStr(db);
       const playBtn = isPreviewing
         ? `<button class="do-lib-act play playing-btn color-${colorIdx}" title="停止" onclick="event.stopPropagation(); doLibPreview(${i})">■</button>`
         : `<button class="do-lib-act play color-${colorIdx}" title="試聴 (DUCK連動)" onclick="event.stopPropagation(); doLibPreview(${i})">▶</button>`;
@@ -3655,6 +3733,7 @@ function doRenderLibrary() {
       slot.addEventListener('dragover', e => {
         if ([...(e.dataTransfer.types||[])].includes('Files')) {
           e.preventDefault();
+          e.stopPropagation();
           slot.classList.add('drop-over');
         }
       });
@@ -3664,12 +3743,13 @@ function doRenderLibrary() {
         const f = e.dataTransfer.files[0];
         if (!f) return;
         e.preventDefault();
+        e.stopPropagation(); // 親 LIBRARY card の drop は走らせない
         try {
           const arrBuf = await f.arrayBuffer();
           const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
           const id = `door-lib-${i}-${Date.now()}`;
           await saveSampleToDB(id, arrBuf, f.name);
-          state.door.library[i] = { sampleId: id, sampleName: f.name, audioBuffer: audBuf };
+          state.door.library[i] = { sampleId: id, sampleName: f.name, audioBuffer: audBuf, level: 1.0 };
           doRenderLibrary();
           doRenderSchedule();
           doSave();
@@ -3678,21 +3758,7 @@ function doRenderLibrary() {
     }
     grid.appendChild(slot);
   }
-  // 末尾に「＋ 枠を追加」スロット（最大 8 枠まで）
-  if (state.door.library.length < 8) {
-    const addSlot = document.createElement('div');
-    addSlot.className = 'do-lib-slot do-lib-slot-add';
-    addSlot.innerHTML = `<i class="ti ti-plus" style="font-size:18px;" aria-hidden="true"></i><div style="font-size:11px; margin-top:4px;">枠を追加</div>`;
-    // 上のアイコンは念のためフォールバック
-    addSlot.innerHTML = `<div style="font-size:22px; line-height:1; color:#5DCAA5;">＋</div><div style="font-size:10px; color:#8A8A92; margin-top:4px; letter-spacing:1px;">枠を追加</div>`;
-    addSlot.addEventListener('click', () => {
-      state.door.library.push(null);
-      doRenderLibrary();
-      doSave();
-    });
-    grid.appendChild(addSlot);
-  }
-  document.getElementById('doLibStatus').textContent = `${used} / ${state.door.library.length} used`;
+  document.getElementById('doLibStatus').textContent = `${used} 個 — エリアにファイルをドロップで追加`;
 }
 
 function escapeHtml(s) {
@@ -3989,20 +4055,30 @@ function doTick() {
     }
   }
 
-  // Fire scheduled rows (works in both modes). HH:MM precision = 60 sec window.
+  // 事前 DUCK + 時刻ピッタリでナレ発火（HH:MM 精度 / 250ms 監視）
   if (state.door.activeRowId == null) {
-    const now = nowSecOfDay();
+    const dNow = new Date();
+    const now = dNow.getHours()*3600 + dNow.getMinutes()*60 + dNow.getSeconds() + dNow.getMilliseconds()/1000;
+    const fadeSec = state.door.duck.fadeSec || 0.8;
     for (const row of state.door.schedule) {
       if (row.played) continue;
+      if (!row.chain.length) continue;
       const rs = timeStrToSec(row.time);
-      // Fire within the first 5 seconds of the scheduled minute (avoid late re-trigger)
-      if (now >= rs && now < rs + 5 && row.chain.length > 0) {
-        doStartRow(row.id);
+      // 1) DUCK 事前開始（予定の fadeSec 秒前）
+      if (!row.preDuckStarted && now >= rs - fadeSec && now < rs) {
+        row.preDuckStarted = true;
+        doDuckActivate();
+      }
+      // 2) ナレ発火（予定時刻に到達）
+      if (now >= rs && now < rs + 3) {
+        row.preDuckStarted = false;
+        doStartRowAlreadyDucked(row.id);
         break;
       }
-      // If we missed the minute entirely (e.g. paused tab), mark played
+      // 3) ミス（タブ寝てた等）
       if (now > rs + 60 && now - rs < 24*3600 - 60) {
         row.played = true;
+        row.preDuckStarted = false;
       }
     }
   }
@@ -4017,7 +4093,23 @@ function doStartRow(rowId) {
   }
   state.door.activeRowId = rowId;
   state.door.activeChainIdx = -1;
+  // DUCK 開始（フェード時間後に頭が揃うように）
   doDuckActivate();
+  const fadeMs = Math.max(0, (state.door.duck.fadeSec ?? 0.8) * 1000);
+  doRenderSchedule();
+  setTimeout(() => {
+    if (state.door.activeRowId === rowId) doPlayNextInChain();
+  }, fadeMs);
+}
+
+// 事前 DUCK 済みでチェーン再生開始（doTick から呼ぶ用）
+function doStartRowAlreadyDucked(rowId) {
+  const row = state.door.schedule.find(r => r.id === rowId);
+  if (!row || row.chain.length === 0) return;
+  if (state.door.activeRowId) return;
+  state.door.activeRowId = rowId;
+  state.door.activeChainIdx = -1;
+  // DUCK は既に効いている前提：即時ナレ再生
   doPlayNextInChain();
   doRenderSchedule();
 }
@@ -4218,6 +4310,7 @@ function doInit() {
   doLoad();
   bindDoBgmVol();
   bindDoBgmDrop();
+  bindDoLibDrop();
   bindDoDuck();
   // expose globals for inline onclick="..." (no duplicate addEventListener — that caused double-add)
   window.doSchedAdd = doSchedAdd;
@@ -4238,7 +4331,8 @@ function doInit() {
   window.setAppMode = setAppMode;
   // start 1Hz tick
   if (!doTickTimer) {
-    doTickTimer = setInterval(doTick, 1000);
+    // 250ms 精度で監視（DUCK 逆算開始のため）
+    doTickTimer = setInterval(doTick, 250);
     doTick();
   }
   // BGM progress loop (rAF)
