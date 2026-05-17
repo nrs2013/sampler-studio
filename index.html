@@ -253,21 +253,28 @@
   }
   .pad {
     background: #1F1F26; border: 0.5px solid #2D2D35; border-radius: 10px;
-    padding: 10px 16px 10px 10px; display: flex; flex-direction: column;
+    padding: 10px 26px 10px 10px; display: flex; flex-direction: column;
     justify-content: space-between; cursor: pointer; position: relative;
     transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
     min-width: 0; overflow: hidden;
   }
 
-  /* Per-pad volume fader (right edge) */
+  /* Per-pad volume fader (right edge) — wider hit zone to avoid mis-tap on pad */
   .pad-level-track {
-    position: absolute; top: 10px; bottom: 10px; right: 5px;
-    width: 6px; background: #22222A; border-radius: 3px;
-    cursor: ns-resize; touch-action: none; z-index: 3;
+    position: absolute; top: 10px; bottom: 10px; right: 4px;
+    width: 16px; cursor: ns-resize; touch-action: none; z-index: 3;
+    background: transparent;
+    display: flex; justify-content: center; align-items: stretch;
+  }
+  .pad-level-track::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+    width: 8px; transform: translateX(-50%);
+    background: #22222A; border-radius: 4px; pointer-events: none;
   }
   .pad-level-fill {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: #5DCAA5; border-radius: 3px; pointer-events: none;
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 8px;
+    background: #5DCAA5; border-radius: 4px; pointer-events: none;
   }
   .pad.empty .pad-level-track { display: none; }
 
@@ -299,7 +306,7 @@
   .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; }
   .pad-num { color: #5A5A60; letter-spacing: 0.5px; }
   .pad.playing .pad-num { color: #5DCAA5; }
-  .pad-name { font-size: 11px; color: #E6E6EA; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pad-name { font-size: 14px; font-weight: 500; color: #E6E6EA; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pad-footer { display: flex; flex-direction: column; gap: 2px; }
   .pad-time {
     display: flex; justify-content: space-between; font-size: 8px; color: #5DCAA5;
@@ -2021,9 +2028,28 @@ function clearPadData(p) {
 
 function keyLabel(code) {
   if (!code) return '-';
+  const map = {
+    'Space': 'Spc', 'Escape': 'Esc', 'Enter': 'Ent', 'Tab': 'Tab',
+    'Backspace': 'BS', 'Delete': 'Del',
+    'ArrowUp': '↑', 'ArrowDown': '↓', 'ArrowLeft': '←', 'ArrowRight': '→',
+    'ShiftLeft': 'Shf', 'ShiftRight': 'Shf',
+    'ControlLeft': 'Ctl', 'ControlRight': 'Ctl',
+    'AltLeft': 'Alt', 'AltRight': 'Alt',
+    'MetaLeft': 'Cmd', 'MetaRight': 'Cmd',
+    'CapsLock': 'Caps',
+    'Semicolon': ';', 'Comma': ',', 'Period': '.', 'Slash': '/',
+    'Backslash': '\\', 'Quote': "'", 'Backquote': '`',
+    'BracketLeft': '[', 'BracketRight': ']', 'Minus': '-', 'Equal': '=',
+    'IntlYen': '¥', 'IntlBackslash': '\\', 'IntlRo': '_',
+    'NonConvert': '無変換', 'Convert': '変換',
+    'Lang1': 'かな', 'Lang2': '英数',
+  };
+  if (map[code]) return map[code];
   if (code.startsWith('Key')) return code.slice(3);
   if (code.startsWith('Digit')) return code.slice(5);
-  return code.replace('Arrow','').replace('Space','␣').replace('Escape','Esc').slice(0,4);
+  if (code.startsWith('Numpad')) return 'N' + code.slice(6);
+  if (/^F\d{1,2}$/.test(code)) return code;
+  return code.slice(0, 4);
 }
 function formatTime(s) {
   const m = Math.floor(s/60);
