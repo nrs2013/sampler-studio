@@ -808,10 +808,24 @@
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
   .do-sched-list { display: flex; flex-direction: column; }
   .do-sched-row {
-    display: grid; grid-template-columns: 110px 1fr 100px;
+    display: grid; grid-template-columns: 92px 110px 1fr;
     gap: 10px; align-items: center; padding: 10px 8px;
     border-top: 0.5px solid #2A2A30;
   }
+  /* 左に大きめのアクションボタン */
+  .do-sched-leftactions { display: flex; gap: 6px; align-items: center; }
+  .do-sched-bigact {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 0.5px solid #2D2D35; background: #22222A; color: #E6E6EA;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-family: inherit; transition: all 0.15s; flex-shrink: 0;
+  }
+  .do-sched-bigact:hover { border-color: #5DCAA5; color: #5DCAA5; }
+  .do-sched-bigact.play.next { background: #5DCAA5; color: #04342C; border-color: #5DCAA5; }
+  .do-sched-bigact.play.next:hover { background: #6FDEB8; color: #04342C; }
+  .do-sched-bigact.play.playing { background: #E24B4A; color: #fff; border-color: #E24B4A; }
+  .do-sched-bigact.play.playing:hover { background: #F09595; }
+  .do-sched-bigact.del:hover { border-color: #E24B4A; color: #E24B4A; }
   .do-sched-row:first-child { border-top: none; }
   .do-sched-row.next {
     background: rgba(93,202,165,0.04); border-top: 0.5px solid #5DCAA5; border-radius: 4px;
@@ -3856,6 +3870,20 @@ function doSchedDel(rowId) {
   doSave();
 }
 
+// 削除前の確認ダイアログ
+function doSchedDelConfirm(rowId) {
+  const row = state.door.schedule.find(r => r.id === rowId);
+  if (!row) return;
+  const chainStr = row.chain.length === 0
+    ? '（チェーン未設定）'
+    : row.chain.map(i => 'A' + (i+1)).join(' → ');
+  const msg = `この予定を削除しますか？\n\n時刻: ${row.time}\nチェーン: ${chainStr}`;
+  if (window.confirm(msg)) {
+    doSchedDel(rowId);
+    showToast('予定を削除しました');
+  }
+}
+
 // 過去予定（played=true）を「未済」に戻して再発火可能にする
 function doSchedReArm(rowId) {
   const row = state.door.schedule.find(r => r.id === rowId);
@@ -3943,7 +3971,25 @@ function doRenderSchedule() {
       return s + (it && it.audioBuffer ? it.audioBuffer.duration : 0);
     }, 0);
 
+    // 左アクション：再生中＝停止/未済かつ次＝緑▶/通常＝▶
+    const isPlaying = (state.door.activeRowId === row.id);
+    const isNext = !row.played && state.door.activeRowId == null && isNextRow(row);
+    const playBtnHTML = isPlaying
+      ? `<button class="do-sched-bigact play playing" title="停止" onclick="doAnnStopAll()">■</button>`
+      : `<button class="do-sched-bigact play ${isNext ? 'next' : ''}" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`;
+    const delBtnHTML = `<button class="do-sched-bigact del" title="削除" onclick="doSchedDelConfirm('${row.id}')">×</button>`;
+
+    // 状態チップ（チェーンの末尾に表示）
+    let statusChipHTML = '';
+    if (isPlaying) statusChipHTML = `<span class="do-sched-playing-chip">● 再生中</span>`;
+    else if (row.played) statusChipHTML = `<span class="do-sched-done-chip" title="クリックで未済に戻す" onclick="doSchedReArm('${row.id}')">✓ 済</span>`;
+    else if (isNext) statusChipHTML = `<span class="do-sched-next-chip">● 次</span>`;
+
     div.innerHTML = `
+      <div class="do-sched-leftactions">
+        ${playBtnHTML}
+        ${delBtnHTML}
+      </div>
       <input class="do-sched-time" type="text" value="${row.time}" data-row="${row.id}" />
       <div class="do-chain" data-row="${row.id}">
         ${row.chain.map((libIdx, ci) => {
@@ -3964,16 +4010,7 @@ function doRenderSchedule() {
           `;
         }).join('')}
         ${row.chain.length === 0 ? '<span class="do-chain-drop-hint">＋ ライブラリ A1〜A4 をドロップ</span>' : ''}
-      </div>
-      <div class="do-sched-actions">
-        ${state.door.activeRowId === row.id
-          ? `<span class="do-sched-playing-chip">● 再生中</span><button class="do-sched-act" title="停止" onclick="doAnnStopAll()" style="color:#E24B4A;">■</button>`
-          : (row.played
-              ? `<span class="do-sched-done-chip" title="クリックで未済に戻す" onclick="doSchedReArm('${row.id}')">✓ 済</span><button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`
-              : (state.door.activeRowId == null && isNextRow(row)
-                  ? `<span class="do-sched-next-chip">● 次</span><button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`
-                  : `<button class="do-sched-act" title="今すぐ再生" onclick="doStartRow('${row.id}')">▶</button>`))}
-        <button class="do-sched-act del" title="削除" onclick="doSchedDel('${row.id}')">×</button>
+        ${statusChipHTML}
       </div>
     `;
 
@@ -4389,6 +4426,7 @@ function doInit() {
   // expose globals for inline onclick="..." (no duplicate addEventListener — that caused double-add)
   window.doSchedAdd = doSchedAdd;
   window.doSchedDel = doSchedDel;
+  window.doSchedDelConfirm = doSchedDelConfirm;
   window.doSchedChipDel = doSchedChipDel;
   window.doSchedReArm = doSchedReArm;
   window.doStartRow = doStartRow;
