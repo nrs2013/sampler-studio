@@ -1020,7 +1020,7 @@
       </div>
     </div>
     <div class="header-right">
-      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3A3A42;letter-spacing:0.05em;user-select:none;">v5.4</span>
+      <span id="version-badge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3A3A42;letter-spacing:0.05em;user-select:none;"></span>
       <span style="width:1px;height:14px;background:#1A1A20;margin:0 4px;"></span>
       <button class="btn-small" onclick="savePreset()">SAVE</button>
       <button class="btn-small" onclick="openLoadModal()">LOAD</button>
@@ -1321,6 +1321,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
+const APP_VERSION = 'v5.5';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -2111,7 +2112,6 @@ async function importProject(file) {
   } catch (e) {
     console.error('importProject failed', e);
     showToast('❌ 読み込み失敗: ' + (e.message || e));
-    alert('読み込みに失敗しました:\n\n' + (e.message || e));
   }
 }
 
@@ -3761,6 +3761,34 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+async function checkForUpdate() {
+  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (isLocal) return;
+  try {
+    const res = await fetch(location.href + '?_cv=' + Date.now());
+    const text = await res.text();
+    const m = text.match(/const APP_VERSION = '([^']+)'/);
+    if (m && m[1] !== APP_VERSION) showUpdateBanner(m[1]);
+  } catch(e) {}
+}
+
+function showUpdateBanner(newVer) {
+  if (document.getElementById('update-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'update-banner';
+  b.style.cssText = [
+    'position:fixed', 'bottom:16px', 'left:50%', 'transform:translateX(-50%)',
+    'background:#0C1A14', 'border:1px solid #5DCAA5', 'border-radius:6px',
+    'color:#9DE0C5', 'font-size:12px', 'padding:10px 16px',
+    'display:flex', 'align-items:center', 'gap:10px',
+    'z-index:9999', 'box-shadow:0 4px 16px rgba(0,0,0,0.6)', 'white-space:nowrap'
+  ].join(';');
+  b.innerHTML = `<span>🔄 新バージョン <strong style="color:#6FDEB8">${newVer}</strong> が利用可能</span>`
+    + `<button onclick="location.reload()" style="background:#5DCAA5;color:#04342C;border:none;border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">更新</button>`
+    + `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#5A5A60;font-size:14px;cursor:pointer;padding:0 2px;">✕</button>`;
+  document.body.appendChild(b);
+}
+
 // ===========================
 // INIT
 // ===========================
@@ -5316,6 +5344,13 @@ async function init() {
   // Unlock audio on first interaction (mobile Safari)
   const unlock = () => { if (ctx && ctx.state === 'suspended') ctx.resume(); document.body.removeEventListener('click', unlock); };
   document.body.addEventListener('click', unlock);
+
+  // バージョンバッジをJSで設定（APP_VERSION定数から）
+  const vb = document.getElementById('version-badge');
+  if (vb) vb.textContent = APP_VERSION;
+
+  // 本番URLで新バージョンが出ていたらバナーで通知（強制リロードはしない）
+  setTimeout(checkForUpdate, 5000);
 
   // DOOR OPEN MODE init
   doInit();
