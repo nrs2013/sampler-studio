@@ -630,7 +630,9 @@
   .do-top { display: grid; grid-template-columns: 200px 1fr 220px; gap: 10px; }
   .do-card {
     background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px; padding: 12px;
+    transition: border-color 0.15s, background 0.15s;
   }
+  .do-card.drop-over { border-color: #5DCAA5; background: #1A2620; }
   .do-card-head {
     font-size: 9px; color: #8A8A92; letter-spacing: 2px; margin-bottom: 8px;
   }
@@ -933,7 +935,7 @@
         <div class="do-clock-next-eta" id="doNextEta">--:--</div>
       </div>
       <!-- BGM -->
-      <div class="do-card">
+      <div class="do-card" id="doBgmCard">
         <div class="do-bgm-row">
           <span class="do-card-head" style="margin:0;">BGM</span>
           <span class="do-bgm-name" id="doBgmName">— ファイル未読込</span>
@@ -3006,29 +3008,61 @@ function setAppMode(m) {
 }
 
 // ---- BGM ----
+async function doBgmLoadFile(f) {
+  if (!f) return;
+  try {
+    if (!ctx) initAudio();
+    if (ctx.state === 'suspended') await ctx.resume();
+    const arrBuf = await f.arrayBuffer();
+    const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+    const id = `door-bgm-${Date.now()}`;
+    await saveSampleToDB(id, arrBuf, f.name);
+    state.door.bgm.sampleId = id;
+    state.door.bgm.sampleName = f.name;
+    state.door.bgm.audioBuffer = audBuf;
+    doBgmStop();
+    doRenderBgm();
+    doSave();
+    showToast(`BGM 読込: ${f.name}`);
+  } catch (err) {
+    showToast('BGM 読込失敗: ' + (err && err.message || err));
+  }
+}
+
 function doBgmLoad() {
   const inp = document.getElementById('doFileInput');
   inp.onchange = async (e) => {
     const f = e.target.files[0];
-    if (!f) return;
-    try {
-      const arrBuf = await f.arrayBuffer();
-      const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
-      const id = `door-bgm-${Date.now()}`;
-      await saveSampleToDB(id, arrBuf, f.name);
-      state.door.bgm.sampleId = id;
-      state.door.bgm.sampleName = f.name;
-      state.door.bgm.audioBuffer = audBuf;
-      doBgmStop();
-      doRenderBgm();
-      doSave();
-      showToast(`BGM 読込: ${f.name}`);
-    } catch (err) {
-      showToast('BGM 読込失敗: ' + err.message);
-    }
+    await doBgmLoadFile(f);
     inp.value = '';
   };
   inp.click();
+}
+
+// BGM card に Drag & Drop バインド
+function bindDoBgmDrop() {
+  const card = document.getElementById('doBgmCard');
+  if (!card) return;
+  card.addEventListener('dragover', e => {
+    const types = [...(e.dataTransfer.types || [])];
+    if (types.includes('Files')) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+      card.classList.add('drop-over');
+    }
+  });
+  card.addEventListener('dragleave', e => {
+    // only remove if leaving the card itself
+    if (e.target === card) card.classList.remove('drop-over');
+  });
+  card.addEventListener('drop', async e => {
+    e.preventDefault();
+    e.stopPropagation();
+    card.classList.remove('drop-over');
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) await doBgmLoadFile(f);
+  });
 }
 
 function doBgmClear() {
@@ -3356,16 +3390,32 @@ function escapeHtml(s) {
 
 // ---- SCHEDULE ----
 function doSchedAdd() {
-  const id = 's_' + Date.now() + '_' + Math.floor(Math.random()*1000);
-  // pick a default time = now + 1 min
-  const now = new Date();
-  now.setMinutes(now.getMinutes() + 1);
-  now.setSeconds(0);
-  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:00`;
-  state.door.schedule.push({ id, time, chain: [], played: false });
-  state.door.schedule.sort((a,b) => a.time.localeCompare(b.time));
-  doRenderSchedule();
-  doSave();
+  try {
+    if (!state.door) {
+      console.warn('state.door undefined');
+      return;
+    }
+    if (!Array.isArray(state.door.schedule)) state.door.schedule = [];
+    const id = 's_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+    // pick a default time = now + 1 min, snapped to next minute
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 1);
+    now.setSeconds(0);
+    const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:00`;
+    state.door.schedule.push({ id, time, chain: [], played: false });
+    state.door.schedule.sort((a,b) => a.time.localeCompare(b.time));
+    doRenderSchedule();
+    doSave();
+    // Scroll the new row into view
+    setTimeout(() => {
+      const list = document.getElementById('doSchedList');
+      if (list) list.scrollTop = list.scrollHeight;
+    }, 30);
+    showToast(`予定を追加: ${time}`);
+  } catch (e) {
+    console.error('doSchedAdd error', e);
+    showToast('追加失敗: ' + (e && e.message || e));
+  }
 }
 
 function doSchedDel(rowId) {
@@ -3764,7 +3814,25 @@ function doRenderAll() {
 function doInit() {
   doLoad();
   bindDoBgmVol();
+  bindDoBgmDrop();
   bindDoDuck();
+  // explicit binding for the "時刻を追加" button (in case inline onclick fails)
+  const addBtn = document.querySelector('.do-sched-add');
+  if (addBtn) addBtn.addEventListener('click', doSchedAdd);
+  // expose globals for any inline onclick="..." just in case
+  window.doSchedAdd = doSchedAdd;
+  window.doSchedDel = doSchedDel;
+  window.doSchedChipDel = doSchedChipDel;
+  window.doStartRow = doStartRow;
+  window.doLibLoad = doLibLoad;
+  window.doLibClear = doLibClear;
+  window.doLibPreview = doLibPreview;
+  window.doBgmLoad = doBgmLoad;
+  window.doBgmClear = doBgmClear;
+  window.doBgmTogglePlay = doBgmTogglePlay;
+  window.doBgmStop = doBgmStop;
+  window.doBgmToggleLoop = doBgmToggleLoop;
+  window.setAppMode = setAppMode;
   // start 1Hz tick
   if (!doTickTimer) {
     doTickTimer = setInterval(doTick, 1000);
