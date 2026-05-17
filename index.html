@@ -298,12 +298,13 @@
 
   /* Edit (trim) button — next to grip, opens waveform trim modal */
   .pad-edit-btn {
-    position: absolute; top: 3px; right: 30px;
-    width: 22px; height: 22px;
+    position: absolute; top: 3px; right: 28px;
+    height: 22px; padding: 0 7px;
     background: rgba(93,202,165,0.12); border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; z-index: 4;
-    color: #5DCAA5; font-size: 12px;
+    color: #5DCAA5; font-size: 10px;
+    letter-spacing: 1px; font-weight: 500;
     border: none; font-family: inherit;
     transition: background 0.1s;
   }
@@ -452,16 +453,46 @@
   .trim-title { font-size: 14px; font-weight: 500; }
   .trim-subtitle { font-size: 11px; color: #8A8A92; margin-top: 2px; }
   .zoom-bar {
-    display: flex; gap: 4px; margin-bottom: 8px; align-items: center;
+    display: flex; gap: 10px; margin-bottom: 8px; align-items: center;
+    padding: 4px 2px;
   }
-  .zoom-bar-label { font-size: 9px; color: #8A8A92; letter-spacing: 1px; padding: 0 8px 0 2px; }
-  .zoom-btn {
-    background: #22222A; border: none; color: #8A8A92; cursor: pointer;
-    padding: 5px 10px; border-radius: 4px; font-size: 11px; font-family: inherit;
+  .zoom-bar-label {
+    font-size: 9px; color: #8A8A92; letter-spacing: 1px;
+    flex-shrink: 0;
   }
-  .zoom-btn:hover { background: #2D2D35; color: #E6E6EA; }
-  .zoom-btn.active { background: #5DCAA5; color: #04342C; font-weight: 500; }
-  .zoom-hint { margin-left: auto; font-size: 9px; color: #5A5A60; }
+  .zoom-slider-wrap {
+    flex: 1; position: relative; height: 24px;
+    display: flex; align-items: center;
+  }
+  .zoom-slider {
+    width: 100%; -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, #5DCAA5 var(--fill, 0%), #22222A var(--fill, 0%));
+    outline: none; cursor: pointer;
+  }
+  .zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #5DCAA5; border: 2px solid #0F0F12;
+    cursor: grab; box-shadow: 0 0 0 1px #5DCAA5;
+  }
+  .zoom-slider::-webkit-slider-thumb:active { cursor: grabbing; }
+  .zoom-slider::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #5DCAA5; border: 2px solid #0F0F12; cursor: grab;
+  }
+  .zoom-value {
+    font-size: 13px; color: #5DCAA5; font-weight: 500;
+    min-width: 60px; text-align: right;
+    font-family: var(--font-mono, monospace);
+  }
+  .zoom-reset-btn {
+    background: transparent; border: 0.5px solid #2D2D35; color: #8A8A92;
+    padding: 4px 10px; border-radius: 4px; font-size: 10px;
+    cursor: pointer; font-family: inherit; letter-spacing: 1px;
+  }
+  .zoom-reset-btn:hover { border-color: #5DCAA5; color: #5DCAA5; }
+  .zoom-hint { font-size: 9px; color: #5A5A60; flex-shrink: 0; }
   .waveform-wrap {
     position: relative; background: #0F0F12; border: 0.5px solid #2A2A30;
     border-radius: 6px; padding: 10px; margin-bottom: 4px;
@@ -1454,7 +1485,7 @@ function renderPads() {
       cell.innerHTML = `
         <div class="pad-body${pad.isPlaying ? ' playing' : ''}">
           <span class="pad-grip" draggable="true" title="掴んで移動">⋮⋮</span>
-          <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">✎</button>
+          <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">EDIT</button>
           <div class="pad-head">
             <span class="pad-num">${idx+1}</span>
             ${pad.isPlaying ? '<span style="color:#5DCAA5;">▶</span>' : '<span></span>'}
@@ -1726,14 +1757,12 @@ function openTrimEditor(bankIdx, padIdx) {
       </div>
       <div class="zoom-bar">
         <span class="zoom-bar-label">ZOOM</span>
-        <button class="zoom-btn active" data-zoom="1" onclick="setTrimZoom(1)">FIT</button>
-        <button class="zoom-btn" data-zoom="2" onclick="setTrimZoom(2)">2×</button>
-        <button class="zoom-btn" data-zoom="4" onclick="setTrimZoom(4)">4×</button>
-        <button class="zoom-btn" data-zoom="8" onclick="setTrimZoom(8)">8×</button>
-        <button class="zoom-btn" data-zoom="16" onclick="setTrimZoom(16)">16×</button>
-        <button class="zoom-btn" data-zoom="32" onclick="setTrimZoom(32)">32×</button>
-        <button class="zoom-btn" data-zoom="64" onclick="setTrimZoom(64)">64×</button>
-        <span class="zoom-hint">マウスホイール: ズーム / ハンドル付近をダブルクリック: そこにズーム</span>
+        <div class="zoom-slider-wrap">
+          <input type="range" class="zoom-slider" id="zoomSlider" min="0" max="100" step="0.1" value="0" />
+        </div>
+        <span class="zoom-value" id="zoomValue">1.0×</span>
+        <button class="zoom-reset-btn" onclick="setTrimZoom(1)">FIT</button>
+        <span class="zoom-hint">ホイールでズームも可</span>
       </div>
       <div class="waveform-wrap" id="wfWrap">
         <canvas class="waveform-canvas" id="wfCanvas"></canvas>
@@ -1807,13 +1836,39 @@ function getTrimView() {
   return { viewStart, viewEnd, dur };
 }
 
-function setTrimZoom(z) {
+// Logarithmic zoom mapping for smooth slider feel.
+// Slider 0..100 → zoom 1×..200×
+const ZOOM_MAX = 200;
+function sliderToZoom(v) {
+  const t = Math.max(0, Math.min(100, parseFloat(v) || 0)) / 100;
+  return Math.pow(ZOOM_MAX, t);
+}
+function zoomToSlider(z) {
+  z = Math.max(1, Math.min(ZOOM_MAX, z));
+  return (Math.log(z) / Math.log(ZOOM_MAX)) * 100;
+}
+
+function updateZoomUI(zoom) {
+  const slider = document.getElementById('zoomSlider');
+  const val = document.getElementById('zoomValue');
+  if (slider) {
+    const sv = zoomToSlider(zoom);
+    slider.value = sv;
+    slider.style.setProperty('--fill', sv + '%');
+  }
+  if (val) val.textContent = zoom.toFixed(1) + '×';
+}
+
+function setTrimZoom(z, centerTime) {
   if (!state.trimEditor) return;
-  state.trimEditor.zoom = z;
-  // Re-center on midpoint of trim region for sensible zoom-in
-  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
-  state.trimEditor.viewCenter = (pad.trimStart + pad.trimEnd) / 2;
-  document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === z));
+  state.trimEditor.zoom = Math.max(1, Math.min(ZOOM_MAX, z));
+  if (centerTime != null) {
+    state.trimEditor.viewCenter = centerTime;
+  } else {
+    const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+    state.trimEditor.viewCenter = (pad.trimStart + pad.trimEnd) / 2;
+  }
+  updateZoomUI(state.trimEditor.zoom);
   drawWaveform();
   updateTrimUI();
 }
@@ -1821,6 +1876,22 @@ function setTrimZoom(z) {
 function bindTrimZoomWheel() {
   const wrap = document.getElementById('wfWrap');
   if (!wrap) return;
+  // Initialize slider value display
+  updateZoomUI(state.trimEditor.zoom || 1);
+
+  const slider = document.getElementById('zoomSlider');
+  if (slider) {
+    slider.addEventListener('input', e => {
+      const z = sliderToZoom(e.target.value);
+      state.trimEditor.zoom = z;
+      slider.style.setProperty('--fill', e.target.value + '%');
+      const valDisp = document.getElementById('zoomValue');
+      if (valDisp) valDisp.textContent = z.toFixed(1) + '×';
+      drawWaveform();
+      updateTrimUI();
+    });
+  }
+
   wrap.addEventListener('wheel', e => {
     e.preventDefault();
     const view = getTrimView();
@@ -1830,20 +1901,14 @@ function bindTrimZoomWheel() {
     const innerW = rect.width - padPx * 2;
     const xRel = Math.max(0, Math.min(innerW, e.clientX - rect.left - padPx));
     const cursorTime = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
-    const zoom = state.trimEditor.zoom || 1;
-    const zoomLevels = [1, 2, 4, 8, 16, 32, 64];
-    const idx = zoomLevels.indexOf(zoom);
-    let newZoom;
-    if (e.deltaY < 0) newZoom = zoomLevels[Math.min(zoomLevels.length - 1, idx + 1)] ?? zoom;
-    else newZoom = zoomLevels[Math.max(0, idx - 1)] ?? zoom;
-    state.trimEditor.zoom = newZoom;
-    state.trimEditor.viewCenter = cursorTime;
-    document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === newZoom));
-    drawWaveform();
-    updateTrimUI();
+    const curSlider = zoomToSlider(state.trimEditor.zoom || 1);
+    // Wheel step: ~4 slider units per notch (smooth)
+    const step = e.deltaY < 0 ? 4 : -4;
+    const newSlider = Math.max(0, Math.min(100, curSlider + step));
+    setTrimZoom(sliderToZoom(newSlider), cursorTime);
   }, { passive: false });
 
-  // Double-click on waveform area → zoom in centered on click
+  // Double-click on waveform area → zoom in 2× centered on click
   wrap.addEventListener('dblclick', e => {
     if (e.target.closest('.trim-handle')) return;
     const view = getTrimView();
@@ -1853,15 +1918,7 @@ function bindTrimZoomWheel() {
     const innerW = rect.width - padPx * 2;
     const xRel = Math.max(0, Math.min(innerW, e.clientX - rect.left - padPx));
     const cursorTime = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
-    const zoom = state.trimEditor.zoom || 1;
-    const zoomLevels = [1, 2, 4, 8, 16, 32, 64];
-    const idx = zoomLevels.indexOf(zoom);
-    const newZoom = zoomLevels[Math.min(zoomLevels.length - 1, idx + 1)] ?? zoom;
-    state.trimEditor.zoom = newZoom;
-    state.trimEditor.viewCenter = cursorTime;
-    document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === newZoom));
-    drawWaveform();
-    updateTrimUI();
+    setTrimZoom(Math.min(ZOOM_MAX, (state.trimEditor.zoom || 1) * 2), cursorTime);
   });
 }
 
@@ -1879,7 +1936,7 @@ function resetTrim() {
   pad.trimEnd = pad.audioBuffer.duration;
   state.trimEditor.zoom = 1;
   state.trimEditor.viewCenter = pad.audioBuffer.duration / 2;
-  document.querySelectorAll('.zoom-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.zoom) === 1));
+  updateZoomUI(1);
   document.getElementById('trimStartInp').value = '0.000';
   document.getElementById('trimEndInp').value = pad.trimEnd.toFixed(3);
   drawWaveform();
