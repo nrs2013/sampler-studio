@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.15';
+const APP_VERSION = 'v5.16';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -3222,42 +3222,47 @@ function bindTrimHandles() {
   const hs = document.getElementById('handleStart');
   const he = document.getElementById('handleEnd');
   const padPx = 10;
-  const onDragStart = (handle, which) => (e) => {
+  // グローバル単一ハンドラ方式（v5.16〜）
+  let trimWhich = null; // 'start' or 'end' or null
+  const moveTrim = (clientX) => {
+    if (!trimWhich || !state.trimEditor) return;
+    const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+    if (!pad || !pad.audioBuffer) return;
+    const dur = pad.audioBuffer.duration;
+    const rect = wrap.getBoundingClientRect();
+    const innerW = rect.width - padPx * 2;
+    const xRel = Math.max(0, Math.min(innerW, clientX - rect.left - padPx));
+    const view = getTrimView();
+    const sec = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
+    if (trimWhich === 'start') pad.trimStart = Math.max(0, Math.min(sec, pad.trimEnd - 0.001));
+    else pad.trimEnd = Math.max(pad.trimStart + 0.001, Math.min(sec, dur));
+    drawWaveform();
+    updateTrimUI();
+  };
+  window.addEventListener('mousemove', e => { if (trimWhich) moveTrim(e.clientX); });
+  window.addEventListener('touchmove', e => {
+    if (trimWhich && e.touches[0]) { moveTrim(e.touches[0].clientX); e.preventDefault(); }
+  }, { passive: false });
+  const endTrim = () => {
+    if (!trimWhich) return;
+    trimWhich = null;
+    activeDrag = null;
+  };
+  window.addEventListener('mouseup', endTrim);
+  window.addEventListener('touchend', endTrim);
+  window.addEventListener('touchcancel', endTrim);
+
+  const startTrim = (which) => (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
-    const dur = pad.audioBuffer.duration;
-    const move = (clientX) => {
-      const rect = wrap.getBoundingClientRect();
-      const innerW = rect.width - padPx * 2;
-      const xRel = Math.max(0, Math.min(innerW, clientX - rect.left - padPx));
-      const view = getTrimView();
-      const sec = view.viewStart + (xRel / innerW) * (view.viewEnd - view.viewStart);
-      if (which === 'start') pad.trimStart = Math.max(0, Math.min(sec, pad.trimEnd - 0.001));
-      else pad.trimEnd = Math.max(pad.trimStart + 0.001, Math.min(sec, dur));
-      drawWaveform();
-      updateTrimUI();
-    };
+    trimWhich = which;
     activeDrag = { update: () => {}, end: () => {} };
-    const mm = ev => move(ev.clientX);
-    const tm = ev => move(ev.touches[0].clientX);
-    const up = () => {
-      window.removeEventListener('mousemove', mm);
-      window.removeEventListener('mouseup', up);
-      window.removeEventListener('touchmove', tm);
-      window.removeEventListener('touchend', up);
-      activeDrag = null;
-    };
-    window.addEventListener('mousemove', mm);
-    window.addEventListener('mouseup', up);
-    window.addEventListener('touchmove', tm, { passive: false });
-    window.addEventListener('touchend', up);
-    if (e.touches) move(e.touches[0].clientX); else move(e.clientX);
+    if (e.touches) moveTrim(e.touches[0].clientX); else moveTrim(e.clientX);
   };
-  hs.addEventListener('mousedown', onDragStart(hs, 'start'));
-  he.addEventListener('mousedown', onDragStart(he, 'end'));
-  hs.addEventListener('touchstart', onDragStart(hs, 'start'), { passive: false });
-  he.addEventListener('touchstart', onDragStart(he, 'end'), { passive: false });
+  hs.addEventListener('mousedown', startTrim('start'));
+  he.addEventListener('mousedown', startTrim('end'));
+  hs.addEventListener('touchstart', startTrim('start'), { passive: false });
+  he.addEventListener('touchstart', startTrim('end'), { passive: false });
 }
 
 function previewTrim() {
@@ -3645,40 +3650,44 @@ function bindCurveEditor() {
   const h1 = document.getElementById('curveH1');
   const h2 = document.getElementById('curveH2');
 
-  const startDrag = (which) => (e) => {
+  // グローバル単一ハンドラ方式（v5.16〜）
+  let curveDragWhich = null; // 1 or 2 or null
+  let curveRafPending = false;
+  const moveCurve = (clientX, clientY) => {
+    if (!curveDragWhich) return;
+    const rect = editor.getBoundingClientRect();
+    let x = (clientX - rect.left) / rect.width;
+    let y = 1 - (clientY - rect.top) / rect.height;
+    x = Math.max(0, Math.min(1, x));
+    y = Math.max(0, Math.min(1, y));
+    if (curveDragWhich === 1) { state.fadeBezier.c1x = x; state.fadeBezier.c1y = y; }
+    else { state.fadeBezier.c2x = x; state.fadeBezier.c2y = y; }
+    state.fadeCurve = 'custom';
+    document.querySelectorAll('[data-curve]').forEach(b => b.classList.remove('active'));
+    if (!curveRafPending) { curveRafPending = true; requestAnimationFrame(() => { curveRafPending = false; drawCurveEditor(); }); }
+  };
+  window.addEventListener('mousemove', e => { if (curveDragWhich) moveCurve(e.clientX, e.clientY); });
+  window.addEventListener('touchmove', e => {
+    if (curveDragWhich && e.touches[0]) { moveCurve(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }
+  }, { passive: false });
+  const endCurveDrag = () => {
+    if (!curveDragWhich) return;
+    curveDragWhich = null;
+    saveStateLocal();
+  };
+  window.addEventListener('mouseup', endCurveDrag);
+  window.addEventListener('touchend', endCurveDrag);
+  window.addEventListener('touchcancel', endCurveDrag);
+
+  const startCurveDrag = (which) => (e) => {
     e.preventDefault();
     e.stopPropagation();
-    let rafPending = false;
-    const move = (clientX, clientY) => {
-      const rect = editor.getBoundingClientRect();
-      let x = (clientX - rect.left) / rect.width;
-      let y = 1 - (clientY - rect.top) / rect.height;
-      x = Math.max(0, Math.min(1, x));
-      y = Math.max(0, Math.min(1, y));
-      if (which === 1) { state.fadeBezier.c1x = x; state.fadeBezier.c1y = y; }
-      else { state.fadeBezier.c2x = x; state.fadeBezier.c2y = y; }
-      state.fadeCurve = 'custom';
-      document.querySelectorAll('[data-curve]').forEach(b => b.classList.remove('active'));
-      if (!rafPending) { rafPending = true; requestAnimationFrame(() => { rafPending = false; drawCurveEditor(); }); }
-    };
-    const mm = ev => move(ev.clientX, ev.clientY);
-    const tm = ev => { if (ev.touches[0]) move(ev.touches[0].clientX, ev.touches[0].clientY); ev.preventDefault(); };
-    const up = () => {
-      window.removeEventListener('mousemove', mm);
-      window.removeEventListener('mouseup', up);
-      window.removeEventListener('touchmove', tm);
-      window.removeEventListener('touchend', up);
-      saveStateLocal();
-    };
-    window.addEventListener('mousemove', mm);
-    window.addEventListener('mouseup', up);
-    window.addEventListener('touchmove', tm, { passive: false });
-    window.addEventListener('touchend', up);
+    curveDragWhich = which;
   };
-  h1.addEventListener('mousedown', startDrag(1));
-  h1.addEventListener('touchstart', startDrag(1), { passive: false });
-  h2.addEventListener('mousedown', startDrag(2));
-  h2.addEventListener('touchstart', startDrag(2), { passive: false });
+  h1.addEventListener('mousedown', startCurveDrag(1));
+  h1.addEventListener('touchstart', startCurveDrag(1), { passive: false });
+  h2.addEventListener('mousedown', startCurveDrag(2));
+  h2.addEventListener('touchstart', startCurveDrag(2), { passive: false });
 }
 
 // Global drag handler (single source of truth)
@@ -4165,40 +4174,49 @@ function bindDoBgmVol() {
 //   - スライダーは depthDb の「設定値」だけを変える（数値とバー位置のみ）
 //   - 実 DUCK（影アナ再生中／プレビュー中）でない時は BGM の音量を変えない
 //   - 実 DUCK 中なら、新しい深さがその場で active duck に反映される（リアルタイム）
+// グローバル単一ハンドラ方式（v5.16〜）
+let _duckDragActive = null; // { depthBar, pointerId } or null
 function bindDoDuck() {
   const depthBar = document.getElementById('doDuckDepthBar');
+  const updateDuck = (cx) => {
+    if (!_duckDragActive) return;
+    const r = depthBar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
+    let db = -((1 - pct) * 24);
+    db = snapToZeroDb(db, 0.6);
+    state.door.duck.depthDb = db;
+    doRenderDuck();
+    if (state.door.duckActive && doBgmDuckGain && ctx) {
+      const targetLin = dbToLin(db);
+      const t = ctx.currentTime;
+      try {
+        doBgmDuckGain.gain.cancelScheduledValues(t);
+        doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+        doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + 0.05);
+      } catch(_){}
+      _animateDuckEffective(state.door.duckEffective, targetLin, 0.05);
+    }
+  };
+  window.addEventListener('pointermove', e => {
+    if (!_duckDragActive) return;
+    e.preventDefault();
+    updateDuck(e.clientX);
+  });
+  const endDuckDrag = () => {
+    if (!_duckDragActive) return;
+    try { _duckDragActive.depthBar.releasePointerCapture(_duckDragActive.pointerId); } catch(_) {}
+    _duckDragActive = null;
+    doSave();
+  };
+  window.addEventListener('pointerup', endDuckDrag);
+  window.addEventListener('pointercancel', endDuckDrag);
+
   depthBar.addEventListener('pointerdown', e => {
     e.preventDefault();
+    if (_duckDragActive) endDuckDrag();
     try { depthBar.setPointerCapture(e.pointerId); } catch(err) {}
-    const update = (cx) => {
-      const r = depthBar.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
-      // pct = 1 → 0dB（下げない）／ pct = 0 → -24dB（最大下げ）
-      let db = -((1 - pct) * 24);
-      db = snapToZeroDb(db, 0.6);
-      state.door.duck.depthDb = db;
-      doRenderDuck();
-      // 実 DUCK 中の時だけ、新しい深さへ即座に追従。それ以外は BGM に触らない。
-      if (state.door.duckActive && doBgmDuckGain && ctx) {
-        const targetLin = dbToLin(db);
-        const t = ctx.currentTime;
-        try {
-          doBgmDuckGain.gain.cancelScheduledValues(t);
-          doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
-          doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + 0.05);
-        } catch(_){}
-        _animateDuckEffective(state.door.duckEffective, targetLin, 0.05);
-      }
-    };
-    update(e.clientX);
-    const mv = ev => { ev.preventDefault(); update(ev.clientX); };
-    const up = () => {
-      window.removeEventListener('pointermove', mv);
-      window.removeEventListener('pointerup', up);
-      doSave();
-    };
-    window.addEventListener('pointermove', mv);
-    window.addEventListener('pointerup', up);
+    _duckDragActive = { depthBar, pointerId: e.pointerId };
+    updateDuck(e.clientX);
   });
   // fade: 数値入力（0〜30秒）
   const fadeInp = document.getElementById('doDuckFadeInput');
@@ -4442,6 +4460,12 @@ function doLibPreviewStop() {
 function doRenderLibrary() {
   const grid = document.getElementById('doLibGrid');
   if (!grid) return;
+  // ドラッグ中に再描画されると DOM が消えて pointer capture が宙ぶらりになるので、
+  // 残骸があれば強制クリーンアップ
+  if (typeof _libVolActive !== 'undefined' && _libVolActive) {
+    try { _libVolActive.sliderEl.releasePointerCapture(_libVolActive.pointerId); } catch(_) {}
+    _libVolActive = null;
+  }
   grid.innerHTML = '';
   // 配列は最低 4 枠を保証
   if (!Array.isArray(state.door.library)) state.door.library = [];
@@ -4611,6 +4635,11 @@ function doSchedDelConfirm(rowId) {
 function doSchedReArm(rowId) {
   const row = state.door.schedule.find(r => r.id === rowId);
   if (!row) return;
+  // 再生中の行を ReArm すると doTick で再起動 race が起きるのでブロック
+  if (state.door.activeRowId === rowId) {
+    showToast('再生中の予定は戻せません');
+    return;
+  }
   row.played = false;
   row.preDuckStarted = false;
   doRenderSchedule();
@@ -4906,8 +4935,10 @@ function doTick() {
         doStartRowAlreadyDucked(row.id);
         break;
       }
-      // 3) ミス（タブ寝てた等）
-      if (now > rs + 60 && now - rs < 24*3600 - 60) {
+      // 3) ミス（タブ寝てた等）— 0 時跨ぎ対応：elapsed を 24h modulo で計算
+      let elapsed = now - rs;
+      if (elapsed < 0) elapsed += 24 * 3600;
+      if (elapsed > 60 && elapsed < 24*3600 - 60) {
         row.played = true;
         row.preDuckStarted = false;
       }
