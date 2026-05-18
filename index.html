@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.18';
+const APP_VERSION = 'v5.19';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -1935,11 +1935,31 @@ async function exportProject() {
     const totalMB = (totalBytes/1024/1024).toFixed(1);
     showToast(`📦 ${samples.length}個の音源を圧縮中...合計${totalMB}MB`);
 
-    // audio/ 直下を「元のファイル名」で保存。manifest.samples[i].savedAs に実際の保存名を記録。
-    // 同名衝突は連番（"speech.wav", "speech_2.wav", "speech_3.wav"...）で回避。
+    // === 重複排除 ===
+    // 中身（バイト）が同じ音源は 1 ファイルに統合。
+    // SHA-256 ハッシュで比較 → 同ハッシュは同じ savedAs を共有。
+    // 名前は最初に登場した sample の名前を採用。同名衝突（中身が違うのに同じ名前）だけ連番。
+    showToast(`📦 重複チェック中...`);
+    const hashToSavedAs = new Map();   // hash -> savedAs filename
     const usedNames = new Set();
     const audioFolder = zip.folder('audio');
-    const samplesWithSavedAs = samples.map(s => {
+    let dedupedBytes = 0;
+
+    const idToSavedAs = new Map();
+    for (const s of samples) {
+      if (!s.data) { idToSavedAs.set(s.id, null); continue; }
+      // ArrayBuffer / Uint8Array どちらでも digest できるよう正規化
+      const bytes = (s.data instanceof ArrayBuffer) ? s.data : (s.data.buffer || s.data);
+      const hashBuf = await crypto.subtle.digest('SHA-256', bytes);
+      const hash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+
+      if (hashToSavedAs.has(hash)) {
+        // 既に同じ中身が保存済み → ファイル名だけ共有
+        idToSavedAs.set(s.id, hashToSavedAs.get(hash));
+        dedupedBytes += s.data.byteLength || 0;
+        continue;
+      }
+      // 新規 → ファイル名を確定して zip へ
       let humanName = (s.name || s.id).replace(/[\/\\:*?"<>|]/g, '_');
       if (!/\.[a-z0-9]+$/i.test(humanName)) humanName += '.bin';
       let finalName = humanName;
@@ -1950,9 +1970,20 @@ async function exportProject() {
         dupCount++;
       }
       usedNames.add(finalName);
-      if (s.data) audioFolder.file(finalName, s.data);
-      return { id: s.id, name: s.name || 'unnamed', savedAs: finalName, size: (s.data && s.data.byteLength) || 0 };
-    });
+      hashToSavedAs.set(hash, finalName);
+      idToSavedAs.set(s.id, finalName);
+      audioFolder.file(finalName, s.data);
+    }
+    if (dedupedBytes > 0) {
+      showToast(`📦 重複 ${(dedupedBytes/1024/1024).toFixed(1)}MB を統合`);
+    }
+
+    const samplesWithSavedAs = samples.map(s => ({
+      id: s.id,
+      name: s.name || 'unnamed',
+      savedAs: idToSavedAs.get(s.id),
+      size: (s.data && s.data.byteLength) || 0,
+    }));
 
     const manifest = {
       version: SSPROJ_VERSION,
@@ -1979,7 +2010,7 @@ async function exportProject() {
       '- manifest.json   音源リスト（ID・元のファイル名・実際の保存名の対応表）\n' +
       '- presets.json    プリセット定義\n' +
       '- state.json      アプリ全体の設定\n' +
-      '- audio/          音源本体（元のファイル名で保存・同名は連番で衝突回避）\n\n' +
+      '- audio/          音源本体（元のファイル名で保存・中身が同じものは1ファイルに統合）\n\n' +
       '【復元方法】\n' +
       '1. https://nrs2013.github.io/sampler-studio/ をChromeで開く\n' +
       '2. 右上の「IMPORT」ボタンをクリック\n' +
