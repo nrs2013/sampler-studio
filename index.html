@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.14';
+const APP_VERSION = 'v5.15';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -4122,27 +4122,40 @@ function doBgmProgressLoop() {
   requestAnimationFrame(doBgmProgressLoop);
 }
 
-// BGM vol slider bind
+// BGM vol slider bind — グローバル単一ハンドラ方式（毎回 add/remove せず安定動作）
+let _bgmVolActive = null; // { slot, slider, pointerId } or null
 function bindDoBgmVol() {
+  const update = (clientX) => {
+    if (!_bgmVolActive) return;
+    const { slot, slider } = _bgmVolActive;
+    const rect = slider.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    doBgmSetVol(slot, pct * 1.4);
+  };
+  // 1個だけ常駐するグローバルリスナー
+  window.addEventListener('pointermove', e => {
+    if (!_bgmVolActive) return;
+    e.preventDefault();
+    update(e.clientX);
+  });
+  const endDrag = () => {
+    if (!_bgmVolActive) return;
+    try { _bgmVolActive.slider.releasePointerCapture(_bgmVolActive.pointerId); } catch(err) {}
+    _bgmVolActive = null;
+  };
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+
   BGM_SLOTS.forEach(slot => {
     const slider = document.getElementById('doBgmVolSlider' + _bgmIdSuffix(slot));
     if (!slider) return;
-    const update = (clientX) => {
-      const rect = slider.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      doBgmSetVol(slot, pct * 1.4);
-    };
     slider.addEventListener('pointerdown', e => {
       e.preventDefault();
+      // 万一前回のドラッグが残っていたらクリーンアップ
+      if (_bgmVolActive) endDrag();
       try { slider.setPointerCapture(e.pointerId); } catch(err) {}
+      _bgmVolActive = { slot, slider, pointerId: e.pointerId };
       update(e.clientX);
-      const mv = ev => { ev.preventDefault(); update(ev.clientX); };
-      const up = () => {
-        window.removeEventListener('pointermove', mv);
-        window.removeEventListener('pointerup', up);
-      };
-      window.addEventListener('pointermove', mv);
-      window.addEventListener('pointerup', up);
     });
   });
 }
@@ -4477,26 +4490,21 @@ function doRenderLibrary() {
           </div>
         </div>
       `;
-      // Volume slider bind (ドラッグ親に伝播させない)
+      // Volume slider bind (グローバル単一ハンドラ方式に移行)
       const vol = slot.querySelector('.do-lib-vol-slider');
       vol.addEventListener('pointerdown', e => {
         e.stopPropagation();
         e.preventDefault();
+        // 前回のドラッグが残っていたらクリーンアップ
+        if (_libVolActive) {
+          try { _libVolActive.sliderEl.releasePointerCapture(_libVolActive.pointerId); } catch(_) {}
+          _libVolActive = null;
+        }
         try { vol.setPointerCapture(e.pointerId); } catch(err) {}
-        const update = (cx) => {
-          const r = vol.getBoundingClientRect();
-          const pct = Math.max(0, Math.min(1, (cx - r.left) / r.width));
-          doLibSetLevel(i, snapToUnity(pct * 1.4));
-        };
-        update(e.clientX);
-        const mv = ev => { ev.preventDefault(); update(ev.clientX); };
-        const up = () => {
-          window.removeEventListener('pointermove', mv);
-          window.removeEventListener('pointerup', up);
-          doLibCommitLevel();
-        };
-        window.addEventListener('pointermove', mv);
-        window.addEventListener('pointerup', up);
+        _libVolActive = { slotIdx: i, sliderEl: vol, pointerId: e.pointerId };
+        const r = vol.getBoundingClientRect();
+        const pct = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+        doLibSetLevel(i, snapToUnity(pct * 1.4));
       });
       // フェーダーカード全体は dragstart を発火させない
       const volCard = slot.querySelector('.do-lib-vol-card');
@@ -5220,9 +5228,35 @@ function doRenderAll() {
   doRenderSchedule();
 }
 
+// LIBRARY vol スライダー用グローバルハンドラ（per-slot バインドはレンダ時、ドラッグ追随はここ）
+let _libVolActive = null;
+function bindLibVolGlobal() {
+  const update = (clientX) => {
+    if (!_libVolActive) return;
+    const { slotIdx, sliderEl } = _libVolActive;
+    const r = sliderEl.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    doLibSetLevel(slotIdx, snapToUnity(pct * 1.4));
+  };
+  window.addEventListener('pointermove', e => {
+    if (!_libVolActive) return;
+    e.preventDefault();
+    update(e.clientX);
+  });
+  const endDrag = () => {
+    if (!_libVolActive) return;
+    try { _libVolActive.sliderEl.releasePointerCapture(_libVolActive.pointerId); } catch(_) {}
+    _libVolActive = null;
+    if (typeof doLibCommitLevel === 'function') doLibCommitLevel();
+  };
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+}
+
 function doInit() {
   doLoad();
   bindDoBgmVol();
+  bindLibVolGlobal();
   bindDoBgmDrop();
   bindDoLibDrop();
   bindDoDuck();
