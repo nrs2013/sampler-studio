@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.16';
+const APP_VERSION = 'v5.17';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -1925,6 +1925,12 @@ async function exportProject() {
     const samples = await _getAllFromStore('samples');
     const presets = await _getAllFromStore('presets');
 
+    // 音源ゼロチェック — 「EXPORT したのに音が入ってない」を未然に防ぐ
+    if (samples.length === 0) {
+      const proceed = confirm('音源が IndexedDB に1つもありません。\n設定だけのバックアップとして書き出しを続けますか？\n\n音源が含まれてないだけでなく、過去にロードした音も復元できなくなる可能性があります。');
+      if (!proceed) { showToast('書き出しをキャンセル'); return; }
+    }
+
     const totalBytes = samples.reduce((a,s)=>a+((s.data && s.data.byteLength)||0), 0);
     const totalMB = (totalBytes/1024/1024).toFixed(1);
     showToast(`📦 ${samples.length}個の音源を圧縮中...合計${totalMB}MB`);
@@ -1954,6 +1960,12 @@ async function exportProject() {
       '出力日時: ' + new Date().toLocaleString('ja-JP') + '\n' +
       '音源数  : ' + samples.length + '\n' +
       'プリセット: ' + presets.length + '\n\n' +
+      '【中身】\n' +
+      '- manifest.json   音源リスト（ID と元のファイル名の対応表）\n' +
+      '- presets.json    プリセット定義\n' +
+      '- state.json      アプリ全体の設定\n' +
+      '- audio/          音源本体（ファイル名は内部 ID。IMPORT 時に使う）\n' +
+      '- audio/_readable/  音源を「元の名前」で複製したもの（Finder で確認用）\n\n' +
       '【復元方法】\n' +
       '1. https://nrs2013.github.io/sampler-studio/ をChromeで開く\n' +
       '2. 右上の「📂 IMPORT」ボタンをクリック\n' +
@@ -1961,8 +1973,28 @@ async function exportProject() {
       '4. 自動でリロードされて全データが復元されます\n');
 
     const audioFolder = zip.folder('audio');
+    // ファイル名は ID で保存（IMPORT 時の照合用）。元の名前は manifest.json に記録済み。
+    // 加えて _readable サブフォルダに "元のファイル名" でも保存（Finder で見て音源と分かるように）
+    const readableFolder = zip.folder('audio/_readable');
+    const usedNames = new Set();
     for (const s of samples) {
-      if (s.data) audioFolder.file(s.id, s.data);
+      if (!s.data) continue;
+      // 1) 復元用: IDをファイル名に（拡張子は manifest 経由で復元）
+      audioFolder.file(s.id, s.data);
+      // 2) 人間用: 元ファイル名で複製（Finder で音と分かる）
+      let humanName = (s.name || s.id).replace(/[\/\\:*?"<>|]/g, '_');
+      // 拡張子が無ければ推測（s.name が "track.wav" のような形だと既にOK）
+      if (!/\.[a-z0-9]+$/i.test(humanName)) humanName += '.bin';
+      // 同名衝突回避
+      let finalName = humanName;
+      let dupCount = 1;
+      while (usedNames.has(finalName)) {
+        const dot = humanName.lastIndexOf('.');
+        finalName = humanName.slice(0, dot) + `_${dupCount}` + humanName.slice(dot);
+        dupCount++;
+      }
+      usedNames.add(finalName);
+      readableFolder.file(finalName, s.data);
     }
 
     const blob = await zip.generateAsync({
@@ -3813,7 +3845,7 @@ async function doBgmLoadFile(slot, f) {
     if (ctx.state === 'suspended') await ctx.resume();
     const arrBuf = await f.arrayBuffer();
     const id = `door-bgm-${slot}-${Date.now()}`;
-    try { await saveSampleToDB(id, arrBuf, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); }
+    try { await saveSampleToDB(id, arrBuf, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); showToast('⚠️ BGM 永続保存失敗（EXPORT に含まれない可能性）: ' + (e.message || e)); }
     // Anti-click: fade current BGM (if playing) before replacing audio nodes
     await _doBgmDetachAsync(slot);
     const blob = new Blob([arrBuf], { type: guessAudioMime(f.name, f.type) });
