@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.13';
+const APP_VERSION = 'v5.14';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -1783,8 +1783,8 @@ function fadeOutAll() {
       }, sec * 1000 + 180);
     }
   });
-  // 3) DOOR OPEN: announce chain + preview
-  if (state.door && (state.door.activeAnnSource || state.door.previewSource) && doAnnGain && ctx) {
+  // 3) DOOR OPEN: announce chain + preview（pre-DUCK 単独状態も含めて全停止）
+  if (state.door && (state.door.activeAnnSource || state.door.previewSource || state.door.duckActive) && doAnnGain && ctx) {
     const t = ctx.currentTime;
     const startVal = doAnnGain.gain.value;
     try {
@@ -1806,6 +1806,11 @@ function fadeOutAll() {
       state.door.previewSource = null;
       state.door.previewGain = null;
       state.door.previewSlot = null;
+      // 停止した行を「済」に。同時に preDuckStarted もクリア。再発火を防ぐ
+      if (state.door.activeRowId) {
+        const stoppedRow = state.door.schedule.find(r => r.id === state.door.activeRowId);
+        if (stoppedRow) { stoppedRow.played = true; stoppedRow.preDuckStarted = false; }
+      }
       state.door.activeRowId = null;
       state.door.activeChainIdx = -1;
       doDuckRelease();
@@ -4599,6 +4604,7 @@ function doSchedReArm(rowId) {
   const row = state.door.schedule.find(r => r.id === rowId);
   if (!row) return;
   row.played = false;
+  row.preDuckStarted = false;
   doRenderSchedule();
   doSave();
   showToast('予定を未済に戻しました');
@@ -4620,6 +4626,7 @@ function doSchedTimeChange(rowId, val) {
   if (!row) return;
   row.time = `${hh}:${mm}`;
   row.played = false;
+  row.preDuckStarted = false;
   state.door.schedule.sort((a,b) => a.time.localeCompare(b.time));
   doRenderSchedule();
   doSave();
@@ -4883,13 +4890,12 @@ function doTick() {
       if (now >= rs && now < rs + 3) {
         const wasDucked = row.preDuckStarted;
         row.preDuckStarted = false;
-        if (wasDucked) {
-          // 事前 DUCK 済み → 即ナレ
-          doStartRowAlreadyDucked(row.id);
-        } else {
-          // pre-DUCK が走らなかった（タブ寝てた等）→ DUCK 込みの通常フロー
-          doStartRow(row.id);
+        if (!wasDucked) {
+          // pre-DUCK が走らなかった（タブ寝てた等）→ DUCK を即起動して並行発火
+          // doStartRow の setTimeout(fadeMs) はバックグラウンドで throttle されるので使わない
+          doDuckActivate();
         }
+        doStartRowAlreadyDucked(row.id);
         break;
       }
       // 3) ミス（タブ寝てた等）
@@ -4942,8 +4948,8 @@ function doPlayNextInChain() {
   const libIdx = row.chain[state.door.activeChainIdx];
   const item = state.door.library[libIdx];
   if (!item || !item.audioBuffer) {
-    // skip and continue
-    doPlayNextInChain();
+    // skip and continue — setTimeout でテール再帰を切る（チェーン全空時のスタック保護）
+    setTimeout(doPlayNextInChain, 0);
     return;
   }
   if (ctx.state === 'suspended') ctx.resume();
