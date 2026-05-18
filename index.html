@@ -960,7 +960,12 @@
     letter-spacing: 2px; cursor: pointer; transition: all 0.15s;
   }
   .back-to-top-btn:hover { border-color: #5DCAA5; color: #5DCAA5; }
-  /* メインアプリページ */
+  /* メインアプリページ — body 直下時と同じ flex 振る舞いに */
+  #appPage {
+    display: flex; flex-direction: column;
+    flex: 1; min-height: 0; min-width: 0;
+    width: 100%;
+  }
   #appPage.hidden { display: none !important; }
   /* ===================================================================== */
 
@@ -1407,7 +1412,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.22';
+const APP_VERSION = 'v5.23';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
