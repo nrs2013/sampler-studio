@@ -1288,7 +1288,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.12';
+const APP_VERSION = 'v5.13';
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -4874,15 +4874,22 @@ function doTick() {
       if (row.played) continue;
       if (!row.chain.length) continue;
       const rs = timeStrToSec(row.time);
-      // 1) DUCK 事前開始（予定の fadeSec 秒前）— タブ非表示中はスキップ
-      if (!row.preDuckStarted && !document.hidden && now >= rs - fadeSec && now < rs) {
+      // 1) DUCK 事前開始（予定の fadeSec 秒前）
+      if (!row.preDuckStarted && now >= rs - fadeSec && now < rs) {
         row.preDuckStarted = true;
         doDuckActivate();
       }
-      // 2) ナレ発火（予定時刻に到達）— タブ非表示中はスキップ
-      if (!document.hidden && now >= rs && now < rs + 3) {
+      // 2) ナレ発火（予定時刻に到達）— タブ非表示中でも発火させる
+      if (now >= rs && now < rs + 3) {
+        const wasDucked = row.preDuckStarted;
         row.preDuckStarted = false;
-        doStartRowAlreadyDucked(row.id);
+        if (wasDucked) {
+          // 事前 DUCK 済み → 即ナレ
+          doStartRowAlreadyDucked(row.id);
+        } else {
+          // pre-DUCK が走らなかった（タブ寝てた等）→ DUCK 込みの通常フロー
+          doStartRow(row.id);
+        }
         break;
       }
       // 3) ミス（タブ寝てた等）
