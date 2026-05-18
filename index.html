@@ -872,6 +872,92 @@
   .do-lib-vol-thumb.color-3 { background: #EF9F27; }
   .do-lib-vol-db { font-size: 10px; color: #E6E6EA; min-width: 36px; text-align: right; font-family: inherit; }
 
+  /* ====================== TOP PAGE (project picker) ====================== */
+  #topPage {
+    display: none;
+    flex-direction: column;
+    padding: 56px 80px 40px;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  #topPage.active { display: flex; }
+  .tp-header { display: flex; align-items: center; gap: 16px; margin-bottom: 56px; }
+  .tp-icon {
+    width: 56px; height: 56px;
+    background: #5DCAA5; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    color: #04342C; font-weight: 800; font-size: 30px; letter-spacing: -1px;
+    font-family: inherit;
+    box-shadow: 0 4px 16px rgba(93,202,165,0.18);
+  }
+  .tp-app-name { font-size: 22px; font-weight: 700; letter-spacing: 6px; color: #E6E6EA; }
+  .tp-app-sub  { font-size: 10px; letter-spacing: 4px; color: #5DCAA5; margin-top: 4px; font-weight: 600; }
+  .tp-ws-label { font-size: 10px; letter-spacing: 5px; color: #5A5A60; font-weight: 700; margin-bottom: 16px; }
+  .tp-ws-row { display: flex; align-items: baseline; gap: 24px; margin-bottom: 32px; }
+  .tp-ws-title { font-size: 56px; font-weight: 800; color: #E6E6EA; letter-spacing: -1px; }
+  .tp-ws-stats { margin-left: auto; font-size: 11px; letter-spacing: 3px; color: #5A5A60; }
+  .tp-ws-stats strong { color: #B0B0B6; font-weight: 700; }
+  .tp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .tp-card {
+    background: #0F0F14; border: 0.5px solid #1A1A20; border-radius: 8px;
+    padding: 22px 22px 20px;
+    min-height: 180px;
+    display: flex; flex-direction: column;
+    cursor: pointer; position: relative;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .tp-card:hover { border-color: #5DCAA5; background: #11181A; }
+  .tp-card-num { position: absolute; top: 18px; right: 22px; font-size: 11px; color: #5A5A60; letter-spacing: 1px; font-weight: 600; }
+  .tp-card-name { font-size: 22px; font-weight: 700; color: #E6E6EA; margin-bottom: 14px; letter-spacing: -0.5px; word-break: break-all; padding-right: 32px; }
+  .tp-card-stats { display: flex; gap: 18px; margin-bottom: auto; }
+  .tp-card-stat { display: flex; flex-direction: column; gap: 2px; }
+  .tp-card-stat-num { font-size: 17px; font-weight: 600; color: #5DCAA5; letter-spacing: -0.5px; }
+  .tp-card-stat-label { font-size: 8.5px; letter-spacing: 1.5px; color: #5A5A60; font-weight: 600; }
+  .tp-card-meta { margin-top: 16px; font-size: 10px; color: #5A5A60; letter-spacing: 1.5px; }
+  .tp-card-menu {
+    position: absolute; bottom: 14px; right: 16px;
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #3A3A48; font-size: 14px;
+    opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s;
+    cursor: pointer;
+  }
+  .tp-card:hover .tp-card-menu { opacity: 1; color: #5A5A60; }
+  .tp-card-menu:hover { background: #1E1E24; color: #E24B4A; }
+  .tp-new {
+    background: transparent; border: 0.5px dashed #2A2A30; border-radius: 8px;
+    min-height: 180px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tp-new:hover { border-color: #5DCAA5; background: rgba(93,202,165,0.04); }
+  .tp-new-icon { font-size: 22px; color: #5A5A60; transition: color 0.15s; }
+  .tp-new:hover .tp-new-icon { color: #5DCAA5; }
+  .tp-new-label { font-size: 11px; letter-spacing: 3px; color: #5A5A60; font-weight: 700; transition: color 0.15s; }
+  .tp-new:hover .tp-new-label { color: #5DCAA5; }
+  .tp-foot {
+    margin-top: 56px; font-size: 10px; letter-spacing: 1.5px; color: #3A3A48; text-align: center;
+  }
+  .tp-foot a { color: #5A5A60; cursor: pointer; }
+  .tp-foot a:hover { color: #5DCAA5; }
+  /* Back-to-projects 小ボタン（メインアプリ側のヘッダー左に追加） */
+  .back-to-top-btn {
+    background: transparent; border: 0.5px solid #2A2A30; color: #8A8A92;
+    border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 9px;
+    letter-spacing: 2px; cursor: pointer; transition: all 0.15s;
+  }
+  .back-to-top-btn:hover { border-color: #5DCAA5; color: #5DCAA5; }
+  /* メインアプリページ */
+  #appPage.hidden { display: none !important; }
+  /* ===================================================================== */
+
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .do-sched-list { display: flex; flex-direction: column; }
@@ -975,8 +1061,32 @@
 </style>
 </head>
 <body>
+
+  <!-- ====================== TOP PAGE (project picker) ====================== -->
+  <div id="topPage">
+    <div class="tp-header">
+      <div class="tp-icon">S</div>
+      <div>
+        <div class="tp-app-name">SAMPLER STUDIO</div>
+        <div class="tp-app-sub">CONCERT AUDIO CONTROL</div>
+      </div>
+    </div>
+    <div class="tp-ws-label">WORKSPACE</div>
+    <div class="tp-ws-row">
+      <div class="tp-ws-title">Projects</div>
+      <div class="tp-ws-stats" id="tpStats"></div>
+    </div>
+    <div class="tp-grid" id="tpGrid"></div>
+    <div class="tp-foot">
+      データはブラウザに自動保存されます。EXPORT で .ssproj.zip として別 Mac に持ち出し可。
+    </div>
+  </div>
+  <!-- ====================================================================== -->
+
+  <div id="appPage">
   <div class="header">
     <div class="header-left">
+      <button class="back-to-top-btn" onclick="projGoTop()" title="プロジェクト一覧へ戻る">← PROJECTS</button>
       <div class="logo">
         <div class="logo-dot"></div>
         <span class="logo-text">SAMPLER STUDIO</span>
@@ -1282,13 +1392,202 @@
     <div class="modal" id="modalContent"></div>
   </div>
 
+  </div>
+  <!-- end #appPage -->
+
 <script>
 'use strict';
 
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.19';
+const APP_VERSION = 'v5.20';
+
+// ===========================
+// PROJECT MANAGEMENT (multi-project support)
+// ===========================
+// localStorage layout:
+//   samplerActiveProject  = current project ID, e.g. "default" or "p_xxx"
+//   samplerProjects       = JSON array [{id, name, createdAt, updatedAt}, ...]
+//   <pid>:samplerStudioState  = per-project sampler state (default project uses unprefixed)
+//   <pid>:samplerStudioDoor   = per-project door open state
+// IndexedDB samples: 共有（projectId プレフィックス無し）。各プロジェクトの参照は state JSON 内
+// の sample ID で決まる。EXPORT 時に参照 ID を抽出してその分だけ書き出す。
+function projGetActiveId() {
+  return localStorage.getItem('samplerActiveProject') || null;
+}
+function projSetActiveId(id) {
+  if (id) localStorage.setItem('samplerActiveProject', id);
+  else localStorage.removeItem('samplerActiveProject');
+}
+function projGetList() {
+  try { return JSON.parse(localStorage.getItem('samplerProjects') || '[]'); }
+  catch { return []; }
+}
+function projSetList(list) {
+  localStorage.setItem('samplerProjects', JSON.stringify(list));
+}
+function projKey(baseKey) {
+  const pid = projGetActiveId();
+  if (!pid || pid === 'default') return baseKey;
+  return pid + ':' + baseKey;
+}
+function projTouchActive() {
+  const pid = projGetActiveId();
+  if (!pid) return;
+  const list = projGetList();
+  const it = list.find(p => p.id === pid);
+  if (it) { it.updatedAt = Date.now(); projSetList(list); }
+}
+// 起動時マイグレーション：projectsリストが空で旧データがあれば「Project 01」として登録
+function projMigrateIfNeeded() {
+  const list = projGetList();
+  if (list.length > 0) return;
+  const hasOldState = !!localStorage.getItem('samplerStudioState');
+  const hasOldDoor  = !!localStorage.getItem('samplerStudioDoor');
+  const now = Date.now();
+  if (hasOldState || hasOldDoor) {
+    // 旧データを「default」プロジェクトとして登録（キーはそのまま）
+    projSetList([{ id: 'default', name: 'Project 01', createdAt: now, updatedAt: now }]);
+    projSetActiveId('default');
+  }
+  // データなし＆プロジェクトなし → トップページで「+NEW」させる
+}
+// プロジェクト切替：現在の作業を保存して、新IDを active にし、reload
+function projSwitchTo(pid) {
+  // 現状を確実に保存（doSave/saveStateLocal は既に都度呼ばれているが念のため）
+  try { if (typeof saveStateLocal === 'function') saveStateLocal(); } catch(_){}
+  try { if (typeof doSave === 'function') doSave(); } catch(_){}
+  projSetActiveId(pid);
+  projTouchActive();
+  location.reload();
+}
+function projGoTop() {
+  try { if (typeof saveStateLocal === 'function') saveStateLocal(); } catch(_){}
+  try { if (typeof doSave === 'function') doSave(); } catch(_){}
+  projTouchActive();
+  projSetActiveId(null);
+  location.reload();
+}
+function projCreateNew() {
+  const name = prompt('新しいプロジェクト名:', 'New Project');
+  if (!name || !name.trim()) return;
+  const id = 'p_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+  const list = projGetList();
+  list.push({ id, name: name.trim(), createdAt: Date.now(), updatedAt: Date.now() });
+  projSetList(list);
+  projSwitchTo(id);
+}
+function projRename(pid) {
+  const list = projGetList();
+  const it = list.find(p => p.id === pid);
+  if (!it) return;
+  const name = prompt('プロジェクト名を変更:', it.name);
+  if (!name || !name.trim()) return;
+  it.name = name.trim();
+  it.updatedAt = Date.now();
+  projSetList(list);
+  renderTopPage();
+}
+function projDelete(pid) {
+  const list = projGetList();
+  const it = list.find(p => p.id === pid);
+  if (!it) return;
+  if (!confirm(`プロジェクト「${it.name}」を削除します。\n\nこの操作は取り消せません。\n（音源データ自体は他のプロジェクトと共有されている可能性があるため残ります）\n\n続行しますか？`)) return;
+  // localStorage から該当プロジェクトの state を消す
+  if (pid === 'default') {
+    localStorage.removeItem('samplerStudioState');
+    localStorage.removeItem('samplerStudioDoor');
+  } else {
+    localStorage.removeItem(pid + ':samplerStudioState');
+    localStorage.removeItem(pid + ':samplerStudioDoor');
+  }
+  projSetList(list.filter(p => p.id !== pid));
+  if (projGetActiveId() === pid) projSetActiveId(null);
+  renderTopPage();
+}
+// プロジェクトのカード表示用統計（state JSON から数えるだけ、軽量）
+function projStats(pid) {
+  let stateKey, doorKey;
+  if (pid === 'default') { stateKey = 'samplerStudioState'; doorKey = 'samplerStudioDoor'; }
+  else { stateKey = pid + ':samplerStudioState'; doorKey = pid + ':samplerStudioDoor'; }
+  let samples = 0, schedule = 0, library = 0;
+  try {
+    const st = JSON.parse(localStorage.getItem(stateKey) || 'null');
+    if (st && Array.isArray(st.banks)) {
+      st.banks.forEach(b => (b.pads || []).forEach(p => { if (p && p.sampleId) samples++; }));
+    }
+  } catch(_){}
+  try {
+    const dr = JSON.parse(localStorage.getItem(doorKey) || 'null');
+    if (dr) {
+      if (dr.bgm) {
+        if (dr.bgm.door && dr.bgm.door.sampleId) samples++;
+        if (dr.bgm.workout && dr.bgm.workout.sampleId) samples++;
+      }
+      if (Array.isArray(dr.library)) library = dr.library.filter(it => it && it.sampleId).length;
+      if (Array.isArray(dr.schedule)) schedule = dr.schedule.length;
+    }
+  } catch(_){}
+  return { samples, schedule, library };
+}
+function renderTopPage() {
+  const grid = document.getElementById('tpGrid');
+  if (!grid) return;
+  const list = projGetList().slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  document.getElementById('tpStats').innerHTML =
+    `<strong>${list.length} TOTAL</strong>` + (list.length ? '&nbsp;&nbsp;・&nbsp;&nbsp;SELECT TO OPEN' : '');
+  grid.innerHTML = '';
+  list.forEach((p, i) => {
+    const st = projStats(p.id);
+    const d = new Date(p.updatedAt || p.createdAt || Date.now());
+    const dateStr = `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}  ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+    const card = document.createElement('div');
+    card.className = 'tp-card';
+    card.innerHTML = `
+      <div class="tp-card-num">${(i+1).toString().padStart(2,'0')}</div>
+      <div class="tp-card-name"></div>
+      <div class="tp-card-stats">
+        <div class="tp-card-stat"><span class="tp-card-stat-num">${st.samples}</span><span class="tp-card-stat-label">SAMPLES</span></div>
+        <div class="tp-card-stat"><span class="tp-card-stat-num">${st.schedule}</span><span class="tp-card-stat-label">SCHEDULE</span></div>
+        <div class="tp-card-stat"><span class="tp-card-stat-num">${st.library}</span><span class="tp-card-stat-label">LIBRARY</span></div>
+      </div>
+      <div class="tp-card-meta">UPDATED ${dateStr}</div>
+      <div class="tp-card-menu" title="削除">×</div>
+    `;
+    card.querySelector('.tp-card-name').textContent = p.name;
+    card.addEventListener('click', e => {
+      if (e.target.closest('.tp-card-menu')) return;
+      projSwitchTo(p.id);
+    });
+    card.querySelector('.tp-card-menu').addEventListener('click', e => {
+      e.stopPropagation();
+      projDelete(p.id);
+    });
+    // ダブルクリックで rename
+    card.addEventListener('dblclick', e => {
+      if (e.target.closest('.tp-card-menu')) return;
+      e.preventDefault();
+      projRename(p.id);
+    });
+    grid.appendChild(card);
+  });
+  // + NEW PROJECT card
+  const nc = document.createElement('div');
+  nc.className = 'tp-new';
+  nc.innerHTML = `<div class="tp-new-icon">+</div><div class="tp-new-label">NEW PROJECT</div>`;
+  nc.addEventListener('click', projCreateNew);
+  grid.appendChild(nc);
+}
+function showTopPage() {
+  document.getElementById('topPage').classList.add('active');
+  document.getElementById('appPage').classList.add('hidden');
+  renderTopPage();
+}
+function hideTopPage() {
+  document.getElementById('topPage').classList.remove('active');
+  document.getElementById('appPage').classList.remove('hidden');
+}
 const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
@@ -1922,8 +2221,34 @@ async function exportProject() {
     const JSZip = await loadJSZip();
     const zip = new JSZip();
 
-    const samples = await _getAllFromStore('samples');
+    const allSamples = await _getAllFromStore('samples');
     const presets = await _getAllFromStore('presets');
+
+    // 現プロジェクトの state から参照されている sample ID を全部収集
+    // EXPORT する音源はこれだけ（他プロジェクトの音は持っていかない）
+    const stateRaw = localStorage.getItem(projKey('samplerStudioState'));
+    const doorRaw  = localStorage.getItem(projKey('samplerStudioDoor'));
+    const refIds = new Set();
+    try {
+      const st = JSON.parse(stateRaw || 'null');
+      if (st && Array.isArray(st.banks)) {
+        st.banks.forEach(b => (b.pads || []).forEach(p => { if (p && p.sampleId) refIds.add(p.sampleId); }));
+      }
+      if (st && Array.isArray(st.hold)) {
+        st.hold.forEach(h => { if (h && h.padData && h.padData.sampleId) refIds.add(h.padData.sampleId); });
+      }
+    } catch(_){}
+    try {
+      const dr = JSON.parse(doorRaw || 'null');
+      if (dr && dr.bgm) {
+        if (dr.bgm.door && dr.bgm.door.sampleId) refIds.add(dr.bgm.door.sampleId);
+        if (dr.bgm.workout && dr.bgm.workout.sampleId) refIds.add(dr.bgm.workout.sampleId);
+      }
+      if (dr && Array.isArray(dr.library)) {
+        dr.library.forEach(it => { if (it && it.sampleId) refIds.add(it.sampleId); });
+      }
+    } catch(_){}
+    const samples = allSamples.filter(s => refIds.has(s.id));
 
     // 音源ゼロチェック — 「EXPORT したのに音が入ってない」を未然に防ぐ
     if (samples.length === 0) {
@@ -1997,8 +2322,8 @@ async function exportProject() {
     zip.file('manifest.json', JSON.stringify(manifest, null, 2));
     zip.file('presets.json', JSON.stringify(presets, null, 2));
     zip.file('state.json', JSON.stringify({
-      samplerStudioState: localStorage.getItem('samplerStudioState'),
-      samplerStudioDoor: localStorage.getItem('samplerStudioDoor'),
+      samplerStudioState: localStorage.getItem(projKey('samplerStudioState')),
+      samplerStudioDoor: localStorage.getItem(projKey('samplerStudioDoor')),
     }, null, 2));
     zip.file('README.txt',
       'SAMPLER STUDIO プロジェクトファイル\n' +
@@ -2068,13 +2393,10 @@ function openImportDialog() {
 async function importProject(file) {
   try {
     const sizeMB = (file.size/1024/1024).toFixed(1);
-    if (!confirm(
-      `「${file.name}」(${sizeMB} MB) を読み込みます。\n\n` +
-      `⚠️ 現在のプロジェクトデータ（音源・パッド設定・スケジュール）はすべて上書きされます。\n\n` +
-      `続行しますか？`
-    )) {
-      return;
-    }
+    // 新仕様: 既存を上書きせず「新規プロジェクト」として取り込む
+    const defaultName = file.name.replace(/\.ssproj\.zip$|\.zip$/i, '').replace(/_\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/, '');
+    const newName = prompt(`「${file.name}」(${sizeMB} MB) を新しいプロジェクトとして読み込みます。\n\nプロジェクト名:`, defaultName);
+    if (!newName || !newName.trim()) { showToast('読み込みをキャンセル'); return; }
 
     showToast('📂 プロジェクト読み込み中... ファイルが大きいと数十秒かかります');
     const JSZip = await loadJSZip();
@@ -2088,17 +2410,18 @@ async function importProject(file) {
       throw new Error('SAMPLER STUDIO 形式のファイルではありません');
     }
 
-    // 既存データをクリア
-    await _clearStore('samples');
-    await _clearStore('presets');
+    // 新規プロジェクト作成 & active 化
+    const newId = 'p_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+    const list = projGetList();
+    list.push({ id: newId, name: newName.trim(), createdAt: Date.now(), updatedAt: Date.now() });
+    projSetList(list);
+    projSetActiveId(newId);
 
-    // 音源復元
+    // 音源復元（既存の samples は消さない — 他プロジェクトと共有可能）
     let restoredSamples = 0;
     const totalToRestore = (manifest.samples || []).length;
     for (let i = 0; i < (manifest.samples || []).length; i++) {
       const sm = manifest.samples[i];
-      // 新形式 (v5.18+): manifest.savedAs に保存名がある（元のファイル名ベース）
-      // 旧形式 (〜v5.17): audio/[ID] で保存されていた
       let f = sm.savedAs ? zip.file(`audio/${sm.savedAs}`) : null;
       if (!f) f = zip.file(`audio/${sm.id}`);
       if (!f) {
@@ -2111,7 +2434,7 @@ async function importProject(file) {
       if (i % 5 === 0) showToast(`📂 音源復元中... ${i+1}/${totalToRestore}`);
     }
 
-    // Presets 復元
+    // Presets 復元（同じ）
     const presetsFile = zip.file('presets.json');
     if (presetsFile) {
       const presets = JSON.parse(await presetsFile.async('string'));
@@ -2123,15 +2446,15 @@ async function importProject(file) {
       }
     }
 
-    // localStorage 復元
+    // localStorage 復元 — 新プロジェクトのキーに書き込む
     const stateFile = zip.file('state.json');
     if (stateFile) {
       const stateJson = JSON.parse(await stateFile.async('string'));
-      if (stateJson.samplerStudioState) localStorage.setItem('samplerStudioState', stateJson.samplerStudioState);
-      if (stateJson.samplerStudioDoor)  localStorage.setItem('samplerStudioDoor',  stateJson.samplerStudioDoor);
+      if (stateJson.samplerStudioState) localStorage.setItem(projKey('samplerStudioState'), stateJson.samplerStudioState);
+      if (stateJson.samplerStudioDoor)  localStorage.setItem(projKey('samplerStudioDoor'),  stateJson.samplerStudioDoor);
     }
 
-    showToast(`✅ 復元完了: ${restoredSamples}個の音源 / ${manifest.presetCount||0}個のプリセット — 3秒後にリロード`);
+    showToast(`✅ 「${newName}」として復元: ${restoredSamples}個の音源 / ${manifest.presetCount||0}個のプリセット — 3秒後にリロード`);
     setTimeout(() => location.reload(), 3000);
   } catch (e) {
     console.error('importProject failed', e);
@@ -2450,7 +2773,7 @@ function closeModal() {
 // ===========================
 function saveStateLocal() {
   try {
-    localStorage.setItem('samplerStudioState', JSON.stringify({
+    localStorage.setItem(projKey('samplerStudioState'), JSON.stringify({
       playMode: state.playMode,
       fadeTime: state.fadeTime,
       fadeCurve: state.fadeCurve,
@@ -2480,7 +2803,7 @@ function saveStateLocal() {
 
 function loadStateLocal() {
   try {
-    const raw = localStorage.getItem('samplerStudioState');
+    const raw = localStorage.getItem(projKey('samplerStudioState'));
     if (!raw) return;
     const s = JSON.parse(raw);
     if (!s) return;
@@ -5183,7 +5506,7 @@ function _doRenderBgmFaderOnly(slot) {
 // ---- PERSISTENCE ----
 function doSave() {
   try {
-    localStorage.setItem('samplerStudioDoor', JSON.stringify({
+    localStorage.setItem(projKey('samplerStudioDoor'), JSON.stringify({
       appMode: state.appMode,
       bgm: {
         door: {
@@ -5212,7 +5535,7 @@ function doSave() {
 
 function doLoad() {
   try {
-    const raw = localStorage.getItem('samplerStudioDoor');
+    const raw = localStorage.getItem(projKey('samplerStudioDoor'));
     if (!raw) return;
     const s = JSON.parse(raw);
     if (!s) return;
@@ -5395,6 +5718,18 @@ function doInit() {
 }
 
 async function init() {
+  // プロジェクト管理：旧データがあればマイグレ、active が無ければトップページへ
+  projMigrateIfNeeded();
+  const activeId = projGetActiveId();
+  if (!activeId) {
+    // トップページを出して、プロジェクト選択待ち
+    showTopPage();
+    // バージョン表示だけ先に
+    const vb = document.getElementById('version-badge');
+    if (vb) vb.textContent = APP_VERSION;
+    return;
+  }
+  // active プロジェクトあり → 通常通り起動
   initBanks();
   loadStateLocal();
   await openDB();
