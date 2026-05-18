@@ -921,15 +921,19 @@
   .tp-card-stat-num { font-size: 17px; font-weight: 600; color: #5DCAA5; letter-spacing: -0.5px; }
   .tp-card-stat-label { font-size: 8.5px; letter-spacing: 1.5px; color: #5A5A60; font-weight: 600; }
   .tp-card-meta { margin-top: 16px; font-size: 10px; color: #5A5A60; letter-spacing: 1.5px; }
-  .tp-card-menu {
-    position: absolute; bottom: 14px; right: 16px;
+  .tp-card-menu, .tp-card-rename {
+    position: absolute; bottom: 14px;
     width: 26px; height: 26px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     color: #3A3A48; font-size: 14px;
     opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s;
     cursor: pointer;
   }
-  .tp-card:hover .tp-card-menu { opacity: 1; color: #5A5A60; }
+  .tp-card-rename { right: 48px; font-size: 13px; }
+  .tp-card-menu { right: 16px; }
+  .tp-card:hover .tp-card-menu,
+  .tp-card:hover .tp-card-rename { opacity: 1; color: #5A5A60; }
+  .tp-card-rename:hover { background: #1E1E24; color: #5DCAA5; }
   .tp-card-menu:hover { background: #1E1E24; color: #E24B4A; }
   .tp-new {
     background: transparent; border: 0.5px dashed #2A2A30; border-radius: 8px;
@@ -1401,7 +1405,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.20';
+const APP_VERSION = 'v5.21';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -1553,20 +1557,25 @@ function renderTopPage() {
         <div class="tp-card-stat"><span class="tp-card-stat-num">${st.library}</span><span class="tp-card-stat-label">LIBRARY</span></div>
       </div>
       <div class="tp-card-meta">UPDATED ${dateStr}</div>
+      <div class="tp-card-rename" title="名前を変更">✎</div>
       <div class="tp-card-menu" title="削除">×</div>
     `;
     card.querySelector('.tp-card-name').textContent = p.name;
     card.addEventListener('click', e => {
-      if (e.target.closest('.tp-card-menu')) return;
+      if (e.target.closest('.tp-card-menu') || e.target.closest('.tp-card-rename')) return;
       projSwitchTo(p.id);
     });
     card.querySelector('.tp-card-menu').addEventListener('click', e => {
       e.stopPropagation();
       projDelete(p.id);
     });
-    // ダブルクリックで rename
+    card.querySelector('.tp-card-rename').addEventListener('click', e => {
+      e.stopPropagation();
+      projRename(p.id);
+    });
+    // ダブルクリックで rename も維持（名前部分でも反応）
     card.addEventListener('dblclick', e => {
-      if (e.target.closest('.tp-card-menu')) return;
+      if (e.target.closest('.tp-card-menu') || e.target.closest('.tp-card-rename')) return;
       e.preventDefault();
       projRename(p.id);
     });
