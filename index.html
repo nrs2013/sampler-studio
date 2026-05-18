@@ -922,19 +922,21 @@
   .tp-card-stat-label { font-size: 8.5px; letter-spacing: 1.5px; color: #5A5A60; font-weight: 600; }
   .tp-card-meta { margin-top: 16px; font-size: 10px; color: #5A5A60; letter-spacing: 1.5px; }
   .tp-card-menu, .tp-card-rename {
-    position: absolute; bottom: 14px;
-    width: 26px; height: 26px; border-radius: 50%;
+    position: absolute; bottom: 12px;
+    width: 36px; height: 36px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    color: #3A3A48; font-size: 14px;
-    opacity: 0; transition: opacity 0.15s, background 0.15s, color 0.15s;
+    color: #5A5A60; font-size: 18px;
+    background: #14141A;
+    border: 0.5px solid #1E1E24;
+    opacity: 0.6; transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
     cursor: pointer;
   }
-  .tp-card-rename { right: 48px; font-size: 13px; }
-  .tp-card-menu { right: 16px; }
+  .tp-card-rename { right: 60px; font-size: 16px; }
+  .tp-card-menu { right: 14px; font-size: 20px; }
   .tp-card:hover .tp-card-menu,
-  .tp-card:hover .tp-card-rename { opacity: 1; color: #5A5A60; }
-  .tp-card-rename:hover { background: #1E1E24; color: #5DCAA5; }
-  .tp-card-menu:hover { background: #1E1E24; color: #E24B4A; }
+  .tp-card:hover .tp-card-rename { opacity: 1; color: #B0B0B6; }
+  .tp-card-rename:hover { background: rgba(93,202,165,0.12); border-color: #5DCAA5; color: #5DCAA5; }
+  .tp-card-menu:hover { background: rgba(226,75,74,0.12); border-color: #E24B4A; color: #E24B4A; }
   .tp-new {
     background: transparent; border: 0.5px dashed #2A2A30; border-radius: 8px;
     min-height: 180px;
@@ -1405,7 +1407,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.21';
+const APP_VERSION = 'v5.22';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
