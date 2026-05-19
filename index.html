@@ -1260,17 +1260,48 @@
     text-transform: uppercase;
   }
   .mt-hero-stem-chip.missing { opacity: 0.22; }
-  .mt-hero-bar {
-    height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px;
-    overflow: hidden; position: relative;
+  /* Timeline scrubber */
+  .mt-hero-timeline {
+    height: 22px; cursor: pointer;
+    padding: 8px 0; position: relative;
+    user-select: none; -webkit-user-select: none;
   }
-  .mt-hero-bar-fill {
-    height: 100%; width: 0%;
+  .mt-hero-timeline-track {
+    height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px;
+    position: relative;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .mt-hero-tl-tick {
+    position: absolute; top: -2px; bottom: -2px;
+    width: 1px; background: rgba(255,255,255,0.12);
+    pointer-events: none;
+  }
+  .mt-hero-timeline-fill {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 0%;
     background: linear-gradient(90deg, #7DB89E, #F0C75E);
-    border-radius: 2px;
-    transition: width 0.1s linear;
-    box-shadow: 0 0 6px rgba(125,184,158,0.4);
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(125,184,158,0.4);
+    transition: width 0.08s linear;
+    pointer-events: none;
   }
+  .mt-hero-timeline-thumb {
+    position: absolute; top: 50%; left: 0%;
+    width: 12px; height: 12px;
+    background: linear-gradient(180deg, #FFFFFF, #C8D8D0);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px rgba(125,184,158,0.5), 0 1px 3px rgba(0,0,0,0.5);
+    pointer-events: none;
+    transition: left 0.08s linear;
+  }
+  .mt-hero-timeline:hover .mt-hero-timeline-thumb { box-shadow: 0 0 14px rgba(125,184,158,0.7), 0 1px 3px rgba(0,0,0,0.5); }
+  .mt-hero.playing .mt-hero-timeline-thumb {
+    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    box-shadow: 0 0 14px rgba(240,199,94,0.7);
+  }
+  /* dragging時はトランジション解除 */
+  .mt-hero-timeline.dragging .mt-hero-timeline-fill,
+  .mt-hero-timeline.dragging .mt-hero-timeline-thumb { transition: none; }
   .mt-hero-meta-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; text-transform: uppercase; }
   .mt-hero.playing .mt-hero-status { color: #92C9B0; }
@@ -1329,6 +1360,11 @@
     box-shadow: inset 3px 0 0 #7DB89E;
   }
   .mt-song-row.queued  { border-color: rgba(125,184,158,0.4); }
+  /* selected: 矢印キーで動かすハイライト（playing 時は playing が優先） */
+  .mt-song-row.selected:not(.playing) {
+    border-color: rgba(125,184,158,0.55);
+    background: linear-gradient(90deg, rgba(125,184,158,0.06), rgba(255,255,255,0.02) 60%);
+  }
   .mt-song-row.drop-target {
     border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed;
     box-shadow: 0 0 0 1px rgba(125,184,158,0.2);
@@ -1400,6 +1436,23 @@
     gap: 10px;
     flex-shrink: 0;
   }
+
+  /* MIXER FADE OUT ボタン (パニックストップ) */
+  .mt-fadeout-btn {
+    background: linear-gradient(180deg, rgba(226,75,74,0.10), rgba(226,75,74,0.04));
+    border: 0.5px solid rgba(226,75,74,0.4); color: #E24B4A;
+    padding: 5px 12px; border-radius: 4px; font-family: inherit;
+    font-size: 10px; letter-spacing: 1.5px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all 0.15s;
+  }
+  .mt-fadeout-btn:hover {
+    background: linear-gradient(180deg, rgba(226,75,74,0.25), rgba(226,75,74,0.15));
+    border-color: #E24B4A; color: #FFB0AF;
+    box-shadow: 0 0 12px rgba(226,75,74,0.3);
+  }
+  .mt-fadeout-glyph { font-size: 13px; line-height: 1; }
+  .mt-fadeout-text { letter-spacing: 1.5px; }
 
   /* MIXER (console-style strips, more compact) */
   .mt-mixer-card {
@@ -2109,9 +2162,18 @@
         </div>
         <div class="mt-hero-bottom">
           <div class="mt-hero-stems" id="mtHeroStems"></div>
-          <div class="mt-hero-bar"><div class="mt-hero-bar-fill" id="mtNowBarFill"></div></div>
+          <!-- スクラバー（クリック/ドラッグでシーク） -->
+          <div class="mt-hero-timeline" id="mtHeroTimeline" title="クリック / ドラッグでシーク">
+            <div class="mt-hero-timeline-track">
+              <span class="mt-hero-tl-tick" style="left:25%"></span>
+              <span class="mt-hero-tl-tick" style="left:50%"></span>
+              <span class="mt-hero-tl-tick" style="left:75%"></span>
+              <div class="mt-hero-timeline-fill" id="mtNowBarFill"></div>
+              <div class="mt-hero-timeline-thumb" id="mtNowBarThumb"></div>
+            </div>
+          </div>
           <div class="mt-hero-meta-bottom">
-            <span class="mt-hero-status" id="mtNowStatus">READY · SPACE で再生</span>
+            <span class="mt-hero-status" id="mtNowStatus">READY · SPACE で再生 / ↑↓で選択 / ENTER で再生</span>
             <span class="mt-hero-times">
               <span class="mt-time-now" id="mtNowTimeCur">0:00</span>
               <span style="opacity:0.5;"> / </span>
@@ -2153,6 +2215,10 @@
             <span class="mt-section-title">MIXER</span>
             <span class="mt-section-count">5 GROUPS</span>
           </div>
+          <button class="mt-fadeout-btn" onclick="mtFadeOut()" title="フェードアウト（パニックストップ）">
+            <span class="mt-fadeout-glyph">⌽</span>
+            <span class="mt-fadeout-text">FADE OUT</span>
+          </button>
         </div>
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
@@ -2258,7 +2324,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.4';
+const APP_VERSION = 'v7.5';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -2513,7 +2579,9 @@ const state = {
       drums: false, bass: false, other: false, vocal: false, chorus: false,
     },
     songs: [],                    // [{ id, name, tracks: {drums:{sampleId,name}|null, bass:..., ...} }]
-    currentSongIdx: -1,
+    currentSongIdx: -1,            // 再生中の曲
+    selectedIdx: 0,                // 矢印キーで動かすハイライト
+    seekOffset: 0,                 // シーク位置（停止中も保持、次の play で適用）
     isPlaying: false,
     // runtime (not persisted)
     activeSources: [],            // [AudioBufferSourceNode] of current song
@@ -2936,6 +3004,10 @@ function pauseAll() {
 function fadeOutAll() {
   initAudio();
   const sec = Math.max(0.05, state.fadeTime || 2.0);
+  // 0) MULTI-TRACK：再生中なら master gain でフェードして停止
+  if (typeof mtFadeOut === 'function' && state.multitrack && state.multitrack.isPlaying) {
+    try { mtFadeOut(); } catch(e) { console.warn('mtFadeOut failed', e); }
+  }
   // 1) SAMPLER pads
   state.banks.forEach(b => b.pads.forEach(p => {
     if (p.isPlaying) fadeOutPad(p, sec);
@@ -3464,11 +3536,28 @@ document.addEventListener('keydown', e => {
     return;
   }
 
-  // MULTI-TRACK: Spaceで再生 / 次曲（PAUSEより優先）
-  if (state.appMode === 'multi' && e.code === 'Space') {
-    if (typeof mtSpaceKey === 'function') mtSpaceKey();
-    e.preventDefault();
-    return;
+  // MULTI-TRACK: 矢印/Enter/Space で SETLIST を操作（既存のグローバルバインドより優先）
+  if (state.appMode === 'multi') {
+    if (e.code === 'Space') {
+      if (typeof mtSpaceKey === 'function') mtSpaceKey();
+      e.preventDefault();
+      return;
+    }
+    if (e.code === 'ArrowDown') {
+      if (typeof mtSelectNext === 'function') mtSelectNext();
+      e.preventDefault();
+      return;
+    }
+    if (e.code === 'ArrowUp') {
+      if (typeof mtSelectPrev === 'function') mtSelectPrev();
+      e.preventDefault();
+      return;
+    }
+    if (e.code === 'Enter') {
+      if (typeof mtEnterKey === 'function') mtEnterKey();
+      e.preventDefault();
+      return;
+    }
   }
 
   // Control shortcuts
@@ -8346,6 +8435,7 @@ async function mtLoadTrackFile(songIdx, group, file) {
     mtDecodedCache[sampleId] = buffer;
     state.multitrack.songs[songIdx].tracks[group] = { sampleId, name: file.name };
     mtSave();
+    mtRecomputeSongDuration();
     mtRenderSetlist();
     mtRenderNow();
     showToast(`${MT_GROUP_LABELS[group]} 読込: ${file.name} (${buffer.duration.toFixed(1)}秒)`);
@@ -8392,11 +8482,18 @@ async function mtRestoreBuffers() {
 }
 
 // ---- 再生エンジン ----
-async function mtPlaySong(idx) {
+async function mtPlaySong(idx, offset) {
   if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  if (!isFinite(offset) || offset < 0) offset = 0;
   await mtInitCtx();
   if (mtCtx.state === 'suspended') await mtCtx.resume();
   mtStopSources(); // 念のため停止
+  // master gain を必ず 1.0 に戻す（前回 fadeout 後の状態を解除）
+  if (mtMasterGain) {
+    const t = mtCtx.currentTime;
+    mtMasterGain.gain.cancelScheduledValues(t);
+    mtMasterGain.gain.setValueAtTime(1.0, t);
+  }
   const song = state.multitrack.songs[idx];
   const groupBuffers = {};
   let hasAny = false;
@@ -8411,6 +8508,8 @@ async function mtPlaySong(idx) {
     showToast('再生するトラックがありません');
     return;
   }
+  // offset が曲長を超えていたら 0 に戻す
+  if (offset >= maxDur - 0.05) offset = 0;
   // 全グループの source を作って同時 start
   // ルート: BufferSource → groupGain → (analyser:tap) → splitter → merger
   const when = mtCtx.currentTime + 0.05; // 少し未来でスケジュール
@@ -8437,37 +8536,117 @@ async function mtPlaySong(idx) {
     } else {
       gain.connect(mtMasterGain);
     }
-    src.start(when);
+    // 3 番目の引数 offset を指定すると、buffer の途中から再生
+    src.start(when, offset);
     sources.push(src);
   }
   state.multitrack.activeSources = sources;
-  state.multitrack.startTime = when;
+  // startTime は「曲の頭が ctx.currentTime のどこに当たるか」と見立てる
+  // → progress = ctx.currentTime - startTime
+  state.multitrack.startTime = when - offset;
   state.multitrack.songDuration = maxDur;
+  state.multitrack.seekOffset = offset; // 現在のシーク位置を覚えておく
   state.multitrack.currentSongIdx = idx;
+  state.multitrack.selectedIdx = idx;
   state.multitrack.isPlaying = true;
-  // 終了時 auto-advance
+  // 終了時 auto-advance（残り時間で計算）
   if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+  const remainSec = maxDur - offset;
   if (state.multitrack.autoAdvance) {
-    const totalMs = (maxDur + state.multitrack.gapSec) * 1000 + 50;
+    const totalMs = (remainSec + state.multitrack.gapSec) * 1000 + 50;
     state.multitrack.advanceTimer = setTimeout(() => {
       const next = state.multitrack.currentSongIdx + 1;
       if (next < state.multitrack.songs.length) {
-        mtPlaySong(next);
+        mtPlaySong(next, 0);
       } else {
         mtStop();
         showToast('セットリスト終了');
       }
     }, totalMs);
   } else {
-    // auto-advance OFF でも songDuration 経過で isPlaying=false に
     state.multitrack.advanceTimer = setTimeout(() => {
       state.multitrack.isPlaying = false;
       mtRenderNow();
-    }, maxDur * 1000 + 50);
+    }, remainSec * 1000 + 50);
   }
   mtRenderSetlist();
   mtRenderNow();
   mtStartMeter();
+}
+
+// ---- SEEK ----
+function mtSeekTo(seekSec) {
+  if (state.multitrack.currentSongIdx < 0 && state.multitrack.selectedIdx < 0) return;
+  const idx = state.multitrack.currentSongIdx >= 0 ? state.multitrack.currentSongIdx : state.multitrack.selectedIdx;
+  const dur = state.multitrack.songDuration || 0;
+  if (!isFinite(seekSec) || seekSec < 0) seekSec = 0;
+  if (seekSec > dur - 0.05) seekSec = Math.max(0, dur - 0.05);
+  state.multitrack.seekOffset = seekSec;
+  if (state.multitrack.isPlaying) {
+    // 再生中：source を作り直して途中から
+    mtPlaySong(idx, seekSec);
+  } else {
+    // 停止中：表示だけ更新
+    state.multitrack.startTime = -seekSec; // 仮想的な開始時刻（progress 表示用）
+    mtRenderNow();
+  }
+}
+
+// ---- FADE OUT (パニックストップ) ----
+function mtFadeOut() {
+  if (!mtCtx || !mtMasterGain) { mtStop(); return; }
+  if (!state.multitrack.isPlaying) {
+    // 再生してない時は即停止
+    mtStop();
+    return;
+  }
+  const dur = Math.max(0.1, state.fadeTime || 2.0);
+  const t = mtCtx.currentTime;
+  const curVal = mtMasterGain.gain.value;
+  mtMasterGain.gain.cancelScheduledValues(t);
+  mtMasterGain.gain.setValueAtTime(curVal, t);
+  mtMasterGain.gain.linearRampToValueAtTime(0.0001, t + dur);
+  showToast(`MULTI-TRACK FADE OUT (${dur.toFixed(1)}s)`);
+  // auto-advance を止める
+  if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+  setTimeout(() => {
+    mtStop();
+    // master gain を 1.0 に戻す（次回再生のため）
+    if (mtCtx && mtMasterGain) {
+      const t2 = mtCtx.currentTime;
+      mtMasterGain.gain.cancelScheduledValues(t2);
+      mtMasterGain.gain.setValueAtTime(1.0, t2);
+    }
+  }, dur * 1000 + 80);
+}
+
+// ---- 矢印キーでセットリスト選択 ----
+function mtSelectNext() {
+  const total = state.multitrack.songs.length;
+  if (total === 0) return;
+  state.multitrack.selectedIdx = Math.min(total - 1, state.multitrack.selectedIdx + 1);
+  state.multitrack.seekOffset = 0;
+  mtRecomputeSongDuration();
+  mtScrollSelectedIntoView();
+  mtRenderSetlist();
+  mtRenderNow();
+}
+function mtSelectPrev() {
+  if (state.multitrack.songs.length === 0) return;
+  state.multitrack.selectedIdx = Math.max(0, state.multitrack.selectedIdx - 1);
+  state.multitrack.seekOffset = 0;
+  mtRecomputeSongDuration();
+  mtScrollSelectedIntoView();
+  mtRenderSetlist();
+  mtRenderNow();
+}
+function mtScrollSelectedIntoView() {
+  // 次の render 後にスクロール
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#mtSetlistList .mt-song-row');
+    const row = rows[state.multitrack.selectedIdx];
+    if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, 10);
 }
 
 function mtStopSources() {
@@ -8501,39 +8680,80 @@ function mtPlayPause() {
   if (state.multitrack.isPlaying) {
     mtStop();
   } else {
-    const idx = Math.max(0, state.multitrack.currentSongIdx);
     if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
-    mtPlaySong(idx);
+    // selectedIdx 優先、なければ currentSongIdx
+    const idx = state.multitrack.selectedIdx >= 0
+      ? state.multitrack.selectedIdx
+      : Math.max(0, state.multitrack.currentSongIdx);
+    mtPlaySong(idx, state.multitrack.seekOffset || 0);
   }
 }
 
 function mtPlayNext() {
-  const next = (state.multitrack.currentSongIdx < 0) ? 0 : state.multitrack.currentSongIdx + 1;
+  const base = state.multitrack.isPlaying
+    ? state.multitrack.currentSongIdx
+    : state.multitrack.selectedIdx;
+  const next = base + 1;
   if (next >= state.multitrack.songs.length) {
     mtStop();
     showToast('セットリスト終了');
     return;
   }
-  mtPlaySong(next);
+  state.multitrack.seekOffset = 0;
+  mtPlaySong(next, 0);
 }
 
 // SPACE キーハンドラ
 function mtSpaceKey() {
+  if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
   if (!state.multitrack.isPlaying) {
-    // 停止中：現在のインデックスから再生
-    const idx = Math.max(0, state.multitrack.currentSongIdx);
-    if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
-    mtPlaySong(idx);
+    // 停止中：selectedIdx から再生
+    mtPlaySong(state.multitrack.selectedIdx, state.multitrack.seekOffset || 0);
   } else {
     // 再生中：次の曲へ
     mtPlayNext();
   }
 }
 
+// ENTER キー：選択曲を頭から再生
+function mtEnterKey() {
+  if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+  state.multitrack.seekOffset = 0;
+  mtPlaySong(state.multitrack.selectedIdx, 0);
+}
+
+// 選択中の曲の最大長を求める（停止中もスクラバーに total を出すため）
+function mtRecomputeSongDuration() {
+  if (state.multitrack.isPlaying) return; // 再生中は触らない
+  const idx = state.multitrack.selectedIdx;
+  if (idx < 0 || idx >= state.multitrack.songs.length) {
+    state.multitrack.songDuration = 0;
+    return;
+  }
+  const song = state.multitrack.songs[idx];
+  let max = 0;
+  for (const g of MT_GROUPS) {
+    const t = song.tracks && song.tracks[g];
+    if (!t || !t.sampleId) continue;
+    const buf = mtDecodedCache[t.sampleId];
+    if (buf) max = Math.max(max, buf.duration);
+  }
+  state.multitrack.songDuration = max;
+}
+
 // ---- 表示更新 ----
 function mtRenderAll() {
   mtRefreshDevices();
   mtUpdateChStatus();
+  mtBindTimeline();
+  // selectedIdx を曲数内にクランプ
+  if (state.multitrack.songs.length > 0) {
+    if (state.multitrack.selectedIdx >= state.multitrack.songs.length) state.multitrack.selectedIdx = state.multitrack.songs.length - 1;
+    if (state.multitrack.selectedIdx < 0) state.multitrack.selectedIdx = 0;
+  } else {
+    state.multitrack.selectedIdx = 0;
+  }
+  mtRecomputeSongDuration();
   // input 復元
   for (const g of MT_GROUPS) {
     const cm = state.multitrack.channelMap[g];
@@ -8707,7 +8927,18 @@ function mtRenderSetlist() {
     const row = document.createElement('div');
     row.className = 'mt-song-row';
     if (idx === state.multitrack.currentSongIdx && state.multitrack.isPlaying) row.classList.add('playing');
-    else if (idx === state.multitrack.currentSongIdx) row.classList.add('queued');
+    // selected: 矢印キーのハイライト
+    if (idx === state.multitrack.selectedIdx) row.classList.add('selected');
+    // 行クリックで selectedIdx を更新
+    row.addEventListener('click', (e) => {
+      // ボタン/入力欄/slot 上のクリックは除外
+      if (e.target.closest('button, input, .mt-track-slot')) return;
+      state.multitrack.selectedIdx = idx;
+      state.multitrack.seekOffset = 0;
+      mtRecomputeSongDuration();
+      mtRenderSetlist();
+      mtRenderNow();
+    });
     // 番号
     const num = document.createElement('div'); num.className = 'mt-song-num'; num.textContent = String(idx + 1).padStart(2, '0');
     row.appendChild(num);
@@ -8895,21 +9126,60 @@ function mtHex2Rgb(h) {
 function mtUpdateProgress() {
   const m = state.multitrack;
   const fill = document.getElementById('mtNowBarFill');
+  const thumb = document.getElementById('mtNowBarThumb');
   const cur = document.getElementById('mtNowTimeCur');
   const tot = document.getElementById('mtNowTimeTot');
   if (!fill || !cur || !tot) return;
+  let t = 0;
+  const d = m.songDuration || 0;
   if (m.isPlaying && mtCtx) {
-    const t = Math.max(0, mtCtx.currentTime - m.startTime);
-    const d = m.songDuration || 0;
-    const pct = d > 0 ? Math.min(100, (t / d) * 100) : 0;
-    fill.style.width = pct + '%';
-    cur.textContent = mtFmtTime(t);
-    tot.textContent = mtFmtTime(d);
+    t = Math.max(0, mtCtx.currentTime - m.startTime);
   } else {
-    fill.style.width = '0%';
-    cur.textContent = '0:00';
-    tot.textContent = mtFmtTime(m.songDuration || 0);
+    // 停止中もシーク位置を表示
+    t = m.seekOffset || 0;
   }
+  const pct = d > 0 ? Math.min(100, (t / d) * 100) : 0;
+  fill.style.width = pct + '%';
+  if (thumb) thumb.style.left = pct + '%';
+  cur.textContent = mtFmtTime(t);
+  tot.textContent = mtFmtTime(d);
+}
+
+// ---- タイムラインスクラバーのドラッグ/クリックバインド ----
+let mtTimelineBound = false;
+function mtBindTimeline() {
+  if (mtTimelineBound) return;
+  const tl = document.getElementById('mtHeroTimeline');
+  if (!tl) return;
+  mtTimelineBound = true;
+  let dragging = false;
+  const seek = (clientX) => {
+    const rect = tl.getBoundingClientRect();
+    let pct = (clientX - rect.left) / rect.width;
+    if (pct < 0) pct = 0; if (pct > 1) pct = 1;
+    const dur = state.multitrack.songDuration || 0;
+    if (dur <= 0) return;
+    mtSeekTo(pct * dur);
+  };
+  tl.addEventListener('pointerdown', (e) => {
+    if (state.multitrack.songs.length === 0) return;
+    dragging = true;
+    tl.classList.add('dragging');
+    tl.setPointerCapture(e.pointerId);
+    seek(e.clientX);
+    e.preventDefault();
+  });
+  tl.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    seek(e.clientX);
+  });
+  const end = (e) => {
+    dragging = false;
+    tl.classList.remove('dragging');
+    try { tl.releasePointerCapture(e.pointerId); } catch(_) {}
+  };
+  tl.addEventListener('pointerup', end);
+  tl.addEventListener('pointercancel', end);
 }
 
 function mtFmtTime(s) {
