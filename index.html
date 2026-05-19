@@ -130,15 +130,21 @@
     background: #E6E6EA; border-radius: 2px; transform: translateY(50%);
     pointer-events: none;
   }
-  .meters { display: flex; gap: 2px; align-items: stretch; }
+  /* マスター L/R メーター — はっきり見える本番視認サイズ */
+  .meters { display: flex; gap: 2px; align-items: stretch; flex-shrink: 0; }
   .meter {
-    width: 4px; background: #14141A; border-radius: 2px;
+    width: 5px;
+    background: linear-gradient(180deg, #08080A, #14141A);
+    border-radius: 2px;
     position: relative; overflow: hidden;
+    border: 0.5px solid #1F1F22;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
   }
   .meter-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #7DB89E, #EF9F27 80%, #E24B4A 95%);
+    background: linear-gradient(to top, #2E7A5B 0%, #7DB89E 55%, #EF9F27 78%, #E24B4A 93%);
     transition: height 0.05s linear;
+    height: 0%;
   }
   .master-value { font-family: 'SF Mono', 'Menlo', monospace; font-size: 14px; font-weight: 400; letter-spacing: 0.3px; }
   .master-value .unit { font-size: 9px; color: #6A6A70; font-family: inherit; }
@@ -2919,7 +2925,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.32.1';
+const APP_VERSION = 'v7.33.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9611,63 +9617,44 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
 // 1. handle がある場合：permission granted なら即 read & decode
 //                       prompt 必要なら needsReconnect 旗を立てて待機
 // 2. handle がない（旧形式）：IDB blob から復元
+// 起動時: 重い decode は行わず、handle の permission 状態だけ素早くチェック。
+// 実際のバッファ decode は mtPlaySong / mtEnsureBufferLoaded の lazy load で行う。
+// これにより起動時のフリーズが消える（数百ファイル登録されていても瞬間起動）
 async function mtRestoreBuffers() {
   if (!state.multitrack.songs.length) return;
   mtRestoreInProgress = true;
-  try { mtRenderNow(); } catch(_) {}  // ロード中表示を即反映
-  await mtInitCtx();
+  try { mtRenderNow(); } catch(_) {}
   let needsReconnect = false;
   let reconnectCount = 0;
-  // assigned (tracks の全 layer) と unassigned (プール) の両方を復元対象に
-  const allEntries = [];
+  // assigned + unassigned の sampleId だけ集める
+  const sampleIds = [];
   for (const s of state.multitrack.songs) {
     for (const g of MT_GROUPS) {
-      mtGetLayers(s, g).forEach(l => { if (l && l.sampleId) allEntries.push(l); });
+      mtGetLayers(s, g).forEach(l => { if (l && l.sampleId) sampleIds.push(l.sampleId); });
     }
-    (s.unassigned || []).forEach(u => { if (u && u.sampleId) allEntries.push(u); });
+    (s.unassigned || []).forEach(u => { if (u && u.sampleId) sampleIds.push(u.sampleId); });
   }
-  for (const t of allEntries) {
-    if (mtDecodedCache[t.sampleId]) continue;
-    // 1) handle 優先
+  // 並列で handle permission を queryPermission（decode は一切しない）
+  const checks = sampleIds.map(async (id) => {
     try {
-      const rec = await mtGetHandleFromDB(t.sampleId);
-      if (rec && rec.handle) {
-        let perm = 'denied';
-        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(e) {}
-        if (perm === 'granted') {
-          try {
-            const f = await rec.handle.getFile();
-            const arr = await f.arrayBuffer();
-            const buf = await mtRobustDecode(arr, {name: "restored"});
-            mtDecodedCache[t.sampleId] = buf;
-            continue;
-          } catch(e) {
-            console.warn('mt handle read failed', t.sampleId, e);
-            needsReconnect = true; reconnectCount++;
-            continue;
-          }
-        } else {
-          needsReconnect = true; reconnectCount++;
-          continue;
-        }
-      }
-    } catch(e) { /* fall through to blob */ }
-    // 2) blob フォールバック
-    try {
-      const rec = await getSampleFromDB(t.sampleId);
-      if (rec && rec.data) {
-        const buf = await mtRobustDecode(rec.data, {name: rec.name||"blob"});
-        mtDecodedCache[t.sampleId] = buf;
-      }
-    } catch(e) { console.warn('mt blob restore failed', t.sampleId, e); }
+      const rec = await mtGetHandleFromDB(id);
+      if (!rec || !rec.handle) return 'no-handle';
+      let perm = 'denied';
+      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+      return perm; // 'granted' | 'prompt' | 'denied'
+    } catch(_) { return 'error'; }
+  });
+  const results = await Promise.all(checks);
+  for (const r of results) {
+    if (r !== 'granted' && r !== 'no-handle') {
+      needsReconnect = true; reconnectCount++;
+    }
   }
-  // 復元終了 → ロード中フラグを下ろす
   mtRestoreInProgress = false;
   if (needsReconnect) {
     state.multitrack.needsReconnect = true;
     state.multitrack.reconnectCount = reconnectCount;
   }
-  mtRecomputeSongDuration();
   mtRenderSetlist();
   mtRenderNow();
   mtRenderReconnectUI();
