@@ -1719,21 +1719,23 @@
   .mt-strip-label.chorus { color: #97C459; }
   .mt-strip-label.vocal  { color: #F0C75E; }
   .mt-strip-label.click  { color: #8DB7F5; }
-  /* 割当ファイル数: "×2" の小チップ */
+  /* 割当ファイル数 (例: ×3) — dB ラベルと混同しないように目立たせる */
   .mt-strip-fcount {
     display: inline-flex; align-items: center; justify-content: center;
     font-family: 'SF Mono', monospace;
-    font-size: 9px; font-weight: 700;
-    color: #B8E0CC; background: rgba(125,184,158,0.15);
-    border: 0.5px solid rgba(125,184,158,0.4);
-    border-radius: 3px;
-    padding: 1px 5px;
-    min-width: 22px;
+    font-size: 12px; font-weight: 800;
+    color: #0E1A14; background: linear-gradient(180deg, #92C9B0, #7DB89E);
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    min-width: 28px;
     flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(125,184,158,0.45);
+    letter-spacing: 0;
   }
   .mt-strip-fcount.pending {
-    color: #F5C470; background: rgba(239,159,39,0.15);
-    border-color: rgba(239,159,39,0.4);
+    color: #2A1F08; background: linear-gradient(180deg, #F5C470, #E5A53D);
+    box-shadow: 0 0 6px rgba(239,159,39,0.5);
   }
   /* フェーダー横の dB ラベル (0 / +3 / -3 / -6 / -12) */
   .mt-strip-fader-lab {
@@ -2650,7 +2652,6 @@
           <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
             <option value="">— 検出中… —</option>
           </select>
-          <button class="mt-btn" onclick="mtRefreshDevices(true)" title="デバイス再検出（マイク許可が必要・名前を表示するため）">⟳</button>
         </div>
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
@@ -2735,7 +2736,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.24.3';
+const APP_VERSION = 'v7.24.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
