@@ -1250,13 +1250,24 @@
     color: #B8E0CC; background: rgba(125,184,158,0.18); border-color: rgba(125,184,158,0.5);
     box-shadow: 0 0 10px rgba(125,184,158,0.2);
   }
+  /* input as title (rename here) */
   .mt-hero-title {
     font-size: 16px; font-weight: 400; color: #F0F0F4;
     letter-spacing: -0.2px; line-height: 1.2;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     min-width: 0; flex: 1;
+    background: transparent;
+    border: 0.5px solid transparent;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-family: inherit;
+    outline: none;
+    cursor: text;
   }
-  .mt-hero.playing .mt-hero-title {
+  .mt-hero-title:hover:not(:disabled) { border-color: #25252A; background: rgba(0,0,0,0.2); }
+  .mt-hero-title:focus { border-color: #7DB89E; background: rgba(0,0,0,0.35); color: #FFFFFF; }
+  .mt-hero-title:disabled { cursor: default; color: #5A5A60; }
+  .mt-hero.playing .mt-hero-title:not(:focus) {
     color: #FFFFFF; font-weight: 500;
     text-shadow: 0 0 16px rgba(125,184,158,0.15);
   }
@@ -1480,13 +1491,20 @@
     background: #7DB89E; color: #0E1A14; border-color: #7DB89E;
     box-shadow: 0 0 10px rgba(125,184,158,0.4);
   }
-  .mt-song-name-input {
-    background: transparent; border: 0.5px solid transparent; color: #E6E6EA;
-    font-family: inherit; font-size: 12px; padding: 3px 6px; border-radius: 3px; width: 100%;
+  /* 曲名テキスト (リネーム不可。リネームは NOW PLAYING タイトル input で) */
+  .mt-song-name {
+    color: #E6E6EA; font-size: 12px; padding: 3px 6px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     min-width: 0;
+    user-select: none;
   }
-  .mt-song-name-input:hover, .mt-song-name-input:focus { border-color: #2A2A30; background: rgba(0,0,0,0.3); outline: none; }
-  .mt-song-row.playing .mt-song-name-input { color: #FFFFFF; }
+  .mt-song-row.playing .mt-song-name { color: #FFFFFF; font-weight: 500; }
+  /* 並べ替えドラッグの視覚化 */
+  .mt-song-row { cursor: grab; }
+  .mt-song-row:active { cursor: grabbing; }
+  .mt-song-row.reorder-dragging { opacity: 0.4; }
+  .mt-song-row.reorder-above { box-shadow: inset 0 2px 0 #7DB89E; }
+  .mt-song-row.reorder-below { box-shadow: inset 0 -2px 0 #7DB89E; }
 
   /* STEM スロット — グループ色の左ボーダーで識別、ヘッダー不要 */
   .mt-track-slot {
@@ -1866,7 +1884,7 @@
   .mt-strip.ready-for-file {
     animation: mtStripReady 1.9s ease-in-out infinite;
   }
-  .mt-strip.ready-for-file.drop-target { animation: none; } /* hover中はパルス止める */
+  .mt-strip.ready-for-file.drop-target { animation: none; }
   @keyframes mtStripReady {
     0%, 100% {
       border-color: #1F1F22;
@@ -1877,6 +1895,31 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 10px rgba(125,184,158,0.25);
     }
   }
+  /* has-layers: ファイルが割当済み (load 完了) → 該当色で枠を強調 */
+  .mt-strip.has-layers {
+    border-color: rgba(125,184,158,0.35);
+  }
+  .mt-strip[data-mt-strip="drums"].has-layers  { border-color: rgba(237,147,177,0.5); }
+  .mt-strip[data-mt-strip="bass"].has-layers   { border-color: rgba(133,183,235,0.5); }
+  .mt-strip[data-mt-strip="other"].has-layers  { border-color: rgba(239,159,39,0.5);  }
+  .mt-strip[data-mt-strip="chorus"].has-layers { border-color: rgba(151,196,89,0.5);  }
+  .mt-strip[data-mt-strip="vocal"].has-layers  { border-color: rgba(240,199,94,0.5);  }
+  .mt-strip[data-mt-strip="click"].has-layers  { border-color: rgba(141,183,245,0.5); }
+  /* layer-pending: 割当てたが buffer 未ロード → オレンジ点滅でユーザーに reconnect 促す */
+  .mt-strip.layer-pending {
+    animation: mtStripPending 1.5s ease-in-out infinite;
+    border-color: #EF9F27;
+  }
+  @keyframes mtStripPending {
+    0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); }
+    50%      { box-shadow: 0 0 8px rgba(239,159,39,0.4); }
+  }
+  /* layer 数チップ */
+  .mt-strip-layer-badge {
+    display: inline-block; color: #7DB89E; font-size: 7px; letter-spacing: 0;
+    margin-right: 3px; vertical-align: middle;
+  }
+  .mt-strip-layer-badge.pending { color: #EF9F27; }
   /* 行も drop target ハイライト */
   .mt-song-row.drop-target {
     border-color: #7DB89E !important;
@@ -2439,7 +2482,9 @@
         <div class="mt-hero-top">
           <div class="mt-hero-meta">
             <span class="mt-hero-trackchip" id="mtHeroTrackChip">— / —</span>
-            <span class="mt-hero-title" id="mtNowName">— 待機中 —</span>
+            <input class="mt-hero-title" id="mtNowName" type="text"
+                   placeholder="— 待機中 —"
+                   title="クリックして曲名を変更（選択中の曲）" />
           </div>
           <div class="mt-hero-transport">
             <button class="mt-tbtn play" id="mtPlayBtn" onclick="mtPlayPause()" aria-label="Play"><span class="mt-tbtn-glyph" id="mtPlayGlyph">▶</span></button>
@@ -2618,7 +2663,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.15';
+const APP_VERSION = 'v7.16';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8413,7 +8458,12 @@ function mtSerialize() {
       nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : (m.gapSec || 3.0),
       locates: Array.isArray(s.locates) ? s.locates.map(l => ({ time: l.time })) : [],
       tracks: Object.fromEntries(
-        Object.entries(s.tracks || {}).map(([g, t]) => [g, t ? { sampleId: t.sampleId, name: t.name } : null])
+        Object.entries(s.tracks || {}).map(([g, t]) => {
+          if (!t) return [g, null];
+          // 配列 (layer) 形式 / 単一オブジェクト両方 OK
+          const arr = Array.isArray(t) ? t : [t];
+          return [g, arr.map(l => ({ sampleId: l.sampleId, name: l.name }))];
+        })
       ),
       unassigned: Array.isArray(s.unassigned) ? s.unassigned.map(u => ({ sampleId: u.sampleId, name: u.name })) : [],
     })),
@@ -8478,6 +8528,15 @@ async function mtInitCtx() {
   }
   await mtRebuildRouting();
   return mtCtx;
+}
+
+// グループに割当てられたファイルの配列を返す（後方互換: 単一 obj は [obj] に）
+function mtGetLayers(song, group) {
+  if (!song || !song.tracks) return [];
+  const t = song.tracks[group];
+  if (!t) return [];
+  if (Array.isArray(t)) return t;
+  return [t]; // legacy: single object → 1要素配列
 }
 
 // SOLO 状態判定：このグループは聴こえるか？
@@ -8697,7 +8756,7 @@ function mtClearAll() {
     try { mtDeleteHandleFromDB(entry.sampleId); } catch(_) {}
   };
   for (const s of state.multitrack.songs) {
-    for (const g of MT_GROUPS) cleanupOne(s.tracks && s.tracks[g]);
+    for (const g of MT_GROUPS) mtGetLayers(s, g).forEach(cleanupOne);
     (s.unassigned || []).forEach(cleanupOne);
   }
   mtStop();
@@ -8913,9 +8972,9 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     const song = state.multitrack.songs[songIdx];
     if (!song.unassigned) song.unassigned = [];
     if (targetGroup && MT_GROUPS.includes(targetGroup)) {
-      // 既存があれば unassigned に追い出してから上書き
-      if (song.tracks[targetGroup]) song.unassigned.push(song.tracks[targetGroup]);
-      song.tracks[targetGroup] = entry;
+      // 多層対応: 既存にあれば layer として追加（上書きしない）
+      const existing = mtGetLayers(song, targetGroup);
+      song.tracks[targetGroup] = [...existing, entry];
     } else {
       song.unassigned.push(entry);
     }
@@ -8986,23 +9045,30 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
   const song = state.multitrack.songs[songIdx];
   if (!song) return;
   if (!song.unassigned) song.unassigned = [];
-  // 1) ファイルを探す（unassigned / 別グループ）
+  // 1) ファイルを探す: unassigned / 別グループの layers / 同グループ
   let entry = null;
+  let srcKind = null;        // 'unassigned' | 'group'
+  let srcGroup = null;
+  let srcLayerIdx = -1;
   const ui = song.unassigned.findIndex(u => u.sampleId === sampleId);
   if (ui >= 0) {
     entry = song.unassigned[ui];
+    srcKind = 'unassigned';
   } else {
     for (const g of MT_GROUPS) {
-      if (song.tracks[g] && song.tracks[g].sampleId === sampleId) {
-        if (g === targetGroup) return; // 既にそこにある
-        entry = song.tracks[g];
+      const layers = mtGetLayers(song, g);
+      const li = layers.findIndex(l => l.sampleId === sampleId);
+      if (li >= 0) {
+        entry = layers[li];
+        srcKind = 'group'; srcGroup = g; srcLayerIdx = li;
         break;
       }
     }
   }
   if (!entry) return;
-  // 1.5) バッファが未ロードなら lazy-load（permission 要求あり）
-  //     これを assign 前に行うことで、再生時に「ファイルがない」を防ぐ
+  // 同じグループ内の操作は無視
+  if (srcKind === 'group' && srcGroup === targetGroup) return;
+  // 1.5) バッファ lazy-load（permission 要求あり）
   if (!mtDecodedCache[sampleId]) {
     const buf = await mtEnsureBufferLoaded(sampleId, true);
     if (!buf) {
@@ -9012,47 +9078,64 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
     }
   }
   // 2) src から外す
-  if (ui >= 0) song.unassigned.splice(ui, 1);
-  else {
-    for (const g of MT_GROUPS) {
-      if (song.tracks[g] && song.tracks[g].sampleId === sampleId) { delete song.tracks[g]; break; }
-    }
+  if (srcKind === 'unassigned') {
+    song.unassigned.splice(ui, 1);
+  } else if (srcKind === 'group') {
+    const layers = mtGetLayers(song, srcGroup).slice();
+    layers.splice(srcLayerIdx, 1);
+    if (layers.length === 0) delete song.tracks[srcGroup];
+    else song.tracks[srcGroup] = layers;
   }
-  // 3) target に既存があれば unassigned に追い出す
-  if (song.tracks[targetGroup]) song.unassigned.push(song.tracks[targetGroup]);
-  // 4) 割り当て
-  song.tracks[targetGroup] = entry;
+  // 3) target に追加（layer として push）
+  const targetLayers = mtGetLayers(song, targetGroup);
+  song.tracks[targetGroup] = [...targetLayers, entry];
   mtSave();
   mtRecomputeSongDuration();
   mtRenderSetlist();
   mtRenderNow();
-  showToast(`${MT_GROUP_LABELS[targetGroup]} ← ${entry.name}`);
+  const count = song.tracks[targetGroup].length;
+  showToast(count > 1
+    ? `${MT_GROUP_LABELS[targetGroup]} に追加 (layer ${count}): ${entry.name}`
+    : `${MT_GROUP_LABELS[targetGroup]} ← ${entry.name}`);
 }
 
-// グループから外して unassigned に戻す
-function mtUnassignFromGroup(songIdx, group) {
+// グループから layer を外して unassigned に戻す（sampleId 指定で1個だけ、無指定で全部）
+function mtUnassignFromGroup(songIdx, group, sampleId) {
   const song = state.multitrack.songs[songIdx];
-  if (!song || !song.tracks[group]) return;
+  if (!song || !song.tracks || !song.tracks[group]) return;
   if (!song.unassigned) song.unassigned = [];
-  song.unassigned.push(song.tracks[group]);
-  delete song.tracks[group];
+  const layers = mtGetLayers(song, group);
+  if (sampleId) {
+    const i = layers.findIndex(l => l.sampleId === sampleId);
+    if (i < 0) return;
+    song.unassigned.push(layers[i]);
+    const remaining = layers.slice(0, i).concat(layers.slice(i + 1));
+    if (remaining.length === 0) delete song.tracks[group];
+    else song.tracks[group] = remaining;
+  } else {
+    layers.forEach(l => song.unassigned.push(l));
+    delete song.tracks[group];
+  }
   mtSave();
   mtRecomputeSongDuration();
   mtRenderSetlist();
   mtRenderNow();
 }
 
-async function mtRemoveTrack(songIdx, group) {
+async function mtRemoveTrack(songIdx, group, sampleId) {
   const s = state.multitrack.songs[songIdx];
   if (!s) return;
-  const t = s.tracks && s.tracks[group];
-  if (!t) return;
-  if (t.sampleId) {
+  const layers = mtGetLayers(s, group);
+  if (layers.length === 0) return;
+  const targets = sampleId ? layers.filter(l => l.sampleId === sampleId) : layers;
+  for (const t of targets) {
     delete mtDecodedCache[t.sampleId];
     try { await deleteSampleFromDB(t.sampleId); } catch(_) {}
     try { await mtDeleteHandleFromDB(t.sampleId); } catch(_) {}
   }
-  delete s.tracks[group];
+  const remaining = sampleId ? layers.filter(l => l.sampleId !== sampleId) : [];
+  if (remaining.length === 0) delete s.tracks[group];
+  else s.tracks[group] = remaining;
   mtSave();
   mtRecomputeSongDuration();
   mtRenderSetlist();
@@ -9068,11 +9151,11 @@ async function mtRestoreBuffers() {
   await mtInitCtx();
   let needsReconnect = false;
   let reconnectCount = 0;
-  // assigned (tracks) と unassigned (プール) の両方を復元対象に
+  // assigned (tracks の全 layer) と unassigned (プール) の両方を復元対象に
   const allEntries = [];
   for (const s of state.multitrack.songs) {
     for (const g of MT_GROUPS) {
-      if (s.tracks && s.tracks[g] && s.tracks[g].sampleId) allEntries.push(s.tracks[g]);
+      mtGetLayers(s, g).forEach(l => { if (l && l.sampleId) allEntries.push(l); });
     }
     (s.unassigned || []).forEach(u => { if (u && u.sampleId) allEntries.push(u); });
   }
@@ -9216,14 +9299,18 @@ async function mtPlaySong(idx, offset) {
     mtMasterGain.gain.setValueAtTime(1.0, t);
   }
   const song = state.multitrack.songs[idx];
+  // groupBuffers: { drums: [AudioBuffer, ...], bass: [...] } 各グループの全 layer
   const groupBuffers = {};
   let hasAny = false;
   let maxDur = 0;
   for (const g of MT_GROUPS) {
-    const t = song.tracks && song.tracks[g];
-    if (!t || !t.sampleId) continue;
-    const buf = mtDecodedCache[t.sampleId];
-    if (buf) { groupBuffers[g] = buf; hasAny = true; maxDur = Math.max(maxDur, buf.duration); }
+    const layers = mtGetLayers(song, g);
+    const bufs = [];
+    for (const layer of layers) {
+      const buf = mtDecodedCache[layer.sampleId];
+      if (buf) { bufs.push(buf); maxDur = Math.max(maxDur, buf.duration); }
+    }
+    if (bufs.length > 0) { groupBuffers[g] = bufs; hasAny = true; }
   }
   if (!hasAny) {
     showToast('再生するトラックがありません');
@@ -9236,30 +9323,37 @@ async function mtPlaySong(idx, offset) {
   const when = mtCtx.currentTime + 0.05; // 少し未来でスケジュール
   const sources = [];
   for (const g of MT_GROUPS) {
-    const buf = groupBuffers[g];
-    if (!buf) continue;
-    const src = mtCtx.createBufferSource();
-    src.buffer = buf;
+    const bufs = groupBuffers[g];
+    if (!bufs || bufs.length === 0) continue;
     const gain = mtGroupGainNodes[g];
-    src.connect(gain);
     const cm = state.multitrack.channelMap[g];
     const chL = Math.max(1, cm.L|0) - 1;
     const chR = Math.max(1, cm.R|0) - 1;
-    // バッファのチャンネル数で分岐（gain の下流に接続）
-    if (buf.numberOfChannels >= 2 && mtMerger.numberOfInputs > Math.max(chL, chR)) {
-      const splitter = mtCtx.createChannelSplitter(2);
-      gain.connect(splitter);
-      splitter.connect(mtMerger, 0, chL);
-      splitter.connect(mtMerger, 1, chR);
-    } else if (buf.numberOfChannels === 1 && mtMerger.numberOfInputs > chL) {
-      gain.connect(mtMerger, 0, chL);
-      if (chL !== chR && mtMerger.numberOfInputs > chR) gain.connect(mtMerger, 0, chR);
-    } else {
-      gain.connect(mtMasterGain);
+    // gain の下流ルーティング（一度だけ）：ステレオなら splitter→merger
+    // gain は既に Phase で構築済みなので、ここでは "新規 source → gain" 接続のみ
+    // gain → merger 経路は、複数 source が gain に集まったときも 1 経路で済む
+    let routedDownstream = false;
+    for (const buf of bufs) {
+      const src = mtCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(gain);
+      if (!routedDownstream) {
+        if (buf.numberOfChannels >= 2 && mtMerger.numberOfInputs > Math.max(chL, chR)) {
+          const splitter = mtCtx.createChannelSplitter(2);
+          gain.connect(splitter);
+          splitter.connect(mtMerger, 0, chL);
+          splitter.connect(mtMerger, 1, chR);
+        } else if (buf.numberOfChannels === 1 && mtMerger.numberOfInputs > chL) {
+          gain.connect(mtMerger, 0, chL);
+          if (chL !== chR && mtMerger.numberOfInputs > chR) gain.connect(mtMerger, 0, chR);
+        } else {
+          gain.connect(mtMasterGain);
+        }
+        routedDownstream = true;
+      }
+      src.start(when, offset);
+      sources.push(src);
     }
-    // 3 番目の引数 offset を指定すると、buffer の途中から再生
-    src.start(when, offset);
-    sources.push(src);
   }
   state.multitrack.activeSources = sources;
   // startTime は「曲の頭が ctx.currentTime のどこに当たるか」と見立てる
@@ -9475,7 +9569,7 @@ function mtEnterKey() {
 
 // 選択中の曲の最大長を求める（停止中もスクラバーに total を出すため）
 function mtRecomputeSongDuration() {
-  if (state.multitrack.isPlaying) return; // 再生中は触らない
+  if (state.multitrack.isPlaying) return;
   const idx = state.multitrack.selectedIdx;
   if (idx < 0 || idx >= state.multitrack.songs.length) {
     state.multitrack.songDuration = 0;
@@ -9484,10 +9578,11 @@ function mtRecomputeSongDuration() {
   const song = state.multitrack.songs[idx];
   let max = 0;
   for (const g of MT_GROUPS) {
-    const t = song.tracks && song.tracks[g];
-    if (!t || !t.sampleId) continue;
-    const buf = mtDecodedCache[t.sampleId];
-    if (buf) max = Math.max(max, buf.duration);
+    const layers = mtGetLayers(song, g);
+    for (const layer of layers) {
+      const buf = mtDecodedCache[layer.sampleId];
+      if (buf) max = Math.max(max, buf.duration);
+    }
   }
   state.multitrack.songDuration = max;
 }
@@ -9536,8 +9631,16 @@ function mtRenderMixer() {
     if (state.multitrack.groupMute[g]) strip.classList.add('muted');
     if (state.multitrack.groupSolo[g]) strip.classList.add('solo');
     if (anySolo && !state.multitrack.groupSolo[g] && !state.multitrack.groupMute[g]) strip.classList.add('dimmed');
-    // ready-for-file: 選択中の曲があり、このグループが空のとき
-    if (selSong && !(selSong.tracks && selSong.tracks[g])) strip.classList.add('ready-for-file');
+    // 状態判定:
+    //   empty   = 選択曲があり、layer 0 → pulse
+    //   loaded  = layer 1+ かつ全 buffer が cache 済み
+    //   pending = layer 1+ だが一部 buffer 未ロード
+    const layers = selSong ? mtGetLayers(selSong, g) : [];
+    const hasLayers = layers.length > 0;
+    const allLoaded = hasLayers && layers.every(l => mtDecodedCache[l.sampleId]);
+    if (selSong && !hasLayers) strip.classList.add('ready-for-file');
+    if (hasLayers) strip.classList.add('has-layers');
+    if (hasLayers && !allLoaded) strip.classList.add('layer-pending');
     strip.dataset.mtStrip = g;
     strip.style.color = MT_GROUP_COLORS[g]; // currentColor 経由で glow に使う
 
@@ -9549,7 +9652,12 @@ function mtRenderMixer() {
     header.appendChild(lbl);
     const sub = document.createElement('span'); sub.className = 'mt-strip-sublabel';
     const cm = state.multitrack.channelMap[g] || { L:0, R:0 };
-    sub.textContent = `${cm.L}/${cm.R}`;
+    // layer 数も表示: "1/2"  (ch info の前に layer 数チップ)
+    if (hasLayers) {
+      sub.innerHTML = `<span class="mt-strip-layer-badge${allLoaded ? '' : ' pending'}">${layers.length > 1 ? '●'.repeat(Math.min(3, layers.length)) + (layers.length > 3 ? '+' : '') : '●'}</span> ${cm.L}/${cm.R}`;
+    } else {
+      sub.textContent = `${cm.L}/${cm.R}`;
+    }
     header.appendChild(sub);
     strip.appendChild(header);
 
@@ -9785,7 +9893,6 @@ function mtRenderSetlist() {
     if (idx === state.multitrack.selectedIdx) row.classList.add('selected');
     // 行クリックで selectedIdx を更新
     row.addEventListener('click', (e) => {
-      // ボタン/入力欄/slot 上のクリックは除外
       if (e.target.closest('button, input, .mt-track-slot')) return;
       state.multitrack.selectedIdx = idx;
       state.multitrack.seekOffset = 0;
@@ -9793,6 +9900,17 @@ function mtRenderSetlist() {
       mtRenderSetlist();
       mtRenderNow();
     });
+    // 行を draggable に → 並べ替え用
+    row.draggable = true;
+    row.dataset.songIdx = String(idx);
+    row.addEventListener('dragstart', (e) => {
+      // ボタン/入力欄からの drag は反応しない
+      if (e.target.closest('button, input')) { e.preventDefault(); return; }
+      e.dataTransfer.setData('application/x-mt-song-reorder', String(idx));
+      e.dataTransfer.effectAllowed = 'move';
+      row.classList.add('reorder-dragging');
+    });
+    row.addEventListener('dragend', () => row.classList.remove('reorder-dragging'));
     // 番号
     const num = document.createElement('div'); num.className = 'mt-song-num'; num.textContent = String(idx + 1).padStart(2, '0');
     row.appendChild(num);
@@ -9804,11 +9922,12 @@ function mtRenderSetlist() {
       else mtPlaySong(idx);
     };
     row.appendChild(playBtn);
-    // 曲名 input
-    const nameInput = document.createElement('input');
-    nameInput.className = 'mt-song-name-input'; nameInput.value = song.name;
-    nameInput.onchange = () => mtRenameSong(idx, nameInput.value);
-    row.appendChild(nameInput);
+    // 曲名はテキスト表示のみ（リネームは NOW PLAYING タイトルで行う）
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'mt-song-name';
+    nameSpan.textContent = song.name;
+    nameSpan.title = song.name + '（リネームは上のタイトル欄で）';
+    row.appendChild(nameSpan);
     // 読込済ファイル数チップ（旧 5 スロット欄の代わり）
     const assignedCount = MT_GROUPS.filter(g => song.tracks && song.tracks[g]).length;
     const unassignedCount = (song.unassigned || []).length;
@@ -9823,22 +9942,56 @@ function mtRenderSetlist() {
       : 'ファイルをドロップで追加';
     row.appendChild(chip);
 
-    // 行全体に複数ファイルをドロップ：unassigned プールに追加
+    // 行 dragover: ファイル drop / 並べ替え drop の両方を受付（mt-file は無視）
     row.ondragover = (e) => {
-      // SELECTED SONG からの drag は別動作なので除外（mt-file タイプ）
-      const types = e.dataTransfer.types || [];
-      if (Array.from(types).includes('application/x-mt-file')) return;
+      const types = Array.from(e.dataTransfer.types || []);
+      if (types.includes('application/x-mt-file')) return;
       e.preventDefault();
-      row.classList.add('drop-target');
+      if (types.includes('application/x-mt-song-reorder')) {
+        // 上下どちらに挿入するか視覚化
+        const rect = row.getBoundingClientRect();
+        const above = (e.clientY - rect.top) < rect.height / 2;
+        row.classList.toggle('reorder-above', above);
+        row.classList.toggle('reorder-below', !above);
+      } else {
+        row.classList.add('drop-target');
+      }
     };
     row.ondragleave = (e) => {
-      if (e.target === row) row.classList.remove('drop-target');
+      if (e.target === row) {
+        row.classList.remove('drop-target', 'reorder-above', 'reorder-below');
+      }
     };
     row.ondrop = async (e) => {
-      const types = e.dataTransfer.types || [];
-      if (Array.from(types).includes('application/x-mt-file')) return;
+      const types = Array.from(e.dataTransfer.types || []);
+      if (types.includes('application/x-mt-file')) return;
       e.preventDefault();
-      row.classList.remove('drop-target');
+      const wasAbove = row.classList.contains('reorder-above');
+      row.classList.remove('drop-target', 'reorder-above', 'reorder-below');
+      // (a) 並べ替え
+      if (types.includes('application/x-mt-song-reorder')) {
+        const srcIdx = parseInt(e.dataTransfer.getData('application/x-mt-song-reorder'), 10);
+        if (!isFinite(srcIdx) || srcIdx === idx) return;
+        const songs = state.multitrack.songs;
+        const moving = songs.splice(srcIdx, 1)[0];
+        // 削除後の挿入位置を再計算
+        let insertIdx = (srcIdx < idx) ? idx - 1 : idx;
+        if (!wasAbove) insertIdx += 1;
+        if (insertIdx > songs.length) insertIdx = songs.length;
+        if (insertIdx < 0) insertIdx = 0;
+        songs.splice(insertIdx, 0, moving);
+        // selectedIdx / currentSongIdx を追従
+        if (state.multitrack.selectedIdx === srcIdx) state.multitrack.selectedIdx = insertIdx;
+        else if (state.multitrack.selectedIdx >= 0) {
+          if (srcIdx < state.multitrack.selectedIdx && insertIdx >= state.multitrack.selectedIdx) state.multitrack.selectedIdx--;
+          else if (srcIdx > state.multitrack.selectedIdx && insertIdx <= state.multitrack.selectedIdx) state.multitrack.selectedIdx++;
+        }
+        mtSave();
+        mtRenderSetlist();
+        mtRenderNow();
+        return;
+      }
+      // (b) ファイル drop
       const items = await mtExtractFilesWithHandles(e.dataTransfer);
       if (items.length === 0) return;
       // 行ドロップ: その曲の空グループに左→右の順で自動配分
@@ -9956,8 +10109,37 @@ function mtRenderNow() {
   if (hero) hero.classList.toggle('playing', m.isPlaying);
   if (playBtn) playBtn.classList.toggle('playing', m.isPlaying);
 
-  // タイトル
-  if (nameEl) nameEl.textContent = cur ? cur.name : '— 待機中 —';
+  // タイトル（input） — フォーカス中は触らない
+  if (nameEl) {
+    if (document.activeElement !== nameEl) {
+      nameEl.value = cur ? cur.name : '';
+    }
+    nameEl.disabled = !cur;
+    // 1 回だけ change ハンドラを bind
+    if (!nameEl._mtBound) {
+      nameEl._mtBound = true;
+      nameEl.addEventListener('change', () => {
+        const i = state.multitrack.selectedIdx;
+        if (i < 0 || i >= state.multitrack.songs.length) return;
+        const newName = (nameEl.value || '').trim();
+        if (!newName) {
+          nameEl.value = state.multitrack.songs[i].name;
+          return;
+        }
+        state.multitrack.songs[i].name = newName;
+        mtSave();
+        mtRenderSetlist();
+      });
+      nameEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); nameEl.blur(); }
+        else if (e.key === 'Escape') {
+          const i = state.multitrack.selectedIdx;
+          nameEl.value = (i >= 0 && state.multitrack.songs[i]) ? state.multitrack.songs[i].name : '';
+          nameEl.blur();
+        }
+      });
+    }
+  }
   // トラックチップ
   if (trackChip) {
     const total = m.songs.length;
@@ -10006,15 +10188,37 @@ function mtRenderSongInfo() {
   nameEl.style.color = '';
   list.innerHTML = '';
 
-  // === 各グループ行 ===
+  // === 各グループの全 layer を行表示（同グループ複数ファイル対応）===
   for (const g of MT_GROUPS) {
-    const t = song.tracks && song.tracks[g];
-    const row = document.createElement('div');
-    row.className = 'mt-songinfo-row' + (t ? ' has' : ' missing');
-    if (t) {
+    const layers = mtGetLayers(song, g);
+    if (layers.length === 0) {
+      // 空グループ
+      const row = document.createElement('div');
+      row.className = 'mt-songinfo-row missing';
+      const dot = document.createElement('span');
+      dot.className = 'mt-songinfo-dot';
+      dot.style.background = MT_GROUP_COLORS[g];
+      dot.style.color = MT_GROUP_COLORS[g];
+      row.appendChild(dot);
+      const lbl = document.createElement('span');
+      lbl.className = 'mt-songinfo-lbl';
+      lbl.textContent = MT_GROUP_LABELS[g].slice(0, 2);
+      lbl.style.color = MT_GROUP_COLORS[g];
+      row.appendChild(lbl);
+      const fname = document.createElement('span');
+      fname.className = 'mt-songinfo-fname';
+      fname.textContent = '— 未割当 —';
+      row.appendChild(fname);
+      list.appendChild(row);
+      continue;
+    }
+    // layer 毎に行
+    layers.forEach((t, layerIdx) => {
+      const row = document.createElement('div');
+      row.className = 'mt-songinfo-row has';
       row.draggable = true;
       row.dataset.sampleId = t.sampleId;
-      row.title = 'フェーダーへドラッグで別グループへ移動 / クリックで未割当へ戻す';
+      row.title = 'フェーダーへドラッグで別グループへ移動 / Shift+クリックで削除';
       row.addEventListener('dragstart', (e) => {
         e.dataTransfer.setData('application/x-mt-file', JSON.stringify({
           songIdx: idx, sampleId: t.sampleId, name: t.name, fromGroup: g
@@ -10024,27 +10228,33 @@ function mtRenderSongInfo() {
       });
       row.addEventListener('dragend', () => row.classList.remove('dragging'));
       row.addEventListener('click', (e) => {
-        if (e.shiftKey || confirm(`${MT_GROUP_LABELS[g]} の「${t.name}」を未割当に戻しますか？`)) {
-          mtUnassignFromGroup(idx, g);
+        if (e.shiftKey) {
+          if (confirm(`${MT_GROUP_LABELS[g]} の「${t.name}」を削除（layer ${layerIdx+1}/${layers.length}）`)) {
+            mtRemoveTrack(idx, g, t.sampleId);
+          }
         }
       });
-    }
-    const dot = document.createElement('span');
-    dot.className = 'mt-songinfo-dot';
-    dot.style.background = MT_GROUP_COLORS[g];
-    dot.style.color = MT_GROUP_COLORS[g];
-    row.appendChild(dot);
-    const lbl = document.createElement('span');
-    lbl.className = 'mt-songinfo-lbl';
-    lbl.textContent = MT_GROUP_LABELS[g].slice(0, 2);
-    lbl.style.color = MT_GROUP_COLORS[g];
-    row.appendChild(lbl);
-    const fname = document.createElement('span');
-    fname.className = 'mt-songinfo-fname';
-    fname.textContent = t ? t.name : '— 未割当 —';
-    if (t) fname.title = t.name;
-    row.appendChild(fname);
-    list.appendChild(row);
+      const dot = document.createElement('span');
+      dot.className = 'mt-songinfo-dot';
+      dot.style.background = MT_GROUP_COLORS[g];
+      dot.style.color = MT_GROUP_COLORS[g];
+      row.appendChild(dot);
+      const lbl = document.createElement('span');
+      lbl.className = 'mt-songinfo-lbl';
+      // 多 layer のときは "DR ②" のように layer 番号
+      lbl.textContent = layers.length > 1
+        ? `${MT_GROUP_LABELS[g].slice(0, 2)} ${layerIdx + 1}`
+        : MT_GROUP_LABELS[g].slice(0, 2);
+      lbl.style.color = MT_GROUP_COLORS[g];
+      row.appendChild(lbl);
+      const fname = document.createElement('span');
+      fname.className = 'mt-songinfo-fname';
+      fname.textContent = t.name;
+      fname.title = t.name + (mtDecodedCache[t.sampleId] ? '' : ' (未ロード)');
+      if (!mtDecodedCache[t.sampleId]) fname.style.color = '#EF9F27';
+      row.appendChild(fname);
+      list.appendChild(row);
+    });
   }
 
   // 旧バージョンで蓄積された unassigned があれば自動で空きグループへ流し込む
