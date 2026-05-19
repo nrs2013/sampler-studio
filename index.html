@@ -2700,7 +2700,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.21.1';
+const APP_VERSION = 'v7.22';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3132,6 +3132,16 @@ function setMasterVol(lin) {
   state.masterVol = Math.max(0, Math.min(1.4, lin)); // up to +3dB
   // Anti-zipper: cancel any pending ramps, then smoothly ramp from current to target
   if (masterGain) safeRamp(masterGain.gain, state.masterVol);
+  // GRAND MASTER: MULTI-TRACK の master gain も同期。
+  // ※ MULTI-TRACK は別 AudioContext (mtCtx) なので別ノードだが、左パネルの
+  //   フェーダーが本アプリ全体のグランドマスターとして全モードを制御する。
+  if (typeof mtMasterGain !== 'undefined' && mtMasterGain && mtCtx) {
+    try {
+      const t = mtCtx.currentTime;
+      mtMasterGain.gain.cancelScheduledValues(t);
+      mtMasterGain.gain.setTargetAtTime(state.masterVol, t, 0.005);
+    } catch(e) { /* ignore */ }
+  }
   const db = linToDb(state.masterVol);
   document.getElementById('masterDbVal').textContent = db === -Infinity ? '-∞' : db.toFixed(1);
   const pct = (state.masterVol / 1.4) * 100;
@@ -8553,7 +8563,8 @@ async function mtInitCtx() {
   // 高サンプルレートかつ低遅延寄りで作成
   mtCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
   mtMasterGain = mtCtx.createGain();
-  mtMasterGain.gain.value = 1.0;
+  // グランドマスター連動 — 左パネルの MASTER フェーダー値で初期化
+  mtMasterGain.gain.value = (typeof state !== 'undefined' && state.masterVol != null) ? state.masterVol : 1.0;
   // 各グループ用 GainNode + AnalyserNode を構築
   for (const g of MT_GROUPS) {
     const gain = mtCtx.createGain();
@@ -9363,10 +9374,11 @@ async function mtPlaySong(idx, offset, options) {
     }
   }
   // master gain は overlap 中は触らない（前曲が鳴っているので）
+  // 通常: グランドマスター (state.masterVol) の値に戻す
   if (mtMasterGain && !keepPrevious) {
     const t = mtCtx.currentTime;
     mtMasterGain.gain.cancelScheduledValues(t);
-    mtMasterGain.gain.setValueAtTime(1.0, t);
+    mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t);
   }
   const song = state.multitrack.songs[idx];
   // groupBuffers: { drums: [AudioBuffer, ...], bass: [...] }
@@ -9567,11 +9579,11 @@ function mtFadeOut() {
   if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
   setTimeout(() => {
     mtStop();
-    // master gain を 1.0 に戻す（次回再生のため）
+    // master gain をグランドマスターの値に戻す（次回再生のため）
     if (mtCtx && mtMasterGain) {
       const t2 = mtCtx.currentTime;
       mtMasterGain.gain.cancelScheduledValues(t2);
-      mtMasterGain.gain.setValueAtTime(1.0, t2);
+      mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t2);
     }
   }, dur * 1000 + 80);
 }
