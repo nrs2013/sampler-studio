@@ -1468,10 +1468,37 @@
     box-shadow: inset 3px 0 0 #7DB89E;
   }
   .mt-song-row.queued  { border-color: rgba(125,184,158,0.4); }
-  /* selected: 矢印キーで動かすハイライト（playing 時は playing が優先） */
+  /* selected (= NEXT UP): playing と区別して "金色で強く"。SPACE で重ねて再生される曲 */
   .mt-song-row.selected:not(.playing) {
-    border-color: rgba(125,184,158,0.55);
-    background: linear-gradient(90deg, rgba(125,184,158,0.06), rgba(255,255,255,0.02) 60%);
+    border-color: #F0C75E;
+    background: linear-gradient(90deg, rgba(240,199,94,0.18), rgba(240,199,94,0.03) 70%);
+    box-shadow: inset 3px 0 0 #F0C75E, 0 0 14px rgba(240,199,94,0.2);
+  }
+  /* selected 行の play ボタンを金色でパルス、SPACE で重なることを示唆 */
+  .mt-song-row.selected:not(.playing) .mt-song-play {
+    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    color: #2A1F08; border-color: #F0C75E;
+    box-shadow: 0 0 10px rgba(240,199,94,0.5);
+    animation: mtNextPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes mtNextPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.10); }
+  }
+  /* "▶ SPACE" インラインバッジ — selected:not(.playing) のときだけ表示 */
+  .mt-song-nextbadge { display: none; }
+  .mt-song-row.selected:not(.playing) .mt-song-nextbadge {
+    display: inline-block;
+    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    color: #2A1F08;
+    font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+    padding: 1px 7px;
+    border-radius: 3px;
+    margin-left: 8px;
+    vertical-align: middle;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+    box-shadow: 0 0 6px rgba(240,199,94,0.4);
+    user-select: none;
   }
   .mt-song-row.drop-target {
     border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed;
@@ -2668,7 +2695,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.19.1';
+const APP_VERSION = 'v7.20';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9323,8 +9350,8 @@ async function mtPlaySong(idx, offset, options) {
       state.multitrack.advanceTimer = null;
     }
   }
-  // master gain を 1.0 に戻す（オーバーラップ中は前曲と新曲を同じ master 上でミックス）
-  if (mtMasterGain) {
+  // master gain は overlap 中は触らない（前曲が鳴っているので）
+  if (mtMasterGain && !keepPrevious) {
     const t = mtCtx.currentTime;
     mtMasterGain.gain.cancelScheduledValues(t);
     mtMasterGain.gain.setValueAtTime(1.0, t);
@@ -9594,16 +9621,13 @@ function mtStop() {
 }
 
 function mtPlayPause() {
-  if (state.multitrack.isPlaying) {
-    mtStop();
-  } else {
-    if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
-    // selectedIdx 優先、なければ currentSongIdx
-    const idx = state.multitrack.selectedIdx >= 0
-      ? state.multitrack.selectedIdx
-      : Math.max(0, state.multitrack.currentSongIdx);
-    mtPlaySong(idx, state.multitrack.seekOffset || 0);
-  }
+  // 新仕様: PLAY ボタンは SPACE と同じくオーバーラップ。STOP は ■ STOP ボタンか ESC で。
+  if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+  const idx = state.multitrack.selectedIdx >= 0
+    ? state.multitrack.selectedIdx
+    : Math.max(0, state.multitrack.currentSongIdx);
+  const wasPlaying = state.multitrack.isPlaying;
+  mtPlaySong(idx, state.multitrack.seekOffset || 0, { keepPrevious: wasPlaying });
 }
 
 function mtPlayNext() {
@@ -9620,30 +9644,22 @@ function mtPlayNext() {
   mtPlaySong(next, 0);
 }
 
-// SPACE キーハンドラ: 常にハイライト曲を再生（トグルなし）
-// ストップは ESC 専用。SPACE はとにかく「再生」
+// SPACE キーハンドラ:
+//   常にハイライト曲を再生（オーバーラップ）。前曲が鳴っていても止めずに重ねる。
+//   ライブで「いいタイミングで重ねる」用途。停止は ESC で。
 function mtSpaceKey() {
   if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
   const idx = state.multitrack.selectedIdx >= 0 ? state.multitrack.selectedIdx : 0;
-  // 何か鳴っていれば一度クリアしてからハイライト曲を頭/seekOffset から再生
-  if (state.multitrack.isPlaying) {
-    mtStopSources();
-    state.multitrack.isPlaying = false;
-    mtStopMeter();
-  }
-  mtPlaySong(idx, state.multitrack.seekOffset || 0);
+  const wasPlaying = state.multitrack.isPlaying;
+  mtPlaySong(idx, state.multitrack.seekOffset || 0, { keepPrevious: wasPlaying });
 }
 
-// ENTER キー：選択曲を「頭」から再生（seekOffset をリセット）
+// ENTER キー：ハイライト曲を「頭」から重ねる（seekOffset リセット）
 function mtEnterKey() {
   if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
   state.multitrack.seekOffset = 0;
-  if (state.multitrack.isPlaying) {
-    mtStopSources();
-    state.multitrack.isPlaying = false;
-    mtStopMeter();
-  }
-  mtPlaySong(state.multitrack.selectedIdx, 0);
+  const wasPlaying = state.multitrack.isPlaying;
+  mtPlaySong(state.multitrack.selectedIdx, 0, { keepPrevious: wasPlaying });
 }
 
 // 選択中の曲の最大長を求める（停止中もスクラバーに total を出すため）
@@ -10007,10 +10023,10 @@ function mtRenderSetlist() {
       else mtPlaySong(idx);
     };
     row.appendChild(playBtn);
-    // 曲名はテキスト表示のみ（リネームは NOW PLAYING タイトルで行う）
+    // 曲名 + "▶ SPACE" バッジ（バッジは CSS で selected:not(.playing) のとき表示）
     const nameSpan = document.createElement('span');
     nameSpan.className = 'mt-song-name';
-    nameSpan.textContent = song.name;
+    nameSpan.innerHTML = `${escapeHtml(song.name)}<span class="mt-song-nextbadge">▶ SPACE</span>`;
     nameSpan.title = song.name + '（リネームは上のタイトル欄で）';
     row.appendChild(nameSpan);
     // 読込済ファイル数チップ（旧 5 スロット欄の代わり）
@@ -10243,9 +10259,9 @@ function mtRenderNow() {
     else if (cur) status.textContent = 'READY · SPACE 再生 / ESC 停止';
     else status.textContent = 'EMPTY · 曲を追加';
   }
-  // 再生ボタン記号
-  if (playGlyph) playGlyph.textContent = m.isPlaying ? '■' : '▶';
-  if (playBtn) playBtn.setAttribute('aria-label', m.isPlaying ? 'Stop' : 'Play');
+  // 再生ボタンは常に ▶（重ねて再生するので、停止記号には変わらない）
+  if (playGlyph) playGlyph.textContent = '▶';
+  if (playBtn) playBtn.setAttribute('aria-label', 'Play (overlay)');
 
   // セットリスト件数
   if (setlistCount) setlistCount.textContent = `${m.songs.length} SONG${m.songs.length === 1 ? '' : 'S'}`;
