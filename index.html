@@ -2925,7 +2925,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.33.0';
+const APP_VERSION = 'v7.34.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8748,6 +8748,10 @@ let mtMerger = null;            // ChannelMerger node (size = outputChannelCount
 let mtDecodedCache = {};        // { sampleId: AudioBuffer }  in-memory cache
 let mtMeterRaf = null;
 let mtRestoreInProgress = false; // 起動時バッファ復元が走ってる間だけ true → ロード中表示
+// バックグラウンド preload の進捗（起動直後にすべてのファイルを並列 decode）
+let mtPreloadTotal = 0;
+let mtPreloadDone = 0;
+let mtPreloadAbort = false;     // セッション中に preload を中断したいとき true
 let mtGroupGainNodes = {};      // { drums: GainNode, bass: GainNode, ... }
 let mtGroupAnalysers = {};      // { drums: AnalyserNode, ... }
 let mtGroupAnalyserData = {};   // { drums: Float32Array, ... }  reusable buffers
@@ -9617,16 +9621,15 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
 // 1. handle がある場合：permission granted なら即 read & decode
 //                       prompt 必要なら needsReconnect 旗を立てて待機
 // 2. handle がない（旧形式）：IDB blob から復元
-// 起動時: 重い decode は行わず、handle の permission 状態だけ素早くチェック。
-// 実際のバッファ decode は mtPlaySong / mtEnsureBufferLoaded の lazy load で行う。
-// これにより起動時のフリーズが消える（数百ファイル登録されていても瞬間起動）
+// 起動時: 軽い permission チェックだけ素早く実行（即時完了）。
+// 続けて mtPreloadBuffers() がバックグラウンドで全ファイルを並列 decode。
+// これでアプリは即操作可能、再生時には全曲ロード済みでゼロロス。
 async function mtRestoreBuffers() {
   if (!state.multitrack.songs.length) return;
   mtRestoreInProgress = true;
   try { mtRenderNow(); } catch(_) {}
   let needsReconnect = false;
   let reconnectCount = 0;
-  // assigned + unassigned の sampleId だけ集める
   const sampleIds = [];
   for (const s of state.multitrack.songs) {
     for (const g of MT_GROUPS) {
@@ -9634,14 +9637,14 @@ async function mtRestoreBuffers() {
     }
     (s.unassigned || []).forEach(u => { if (u && u.sampleId) sampleIds.push(u.sampleId); });
   }
-  // 並列で handle permission を queryPermission（decode は一切しない）
+  // permission を並列に確認（decode は一切しない）
   const checks = sampleIds.map(async (id) => {
     try {
       const rec = await mtGetHandleFromDB(id);
       if (!rec || !rec.handle) return 'no-handle';
       let perm = 'denied';
       try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-      return perm; // 'granted' | 'prompt' | 'denied'
+      return perm;
     } catch(_) { return 'error'; }
   });
   const results = await Promise.all(checks);
@@ -9658,6 +9661,62 @@ async function mtRestoreBuffers() {
   mtRenderSetlist();
   mtRenderNow();
   mtRenderReconnectUI();
+  // バックグラウンドで全 decode 開始（await しない — UI は即操作 OK）
+  mtPreloadBuffers().catch(e => console.warn('preload failed', e));
+}
+
+// バックグラウンドで全ファイルを並列 decode してキャッシュに乗せる。
+// CONCURRENCY=4 ワーカー並列で重いブラウザ work を時分割。
+// 完了後は SPACE 押した瞬間に再生（ゼロロス）になる。
+async function mtPreloadBuffers() {
+  if (!state.multitrack.songs.length) return;
+  await mtInitCtx();
+  // まだロードされていない sampleId を収集（handle/blob のどちらでも OK）
+  const sampleIds = [];
+  for (const s of state.multitrack.songs) {
+    for (const g of MT_GROUPS) {
+      mtGetLayers(s, g).forEach(l => {
+        if (l && l.sampleId && !mtDecodedCache[l.sampleId]) sampleIds.push(l.sampleId);
+      });
+    }
+    (s.unassigned || []).forEach(u => {
+      if (u && u.sampleId && !mtDecodedCache[u.sampleId]) sampleIds.push(u.sampleId);
+    });
+  }
+  if (sampleIds.length === 0) return;
+  mtPreloadTotal = sampleIds.length;
+  mtPreloadDone = 0;
+  mtPreloadAbort = false;
+  try { mtRenderNow(); } catch(_) {}
+
+  const CONCURRENCY = 4;
+  let idx = 0;
+  async function worker() {
+    while (idx < sampleIds.length) {
+      if (mtPreloadAbort) return;
+      const i = idx++;
+      const sid = sampleIds[i];
+      try {
+        await mtEnsureBufferLoaded(sid, false);
+      } catch(e) {
+        console.warn('preload entry failed', sid, e);
+      }
+      mtPreloadDone++;
+      // 8 ファイルごと OR 完了時のみ render（render を頻発させない）
+      if (mtPreloadDone % 8 === 0 || mtPreloadDone === mtPreloadTotal) {
+        try { mtRenderNow(); } catch(_) {}
+      }
+    }
+  }
+  const workers = [];
+  for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
+  await Promise.all(workers);
+  // 完了 → 状態リセット
+  mtPreloadTotal = 0;
+  mtPreloadDone = 0;
+  try { mtRenderNow(); } catch(_) {}
+  try { mtRecomputeSongDuration(); } catch(_) {}
+  showToast('✓ 全ファイル読込完了');
 }
 
 // 再接続：ユーザージェスチャーから呼ばれる（permission 要求あり）
@@ -9776,7 +9835,8 @@ async function mtPlaySong(idx, offset, options) {
     if (needsLoad) break;
   }
   if (needsLoad) {
-    showToast('ファイル読込中…');
+    // この曲のレイヤーを優先 lazy load（preload より優先）
+    // toast は出さない（preload 中に押された場合に背景進捗だけで十分）
     for (const g of MT_GROUPS) {
       for (const layer of mtGetLayers(song, g)) {
         if (!mtDecodedCache[layer.sampleId]) {
@@ -10788,21 +10848,19 @@ function mtRenderNow() {
       nextChipName.textContent = '— なし —';
     }
   }
-  // ロード中表示: 起動時の mtRestoreBuffers が走っている間だけ true。
-  // 終了後は「未ロード」状態になっても壊れた参照とみなしロード表示しない
-  // （ファイル毎にカウントすると毎フレーム O(N) で重い + orphan で永遠に
-  //  ロード中になる問題を回避）
-  const isLoading = mtRestoreInProgress;
-
-  // ヘッダーチップに loading クラスを付け外し → CSS でオレンジパルスに切替
+  // ロード中表示: restore 中 OR 背景 preload 中
+  const isPreloading = mtPreloadTotal > 0 && mtPreloadDone < mtPreloadTotal;
+  const isLoading = mtRestoreInProgress || isPreloading;
   const nowChip = document.getElementById('mtHeroTrackChip');
   if (nowChip) nowChip.classList.toggle('loading', isLoading);
   if (hero) hero.classList.toggle('mt-loading', isLoading);
 
-  // ステータス
+  // ステータス: preload 中は実進捗を表示 (X/Y)
   if (status) {
-    if (isLoading) {
-      status.textContent = '📂 ファイル読込中...';
+    if (isPreloading) {
+      status.textContent = `📂 LOADING ${mtPreloadDone}/${mtPreloadTotal} ファイル (バックグラウンド)`;
+    } else if (mtRestoreInProgress) {
+      status.textContent = '📂 起動中...';
     } else if (m.isPlaying) status.textContent = 'PLAYING · ESC で停止';
     else if (cur) status.textContent = 'READY · SPACE 再生 / ESC 停止';
     else status.textContent = 'EMPTY · 曲を追加';
