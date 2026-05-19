@@ -1561,6 +1561,22 @@
             </div>
             <span class="do-logo-size-val" id="doLogoSizeVal">100%</span>
           </div>
+          <div class="do-logo-size-row" id="doLogoXRow" style="display:none;">
+            <span class="do-logo-size-label">X POS</span>
+            <div class="do-logo-size-slider" id="doLogoXSlider">
+              <div class="do-logo-size-fill" id="doLogoXFill" style="width:50%;"></div>
+              <div class="do-logo-size-thumb" id="doLogoXThumb" style="left:50%;"></div>
+            </div>
+            <span class="do-logo-size-val" id="doLogoXVal">0</span>
+          </div>
+          <div class="do-logo-size-row" id="doLogoYRow" style="display:none;">
+            <span class="do-logo-size-label">Y POS</span>
+            <div class="do-logo-size-slider" id="doLogoYSlider">
+              <div class="do-logo-size-fill" id="doLogoYFill" style="width:50%;"></div>
+              <div class="do-logo-size-thumb" id="doLogoYThumb" style="left:50%;"></div>
+            </div>
+            <span class="do-logo-size-val" id="doLogoYVal">0</span>
+          </div>
           <div class="do-logo-actions">
             <button class="do-logo-btn" onclick="doLogoLoad()">LOAD</button>
             <button class="do-logo-btn" onclick="doLogoShow()" id="doLogoShowBtn" style="display:none; background:rgba(201,169,106,0.18); color:#C9A96A;">▶ SHOW</button>
@@ -1612,7 +1628,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.6';
+const APP_VERSION = 'v6.6.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5322,6 +5338,8 @@ function doRenderLogo() {
   const resetBtn = document.getElementById('doLogoResetBtn');
   const sizeRow = document.getElementById('doLogoSizeRow');
   if (!previewEl) return;
+  const xRow = document.getElementById('doLogoXRow');
+  const yRow = document.getElementById('doLogoYRow');
   if (!it) {
     if (nameEl) { nameEl.textContent = '— 未読込'; nameEl.style.color = '#6A6A70'; }
     previewEl.className = 'do-logo-preview empty';
@@ -5332,6 +5350,8 @@ function doRenderLogo() {
     if (showBtn) showBtn.style.display = 'none';
     if (resetBtn) resetBtn.style.display = 'none';
     if (sizeRow) sizeRow.style.display = 'none';
+    if (xRow) xRow.style.display = 'none';
+    if (yRow) yRow.style.display = 'none';
   } else {
     const reLink = !it.file;
     if (nameEl) {
@@ -5356,6 +5376,9 @@ function doRenderLogo() {
       sizeRow.style.display = '';
       doRenderLogoSize();
     }
+    // X / Y POS スライダー行も表示
+    if (xRow) xRow.style.display = '';
+    if (yRow) yRow.style.display = '';
     // プレビューの transform を反映
     doRenderLogoPreviewTransform();
   }
@@ -5367,8 +5390,22 @@ function doRenderLogoPreviewTransform() {
   const scale = it.scale ?? 1.0;
   const posX = it.posX ?? 0;
   const posY = it.posY ?? 0;
-  // posX/posY -1..+1 → プレビュー幅/高さの ±50% に対応
   previewContent.style.transform = `translate(${posX * 50}%, ${posY * 50}%) scale(${scale})`;
+  // X/Y スライダーの値表示も更新
+  const xFill = document.getElementById('doLogoXFill');
+  const xThumb = document.getElementById('doLogoXThumb');
+  const xVal = document.getElementById('doLogoXVal');
+  const yFill = document.getElementById('doLogoYFill');
+  const yThumb = document.getElementById('doLogoYThumb');
+  const yVal = document.getElementById('doLogoYVal');
+  const xPctStr = ((posX + 1) * 50).toFixed(2) + '%';
+  const yPctStr = ((posY + 1) * 50).toFixed(2) + '%';
+  if (xFill) xFill.style.width = xPctStr;
+  if (xThumb) xThumb.style.left = xPctStr;
+  if (xVal) xVal.textContent = (posX >= 0 ? '+' : '') + (posX * 100).toFixed(0);
+  if (yFill) yFill.style.width = yPctStr;
+  if (yThumb) yThumb.style.left = yPctStr;
+  if (yVal) yVal.textContent = (posY >= 0 ? '+' : '') + (posY * 100).toFixed(0);
 }
 function doLogoResetPosition() {
   if (!state.door.logo) return;
@@ -5380,6 +5417,55 @@ function doLogoResetPosition() {
     _outBC.postMessage({ cmd: 'logo-transform', posX: 0, posY: 0, scale: state.door.logo.scale ?? 1.0 });
   }
   showToast('LOGO 位置をセンターに戻しました');
+}
+// X / Y POS スライダーをバインド
+let _logoPosSliderDrag = null; // 'x' | 'y' | null
+function bindDoLogoPosSliders() {
+  const xSlider = document.getElementById('doLogoXSlider');
+  const ySlider = document.getElementById('doLogoYSlider');
+  if (!xSlider || !ySlider) return;
+  const updateFrom = (slider, axis, clientX) => {
+    if (!state.door.logo) return;
+    const r = slider.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    const val = (p - 0.5) * 2; // 0..1 → -1..+1
+    if (axis === 'x') state.door.logo.posX = val;
+    else state.door.logo.posY = val;
+    doRenderLogoPreviewTransform();
+    if (_outBC && _outWindow && !_outWindow.closed) {
+      _outBC.postMessage({
+        cmd: 'logo-transform',
+        scale: state.door.logo.scale ?? 1.0,
+        posX: state.door.logo.posX ?? 0,
+        posY: state.door.logo.posY ?? 0,
+      });
+    }
+  };
+  window.addEventListener('pointermove', e => {
+    if (!_logoPosSliderDrag) return;
+    e.preventDefault();
+    if (_logoPosSliderDrag === 'x') updateFrom(xSlider, 'x', e.clientX);
+    else updateFrom(ySlider, 'y', e.clientX);
+  });
+  const endDrag = () => {
+    if (!_logoPosSliderDrag) return;
+    _logoPosSliderDrag = null;
+    doSave();
+  };
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+  xSlider.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    _logoPosSliderDrag = 'x';
+    try { xSlider.setPointerCapture(e.pointerId); } catch(_) {}
+    updateFrom(xSlider, 'x', e.clientX);
+  });
+  ySlider.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    _logoPosSliderDrag = 'y';
+    try { ySlider.setPointerCapture(e.pointerId); } catch(_) {}
+    updateFrom(ySlider, 'y', e.clientX);
+  });
 }
 // プレビュー上のドラッグで位置調節
 let _logoPosDragActive = false;
@@ -5457,13 +5543,13 @@ function doLogoShow() {
   }
 }
 
-// scale ↔ slider 位置の変換（中央 = 100%、左 = 30%、右 = 200%）
+// scale ↔ slider 位置の変換（中央 = 100%、左 = 10%、右 = 200%）
 function _logoScaleToSlider(s) {
-  if (s < 1.0) return Math.max(0, (s - 0.3) / 1.4);
+  if (s < 1.0) return Math.max(0, (s - 0.1) / 1.8);
   return Math.min(1, 0.5 + (s - 1.0) / 2.0);
 }
 function _logoSliderToScale(p) {
-  if (p < 0.5) return 0.3 + p * 1.4; // 0 → 0.3, 0.5 → 1.0
+  if (p < 0.5) return 0.1 + p * 1.8;  // 0 → 0.1, 0.5 → 1.0
   return 1.0 + (p - 0.5) * 2.0;       // 0.5 → 1.0, 1.0 → 2.0
 }
 function doRenderLogoSize() {
@@ -6857,6 +6943,7 @@ function doInit() {
   bindDoBgmDrop();
   bindDoLogoDrop();
   bindDoLogoSizeSlider();
+  bindDoLogoPosSliders();
   bindDoLogoPreviewDrag();
   bindDoLibDrop();
   bindDoDuck();
