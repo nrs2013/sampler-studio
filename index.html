@@ -1108,6 +1108,88 @@
   .do-chip-badge.color-vid { background: #4FD1C5; color: #093B36; }
   /* ====================================================================== */
 
+  /* ====================== MULTI-TRACK MODE ====================== */
+  #multiPage { display: none; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
+  .mt-top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .mt-card { background: #131316; border: 1px solid #1F1F22; border-radius: 8px; padding: 12px; }
+  .mt-card-head { font-size: 10px; color: #6A6A70; letter-spacing: 2px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; }
+  .mt-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .mt-label { font-size: 10px; letter-spacing: 1.5px; color: #6A6A70; font-weight: 600; min-width: 90px; }
+  .mt-select {
+    flex: 1; background: #1A1A1E; border: 0.5px solid #25252A; color: #C8C8CE;
+    padding: 6px 10px; border-radius: 4px; font-family: inherit; font-size: 11px; cursor: pointer;
+  }
+  .mt-select:focus { outline: none; border-color: #7DB89E; }
+  .mt-input-num {
+    width: 60px; background: #1A1A1E; border: 0.5px solid #25252A; color: #C8C8CE;
+    padding: 4px 8px; border-radius: 3px; font-family: inherit; font-size: 11px; text-align: right;
+  }
+  .mt-btn {
+    background: transparent; border: 0.5px solid #25252A; color: #C8C8CE;
+    padding: 6px 12px; border-radius: 4px; font-family: inherit; font-size: 10px;
+    letter-spacing: 1.5px; font-weight: 600; cursor: pointer;
+  }
+  .mt-btn:hover { border-color: #7DB89E; color: #7DB89E; }
+  .mt-btn.primary { background: #7DB89E; color: #0E1A14; border: none; }
+  .mt-btn.primary:hover { background: #92C9B0; }
+  .mt-btn.danger { color: #E24B4A; border-color: rgba(226,75,74,0.4); }
+  .mt-btn.danger:hover { background: rgba(226,75,74,0.1); }
+
+  /* Setlist */
+  .mt-setlist-card { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+  .mt-setlist-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; min-height: 200px; }
+  .mt-song-row {
+    display: grid; grid-template-columns: 24px 22px 1fr repeat(5, 50px) 32px;
+    gap: 6px; align-items: center;
+    padding: 6px 8px; border: 0.5px solid #25252A; border-radius: 4px;
+    background: #1A1A1E;
+  }
+  .mt-song-row.playing { border-color: #7DB89E; background: rgba(125,184,158,0.06); }
+  .mt-song-row.queued  { border-color: rgba(125,184,158,0.4); }
+  .mt-song-num { font-family: 'SF Mono', monospace; font-size: 10px; color: #6A6A70; text-align: right; }
+  .mt-song-play { width: 22px; height: 22px; border-radius: 50%; background: #1F1F22; color: #C8C8CE; border: none; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; }
+  .mt-song-play:hover { background: #7DB89E; color: #0E1A14; }
+  .mt-song-row.playing .mt-song-play { background: #7DB89E; color: #0E1A14; }
+  .mt-song-name-input {
+    background: transparent; border: 0.5px solid transparent; color: #E6E6EA;
+    font-family: inherit; font-size: 12px; padding: 3px 6px; border-radius: 3px; width: 100%;
+  }
+  .mt-song-name-input:hover, .mt-song-name-input:focus { border-color: #25252A; background: #131316; outline: none; }
+  .mt-track-slot {
+    width: 100%; height: 28px; border-radius: 3px;
+    border: 0.5px dashed #2A2A30; background: rgba(125,184,158,0.04);
+    color: #5A5A65; font-size: 9px; letter-spacing: 0.5px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 4px;
+  }
+  .mt-track-slot.has-content { background: rgba(125,184,158,0.15); border-color: rgba(125,184,158,0.5); color: #92C9B0; border-style: solid; }
+  .mt-track-slot.has-content:hover { color: #7DB89E; }
+  .mt-track-slot.drop-over { border-color: #7DB89E; background: rgba(125,184,158,0.25); color: #E6E6EA; }
+  .mt-track-slot.loading { color: #EF9F27; border-color: #EF9F27; }
+  .mt-track-headers { display: grid; grid-template-columns: 24px 22px 1fr repeat(5, 50px) 32px; gap: 6px; padding: 0 8px 4px; }
+  .mt-track-headers > span { font-size: 8px; letter-spacing: 1px; color: #4A4A50; text-align: center; }
+  .mt-track-headers > span:nth-child(3) { text-align: left; padding-left: 6px; }
+  .mt-song-del { color: #5A5A65; background: transparent; border: none; cursor: pointer; font-size: 14px; }
+  .mt-song-del:hover { color: #E24B4A; }
+
+  /* Now Playing */
+  .mt-now-card { background: linear-gradient(180deg, #131316, #16161A); border: 0.5px solid #25252A; padding: 16px 20px; }
+  .mt-now-label { font-size: 9px; letter-spacing: 2.5px; color: #6A6A70; font-weight: 600; margin-bottom: 4px; }
+  .mt-now-name { font-size: 22px; font-weight: 500; color: #F8F8F8; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .mt-now-time { font-family: 'SF Mono', monospace; font-size: 14px; color: #C8C8CE; }
+  .mt-now-bar { height: 4px; background: #1F1F22; border-radius: 2px; margin: 10px 0; overflow: hidden; }
+  .mt-now-bar-fill { height: 100%; background: #7DB89E; width: 0%; transition: width 0.1s linear; }
+  .mt-now-status { font-size: 10px; color: #6A6A70; margin-top: 4px; letter-spacing: 1px; }
+
+  /* Channel matrix */
+  .mt-ch-matrix { display: grid; grid-template-columns: 100px repeat(5, 1fr); gap: 6px; align-items: center; }
+  .mt-ch-cell { font-size: 10px; color: #6A6A70; padding: 4px; text-align: center; }
+  .mt-ch-input {
+    width: 100%; background: #1A1A1E; border: 0.5px solid #25252A; color: #C8C8CE;
+    padding: 4px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 10px;
+    text-align: center;
+  }
+
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .do-sched-list { display: flex; flex-direction: column; }
@@ -1277,6 +1359,7 @@
   <div class="app-mode-tabs">
     <button class="mode-tab" id="modeTabDoor" onclick="setAppMode('door')">DOOR OPEN</button>
     <button class="mode-tab active" id="modeTabSampler" onclick="setAppMode('sampler')">SAMPLER</button>
+    <button class="mode-tab" id="modeTabMulti" onclick="setAppMode('multi')">MULTI-TRACK</button>
     <div class="status">
       <span><span class="midi-led" id="midiLed"></span> <span id="midiName">MIDI: 未接続</span></span>
       <span id="bankInfo">BANK 01 / 16</span>
@@ -1615,6 +1698,109 @@
 
     </div>
   </div>
+
+  <!-- ====================== MULTI-TRACK PAGE ====================== -->
+  <div id="multiPage">
+    <div class="mt-top">
+      <!-- AUDIO INTERFACE -->
+      <div class="mt-card">
+        <div class="mt-card-head">AUDIO INTERFACE</div>
+        <div class="mt-row">
+          <span class="mt-label">DEVICE</span>
+          <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
+            <option value="">— 検出中… —</option>
+          </select>
+          <button class="mt-btn" onclick="mtRefreshDevices()" title="デバイス再検出">⟳</button>
+        </div>
+        <div class="mt-row">
+          <span class="mt-label">CHANNELS</span>
+          <span id="mtChCount" style="font-family:'SF Mono',monospace; font-size:11px; color:#C8C8CE;">—</span>
+          <span style="font-size:10px; color:#6A6A70; margin-left:8px;" id="mtChStatus">ブラウザで使用可能なチャンネル数</span>
+        </div>
+        <div class="mt-row">
+          <span class="mt-label">GAP</span>
+          <input type="number" class="mt-input-num" id="mtGapSec" min="0" max="60" step="0.5" value="3.0" onchange="mtSetGap(this.value)">
+          <span style="font-size:10px; color:#6A6A70;">秒（曲間の自動隙間）</span>
+        </div>
+        <div class="mt-row">
+          <span class="mt-label">AUTO ADVANCE</span>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:10px; color:#C8C8CE;">
+            <input type="checkbox" id="mtAutoAdvance" checked onchange="mtSetAutoAdvance(this.checked)" style="cursor:pointer;">
+            <span>曲終了後に次の曲を自動再生</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- CHANNEL ROUTING -->
+      <div class="mt-card">
+        <div class="mt-card-head">CHANNEL ROUTING (パラ出力)</div>
+        <div class="mt-ch-matrix" id="mtChMatrix">
+          <span class="mt-ch-cell" style="text-align:left;">GROUP</span>
+          <span class="mt-ch-cell">DRUMS</span>
+          <span class="mt-ch-cell">BASS</span>
+          <span class="mt-ch-cell">OTHER</span>
+          <span class="mt-ch-cell">VOCAL</span>
+          <span class="mt-ch-cell">CHORUS</span>
+          <span class="mt-ch-cell" style="text-align:left;">L ch</span>
+          <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChBassL"  min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="7" onchange="mtSetCh('vocal','L',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="9" onchange="mtSetCh('chorus','L',this.value)">
+          <span class="mt-ch-cell" style="text-align:left;">R ch</span>
+          <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChBassR"  min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="8" onchange="mtSetCh('vocal','R',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="10" onchange="mtSetCh('chorus','R',this.value)">
+        </div>
+        <div style="font-size:9px; color:#5A5A60; margin-top:8px; letter-spacing:0.5px;">
+          ※ オーディオI/Fが10ch出力に対応していれば自動でパラ送り。それ未満なら通常ステレオにミックス。
+        </div>
+      </div>
+    </div>
+
+    <!-- NOW PLAYING -->
+    <div class="mt-now-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+        <div style="flex:1; min-width:0;">
+          <div class="mt-now-label">NOW PLAYING</div>
+          <div class="mt-now-name" id="mtNowName">— 待機中 —</div>
+          <div class="mt-now-bar"><div class="mt-now-bar-fill" id="mtNowBarFill"></div></div>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="mt-now-time"><span id="mtNowTimeCur">0:00</span> / <span id="mtNowTimeTot">0:00</span></div>
+            <div class="mt-now-status" id="mtNowStatus">SPACE で再生 / 次曲</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-shrink:0;">
+          <button class="mt-btn primary" id="mtPlayBtn" onclick="mtPlayPause()" style="min-width:90px;">▶ PLAY</button>
+          <button class="mt-btn" onclick="mtPlayNext()" title="次の曲へ">NEXT ▶</button>
+          <button class="mt-btn danger" onclick="mtStop()">■ STOP</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETLIST -->
+    <div class="mt-card mt-setlist-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+        <div class="mt-card-head" style="margin-bottom:0;">SETLIST</div>
+        <div style="display:flex; gap:6px;">
+          <button class="mt-btn" onclick="mtAddSong()">＋ 曲を追加</button>
+          <button class="mt-btn" onclick="mtClearAll()" style="color:#6A6A70;">CLEAR ALL</button>
+        </div>
+      </div>
+      <div class="mt-track-headers">
+        <span></span><span></span><span>SONG</span>
+        <span>DRUMS</span><span>BASS</span><span>OTHER</span><span>VOCAL</span><span>CHORUS</span>
+        <span></span>
+      </div>
+      <div class="mt-setlist-list" id="mtSetlistList"></div>
+    </div>
+  </div>
+
+  <!-- 隠しファイル input (MULTI-TRACK 用) -->
+  <input type="file" id="mtFileInput" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.oga,.flac" style="display:none;">
+
     </div><!-- /#rightSide -->
   </div><!-- /.main -->
 
@@ -1641,7 +1827,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.6.2';
+const APP_VERSION = 'v7.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -1871,7 +2057,30 @@ const state = {
     pause:   { midiNote: 63, key: 'Space' },
   },
   // DOOR OPEN MODE
-  appMode: 'sampler', // 'sampler' | 'door'
+  appMode: 'sampler', // 'sampler' | 'door' | 'multi'
+  // MULTI-TRACK MODE
+  multitrack: {
+    outputDeviceId: '',           // selected audio output device (sinkId)
+    outputDeviceLabel: '',
+    outputChannelCount: 2,        // detected channel count of selected device
+    gapSec: 3.0,                  // 曲間の自動隙間
+    autoAdvance: true,
+    channelMap: {                 // 各グループの出力ch（1始まり）
+      drums:  { L: 1, R: 2 },
+      bass:   { L: 3, R: 4 },
+      other:  { L: 5, R: 6 },
+      vocal:  { L: 7, R: 8 },
+      chorus: { L: 9, R: 10 },
+    },
+    songs: [],                    // [{ id, name, tracks: {drums:{sampleId,name}|null, bass:..., ...} }]
+    currentSongIdx: -1,
+    isPlaying: false,
+    // runtime (not persisted)
+    activeSources: [],            // [AudioBufferSourceNode] of current song
+    startTime: 0,                 // ctx.currentTime when current song started
+    songDuration: 0,
+    advanceTimer: null,
+  },
   door: {
     // 2系統の BGM：door = 客入れ、workout = 客出し
     bgm: {
@@ -2811,6 +3020,13 @@ document.addEventListener('keydown', e => {
       return;
     }
     assignLearn({ kind: 'key', value: e.code });
+    e.preventDefault();
+    return;
+  }
+
+  // MULTI-TRACK: Spaceで再生 / 次曲（PAUSEより優先）
+  if (state.appMode === 'multi' && e.code === 'Space') {
+    if (typeof mtSpaceKey === 'function') mtSpaceKey();
     e.preventDefault();
     return;
   }
@@ -4411,18 +4627,23 @@ function setAppMode(m) {
   document.getElementById('rightContent').style.display = (m === 'sampler') ? 'flex' : 'none';
   // DOOR OPEN ページ
   document.getElementById('doorPage').style.display = (m === 'door') ? 'flex' : 'none';
+  // MULTI-TRACK ページ
+  const mtPage = document.getElementById('multiPage');
+  if (mtPage) mtPage.style.display = (m === 'multi') ? 'flex' : 'none';
   // モードタブ
   document.getElementById('modeTabSampler').classList.toggle('active', m === 'sampler');
   document.getElementById('modeTabDoor').classList.toggle('active', m === 'door');
   document.getElementById('modeTabDoor').classList.toggle('door-active', m === 'door');
-  // body にクラスを付けて CSS でモード別の見た目切替（左パネルの一部要素を隠す）
+  const mtTab = document.getElementById('modeTabMulti');
+  if (mtTab) mtTab.classList.toggle('active', m === 'multi');
+  // body にクラスを付けて CSS でモード別の見た目切替
   document.body.classList.toggle('mode-sampler', m === 'sampler');
   document.body.classList.toggle('mode-door', m === 'door');
+  document.body.classList.toggle('mode-multi', m === 'multi');
   doSave();
-  if (m === 'door') {
-    doRenderAll();
-  }
-  // Pad grid の再計算（display 切替後にレイアウト変わる）
+  if (m === 'door') doRenderAll();
+  if (m === 'multi' && typeof mtRenderAll === 'function') mtRenderAll();
+  // Pad grid の再計算
   if (typeof resizePads === 'function') setTimeout(resizePads, 30);
 }
 
@@ -7245,6 +7466,613 @@ function initOutputMode() {
   window.addEventListener('beforeunload', () => bc.postMessage({ event: 'closed' }));
 }
 
+// ===========================
+// MULTI-TRACK MODE
+// ===========================
+// 設計方針：
+//  - 専用 AudioContext で setSinkId 経由でオーディオI/Fへ送出
+//  - ChannelMerger を使って各グループのステレオを任意のch番号へパラ送り
+//  - 全トラックは同じバッファサイズ・サンプルレートで同時 start で完全同期
+//  - 本番中に止まらないよう、AudioBuffer に decode 済みで持ち、source は使い捨て
+//  - 曲の終わり -> gapSec 待機 -> 次曲を auto-advance（trigger は setTimeout で堅牢に）
+
+const MT_GROUPS = ['drums', 'bass', 'other', 'vocal', 'chorus'];
+const MT_GROUP_LABELS = { drums:'DRUMS', bass:'BASS', other:'OTHER', vocal:'VOCAL', chorus:'CHORUS' };
+
+let mtCtx = null;
+let mtMasterGain = null;
+let mtMerger = null;            // ChannelMerger node (size = outputChannelCount)
+let mtDecodedCache = {};        // { sampleId: AudioBuffer }  in-memory cache
+let mtMeterRaf = null;
+
+// state を localStorage 用に整形
+function mtSerialize() {
+  const m = state.multitrack;
+  return {
+    outputDeviceId: m.outputDeviceId,
+    outputDeviceLabel: m.outputDeviceLabel,
+    gapSec: m.gapSec,
+    autoAdvance: m.autoAdvance,
+    channelMap: m.channelMap,
+    songs: m.songs.map(s => ({
+      id: s.id, name: s.name,
+      tracks: Object.fromEntries(
+        Object.entries(s.tracks || {}).map(([g, t]) => [g, t ? { sampleId: t.sampleId, name: t.name } : null])
+      ),
+    })),
+    currentSongIdx: m.currentSongIdx,
+  };
+}
+function mtRestore(saved) {
+  if (!saved) return;
+  const m = state.multitrack;
+  if (saved.outputDeviceId) m.outputDeviceId = saved.outputDeviceId;
+  if (saved.outputDeviceLabel) m.outputDeviceLabel = saved.outputDeviceLabel;
+  if (typeof saved.gapSec === 'number') m.gapSec = saved.gapSec;
+  if (typeof saved.autoAdvance === 'boolean') m.autoAdvance = saved.autoAdvance;
+  if (saved.channelMap) m.channelMap = saved.channelMap;
+  if (Array.isArray(saved.songs)) m.songs = saved.songs.map(s => ({
+    id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
+    name: s.name || '無題',
+    tracks: s.tracks || {},
+  }));
+  if (typeof saved.currentSongIdx === 'number') m.currentSongIdx = saved.currentSongIdx;
+}
+function mtSave() {
+  try {
+    const key = projKey('samplerMultitrack');
+    localStorage.setItem(key, JSON.stringify(mtSerialize()));
+  } catch(e) { console.warn('mtSave failed', e); }
+}
+function mtLoad() {
+  try {
+    const key = projKey('samplerMultitrack');
+    const raw = localStorage.getItem(key);
+    if (raw) mtRestore(JSON.parse(raw));
+  } catch(e) { console.warn('mtLoad failed', e); }
+}
+
+// ---- AudioContext / Routing ----
+async function mtInitCtx() {
+  if (mtCtx) return mtCtx;
+  // 高サンプルレートかつ低遅延寄りで作成
+  mtCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
+  mtMasterGain = mtCtx.createGain();
+  mtMasterGain.gain.value = 1.0;
+  await mtRebuildRouting();
+  return mtCtx;
+}
+
+// destination のチャンネル数を更新し、ChannelMerger を再構築
+async function mtRebuildRouting() {
+  if (!mtCtx) return;
+  const maxCh = mtCtx.destination.maxChannelCount || 2;
+  const needCh = mtMaxAssignedChannel();
+  const ch = Math.min(maxCh, Math.max(2, needCh));
+  try {
+    mtCtx.destination.channelCount = ch;
+    mtCtx.destination.channelCountMode = 'explicit';
+    mtCtx.destination.channelInterpretation = 'discrete';
+  } catch(e) {
+    console.warn('destination channelCount set failed', e);
+  }
+  state.multitrack.outputChannelCount = ch;
+  // 既存ノードを切断・破棄
+  try { if (mtMerger) mtMerger.disconnect(); } catch(_) {}
+  mtMerger = mtCtx.createChannelMerger(ch);
+  mtMerger.connect(mtMasterGain);
+  try { mtMasterGain.disconnect(); } catch(_) {}
+  mtMasterGain.connect(mtCtx.destination);
+  mtUpdateChStatus();
+}
+
+function mtMaxAssignedChannel() {
+  let max = 2;
+  for (const g of MT_GROUPS) {
+    const cm = state.multitrack.channelMap[g];
+    if (!cm) continue;
+    max = Math.max(max, cm.L|0, cm.R|0);
+  }
+  return max;
+}
+
+function mtUpdateChStatus() {
+  const cc = document.getElementById('mtChCount');
+  const cs = document.getElementById('mtChStatus');
+  if (cc) cc.textContent = state.multitrack.outputChannelCount + ' ch';
+  if (cs) {
+    const max = mtCtx ? mtCtx.destination.maxChannelCount : 2;
+    cs.textContent = `デバイス最大 ${max} ch（必要 ${mtMaxAssignedChannel()} ch）`;
+  }
+}
+
+// ---- デバイス一覧 / 選択 ----
+async function mtRefreshDevices() {
+  const sel = document.getElementById('mtDeviceSelect');
+  if (!sel) return;
+  // 権限取得（labels を見せるため）
+  try { await navigator.mediaDevices.getUserMedia({ audio: true }).then(s => s.getTracks().forEach(t => t.stop())); } catch(_) {}
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const outs = devices.filter(d => d.kind === 'audiooutput');
+  sel.innerHTML = '';
+  if (outs.length === 0) {
+    sel.innerHTML = '<option value="">(デバイスなし)</option>';
+    return;
+  }
+  // デフォルト＋検出済み
+  const opt0 = document.createElement('option');
+  opt0.value = ''; opt0.textContent = '— システムデフォルト —';
+  sel.appendChild(opt0);
+  outs.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.deviceId;
+    o.textContent = d.label || `出力 ${d.deviceId.slice(0, 6)}`;
+    sel.appendChild(o);
+  });
+  // 復元
+  sel.value = state.multitrack.outputDeviceId || '';
+}
+
+async function mtSetDevice(deviceId) {
+  state.multitrack.outputDeviceId = deviceId || '';
+  // ラベル更新
+  const sel = document.getElementById('mtDeviceSelect');
+  if (sel && sel.selectedOptions[0]) state.multitrack.outputDeviceLabel = sel.selectedOptions[0].textContent;
+  await mtInitCtx();
+  // AudioContext は setSinkId に対応していないバージョンがあるため try
+  try {
+    if (typeof mtCtx.setSinkId === 'function') {
+      await mtCtx.setSinkId(deviceId || '');
+      showToast(`出力デバイス: ${state.multitrack.outputDeviceLabel || 'デフォルト'}`);
+    } else {
+      // 古いブラウザでは出力は変えられない
+      console.warn('AudioContext.setSinkId 未対応 — システム設定で切替えてください');
+      showToast('⚠️ AudioContext.setSinkId 未対応。Chrome 110+ を使ってください。');
+    }
+  } catch(e) {
+    console.error('setSinkId failed', e);
+    showToast('出力デバイス切替失敗: ' + (e.message || e));
+  }
+  await mtRebuildRouting();
+  mtSave();
+}
+
+function mtSetCh(group, side, val) {
+  const v = Math.max(1, parseInt(val, 10) || 1);
+  state.multitrack.channelMap[group][side] = v;
+  mtSave();
+  if (mtCtx) mtRebuildRouting();
+}
+
+function mtSetGap(val) {
+  let v = parseFloat(val);
+  if (!isFinite(v) || v < 0) v = 0;
+  if (v > 60) v = 60;
+  state.multitrack.gapSec = v;
+  mtSave();
+}
+
+function mtSetAutoAdvance(checked) {
+  state.multitrack.autoAdvance = !!checked;
+  mtSave();
+}
+
+// ---- 曲の追加・削除 ----
+function mtAddSong() {
+  const id = 'mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  state.multitrack.songs.push({ id, name: `曲 ${state.multitrack.songs.length + 1}`, tracks: {} });
+  if (state.multitrack.currentSongIdx < 0) state.multitrack.currentSongIdx = 0;
+  mtSave();
+  mtRenderSetlist();
+}
+
+function mtDeleteSong(idx) {
+  if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  state.multitrack.songs.splice(idx, 1);
+  if (state.multitrack.currentSongIdx >= state.multitrack.songs.length) {
+    state.multitrack.currentSongIdx = state.multitrack.songs.length - 1;
+  }
+  if (state.multitrack.isPlaying && state.multitrack.currentSongIdx < 0) mtStop();
+  mtSave();
+  mtRenderSetlist();
+  mtRenderNow();
+}
+
+function mtRenameSong(idx, name) {
+  if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  state.multitrack.songs[idx].name = name || '無題';
+  mtSave();
+  mtRenderNow();
+}
+
+function mtClearAll() {
+  if (!confirm('セットリストを全クリアしますか？（音源ファイルは IndexedDB から削除されます）')) return;
+  // IDB からも削除
+  for (const s of state.multitrack.songs) {
+    for (const g of MT_GROUPS) {
+      const t = s.tracks && s.tracks[g];
+      if (t && t.sampleId) { try { deleteSampleFromDB(t.sampleId); } catch(_) {} }
+    }
+  }
+  mtStop();
+  state.multitrack.songs = [];
+  state.multitrack.currentSongIdx = -1;
+  mtDecodedCache = {};
+  mtSave();
+  mtRenderSetlist();
+  mtRenderNow();
+}
+
+// ---- トラック読込 ----
+async function mtLoadTrackFile(songIdx, group, file) {
+  if (!file) return;
+  if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
+  try {
+    await mtInitCtx();
+    if (mtCtx.state === 'suspended') await mtCtx.resume();
+    const slot = document.querySelector(`[data-mt-slot="${songIdx}-${group}"]`);
+    if (slot) { slot.classList.add('loading'); slot.textContent = 'LOADING…'; }
+    const arrBuf = await file.arrayBuffer();
+    const sampleId = `mt-${state.multitrack.songs[songIdx].id}-${group}`;
+    // 既存があれば置き換え
+    try { await deleteSampleFromDB(sampleId); } catch(_) {}
+    try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
+      console.warn('mt saveSampleToDB failed', e);
+      showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
+    }
+    // decode してキャッシュ
+    const buffer = await mtCtx.decodeAudioData(arrBuf.slice(0));
+    mtDecodedCache[sampleId] = buffer;
+    state.multitrack.songs[songIdx].tracks[group] = { sampleId, name: file.name };
+    mtSave();
+    mtRenderSetlist();
+    mtRenderNow();
+    showToast(`${MT_GROUP_LABELS[group]} 読込: ${file.name} (${buffer.duration.toFixed(1)}秒)`);
+  } catch(e) {
+    console.error('mtLoadTrackFile failed', e);
+    showToast('読込失敗: ' + (e.message || e));
+    mtRenderSetlist();
+  }
+}
+
+async function mtRemoveTrack(songIdx, group) {
+  const s = state.multitrack.songs[songIdx];
+  if (!s) return;
+  const t = s.tracks && s.tracks[group];
+  if (!t) return;
+  if (t.sampleId) {
+    delete mtDecodedCache[t.sampleId];
+    try { await deleteSampleFromDB(t.sampleId); } catch(_) {}
+  }
+  delete s.tracks[group];
+  mtSave();
+  mtRenderSetlist();
+}
+
+// IDB からバッファ復元（ページ起動時）
+async function mtRestoreBuffers() {
+  if (!state.multitrack.songs.length) return;
+  await mtInitCtx();
+  for (const s of state.multitrack.songs) {
+    for (const g of MT_GROUPS) {
+      const t = s.tracks && s.tracks[g];
+      if (!t || !t.sampleId) continue;
+      if (mtDecodedCache[t.sampleId]) continue;
+      try {
+        const rec = await getSampleFromDB(t.sampleId);
+        if (rec && rec.data) {
+          const buf = await mtCtx.decodeAudioData(rec.data.slice(0));
+          mtDecodedCache[t.sampleId] = buf;
+        }
+      } catch(e) { console.warn('mt decode restore failed', t.sampleId, e); }
+    }
+  }
+  mtRenderSetlist();
+}
+
+// ---- 再生エンジン ----
+async function mtPlaySong(idx) {
+  if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  await mtInitCtx();
+  if (mtCtx.state === 'suspended') await mtCtx.resume();
+  mtStopSources(); // 念のため停止
+  const song = state.multitrack.songs[idx];
+  const groupBuffers = {};
+  let hasAny = false;
+  let maxDur = 0;
+  for (const g of MT_GROUPS) {
+    const t = song.tracks && song.tracks[g];
+    if (!t || !t.sampleId) continue;
+    const buf = mtDecodedCache[t.sampleId];
+    if (buf) { groupBuffers[g] = buf; hasAny = true; maxDur = Math.max(maxDur, buf.duration); }
+  }
+  if (!hasAny) {
+    showToast('再生するトラックがありません');
+    return;
+  }
+  // 全グループの source を作って同時 start
+  const when = mtCtx.currentTime + 0.05; // 少し未来でスケジュール
+  const sources = [];
+  for (const g of MT_GROUPS) {
+    const buf = groupBuffers[g];
+    if (!buf) continue;
+    const src = mtCtx.createBufferSource();
+    src.buffer = buf;
+    const cm = state.multitrack.channelMap[g];
+    const chL = Math.max(1, cm.L|0) - 1;
+    const chR = Math.max(1, cm.R|0) - 1;
+    // バッファのチャンネル数で分岐
+    if (buf.numberOfChannels >= 2 && mtMerger.numberOfInputs > Math.max(chL, chR)) {
+      // ステレオ → 個別ch
+      const splitter = mtCtx.createChannelSplitter(2);
+      src.connect(splitter);
+      splitter.connect(mtMerger, 0, chL);
+      splitter.connect(mtMerger, 1, chR);
+    } else if (buf.numberOfChannels === 1 && mtMerger.numberOfInputs > chL) {
+      // モノラル → L のみ
+      src.connect(mtMerger, 0, chL);
+      if (chL !== chR && mtMerger.numberOfInputs > chR) src.connect(mtMerger, 0, chR);
+    } else {
+      // チャンネル数が足りない場合は通常出力（master 経由でステレオダウンミックス）
+      src.connect(mtMasterGain);
+    }
+    src.start(when);
+    sources.push(src);
+  }
+  state.multitrack.activeSources = sources;
+  state.multitrack.startTime = when;
+  state.multitrack.songDuration = maxDur;
+  state.multitrack.currentSongIdx = idx;
+  state.multitrack.isPlaying = true;
+  // 終了時 auto-advance
+  if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+  if (state.multitrack.autoAdvance) {
+    const totalMs = (maxDur + state.multitrack.gapSec) * 1000 + 50;
+    state.multitrack.advanceTimer = setTimeout(() => {
+      const next = state.multitrack.currentSongIdx + 1;
+      if (next < state.multitrack.songs.length) {
+        mtPlaySong(next);
+      } else {
+        mtStop();
+        showToast('セットリスト終了');
+      }
+    }, totalMs);
+  } else {
+    // auto-advance OFF でも songDuration 経過で isPlaying=false に
+    state.multitrack.advanceTimer = setTimeout(() => {
+      state.multitrack.isPlaying = false;
+      mtRenderNow();
+    }, maxDur * 1000 + 50);
+  }
+  mtRenderSetlist();
+  mtRenderNow();
+  mtStartMeter();
+}
+
+function mtStopSources() {
+  for (const src of state.multitrack.activeSources) {
+    try { src.stop(0); } catch(_) {}
+    try { src.disconnect(); } catch(_) {}
+  }
+  state.multitrack.activeSources = [];
+  if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+}
+
+function mtStop() {
+  mtStopSources();
+  state.multitrack.isPlaying = false;
+  mtStopMeter();
+  mtRenderSetlist();
+  mtRenderNow();
+}
+
+function mtPlayPause() {
+  if (state.multitrack.isPlaying) {
+    mtStop();
+  } else {
+    const idx = Math.max(0, state.multitrack.currentSongIdx);
+    if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+    mtPlaySong(idx);
+  }
+}
+
+function mtPlayNext() {
+  const next = (state.multitrack.currentSongIdx < 0) ? 0 : state.multitrack.currentSongIdx + 1;
+  if (next >= state.multitrack.songs.length) {
+    mtStop();
+    showToast('セットリスト終了');
+    return;
+  }
+  mtPlaySong(next);
+}
+
+// SPACE キーハンドラ
+function mtSpaceKey() {
+  if (!state.multitrack.isPlaying) {
+    // 停止中：現在のインデックスから再生
+    const idx = Math.max(0, state.multitrack.currentSongIdx);
+    if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+    mtPlaySong(idx);
+  } else {
+    // 再生中：次の曲へ
+    mtPlayNext();
+  }
+}
+
+// ---- 表示更新 ----
+function mtRenderAll() {
+  mtRefreshDevices();
+  mtUpdateChStatus();
+  // input 復元
+  for (const g of MT_GROUPS) {
+    const cm = state.multitrack.channelMap[g];
+    const inL = document.getElementById('mtCh' + g[0].toUpperCase() + g.slice(1) + 'L');
+    const inR = document.getElementById('mtCh' + g[0].toUpperCase() + g.slice(1) + 'R');
+    if (inL) inL.value = cm.L;
+    if (inR) inR.value = cm.R;
+  }
+  const gapInput = document.getElementById('mtGapSec');
+  if (gapInput) gapInput.value = state.multitrack.gapSec;
+  const autoCB = document.getElementById('mtAutoAdvance');
+  if (autoCB) autoCB.checked = state.multitrack.autoAdvance;
+  mtRenderSetlist();
+  mtRenderNow();
+}
+
+function mtRenderSetlist() {
+  const list = document.getElementById('mtSetlistList');
+  if (!list) return;
+  list.innerHTML = '';
+  state.multitrack.songs.forEach((song, idx) => {
+    const row = document.createElement('div');
+    row.className = 'mt-song-row';
+    if (idx === state.multitrack.currentSongIdx && state.multitrack.isPlaying) row.classList.add('playing');
+    else if (idx === state.multitrack.currentSongIdx) row.classList.add('queued');
+    // 番号
+    const num = document.createElement('div'); num.className = 'mt-song-num'; num.textContent = String(idx + 1).padStart(2, '0');
+    row.appendChild(num);
+    // ▶ ボタン
+    const playBtn = document.createElement('button'); playBtn.className = 'mt-song-play';
+    playBtn.textContent = (idx === state.multitrack.currentSongIdx && state.multitrack.isPlaying) ? '■' : '▶';
+    playBtn.onclick = () => {
+      if (idx === state.multitrack.currentSongIdx && state.multitrack.isPlaying) mtStop();
+      else mtPlaySong(idx);
+    };
+    row.appendChild(playBtn);
+    // 曲名 input
+    const nameInput = document.createElement('input');
+    nameInput.className = 'mt-song-name-input'; nameInput.value = song.name;
+    nameInput.onchange = () => mtRenameSong(idx, nameInput.value);
+    row.appendChild(nameInput);
+    // 5 グループのスロット
+    for (const g of MT_GROUPS) {
+      const slot = document.createElement('div');
+      slot.className = 'mt-track-slot';
+      slot.dataset.mtSlot = `${idx}-${g}`;
+      const t = song.tracks && song.tracks[g];
+      if (t) {
+        slot.classList.add('has-content');
+        slot.textContent = t.name.length > 8 ? t.name.slice(0, 6) + '…' : t.name;
+        slot.title = `${t.name}\n（クリックで削除）`;
+        slot.onclick = (e) => {
+          if (!confirm(`${MT_GROUP_LABELS[g]} の「${t.name}」を削除しますか？`)) return;
+          mtRemoveTrack(idx, g);
+        };
+      } else {
+        slot.textContent = '+ DROP';
+        slot.title = `クリック or ドラッグで ${MT_GROUP_LABELS[g]} ファイルを選択`;
+        slot.onclick = () => {
+          const inp = document.getElementById('mtFileInput');
+          inp.onchange = (ev) => {
+            const f = ev.target.files && ev.target.files[0];
+            if (f) mtLoadTrackFile(idx, g, f);
+            inp.value = '';
+          };
+          inp.click();
+        };
+      }
+      // Drag-drop（既存／空問わず）
+      slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drop-over'); };
+      slot.ondragleave = () => slot.classList.remove('drop-over');
+      slot.ondrop = (e) => {
+        e.preventDefault();
+        slot.classList.remove('drop-over');
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) mtLoadTrackFile(idx, g, f);
+      };
+      row.appendChild(slot);
+    }
+    // 削除ボタン
+    const del = document.createElement('button'); del.className = 'mt-song-del'; del.textContent = '✕';
+    del.title = '曲を削除';
+    del.onclick = () => {
+      if (confirm(`「${song.name}」を削除しますか？`)) mtDeleteSong(idx);
+    };
+    row.appendChild(del);
+    list.appendChild(row);
+  });
+  if (state.multitrack.songs.length === 0) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'padding:24px; text-align:center; color:#5A5A60; font-size:11px; letter-spacing:1px;';
+    empty.textContent = '＋ 曲を追加 でセットリストを作成';
+    list.appendChild(empty);
+  }
+}
+
+function mtRenderNow() {
+  const m = state.multitrack;
+  const cur = (m.currentSongIdx >= 0) ? m.songs[m.currentSongIdx] : null;
+  const nameEl = document.getElementById('mtNowName');
+  const playBtn = document.getElementById('mtPlayBtn');
+  const status = document.getElementById('mtNowStatus');
+  if (nameEl) nameEl.textContent = cur ? `${String(m.currentSongIdx+1).padStart(2,'0')}. ${cur.name}` : '— 待機中 —';
+  if (playBtn) playBtn.textContent = m.isPlaying ? '■ STOP' : '▶ PLAY';
+  if (status) {
+    if (m.isPlaying) status.textContent = `再生中 — SPACE で次曲`;
+    else if (cur) status.textContent = 'SPACE で再生';
+    else status.textContent = 'セットリストに曲を追加';
+  }
+  mtUpdateProgress();
+}
+
+function mtUpdateProgress() {
+  const m = state.multitrack;
+  const fill = document.getElementById('mtNowBarFill');
+  const cur = document.getElementById('mtNowTimeCur');
+  const tot = document.getElementById('mtNowTimeTot');
+  if (!fill || !cur || !tot) return;
+  if (m.isPlaying && mtCtx) {
+    const t = Math.max(0, mtCtx.currentTime - m.startTime);
+    const d = m.songDuration || 0;
+    const pct = d > 0 ? Math.min(100, (t / d) * 100) : 0;
+    fill.style.width = pct + '%';
+    cur.textContent = mtFmtTime(t);
+    tot.textContent = mtFmtTime(d);
+  } else {
+    fill.style.width = '0%';
+    cur.textContent = '0:00';
+    tot.textContent = mtFmtTime(m.songDuration || 0);
+  }
+}
+
+function mtFmtTime(s) {
+  if (!isFinite(s) || s < 0) s = 0;
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+function mtStartMeter() {
+  if (mtMeterRaf) return;
+  const tick = () => {
+    mtUpdateProgress();
+    if (state.multitrack.isPlaying) mtMeterRaf = requestAnimationFrame(tick);
+    else mtMeterRaf = null;
+  };
+  mtMeterRaf = requestAnimationFrame(tick);
+}
+function mtStopMeter() {
+  if (mtMeterRaf) { cancelAnimationFrame(mtMeterRaf); mtMeterRaf = null; }
+}
+
+// デバイス変化を監視（USB の抜き差し）
+if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+  navigator.mediaDevices.addEventListener('devicechange', async () => {
+    if (state.appMode === 'multi') {
+      await mtRefreshDevices();
+      mtUpdateChStatus();
+      showToast('オーディオデバイス変化を検知');
+    }
+  });
+}
+
+// MULTI-TRACK 初期化（init から呼ぶ）
+async function mtInit() {
+  mtLoad();
+  // バッファ復元は async でバックグラウンド
+  mtRestoreBuffers().catch(e => console.warn('mtRestoreBuffers failed', e));
+}
+
 async function init() {
   // 出力モードで起動された場合は別ルートへ
   if (new URLSearchParams(location.search).get('mode') === 'output') {
@@ -7337,6 +8165,9 @@ async function init() {
 
   // DOOR OPEN MODE init
   doInit();
+
+  // MULTI-TRACK MODE init
+  mtInit();
 }
 
 init();
