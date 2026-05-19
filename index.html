@@ -2812,7 +2812,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.25.2';
+const APP_VERSION = 'v7.25.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10448,6 +10448,8 @@ function mtRenderSetlist() {
       mtLoadMultipleFiles(newIdx, files);
     }
   };
+  // ファイル数バッジ等を最新化するため、セットリスト更新時はミキサーも再描画
+  mtRenderMixer();
 }
 
 function mtRenderNow() {
