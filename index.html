@@ -1553,6 +1553,7 @@
   }
   .mt-right-stack {
     display: flex; flex-direction: column; gap: 8px; min-width: 0;
+    align-self: start;
   }
 
   /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
@@ -1596,7 +1597,8 @@
     background: linear-gradient(180deg, #131316, #0E0E12);
     border: 0.5px solid #1F1F22; border-radius: 10px; padding: 10px 12px 12px;
     box-shadow: 0 2px 24px rgba(0,0,0,0.4);
-    display: flex; flex-direction: column; min-width: 0;
+    min-width: 0;
+    align-self: start;        /* bottom-row grid セル内で縦伸びしない */
   }
   /* FADE OUT を MIXER カード右上にフロート（ヘッダーなしの分スペース節約） */
   .mt-fadeout-float {
@@ -1605,7 +1607,7 @@
   .mt-mixer-strips {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
     padding: 0;
-    flex: 1; min-height: 0;
+    /* flex:1 を外す — strip は内容に応じた自然サイズに */
   }
   .mt-strip {
     position: relative;
@@ -2527,7 +2529,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.2';
+const APP_VERSION = 'v7.10.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
