@@ -1862,6 +1862,21 @@
     background: linear-gradient(180deg, rgba(240,199,94,0.18) 0%, #101013 80%) !important;
     box-shadow: 0 0 12px rgba(240,199,94,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
   }
+  /* ready-for-file: 選択中の曲で空のグループは "ファイル待ち" を緑でゆっくりパルス */
+  .mt-strip.ready-for-file {
+    animation: mtStripReady 1.9s ease-in-out infinite;
+  }
+  .mt-strip.ready-for-file.drop-target { animation: none; } /* hover中はパルス止める */
+  @keyframes mtStripReady {
+    0%, 100% {
+      border-color: #1F1F22;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    }
+    50% {
+      border-color: rgba(125,184,158,0.55);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 10px rgba(125,184,158,0.25);
+    }
+  }
   /* 行も drop target ハイライト */
   .mt-song-row.drop-target {
     border-color: #7DB89E !important;
@@ -2470,8 +2485,8 @@
           <span class="mt-section-title">SETLIST</span>
           <span class="mt-section-count" id="mtSetlistCount">0 SONGS</span>
           <!-- 使い方ヒント -->
-          <div class="mt-legend" title="ファイルを曲にドロップ → 右下 SELECTED SONG から フェーダーへドラッグしてアサイン">
-            <span class="mt-legend-lbl" style="color:#7DB89E;">＋曲を作って → ファイルをドロップ → SELECTED SONG → フェーダーへ drag</span>
+          <div class="mt-legend" title="① ＋ ADD SONG で曲枠を作成 ② 空いたフェーダー（パルス中）に音声ファイルを直接ドロップ">
+            <span class="mt-legend-lbl" style="color:#7DB89E;">＋ ADD SONG → パルス中のフェーダーへ直接 drop</span>
           </div>
         </div>
         <div class="mt-section-actions">
@@ -2603,7 +2618,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.14';
+const APP_VERSION = 'v7.15';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8868,20 +8883,8 @@ async function mtRobustDecode(arrayBuffer, file) {
   }
 }
 
-// 曲の "unassigned" プールにファイルを追加する（自動グループ割り当てはしない）
-// targetGroup を指定すれば直接そのグループに入れる（drag-drop でアサイン時など）
-async function mtLoadTrackFile(songIdx, fileOrGroup, fileOrHandle, handleArg, targetGroup) {
-  // 後方互換: 旧シグネチャ mtLoadTrackFile(songIdx, group, file, handle) もサポート
-  let file, handle;
-  if (typeof fileOrGroup === 'string') {
-    // 旧呼び出し: group は無視（自動アサインしない）
-    targetGroup = null;
-    file = fileOrHandle;
-    handle = handleArg;
-  } else {
-    file = fileOrGroup;
-    handle = fileOrHandle;
-  }
+// ファイルを読み込んで対象グループに割当（targetGroup=null なら unassigned プールに）
+async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
   if (!file) return;
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
   try {
@@ -8940,10 +8943,45 @@ async function _mtDecodeOrThrow(arrayBuffer, label) {
   return mtRobustDecode(arrayBuffer, { name: label || 'restore' });
 }
 
+// 指定 sampleId のバッファを必要に応じて lazy-load して mtDecodedCache に乗せる。
+// 戻り値: AudioBuffer or null。askPermission=true なら handle に permission 要求も行う。
+async function mtEnsureBufferLoaded(sampleId, askPermission = false) {
+  if (mtDecodedCache[sampleId]) return mtDecodedCache[sampleId];
+  await mtInitCtx();
+  // 1) handle 優先
+  try {
+    const rec = await mtGetHandleFromDB(sampleId);
+    if (rec && rec.handle) {
+      let perm = 'denied';
+      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+      if (perm !== 'granted' && askPermission) {
+        try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
+      }
+      if (perm === 'granted') {
+        const f = await rec.handle.getFile();
+        const arr = await f.arrayBuffer();
+        const buf = await mtRobustDecode(arr, f);
+        mtDecodedCache[sampleId] = buf;
+        return buf;
+      }
+    }
+  } catch (e) { console.warn('mtEnsureBufferLoaded handle path failed', sampleId, e); }
+  // 2) blob フォールバック
+  try {
+    const rec = await getSampleFromDB(sampleId);
+    if (rec && rec.data) {
+      const buf = await mtRobustDecode(rec.data, { name: rec.name || sampleId });
+      mtDecodedCache[sampleId] = buf;
+      return buf;
+    }
+  } catch (e) { console.warn('mtEnsureBufferLoaded blob path failed', sampleId, e); }
+  return null;
+}
+
 // SELECTED SONG → mixer fader の drag で呼ばれる
 // 指定 sampleId のファイルを、target グループに割り当てる
 // 元の場所（unassigned もしくは別グループ）からは外す
-function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
+async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
   if (!MT_GROUPS.includes(targetGroup)) return;
   const song = state.multitrack.songs[songIdx];
   if (!song) return;
@@ -8952,21 +8990,37 @@ function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
   let entry = null;
   const ui = song.unassigned.findIndex(u => u.sampleId === sampleId);
   if (ui >= 0) {
-    entry = song.unassigned.splice(ui, 1)[0];
+    entry = song.unassigned[ui];
   } else {
     for (const g of MT_GROUPS) {
       if (song.tracks[g] && song.tracks[g].sampleId === sampleId) {
         if (g === targetGroup) return; // 既にそこにある
         entry = song.tracks[g];
-        delete song.tracks[g];
         break;
       }
     }
   }
   if (!entry) return;
-  // 2) target に既存があれば unassigned に追い出す
+  // 1.5) バッファが未ロードなら lazy-load（permission 要求あり）
+  //     これを assign 前に行うことで、再生時に「ファイルがない」を防ぐ
+  if (!mtDecodedCache[sampleId]) {
+    const buf = await mtEnsureBufferLoaded(sampleId, true);
+    if (!buf) {
+      showToast('⚠️ ファイルが復元できません。再ドロップしてください: ' + entry.name);
+      console.error('[mt] assign failed: buffer not loadable', { sampleId, entry });
+      return;
+    }
+  }
+  // 2) src から外す
+  if (ui >= 0) song.unassigned.splice(ui, 1);
+  else {
+    for (const g of MT_GROUPS) {
+      if (song.tracks[g] && song.tracks[g].sampleId === sampleId) { delete song.tracks[g]; break; }
+    }
+  }
+  // 3) target に既存があれば unassigned に追い出す
   if (song.tracks[targetGroup]) song.unassigned.push(song.tracks[targetGroup]);
-  // 3) 割り当て
+  // 4) 割り当て
   song.tracks[targetGroup] = entry;
   mtSave();
   mtRecomputeSongDuration();
@@ -9474,13 +9528,16 @@ function mtRenderMixer() {
   if (!host) return;
   host.innerHTML = '';
   const anySolo = MT_GROUPS.some(g => state.multitrack.groupSolo[g]);
+  // 選択中の曲のうち、空のグループ = drop target としてパルスさせる
+  const selSong = state.multitrack.songs[state.multitrack.selectedIdx];
   for (const g of MT_GROUPS) {
     const strip = document.createElement('div');
     strip.className = 'mt-strip';
     if (state.multitrack.groupMute[g]) strip.classList.add('muted');
     if (state.multitrack.groupSolo[g]) strip.classList.add('solo');
-    // 他に solo がある + 自分は solo じゃない場合は dim
     if (anySolo && !state.multitrack.groupSolo[g] && !state.multitrack.groupMute[g]) strip.classList.add('dimmed');
+    // ready-for-file: 選択中の曲があり、このグループが空のとき
+    if (selSong && !(selSong.tracks && selSong.tracks[g])) strip.classList.add('ready-for-file');
     strip.dataset.mtStrip = g;
     strip.style.color = MT_GROUP_COLORS[g]; // currentColor 経由で glow に使う
 
@@ -9541,26 +9598,60 @@ function mtRenderMixer() {
     btns.appendChild(solo);
     strip.appendChild(btns);
 
-    // SELECTED SONG からのドラッグを受け付ける drop target に
+    // drop target:
+    //   1) 内部 drag (SELECTED SONG → fader / 別 fader → fader)  = グループ間移動
+    //   2) 外部ファイル (Finder / Explorer) drop                  = 直接ロード & 割当
     strip.addEventListener('dragover', (e) => {
-      const types = e.dataTransfer.types || [];
-      if (!Array.from(types).includes('application/x-mt-file')) return;
+      const types = Array.from(e.dataTransfer.types || []);
+      const isMtFile = types.includes('application/x-mt-file');
+      const isExternal = types.includes('Files');
+      if (!isMtFile && !isExternal) return;
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
+      e.dataTransfer.dropEffect = isMtFile ? 'move' : 'copy';
       strip.classList.add('drop-target');
     });
     strip.addEventListener('dragleave', () => strip.classList.remove('drop-target'));
-    strip.addEventListener('drop', (e) => {
-      const types = e.dataTransfer.types || [];
-      if (!Array.from(types).includes('application/x-mt-file')) return;
+    strip.addEventListener('drop', async (e) => {
+      const types = Array.from(e.dataTransfer.types || []);
       e.preventDefault();
       strip.classList.remove('drop-target');
-      try {
-        const payload = JSON.parse(e.dataTransfer.getData('application/x-mt-file'));
-        if (payload && payload.sampleId) {
-          mtAssignFileToGroup(payload.songIdx, payload.sampleId, g);
+      // (1) 内部 drag: グループ間で再ルート
+      if (types.includes('application/x-mt-file')) {
+        try {
+          const payload = JSON.parse(e.dataTransfer.getData('application/x-mt-file'));
+          if (payload && payload.sampleId) {
+            await mtAssignFileToGroup(payload.songIdx, payload.sampleId, g);
+          }
+        } catch(err) { console.warn('mt strip drop parse failed', err); }
+        return;
+      }
+      // (2) 外部ファイル drop: 選択中の曲に対し、このグループに直接アサイン
+      if (types.includes('Files')) {
+        const idx = state.multitrack.selectedIdx;
+        if (idx < 0 || idx >= state.multitrack.songs.length) {
+          showToast('先に曲を選択してください'); return;
         }
-      } catch(err) { console.warn('mt strip drop parse failed', err); }
+        const items = await mtExtractFilesWithHandles(e.dataTransfer);
+        if (items.length === 0) return;
+        // 最初の 1 個をこのグループへ、残りは隣接する空きグループへ順次
+        await mtLoadTrackFile(idx, items[0].file, items[0].handle, g);
+        if (items.length > 1) {
+          // このグループ以降の空きグループに順番に
+          const startPos = MT_GROUPS.indexOf(g);
+          const song = state.multitrack.songs[idx];
+          let fileI = 1;
+          for (let i = 1; i < MT_GROUPS.length && fileI < items.length; i++) {
+            const targetG = MT_GROUPS[(startPos + i) % MT_GROUPS.length];
+            if (!song.tracks[targetG]) {
+              await mtLoadTrackFile(idx, items[fileI].file, items[fileI].handle, targetG);
+              fileI++;
+            }
+          }
+          if (fileI < items.length) {
+            showToast(`⚠️ ${items.length} 個中 ${fileI} 個割当 / ${items.length - fileI} 個は空き不足でスキップ`);
+          }
+        }
+      }
     });
 
     host.appendChild(strip);
@@ -9750,8 +9841,29 @@ function mtRenderSetlist() {
       row.classList.remove('drop-target');
       const items = await mtExtractFilesWithHandles(e.dataTransfer);
       if (items.length === 0) return;
-      // 単一/複数とも unassigned プールに（自動アサインしない）
-      mtLoadMultipleFiles(idx, items);
+      // 行ドロップ: その曲の空グループに左→右の順で自動配分
+      // ※ 自動推定なし、単純な位置ベースの順次割当
+      // 曲を選択状態にしてからフェーダーへ直接ドロップでも OK
+      state.multitrack.selectedIdx = idx;
+      mtRecomputeSongDuration();
+      const song = state.multitrack.songs[idx];
+      // 曲名がデフォルトのままなら共通プレフィクスから付ける
+      if (/^曲 \d+$/.test(song.name) && items.length >= 2) {
+        const guessed = mtGuessSongName(items.map(it => it.file));
+        if (guessed) { song.name = guessed; mtSave(); }
+      }
+      let fileI = 0;
+      for (const g of MT_GROUPS) {
+        if (fileI >= items.length) break;
+        if (song.tracks && song.tracks[g]) continue; // 既存はスキップ
+        const it = items[fileI++];
+        await mtLoadTrackFile(idx, it.file, it.handle, g);
+      }
+      if (fileI < items.length) {
+        showToast(`⚠️ ${items.length} 個中 ${fileI} 個割当 / 空き不足 ${items.length - fileI} 個`);
+      } else {
+        showToast(`✓ ${fileI} 個をフェーダーへ自動割当`);
+      }
     };
     // 曲後の挙動：AUTO（次曲へ）/ STOP（停止）+ delay 秒数
     const autoNext = song.autoNext === 'stop' ? 'stop' : 'auto';
@@ -9935,62 +10047,23 @@ function mtRenderSongInfo() {
     list.appendChild(row);
   }
 
-  // === UNASSIGNED プール ===
+  // 旧バージョンで蓄積された unassigned があれば自動で空きグループへ流し込む
+  // （新WFはフェーダー直接ドロップなので pool UI は廃止）
   const unassigned = song.unassigned || [];
   if (unassigned.length > 0) {
-    const head = document.createElement('div');
-    head.className = 'mt-songinfo-pool-head';
-    head.innerHTML = `📦 UNASSIGNED <span style="color:#5A5A60;font-weight:400;">— フェーダーへドラッグでアサイン</span>`;
-    list.appendChild(head);
-    unassigned.forEach((u) => {
-      const row = document.createElement('div');
-      row.className = 'mt-songinfo-row pool';
-      row.draggable = true;
-      row.dataset.sampleId = u.sampleId;
-      row.title = 'フェーダーにドラッグでグループへ割当';
-      row.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('application/x-mt-file', JSON.stringify({
-          songIdx: idx, sampleId: u.sampleId, name: u.name, fromGroup: null
-        }));
-        e.dataTransfer.effectAllowed = 'move';
-        row.classList.add('dragging');
-      });
-      row.addEventListener('dragend', () => row.classList.remove('dragging'));
-      // 完全削除（IDB から消す）
-      const del = document.createElement('button');
-      del.className = 'mt-songinfo-del';
-      del.textContent = '✕';
-      del.title = 'このファイルを削除';
-      del.onclick = async (e) => {
-        e.stopPropagation();
-        if (!confirm(`「${u.name}」を削除しますか？`)) return;
-        // IDB から削除
-        try { await deleteSampleFromDB(u.sampleId); } catch(_) {}
-        try { await mtDeleteHandleFromDB(u.sampleId); } catch(_) {}
-        delete mtDecodedCache[u.sampleId];
-        const i = song.unassigned.findIndex(x => x.sampleId === u.sampleId);
-        if (i >= 0) song.unassigned.splice(i, 1);
-        mtSave();
-        mtRenderSetlist();
-        mtRenderNow();
-      };
-      const dot2 = document.createElement('span');
-      dot2.className = 'mt-songinfo-dot';
-      dot2.style.background = '#5A5A60';
-      row.appendChild(dot2);
-      const lbl2 = document.createElement('span');
-      lbl2.className = 'mt-songinfo-lbl';
-      lbl2.textContent = '··';
-      lbl2.style.color = '#6A6A70';
-      row.appendChild(lbl2);
-      const fname2 = document.createElement('span');
-      fname2.className = 'mt-songinfo-fname';
-      fname2.textContent = u.name;
-      fname2.title = u.name;
-      row.appendChild(fname2);
-      row.appendChild(del);
-      list.appendChild(row);
-    });
+    let migrated = 0;
+    for (const g of MT_GROUPS) {
+      if (unassigned.length === 0) break;
+      if (song.tracks && song.tracks[g]) continue;
+      song.tracks[g] = unassigned.shift();
+      migrated++;
+    }
+    if (migrated > 0) {
+      mtSave();
+      showToast(`旧プールから ${migrated} 個を空フェーダーへ自動割当`);
+      // 再描画で反映
+      setTimeout(() => mtRenderSongInfo(), 50);
+    }
   }
 }
 
