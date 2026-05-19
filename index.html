@@ -1249,12 +1249,13 @@
     border-color: #C99828;
     box-shadow: 0 0 12px rgba(240,199,94,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
   }
-  /* NOW → NEXT を繋ぐ矢印（囲みなし、文字だけ） */
+  /* NOW → NEXT を繋ぐ矢印（囲みなし、文字だけ）
+     margin-left: auto で右側ブロックを右端に押し出す */
   .mt-hero-arrow {
     font-size: 26px; font-weight: 300;
     color: #6A6A75;
     flex-shrink: 0;
-    margin: 0 4px;
+    margin: 0 4px 0 auto;
     line-height: 1;
   }
   /* 次の曲名タイトル — NOW のタイトルと同じ流儀で表示 */
@@ -2850,7 +2851,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.29.0';
+const APP_VERSION = 'v7.29.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
