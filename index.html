@@ -634,7 +634,37 @@
 
   /* DOOR OPEN PAGE */
   #doorPage { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
-  .do-top { display: grid; grid-template-columns: minmax(380px, 1.8fr) 1fr 1fr; gap: 8px; }
+  .do-top { display: grid; grid-template-columns: minmax(340px, 1.4fr) 1fr 1fr 0.9fr; gap: 8px; }
+  /* LOGO カード（amber #C9A96A テーマ） */
+  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+  .do-logo-head-row { display: flex; align-items: center; gap: 6px; }
+  .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
+    background: rgba(201,169,106,0.18); color: #C9A96A;
+  }
+  .do-logo-sub { font-size: 9px; color: #6A6A70; }
+  .do-logo-name { font-size: 11px; color: #C8C8CE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .do-logo-thumb {
+    width: 100%; flex: 1; min-height: 60px;
+    background: linear-gradient(135deg, #1A1208, #3A2818);
+    border-radius: 4px; border: 0.5px solid rgba(201,169,106,0.3);
+    display: flex; align-items: center; justify-content: center;
+    color: #C9A96A; font-size: 18px; overflow: hidden;
+  }
+  .do-logo-thumb img, .do-logo-thumb video { width: 100%; height: 100%; object-fit: cover; }
+  .do-logo-thumb.empty {
+    background: transparent; border-style: dashed;
+    cursor: pointer; color: #6A6A70; font-size: 10px;
+  }
+  .do-logo-thumb.empty:hover { border-color: #C9A96A; color: #C9A96A; }
+  .do-logo-actions { display: flex; gap: 6px; }
+  .do-logo-btn {
+    background: transparent; border: 0.5px solid rgba(201,169,106,0.35); color: #C9A96A;
+    padding: 4px 10px; border-radius: 3px; font-size: 9px; letter-spacing: 1px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .do-logo-btn:hover { background: rgba(201,169,106,0.1); }
+  .do-logo-btn.del { color: #E24B4A; border-color: rgba(226,75,74,0.35); }
+  .do-logo-btn.del:hover { background: rgba(226,75,74,0.1); }
   /* DUCK 横長ストリップ */
   .do-duck-strip {
     display: flex; align-items: center; gap: 14px;
@@ -1135,9 +1165,13 @@
 <body>
 
   <!-- ====================== OUTPUT MODE (sub-monitor) ====================== -->
-  <!-- ?mode=output で別ウィンドウとして起動。普段は完全黒、コマンド受信で映像再生。 -->
+  <!-- ?mode=output で別ウィンドウとして起動。普段は LOGO (or 黒)、V コマンドで映像へクロスフェード -->
   <div id="outputMode" style="display:none; position:fixed; inset:0; background:#000; z-index:9999;">
-    <video id="outputVideo" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000;" playsinline></video>
+    <!-- LOGO レイヤー (back): 画像 or 無音ループ動画 -->
+    <img id="outputLogoImg" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; display:none; transition: opacity 0.3s ease;" />
+    <video id="outputLogoVideo" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; display:none; transition: opacity 0.3s ease;" muted loop playsinline></video>
+    <!-- V レイヤー (front): 通常映像 -->
+    <video id="outputVideo" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:transparent; opacity:0; transition: opacity 0.3s ease;" playsinline></video>
     <div id="outputIdle" style="position:absolute; bottom:16px; right:20px; color:#25252A; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif;">● OUTPUT READY</div>
     <div id="outputStatus" style="position:absolute; top:16px; left:16px; color:#4FD1C5; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif; display:none;"></div>
     <!-- Click to enable autoplay (Chrome autoplay policy) -->
@@ -1428,6 +1462,21 @@
           <span class="do-bgm-vol-db" id="doBgmVolDbWorkout">0.0</span>
         </div>
       </div>
+
+      <!-- LOGO カード -->
+      <div class="do-card do-logo-card" id="doLogoCard">
+        <div class="do-logo-head-row">
+          <span class="do-logo-tag">LOGO</span>
+          <span class="do-logo-sub">客入れ常時表示</span>
+        </div>
+        <div class="do-logo-name" id="doLogoName" style="color:#6A6A70;">— 未読込</div>
+        <div class="do-logo-thumb empty" id="doLogoThumb">+ 画像 / 動画をドロップ</div>
+        <div class="do-logo-actions">
+          <button class="do-logo-btn" onclick="doLogoLoad()">LOAD</button>
+          <button class="do-logo-btn del" onclick="doLogoClear()" id="doLogoClearBtn" style="display:none;">CLEAR</button>
+        </div>
+        <input type="file" id="doLogoFileInput" accept="image/*,video/*" style="display:none;">
+      </div>
     </div>
 
     <!-- DUCK 設定（横長帯） -->
@@ -1513,7 +1562,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.4';
+const APP_VERSION = 'v6.5';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -1762,6 +1811,7 @@ const state = {
     },
     library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer, level}
     videoLibrary: [null, null, null], // each: {sampleId, sampleName, duration, thumbDataUrl}
+    logo: null, // { sampleName, type: 'image'|'video', thumbDataUrl, size, file? } — 客入れ時に常時表示
     schedule: [], // [{id, time:'HH:MM:SS', chain:[{type:'a'|'v', idx} or legacy number],played:bool}]
     duck: { depthDb: -6.0, fadeSec: 0.8, videoFadeSec: 2.0 },
     // runtime (not persisted)
@@ -5113,6 +5163,145 @@ function doRenderVideoLibrary() {
   };
 }
 
+// ====================== LOGO (客入れ常時表示) ======================
+function doLogoLoad() {
+  const inp = document.getElementById('doLogoFileInput');
+  inp.onchange = async (e) => {
+    const f = e.target.files[0];
+    if (f) await doLogoLoadFile(f);
+    inp.value = '';
+  };
+  inp.click();
+}
+async function doLogoLoadFile(f) {
+  if (!f) return;
+  const isVideo = f.type.startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(f.name || '');
+  const isImage = f.type.startsWith('image/') || /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(f.name || '');
+  if (!isVideo && !isImage) {
+    showToast('⚠️ LOGO は画像または動画ファイルです (' + (f.type || '形式不明') + ')');
+    return;
+  }
+  try {
+    showToast('🏷 LOGO 読込中: ' + f.name);
+    // サムネ生成
+    const url = URL.createObjectURL(f);
+    let thumb = null;
+    try {
+      if (isImage) {
+        thumb = await _imageExtractThumb(url);
+      } else {
+        const meta = await _videoExtractMeta(url, f.name);
+        thumb = meta.thumb;
+      }
+    } catch (e) { console.warn('logo thumb fail', e); }
+    URL.revokeObjectURL(url);
+    state.door.logo = {
+      sampleName: f.name,
+      type: isVideo ? 'video' : 'image',
+      thumbDataUrl: thumb,
+      size: f.size,
+      file: f,
+    };
+    doRenderLogo();
+    doSave();
+    showToast('✅ LOGO 登録完了: ' + f.name);
+    // OUTPUT に即時反映
+    doLogoSendToOutput();
+  } catch (err) {
+    console.error('LOGO 読込失敗', err);
+    showToast('❌ LOGO 読込失敗: ' + (err.message || err));
+  }
+}
+function _imageExtractThumb(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        const ratio = img.naturalHeight / img.naturalWidth || 0.5625;
+        c.width = 320; c.height = Math.round(320 * ratio);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/jpeg', 0.6));
+      } catch(e) { resolve(null); }
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+    setTimeout(() => resolve(null), 5000);
+  });
+}
+function doLogoClear() {
+  if (!state.door.logo) return;
+  if (!confirm(`LOGO「${state.door.logo.sampleName}」を解除しますか？`)) return;
+  state.door.logo = null;
+  doRenderLogo();
+  doSave();
+  // OUTPUT に解除コマンド
+  if (_outBC && _outWindow && !_outWindow.closed) {
+    _outBC.postMessage({ cmd: 'logo-clear' });
+  }
+}
+function doRenderLogo() {
+  const it = state.door.logo;
+  const nameEl = document.getElementById('doLogoName');
+  const thumbEl = document.getElementById('doLogoThumb');
+  const clearBtn = document.getElementById('doLogoClearBtn');
+  if (!nameEl || !thumbEl) return;
+  if (!it) {
+    nameEl.textContent = '— 未読込';
+    nameEl.style.color = '#6A6A70';
+    thumbEl.className = 'do-logo-thumb empty';
+    thumbEl.innerHTML = '+ 画像 / 動画をドロップ';
+    thumbEl.onclick = () => doLogoLoad();
+    if (clearBtn) clearBtn.style.display = 'none';
+  } else {
+    const reLink = !it.file;
+    nameEl.innerHTML = escapeHtml(it.sampleName) + (reLink ? ' <span style="color:#EF9F27;font-size:9px;">⚠ 再リンク</span>' : '');
+    nameEl.style.color = '#C8C8CE';
+    thumbEl.className = 'do-logo-thumb';
+    if (it.thumbDataUrl) thumbEl.innerHTML = `<img src="${it.thumbDataUrl}" alt="">`;
+    else thumbEl.innerHTML = (it.type === 'video' ? '▶' : '▣');
+    thumbEl.onclick = reLink ? () => doLogoLoad() : null;
+    if (clearBtn) clearBtn.style.display = '';
+  }
+}
+function doLogoSendToOutput() {
+  if (!_outBC || !_outWindow || _outWindow.closed) return;
+  const it = state.door.logo;
+  if (!it || !it.file) {
+    _outBC.postMessage({ cmd: 'logo-clear' });
+    return;
+  }
+  const url = URL.createObjectURL(it.file);
+  if (_outCurrentLogoUrl) { try { URL.revokeObjectURL(_outCurrentLogoUrl); } catch(_) {} }
+  _outCurrentLogoUrl = url;
+  _outBC.postMessage({ cmd: 'logo', kind: it.type, url, name: it.sampleName });
+}
+let _outCurrentLogoUrl = null;
+// LOGO カードに drop 受付
+function bindDoLogoDrop() {
+  const card = document.getElementById('doLogoCard');
+  const thumb = document.getElementById('doLogoThumb');
+  if (!card) return;
+  const onOver = e => {
+    if ([...(e.dataTransfer.types || [])].includes('Files')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      card.classList.add('drop-over');
+    }
+  };
+  const onLeave = e => { if (e.target === card || e.target === thumb) card.classList.remove('drop-over'); };
+  const onDrop = async e => {
+    if (![...(e.dataTransfer.types || [])].includes('Files')) return;
+    e.preventDefault();
+    card.classList.remove('drop-over');
+    const f = (e.dataTransfer.files || [])[0];
+    if (f) await doLogoLoadFile(f);
+  };
+  card.addEventListener('dragover', onOver);
+  card.addEventListener('dragleave', onLeave);
+  card.addEventListener('drop', onDrop);
+}
+
 // ====================== OUTPUT WINDOW MANAGEMENT ======================
 let _outWindow = null;
 let _outBC = null;
@@ -5164,6 +5353,8 @@ function doOutInitBC() {
         doOutUpdateStatus();
         showToast('✅ サブモニター接続完了');
       }
+      // LOGO を OUTPUT に送る
+      doLogoSendToOutput();
       // 保留中の手動再生があれば実行
       if (_vidPendingPlay && Date.now() < _vidPendingPlay.deadline) {
         const p = _vidPendingPlay; _vidPendingPlay = null;
@@ -6202,6 +6393,10 @@ function doSave() {
       videoLibrary: (state.door.videoLibrary || []).map(it => it ? ({
         sampleName: it.sampleName, duration: it.duration, thumbDataUrl: it.thumbDataUrl, size: it.size,
       }) : null),
+      logo: state.door.logo ? ({
+        sampleName: state.door.logo.sampleName, type: state.door.logo.type,
+        thumbDataUrl: state.door.logo.thumbDataUrl, size: state.door.logo.size,
+      }) : null,
       schedule: state.door.schedule.map(r => ({
         id: r.id, time: r.time, chain: [...r.chain], played: false,
       })),
@@ -6253,6 +6448,13 @@ function doLoad() {
         size: it.size,
         file: null, // リロード後は再リンク必要
       } : null);
+    }
+    if (s.logo) {
+      state.door.logo = {
+        sampleName: s.logo.sampleName, type: s.logo.type,
+        thumbDataUrl: s.logo.thumbDataUrl, size: s.logo.size,
+        file: null, // 再リンク必要
+      };
     }
     if (Array.isArray(s.schedule)) {
       state.door.schedule = s.schedule.map(r => {
@@ -6327,6 +6529,7 @@ function doRenderAll() {
   doRenderDuck();
   doRenderLibrary();
   doRenderVideoLibrary();
+  doRenderLogo();
   doRenderSchedule();
 }
 
@@ -6360,6 +6563,7 @@ function doInit() {
   bindDoBgmVol();
   bindLibVolGlobal();
   bindDoBgmDrop();
+  bindDoLogoDrop();
   bindDoLibDrop();
   bindDoDuck();
   // ドラッグ系の残留ハイライトをグローバルに掃除
@@ -6425,6 +6629,8 @@ function initOutputMode() {
   const video = document.getElementById('outputVideo');
   const status = document.getElementById('outputStatus');
   const idle = document.getElementById('outputIdle');
+  const logoImg = document.getElementById('outputLogoImg');
+  const logoVideo = document.getElementById('outputLogoVideo');
 
   // 同一オリジン内なので IndexedDB を共有読み込みできる
   let db = null;
@@ -6440,10 +6646,43 @@ function initOutputMode() {
     r.onerror = e => rej(e);
   });
 
+  // === LOGO 管理（main から logo コマンドで設定） ===
+  let currentLogoUrl = null;
+  const setLogo = (kind, url, name) => {
+    if (currentLogoUrl && currentLogoUrl !== url) { try { URL.revokeObjectURL(currentLogoUrl); } catch(_) {} }
+    currentLogoUrl = url;
+    if (kind === 'video') {
+      logoImg.style.display = 'none';
+      logoVideo.src = url;
+      logoVideo.style.display = '';
+      logoVideo.muted = true;
+      logoVideo.loop = true;
+      logoVideo.play().catch(() => {});
+    } else {
+      logoVideo.pause();
+      logoVideo.removeAttribute('src');
+      logoVideo.style.display = 'none';
+      logoImg.src = url;
+      logoImg.style.display = '';
+    }
+    idle.style.display = 'none';
+  };
+  const clearLogo = () => {
+    if (currentLogoUrl) { try { URL.revokeObjectURL(currentLogoUrl); } catch(_) {} currentLogoUrl = null; }
+    logoImg.style.display = 'none';
+    logoImg.removeAttribute('src');
+    logoVideo.pause();
+    logoVideo.style.display = 'none';
+    logoVideo.removeAttribute('src');
+    if (video.style.opacity === '0' || !video.style.opacity) idle.style.display = '';
+  };
+
   // main から blob URL を受け取って再生（同一オリジンウィンドウ間で blob URL は共有可能）
   const playFromUrl = async (blobUrl, name) => {
     try {
       video.src = blobUrl;
+      // V レイヤーをフェードイン（LOGO がその裏に残るが見えなくなる）
+      video.style.opacity = '1';
       status.textContent = '● PLAYING — ' + (name || '');
       status.style.display = '';
       idle.style.display = 'none';
@@ -6467,9 +6706,14 @@ function initOutputMode() {
     }
   };
   const stopVideo = () => {
-    try { video.pause(); video.removeAttribute('src'); video.load(); } catch(_) {}
+    // V レイヤーをフェードアウトして LOGO に戻す
+    video.style.opacity = '0';
+    setTimeout(() => {
+      try { video.pause(); video.removeAttribute('src'); video.load(); } catch(_) {}
+    }, 320); // CSS transition 完了待ち
     status.style.display = 'none';
-    idle.style.display = '';
+    // LOGO が無ければ idle 表示
+    if (!currentLogoUrl) idle.style.display = '';
   };
   video.addEventListener('ended', () => {
     bc.postMessage({ event: 'ended' });
@@ -6507,6 +6751,8 @@ function initOutputMode() {
     }
     else if (m.cmd === 'stop') { _pendingPlay = null; stopVideo(); }
     else if (m.cmd === 'ping') bc.postMessage({ event: 'pong', unlocked: autoplayUnlocked });
+    else if (m.cmd === 'logo' && m.url) setLogo(m.kind, m.url, m.name);
+    else if (m.cmd === 'logo-clear') clearLogo();
   };
 
   // === Autoplay 有効化 ===
