@@ -1515,8 +1515,8 @@
   }
   .mt-strip {
     position: relative;
-    display: flex; flex-direction: column; align-items: stretch; gap: 5px;
-    padding: 8px 5px 7px 9px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+    padding: 6px 5px 6px 9px;
     background: linear-gradient(180deg, #16161B 0%, #101013 100%);
     border: 0.5px solid #1F1F22; border-radius: 5px;
     min-width: 0;
@@ -1539,10 +1539,16 @@
     box-shadow: 0 0 0 0.5px currentColor, inset 0 0 18px rgba(240,199,94,0.04);
   }
 
-  .mt-strip-header { display: flex; flex-direction: column; gap: 1px; }
+  /* 1 行ヘッダー: "DRUMS  1/2" */
+  .mt-strip-header {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 4px;
+    min-width: 0;
+  }
   .mt-strip-label {
-    font-size: 10px; letter-spacing: 1.5px; font-weight: 700;
+    font-size: 9px; letter-spacing: 1.2px; font-weight: 700;
     text-align: left;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    min-width: 0;
   }
   .mt-strip-label.drums  { color: #ED93B1; }
   .mt-strip-label.bass   { color: #85B7EB; }
@@ -1550,16 +1556,16 @@
   .mt-strip-label.chorus { color: #97C459; }
   .mt-strip-label.vocal  { color: #F0C75E; }
   .mt-strip-sublabel {
-    font-size: 7px; letter-spacing: 1px; color: #4A4A50; font-weight: 600;
-    text-transform: uppercase;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: 'SF Mono', monospace;
+    font-size: 8px; letter-spacing: 0; color: #4A4A50; font-weight: 600;
+    flex-shrink: 0;
   }
 
-  /* Fader + Meter 横並びエリア（ヘッダー廃止分、フェーダーを長く） */
+  /* Fader + Meter 横並びエリア — ヘッダー1行化＆MIXERヘッダー廃止で大幅伸長 */
   .mt-strip-faderwrap {
     display: flex; gap: 5px; align-items: stretch; justify-content: center;
-    height: 175px; padding: 3px 0;
-    flex: 1; min-height: 80px;
+    height: 220px; padding: 3px 0;
+    flex: 1; min-height: 100px;
   }
   /* Fader */
   .mt-strip-fader {
@@ -2280,12 +2286,8 @@
 
     <!-- 3. BOTTOM ROW: MIXER | AUDIO IFACE | CHANNEL ROUTING -->
     <div class="mt-bottom-row">
-      <!-- MIXER (左) — ヘッダーは廃止して FADE OUT だけ右上にフロート -->
+      <!-- MIXER (左) — ヘッダーも FADE OUT も無し（左パネルの大型 FADE OUT が全機能パニックストップ） -->
       <div class="mt-mixer-card">
-        <button class="mt-fadeout-btn mt-fadeout-float" onclick="mtFadeOut()" title="フェードアウト（パニックストップ）">
-          <span class="mt-fadeout-glyph">⌽</span>
-          <span class="mt-fadeout-text">FADE OUT</span>
-        </button>
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
 
@@ -2394,7 +2396,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.7.1';
+const APP_VERSION = 'v7.7.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9062,15 +9064,15 @@ function mtRenderMixer() {
     strip.dataset.mtStrip = g;
     strip.style.color = MT_GROUP_COLORS[g]; // currentColor 経由で glow に使う
 
-    // ヘッダー（英 + 和ラベル）
+    // ヘッダー（1 行コンパクト: "DRUMS · 1/2"）
     const header = document.createElement('div'); header.className = 'mt-strip-header';
-    const lbl = document.createElement('div');
+    const lbl = document.createElement('span');
     lbl.className = 'mt-strip-label ' + g;
     lbl.textContent = MT_GROUP_LABELS[g];
     header.appendChild(lbl);
-    const sub = document.createElement('div'); sub.className = 'mt-strip-sublabel';
+    const sub = document.createElement('span'); sub.className = 'mt-strip-sublabel';
     const cm = state.multitrack.channelMap[g] || { L:0, R:0 };
-    sub.textContent = `CH ${cm.L}/${cm.R}`;
+    sub.textContent = `${cm.L}/${cm.R}`;
     header.appendChild(sub);
     strip.appendChild(header);
 
