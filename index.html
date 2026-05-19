@@ -1421,6 +1421,25 @@
     transition: border-color 0.15s, background 0.15s;
     min-width: 0;
   }
+  /* セットリスト最上段のカラムヘッダー（STYLE / NEXT START 表示） */
+  .mt-setlist-header {
+    display: grid;
+    grid-template-columns: 22px 28px minmax(0, 1fr) 32px 56px 22px;
+    gap: 6px; align-items: center;
+    padding: 0 9px 3px 9px;
+    font-size: 7.5px; letter-spacing: 0.8px; font-weight: 700;
+    color: #6A6A75;
+    text-transform: uppercase;
+    pointer-events: none;
+    user-select: none;
+  }
+  .mt-setlist-header > .h-style,
+  .mt-setlist-header > .h-next {
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   /* unassigned 件数チップ */
   .mt-song-loadcount {
     display: inline-flex; align-items: center; justify-content: center;
@@ -1663,7 +1682,7 @@
     position: absolute; top: 8px; right: 10px; z-index: 2;
   }
   .mt-mixer-strips {
-    display: grid; grid-template-columns: repeat(6, 76px); gap: 7px;
+    display: grid; grid-template-columns: repeat(6, 90px); gap: 7px;
     padding: 0;
     justify-content: start;
     flex: 1;     /* カードの残り高さを全部使う */
@@ -2668,6 +2687,12 @@
           <button class="mt-btn ghost subtle" onclick="mtClearAll()">CLEAR</button>
         </div>
       </div>
+      <div class="mt-setlist-header" id="mtSetlistHeader" style="display:none;">
+        <span></span><span></span><span></span>
+        <span class="h-style" title="この曲のあと：AUTO（自動次曲）/ STANDBY（次曲頭で停止）">STYLE</span>
+        <span class="h-next" title="次曲スタートまでの秒数（負値で前倒し＝オーバーラップ）">NEXT START</span>
+        <span></span>
+      </div>
       <div class="mt-setlist-list" id="mtSetlistList"></div>
     </div>
 
@@ -2787,7 +2812,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.25.1';
+const APP_VERSION = 'v7.25.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8564,7 +8589,7 @@ function initOutputMode() {
 // 表示順: CLICK → VOCAL → CHORUS → OTHER → BASS → DRUMS
 const MT_GROUPS = ['click', 'vocal', 'chorus', 'other', 'bass', 'drums'];
 const MT_GROUP_LABELS = {
-  click:'CLICK', vocal:'VOCAL', chorus:'CHORUS', other:'OTHER', bass:'BASS', drums:'DRUMS'
+  click:'CLICK', vocal:'VOCAL', chorus:'CHORUS', other:'OTHER', bass:'BASS', drums:'RHYTHM'
 };
 const MT_GROUP_LABELS_JP = {
   click:'クリック', vocal:'ボーカル', chorus:'コーラス', other:'OTHER', bass:'ベース', drums:'リズム'
@@ -9963,7 +9988,6 @@ function mtRenderMixer() {
     // dB tick marks + ラベル (bottom % で配置)
     // 0dB が 71% 基準
     const ticks = [
-      { pos: 100, cls: 'plus', label: '+3', title: '+3 dB' },
       { pos: 71,  cls: 'zero', label: '0',  title: '0 dB' },
       { pos: 50,  cls: '',     label: '-3', title: '-3 dB' },
       { pos: 36,  cls: '',     label: '-6', title: '-6 dB' },
@@ -10211,6 +10235,9 @@ function mtRenderSetlist() {
   // (左列を上から下まで埋めて → 右列に流す)
   const n = state.multitrack.songs.length;
   list.style.gridTemplateRows = n > 0 ? `repeat(${Math.ceil(n / 2)}, auto)` : '';
+  // ヘッダー（STYLE / NEXT START カラムラベル）の表示制御
+  const header = document.getElementById('mtSetlistHeader');
+  if (header) header.style.display = n > 0 ? 'grid' : 'none';
   state.multitrack.songs.forEach((song, idx) => {
     const row = document.createElement('div');
     row.className = 'mt-song-row';
@@ -10376,7 +10403,7 @@ function mtRenderSetlist() {
     delayInput.value = (Number.isInteger(nextDelay) ? nextDelay.toFixed(0) : nextDelay.toFixed(1));
     delayInput.step = '0.5';
     delayInput.min = -60; delayInput.max = 60;
-    delayInput.title = '次曲までの秒数（負値で前倒し）';
+    delayInput.title = '次曲スタートまでの秒数（負値で前倒し＝オーバーラップ）';
     delayInput.disabled = (autoNext === 'stop');
     delayInput.onclick = (e) => e.stopPropagation();
     delayInput.onchange = () => {
