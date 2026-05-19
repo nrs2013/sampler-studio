@@ -1525,17 +1525,14 @@
   .mt-song-delay::-webkit-outer-spin-button { display: none; }
   .mt-song-delay { -moz-appearance: textfield; }
 
-  /* ============= 3. BOTTOM ROW (MIXER | RIGHT-STACK) ============= */
-  /* MIXER はコンテンツ幅、右スタックが残り全部 */
+  /* ============= 3. BOTTOM ROW: MIXER | IFACE | SELECTED SONG (横3列) ============= */
+  /* MIXER はコンテンツ幅、IFACE は最小幅、SELECTED SONG が残り */
   .mt-bottom-row {
     display: grid;
-    grid-template-columns: auto minmax(280px, 1fr);
+    grid-template-columns: auto minmax(240px, 1fr) minmax(280px, 1.3fr);
     gap: 8px;
     flex-shrink: 0;
-  }
-  .mt-right-stack {
-    display: flex; flex-direction: column; gap: 8px; min-width: 0;
-    align-self: start;
+    align-items: start;
   }
 
   /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
@@ -1587,8 +1584,9 @@
     position: absolute; top: 8px; right: 10px; z-index: 2;
   }
   .mt-mixer-strips {
-    display: grid; grid-template-columns: repeat(5, 88px); gap: 4px;
+    display: grid; grid-template-columns: repeat(5, 80px); gap: 4px;
     padding: 0;
+    justify-content: start;
   }
   .mt-strip {
     position: relative;
@@ -2395,15 +2393,13 @@
       <div class="mt-setlist-list" id="mtSetlistList"></div>
     </div>
 
-    <!-- 3. BOTTOM ROW: MIXER (左) | 右側スタック (IFACE 上 / ROUTING 下) -->
+    <!-- 3. BOTTOM ROW: MIXER | AUDIO IFACE | SELECTED SONG (横一列) -->
     <div class="mt-bottom-row">
       <!-- MIXER (左) — ヘッダーも FADE OUT も無し（左パネルの大型 FADE OUT が全機能パニックストップ） -->
       <div class="mt-mixer-card">
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
 
-      <!-- 右側スタック -->
-      <div class="mt-right-stack">
       <!-- AUDIO IFACE (ROUTING も内包) -->
       <div class="mt-card mt-config-card">
         <div class="mt-section-head compact">
@@ -2480,7 +2476,6 @@
         <div class="mt-songinfo-name" id="mtSongInfoName">— 選択されていません —</div>
         <div class="mt-songinfo-list" id="mtSongInfoList"></div>
       </div>
-      </div><!-- /.mt-right-stack -->
     </div><!-- /.mt-bottom-row -->
   </div>
 
@@ -2513,7 +2508,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.7';
+const APP_VERSION = 'v7.10.8';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
