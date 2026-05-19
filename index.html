@@ -2687,7 +2687,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.17';
+const APP_VERSION = 'v7.17.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9777,10 +9777,10 @@ function mtRenderMixer() {
         }
         const items = await mtExtractFilesWithHandles(e.dataTransfer);
         if (items.length === 0) return;
-        // 最初の 1 個をこのグループへ、残りは隣接する空きグループへ順次
+        // 1) 最初の 1 個をこのグループへ（layer として push）
         await mtLoadTrackFile(idx, items[0].file, items[0].handle, g);
         if (items.length > 1) {
-          // このグループ以降の空きグループに順番に
+          // 2) 続けて隣接する空きグループに順次
           const startPos = MT_GROUPS.indexOf(g);
           const song = state.multitrack.songs[idx];
           let fileI = 1;
@@ -9791,8 +9791,14 @@ function mtRenderMixer() {
               fileI++;
             }
           }
-          if (fileI < items.length) {
-            showToast(`⚠️ ${items.length} 個中 ${fileI} 個割当 / ${items.length - fileI} 個は空き不足でスキップ`);
+          // 3) 残りは未割当プールへ（捨てない）
+          const filled = fileI;
+          for (; fileI < items.length; fileI++) {
+            await mtLoadTrackFile(idx, items[fileI].file, items[fileI].handle, null);
+          }
+          const extra = items.length - filled;
+          if (extra > 0) {
+            showToast(`✓ ${items.length} 個: ${filled} 個フェーダー＋${extra} 個未割当`);
           }
         }
       }
@@ -10030,28 +10036,34 @@ function mtRenderSetlist() {
       // (b) ファイル drop
       const items = await mtExtractFilesWithHandles(e.dataTransfer);
       if (items.length === 0) return;
-      // 行ドロップ: その曲の空グループに左→右の順で自動配分
-      // ※ 自動推定なし、単純な位置ベースの順次割当
-      // 曲を選択状態にしてからフェーダーへ直接ドロップでも OK
+      // 行ドロップ: 空グループに左→右で配分、余ったファイルは未割当へ
+      // → 全ファイルが必ず読み込まれる（捨てない）
       state.multitrack.selectedIdx = idx;
       mtRecomputeSongDuration();
       const song = state.multitrack.songs[idx];
-      // 曲名がデフォルトのままなら共通プレフィクスから付ける
       if (/^曲 \d+$/.test(song.name) && items.length >= 2) {
         const guessed = mtGuessSongName(items.map(it => it.file));
         if (guessed) { song.name = guessed; mtSave(); }
       }
       let fileI = 0;
+      // Phase 1: 空グループに順次
       for (const g of MT_GROUPS) {
         if (fileI >= items.length) break;
-        if (song.tracks && song.tracks[g]) continue; // 既存はスキップ
+        if (song.tracks && song.tracks[g]) continue;
         const it = items[fileI++];
         await mtLoadTrackFile(idx, it.file, it.handle, g);
       }
-      if (fileI < items.length) {
-        showToast(`⚠️ ${items.length} 個中 ${fileI} 個割当 / 空き不足 ${items.length - fileI} 個`);
+      // Phase 2: 余りは未割当プールへ全部
+      const filled = fileI;
+      for (; fileI < items.length; fileI++) {
+        const it = items[fileI];
+        await mtLoadTrackFile(idx, it.file, it.handle, null);
+      }
+      const extra = items.length - filled;
+      if (extra > 0) {
+        showToast(`✓ ${items.length} 個読込: ${filled} 個はフェーダーへ、${extra} 個は未割当（SELECTED SONG で割当）`);
       } else {
-        showToast(`✓ ${fileI} 個をフェーダーへ自動割当`);
+        showToast(`✓ ${filled} 個をフェーダーへ自動割当`);
       }
     };
     // 曲後の挙動：AUTO（次曲へ）/ STOP（停止）+ delay 秒数
