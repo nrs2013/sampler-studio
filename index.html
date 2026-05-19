@@ -1192,18 +1192,11 @@
     <video id="outputLogoVideo" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000; display:none; transition: opacity 0.3s ease;" muted loop playsinline></video>
     <!-- V レイヤー (front): 通常映像 -->
     <video id="outputVideo" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:transparent; opacity:0; transition: opacity 0.3s ease;" playsinline></video>
-    <div id="outputIdle" style="position:absolute; bottom:16px; right:20px; color:#25252A; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif;">● OUTPUT READY</div>
-    <div id="outputStatus" style="position:absolute; top:16px; left:16px; color:#4FD1C5; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif; display:none;"></div>
-    <!-- Click to enable autoplay (Chrome autoplay policy) -->
-    <div id="outputEnableOverlay" style="position:absolute; inset:auto 20px 20px auto; padding:14px 18px; display:flex; align-items:center; gap:14px; background:rgba(20,20,24,0.92); border:1px solid #4FD1C5; border-radius:6px; cursor:pointer; z-index:10000; backdrop-filter:blur(8px);">
-      <div>
-        <div style="font-family:'Helvetica Neue',sans-serif; color:#4FD1C5; font-size:11px; letter-spacing:2px; font-weight:600; margin-bottom:3px;">CLICK TO ENABLE V AUDIO</div>
-        <div style="font-family:'Helvetica Neue',sans-serif; color:#5A5A60; font-size:9px; letter-spacing:0.5px; max-width:280px; line-height:1.5;">
-          映像 V を音声付きで再生する前に一度クリックしてください
-        </div>
-      </div>
-      <div style="padding:7px 16px; border:1px solid #4FD1C5; border-radius:3px; color:#4FD1C5; font-family:'Helvetica Neue',sans-serif; font-size:10px; letter-spacing:2px; font-weight:600;">▶ ENABLE</div>
-    </div>
+    <!-- 内部要素（観客には見せない、運用者向けの状態は main で確認） -->
+    <div id="outputIdle" style="display:none;"></div>
+    <div id="outputStatus" style="display:none;"></div>
+    <!-- 透明クリックキャッチャー（autoplay 解除用）。クリックで消える -->
+    <div id="outputEnableOverlay" style="position:absolute; inset:0; cursor:pointer; z-index:10000; background:transparent;"></div>
   </div>
   <!-- ====================================================================== -->
 
@@ -1592,7 +1585,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.5.7';
+const APP_VERSION = 'v6.5.8';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -6789,8 +6782,15 @@ function doInit() {
 // ?mode=output で起動された別ウィンドウ用の初期化。
 // 普段は完全黒。main からの BroadcastChannel コマンドで映像を再生。
 function initOutputMode() {
-  // メインアプリのページを完全に隠す
-  document.body.style.cssText = 'background:#000; margin:0; padding:0; overflow:hidden;';
+  // メインアプリのページを完全に隠す。カーソルも非表示（観客向けピュア表示）
+  document.body.style.cssText = 'background:#000; margin:0; padding:0; overflow:hidden; cursor:none;';
+  // マウスを動かしたら一時的にカーソルを出す（運用者が操作する時用）。2 秒で非表示に戻る
+  let _cursorTimer = null;
+  document.addEventListener('mousemove', () => {
+    document.body.style.cursor = '';
+    clearTimeout(_cursorTimer);
+    _cursorTimer = setTimeout(() => { document.body.style.cursor = 'none'; }, 2000);
+  });
   const top = document.getElementById('topPage'); if (top) top.style.display = 'none';
   const app = document.getElementById('appPage'); if (app) app.style.display = 'none';
   const out = document.getElementById('outputMode');
@@ -6964,13 +6964,7 @@ function initOutputMode() {
   });
   document.addEventListener('dblclick', toggleFullscreen);
 
-  // フルスクリーン操作ヒント（hover/初期表示時のみ薄く表示）
-  const fsHint = document.createElement('div');
-  fsHint.textContent = 'F または ダブルクリック で全画面（Esc で戻る）';
-  fsHint.style.cssText = 'position:absolute; bottom:16px; left:20px; color:#1F1F22; font-size:10px; letter-spacing:1.5px; font-family:"Helvetica Neue",sans-serif; pointer-events:none; transition: opacity 1.5s ease; opacity: 1;';
-  document.getElementById('outputMode').appendChild(fsHint);
-  // 5 秒後にフェードアウト
-  setTimeout(() => { fsHint.style.opacity = '0'; }, 5000);
+  // フルスクリーン操作はキー/ダブルクリックで隠し操作。画面にヒントは出さない（観客向けピュア）。
 
   // === Autoplay 有効化 ===
   // Chrome の autoplay ポリシーで「未操作のドキュメントで play() ブロック」を防ぐため、
