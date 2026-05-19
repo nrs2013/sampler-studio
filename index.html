@@ -1526,10 +1526,10 @@
   .mt-song-delay { -moz-appearance: textfield; }
 
   /* ============= 3. BOTTOM ROW (MIXER | RIGHT-STACK) ============= */
-  /* 右側は IFACE と ROUTING を縦に積む */
+  /* MIXER はコンテンツ幅、右スタックが残り全部 */
   .mt-bottom-row {
     display: grid;
-    grid-template-columns: minmax(400px, 2.2fr) minmax(220px, 1fr);
+    grid-template-columns: auto minmax(280px, 1fr);
     gap: 8px;
     flex-shrink: 0;
   }
@@ -1587,14 +1587,13 @@
     position: absolute; top: 8px; right: 10px; z-index: 2;
   }
   .mt-mixer-strips {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    display: grid; grid-template-columns: repeat(5, 88px); gap: 4px;
     padding: 0;
-    /* flex:1 を外す — strip は内容に応じた自然サイズに */
   }
   .mt-strip {
     position: relative;
-    display: flex; flex-direction: column; align-items: stretch; gap: 4px;
-    padding: 6px 5px 6px 9px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+    padding: 5px 3px 5px 7px;
     background: linear-gradient(180deg, #16161B 0%, #101013 100%);
     border: 0.5px solid #1F1F22; border-radius: 5px;
     min-width: 0;
@@ -2514,7 +2513,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.6';
+const APP_VERSION = 'v7.10.7';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
