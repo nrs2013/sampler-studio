@@ -1423,23 +1423,25 @@
     font-size: 8px; letter-spacing: 0.5px; color: #5A5A60;
     font-family: 'SF Mono', monospace; margin-right: 2px;
   }
-  /* 2 カラム: 左列を上から下まで埋めて → 右列へ流れる
-     grid-auto-flow: column と grid-template-rows を JS で設定 */
+  /* 3 カラム: 1, 2, 3 が左から右へ → 4, 5, 6 が次の行 ... と単純に流れる。
+     本番中スクロールしないよう、横方向に広く使う。 */
   .mt-setlist-list {
     display: grid;
-    grid-auto-flow: column;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    /* grid-template-rows は JS で設定 (ceil(n/2) 行) */
-    gap: 4px 6px;
+    grid-auto-flow: row;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px 8px;
     overflow-y: auto; padding-right: 2px;
     flex: 1; min-height: 0;
     align-content: start;
   }
-  @media (max-width: 900px) {
+  @media (max-width: 1100px) {
     .mt-setlist-list {
-      grid-auto-flow: row;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 720px) {
+    .mt-setlist-list {
       grid-template-columns: 1fr;
-      grid-template-rows: none !important;
     }
   }
   .mt-song-row {
@@ -2843,7 +2845,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.26.1';
+const APP_VERSION = 'v7.27.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10318,13 +10320,12 @@ function mtRenderSetlist() {
   const list = document.getElementById('mtSetlistList');
   if (!list) return;
   list.innerHTML = '';
-  // grid-auto-flow: column の縦方向行数を曲数に応じてセット
-  // (左列を上から下まで埋めて → 右列に流す)
+  // 3 カラム横流し: 1,2,3 → 4,5,6 ... 行数は CSS の自動 layout に任せる
   const n = state.multitrack.songs.length;
-  list.style.gridTemplateRows = n > 0 ? `repeat(${Math.ceil(n / 2)}, auto)` : '';
-  // ヘッダー（STYLE / NEXT START カラムラベル）の表示制御
+  list.style.gridTemplateRows = '';
+  // ヘッダー（旧 STYLE / NEXT START）は 3 カラム化で 1 列目とは整列しなくなるので常時非表示
   const header = document.getElementById('mtSetlistHeader');
-  if (header) header.style.display = n > 0 ? 'grid' : 'none';
+  if (header) header.style.display = 'none';
   state.multitrack.songs.forEach((song, idx) => {
     const row = document.createElement('div');
     row.className = 'mt-song-row';
