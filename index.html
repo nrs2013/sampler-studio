@@ -1260,12 +1260,54 @@
     text-transform: uppercase;
   }
   .mt-hero-stem-chip.missing { opacity: 0.22; }
-  /* Timeline scrubber */
+  /* Timeline scrubber + ロケートドロップ ハンドル */
+  .mt-hero-timeline-wrap {
+    display: flex; align-items: center; gap: 8px;
+  }
   .mt-hero-timeline {
+    flex: 1; min-width: 0;
     height: 22px; cursor: pointer;
     padding: 8px 0; position: relative;
     user-select: none; -webkit-user-select: none;
   }
+  /* ロケート ドロップ ハンドル — 掴んでタイムラインに離す */
+  .mt-locate-drop {
+    width: 26px; height: 22px; padding: 0; flex-shrink: 0;
+    background: linear-gradient(180deg, rgba(240,199,94,0.12), rgba(240,199,94,0.04));
+    border: 0.5px solid rgba(240,199,94,0.4); border-radius: 4px;
+    color: #F0C75E; cursor: grab;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; line-height: 1; font-family: inherit;
+    transition: all 0.12s;
+  }
+  .mt-locate-drop:hover { filter: brightness(1.2); border-color: #F0C75E; }
+  .mt-locate-drop:active, .mt-locate-drop.dragging { cursor: grabbing; box-shadow: 0 0 10px rgba(240,199,94,0.4); }
+  .mt-locate-glyph { pointer-events: none; }
+  /* ドラッグ中のゴースト（カーソルに追従） */
+  .mt-locate-ghost {
+    position: fixed; z-index: 99999; pointer-events: none;
+    width: 16px; height: 16px; margin: -8px 0 0 -8px;
+    color: #F0C75E; font-size: 14px; line-height: 1;
+    text-shadow: 0 0 8px rgba(240,199,94,0.8);
+  }
+  /* ロケート マーカー（タイムライン上の旗） */
+  .mt-locate-marker {
+    position: absolute; top: -3px; bottom: -3px;
+    width: 2px; background: #F0C75E;
+    box-shadow: 0 0 6px rgba(240,199,94,0.6);
+    cursor: pointer; z-index: 3;
+    pointer-events: auto;
+  }
+  .mt-locate-marker::before {
+    content: ''; position: absolute; top: -3px; left: -3px;
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #F0C75E;
+    filter: drop-shadow(0 0 4px rgba(240,199,94,0.6));
+  }
+  .mt-locate-marker:hover { width: 3px; background: #FFE89A; }
+  .mt-locate-marker:hover::before { border-top-color: #FFE89A; }
   .mt-hero-timeline-track {
     height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px;
     position: relative;
@@ -1302,6 +1344,11 @@
   /* dragging時はトランジション解除 */
   .mt-hero-timeline.dragging .mt-hero-timeline-fill,
   .mt-hero-timeline.dragging .mt-hero-timeline-thumb { transition: none; }
+  /* ロケートドロップ中にタイムラインがハイライト */
+  .mt-hero-timeline.locate-target .mt-hero-timeline-track {
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(240,199,94,0.5);
+    background: rgba(240,199,94,0.08);
+  }
   .mt-hero-meta-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; text-transform: uppercase; }
   .mt-hero.playing .mt-hero-status { color: #92C9B0; }
@@ -1464,7 +1511,9 @@
     cursor: pointer; padding: 0;
     line-height: 1; letter-spacing: 0;
     transition: all 0.12s;
+    display: flex; align-items: center; justify-content: center;
   }
+  .mt-song-autotoggle svg { display: block; }
   .mt-song-autotoggle:hover { filter: brightness(1.25); }
   .mt-song-autotoggle.stop {
     background: rgba(226,75,74,0.10); color: #E24B4A;
@@ -1487,12 +1536,16 @@
   .mt-song-delay::-webkit-outer-spin-button { display: none; }
   .mt-song-delay { -moz-appearance: textfield; }
 
-  /* ============= 3. BOTTOM ROW (MIXER | IFACE | ROUTING) ============= */
+  /* ============= 3. BOTTOM ROW (MIXER | RIGHT-STACK) ============= */
+  /* 右側は IFACE と ROUTING を縦に積む */
   .mt-bottom-row {
     display: grid;
-    grid-template-columns: minmax(360px, 1.5fr) minmax(200px, 0.8fr) minmax(200px, 0.9fr);
+    grid-template-columns: minmax(400px, 2.2fr) minmax(220px, 1fr);
     gap: 8px;
     flex-shrink: 0;
+  }
+  .mt-right-stack {
+    display: flex; flex-direction: column; gap: 8px; min-width: 0;
   }
 
   /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
@@ -2271,15 +2324,22 @@
           </div>
         </div>
         <div class="mt-hero-bottom">
-          <!-- スクラバー（クリック/ドラッグでシーク） -->
-          <div class="mt-hero-timeline" id="mtHeroTimeline" title="クリック / ドラッグでシーク">
-            <div class="mt-hero-timeline-track">
-              <span class="mt-hero-tl-tick" style="left:25%"></span>
-              <span class="mt-hero-tl-tick" style="left:50%"></span>
-              <span class="mt-hero-tl-tick" style="left:75%"></span>
-              <div class="mt-hero-timeline-fill" id="mtNowBarFill"></div>
-              <div class="mt-hero-timeline-thumb" id="mtNowBarThumb"></div>
+          <!-- スクラバー（クリック/ドラッグでシーク）+ ロケート ドロップハンドル -->
+          <div class="mt-hero-timeline-wrap">
+            <div class="mt-hero-timeline" id="mtHeroTimeline" title="クリック / ドラッグでシーク">
+              <div class="mt-hero-timeline-track" id="mtHeroTimelineTrack">
+                <span class="mt-hero-tl-tick" style="left:25%"></span>
+                <span class="mt-hero-tl-tick" style="left:50%"></span>
+                <span class="mt-hero-tl-tick" style="left:75%"></span>
+                <div class="mt-hero-timeline-fill" id="mtNowBarFill"></div>
+                <div class="mt-hero-timeline-thumb" id="mtNowBarThumb"></div>
+                <!-- ロケートマーカーは JS で動的追加 -->
+              </div>
             </div>
+            <button class="mt-locate-drop" id="mtLocateDrop"
+                    title="ドラッグでタイムラインにロケート（再生位置メモリ）を配置">
+              <span class="mt-locate-glyph">🚩</span>
+            </button>
           </div>
           <div class="mt-hero-meta-bottom">
             <span class="mt-hero-status" id="mtNowStatus">READY · SPACE で再生 / ↑↓で選択 / ENTER で再生</span>
@@ -2317,14 +2377,16 @@
       <div class="mt-setlist-list" id="mtSetlistList"></div>
     </div>
 
-    <!-- 3. BOTTOM ROW: MIXER | AUDIO IFACE | CHANNEL ROUTING -->
+    <!-- 3. BOTTOM ROW: MIXER (左) | 右側スタック (IFACE 上 / ROUTING 下) -->
     <div class="mt-bottom-row">
       <!-- MIXER (左) — ヘッダーも FADE OUT も無し（左パネルの大型 FADE OUT が全機能パニックストップ） -->
       <div class="mt-mixer-card">
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
 
-      <!-- AUDIO IFACE (中央) -->
+      <!-- 右側スタック -->
+      <div class="mt-right-stack">
+      <!-- AUDIO IFACE -->
       <div class="mt-card mt-config-card">
         <div class="mt-section-head compact">
           <div class="mt-section-head-l">
@@ -2396,8 +2458,9 @@
             <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
           </div>
         </div>
-      </div>
-    </div>
+      </div><!-- /.mt-routing-card -->
+      </div><!-- /.mt-right-stack -->
+    </div><!-- /.mt-bottom-row -->
   </div>
 
   <!-- 隠しファイル input (MULTI-TRACK 用) -->
@@ -2429,7 +2492,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.8';
+const APP_VERSION = 'v7.9';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8174,6 +8237,7 @@ function mtSerialize() {
       id: s.id, name: s.name,
       autoNext: s.autoNext || 'auto',
       nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : (m.gapSec || 3.0),
+      locates: Array.isArray(s.locates) ? s.locates.map(l => ({ time: l.time })) : [],
       tracks: Object.fromEntries(
         Object.entries(s.tracks || {}).map(([g, t]) => [g, t ? { sampleId: t.sampleId, name: t.name } : null])
       ),
@@ -8198,6 +8262,7 @@ function mtRestore(saved) {
     tracks: s.tracks || {},
     autoNext: s.autoNext === 'stop' ? 'stop' : 'auto',
     nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : (m.gapSec || 3.0),
+    locates: Array.isArray(s.locates) ? s.locates : [],
   }));
   if (typeof saved.currentSongIdx === 'number') m.currentSongIdx = saved.currentSongIdx;
 }
@@ -8421,6 +8486,7 @@ function mtAddSong() {
     tracks: {},
     autoNext: 'auto',                    // 'auto' | 'stop' — この曲の後の挙動
     nextDelay: state.multitrack.gapSec,   // 次曲までの秒数（負値で前倒し可）
+    locates: [],                          // [{time: sec}] — タイムライン上のロケート
   });
   if (state.multitrack.currentSongIdx < 0) state.multitrack.currentSongIdx = 0;
   mtSave();
@@ -9372,7 +9438,11 @@ function mtRenderSetlist() {
 
     const togBtn = document.createElement('button');
     togBtn.className = 'mt-song-autotoggle ' + autoNext + (isLast ? ' is-last' : '');
-    togBtn.textContent = autoNext === 'auto' ? '▶▶' : '■';
+    // 明示的なアイコン:
+    //   AUTO: ↓ (下の曲へ自動進行)   STOP: ◯ (この曲で終了)
+    togBtn.innerHTML = autoNext === 'auto'
+      ? '<svg viewBox="0 0 14 14" width="11" height="11"><path d="M7 2 L7 11 M3.5 8 L7 11.5 L10.5 8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 14 14" width="11" height="11"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
     togBtn.title = autoNext === 'auto'
       ? `この曲のあと自動で次曲へ${isLast ? '（最終曲なので停止）' : ''}\nクリックで「停止」に切替`
       : `この曲の後で停止\nクリックで「自動で次曲へ」に切替`;
@@ -9476,6 +9546,7 @@ function mtRenderNow() {
   mtMarkActiveStrips(m.isPlaying);
 
   mtUpdateProgress();
+  mtRenderLocates();
 }
 
 // hex "#RRGGBB" → [r,g,b]
@@ -9524,6 +9595,8 @@ function mtBindTimeline() {
     mtSeekTo(pct * dur);
   };
   tl.addEventListener('pointerdown', (e) => {
+    // ロケートマーカー上でのクリックはスクラブ扱いしない
+    if (e.target.classList && e.target.classList.contains('mt-locate-marker')) return;
     if (state.multitrack.songs.length === 0) return;
     dragging = true;
     tl.classList.add('dragging');
@@ -9542,6 +9615,125 @@ function mtBindTimeline() {
   };
   tl.addEventListener('pointerup', end);
   tl.addEventListener('pointercancel', end);
+  // ロケートハンドルのバインド
+  mtBindLocateDrop();
+}
+
+// ---- ロケート機能 ----
+// 旗ハンドルを掴んでタイムラインにドロップ → そこにロケートを配置
+let mtLocateDropBound = false;
+function mtBindLocateDrop() {
+  if (mtLocateDropBound) return;
+  const drop = document.getElementById('mtLocateDrop');
+  const tl = document.getElementById('mtHeroTimeline');
+  if (!drop || !tl) return;
+  mtLocateDropBound = true;
+  let dragging = false;
+  let ghost = null;
+  let overTimeline = false;
+
+  const moveGhost = (x, y) => {
+    if (!ghost) return;
+    ghost.style.left = x + 'px';
+    ghost.style.top = y + 'px';
+  };
+
+  drop.addEventListener('pointerdown', (e) => {
+    if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+    if ((state.multitrack.songDuration || 0) <= 0) { showToast('曲を読み込んでから配置してください'); return; }
+    dragging = true;
+    drop.classList.add('dragging');
+    drop.setPointerCapture(e.pointerId);
+    ghost = document.createElement('div');
+    ghost.className = 'mt-locate-ghost';
+    ghost.textContent = '🚩';
+    document.body.appendChild(ghost);
+    moveGhost(e.clientX, e.clientY);
+    e.preventDefault();
+  });
+  drop.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    moveGhost(e.clientX, e.clientY);
+    const r = tl.getBoundingClientRect();
+    overTimeline = (e.clientX >= r.left && e.clientX <= r.right &&
+                    e.clientY >= r.top - 20 && e.clientY <= r.bottom + 20);
+    tl.classList.toggle('locate-target', overTimeline);
+  });
+  const endDrop = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    drop.classList.remove('dragging');
+    try { drop.releasePointerCapture(e.pointerId); } catch(_) {}
+    if (ghost) { ghost.remove(); ghost = null; }
+    tl.classList.remove('locate-target');
+    const r = tl.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right &&
+        e.clientY >= r.top - 20 && e.clientY <= r.bottom + 20) {
+      const pct = (e.clientX - r.left) / r.width;
+      const dur = state.multitrack.songDuration || 0;
+      if (dur > 0) {
+        const time = Math.max(0, Math.min(dur, pct * dur));
+        mtAddLocate(time);
+      }
+    }
+  };
+  drop.addEventListener('pointerup', endDrop);
+  drop.addEventListener('pointercancel', endDrop);
+}
+
+// セットリスト中の「選択中の曲」にロケートを追加
+function mtAddLocate(timeSec) {
+  const idx = state.multitrack.selectedIdx;
+  if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  const song = state.multitrack.songs[idx];
+  if (!Array.isArray(song.locates)) song.locates = [];
+  // 近接（< 0.5s）なら追加しない（誤操作防止）
+  if (song.locates.some(l => Math.abs(l.time - timeSec) < 0.5)) {
+    showToast('近接するロケートがあります');
+    return;
+  }
+  song.locates.push({ time: timeSec });
+  song.locates.sort((a, b) => a.time - b.time);
+  mtSave();
+  mtRenderLocates();
+  showToast(`ロケート ${mtFmtTime(timeSec)} 追加 (Shift+クリックで削除)`);
+}
+
+function mtRemoveLocate(locateIdx) {
+  const idx = state.multitrack.selectedIdx;
+  if (idx < 0) return;
+  const song = state.multitrack.songs[idx];
+  if (!song.locates) return;
+  song.locates.splice(locateIdx, 1);
+  mtSave();
+  mtRenderLocates();
+}
+
+function mtRenderLocates() {
+  const track = document.getElementById('mtHeroTimelineTrack');
+  if (!track) return;
+  // 既存のマーカーを削除
+  track.querySelectorAll('.mt-locate-marker').forEach(el => el.remove());
+  const idx = state.multitrack.selectedIdx;
+  if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  const song = state.multitrack.songs[idx];
+  if (!song.locates || song.locates.length === 0) return;
+  const dur = state.multitrack.songDuration || 0;
+  if (dur <= 0) return;
+  song.locates.forEach((loc, li) => {
+    const pct = Math.max(0, Math.min(100, (loc.time / dur) * 100));
+    const m = document.createElement('span');
+    m.className = 'mt-locate-marker';
+    m.style.left = pct + '%';
+    m.title = `${mtFmtTime(loc.time)} — クリックでジャンプ / Shift+クリックで削除`;
+    m.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
+    m.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (e.shiftKey) mtRemoveLocate(li);
+      else mtSeekTo(loc.time);
+    });
+    track.appendChild(m);
+  });
 }
 
 function mtFmtTime(s) {
