@@ -1817,58 +1817,82 @@
     border-top: 0.5px solid #1F1F22;
   }
 
-  /* SELECTED SONG カード — STEM ファイル名一覧 */
-  .mt-songinfo-card { padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+  /* SELECTED SONG カード — フラット成長リスト */
+  .mt-songinfo-card {
+    padding: 10px 12px; display: flex; flex-direction: column; min-width: 0;
+    max-height: 280px;
+  }
   .mt-songinfo-name {
     font-size: 12px; color: #E6E6EA; font-weight: 500;
-    margin: 4px 0 8px; padding-bottom: 6px;
+    margin: 4px 0 6px; padding-bottom: 6px;
     border-bottom: 0.5px solid #1F1F22;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    flex-shrink: 0;
   }
   .mt-songinfo-list {
     display: flex; flex-direction: column; gap: 3px;
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding-right: 2px;
   }
+  /* ドロップゾーン */
+  .mt-songinfo-drop {
+    border: 0.5px dashed #2A2A30; border-radius: 5px;
+    padding: 8px; text-align: center;
+    font-size: 10px; color: #5A5A60; letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    transition: all 0.15s;
+  }
+  .mt-songinfo-drop.drop-over {
+    border-color: #7DB89E; color: #92C9B0;
+    background: rgba(125,184,158,0.08);
+    box-shadow: 0 0 8px rgba(125,184,158,0.25);
+  }
+  /* 件数ヘッダー */
+  .mt-songinfo-counthead {
+    display: flex; align-items: baseline; gap: 6px;
+    margin: 4px 2px 2px;
+    font-size: 9px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 700;
+  }
+  .mt-songinfo-count {
+    font-family: 'SF Mono', monospace; font-size: 10px;
+    color: #92C9B0; letter-spacing: 0;
+  }
+  .mt-songinfo-empty {
+    font-size: 10px; color: #4A4A50; padding: 12px 4px; text-align: center;
+  }
+  /* 各ファイル行 */
   .mt-songinfo-row {
-    display: grid; grid-template-columns: 6px 20px minmax(0, 1fr);
+    display: grid; grid-template-columns: 42px minmax(0, 1fr) 18px;
     gap: 6px; align-items: center;
     padding: 3px 4px; border-radius: 3px;
     font-size: 10px; min-width: 0;
+    cursor: grab;
   }
-  .mt-songinfo-row.has { background: rgba(255,255,255,0.02); }
-  .mt-songinfo-row.missing { opacity: 0.35; }
-  .mt-songinfo-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    box-shadow: 0 0 4px currentColor;
+  .mt-songinfo-row:active { cursor: grabbing; }
+  .mt-songinfo-row.assigned { background: rgba(255,255,255,0.02); }
+  .mt-songinfo-row.pool { background: rgba(240,199,94,0.06); border: 0.5px solid rgba(240,199,94,0.18); }
+  .mt-songinfo-row:hover { background: rgba(255,255,255,0.05); }
+  .mt-songinfo-row.pool:hover { background: rgba(240,199,94,0.12); }
+  .mt-songinfo-row.dragging { opacity: 0.4; }
+  /* グループセレクタ（色付き badge） */
+  .mt-songinfo-groupsel {
+    width: 100%; min-width: 0;
+    background: #06060A; color: #6A6A70;
+    border: 0.5px solid #1F1F22; border-radius: 3px;
+    padding: 2px 0 2px 4px;
+    font-family: 'SF Mono', monospace; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+    text-align: center; text-align-last: center;
   }
-  .mt-songinfo-lbl {
-    font-weight: 700; font-family: 'SF Mono', monospace;
-    letter-spacing: 0.5px; font-size: 9px;
-  }
+  .mt-songinfo-groupsel:focus { outline: none; }
+  .mt-songinfo-groupsel:hover { background: #0D0D11; }
   .mt-songinfo-fname {
     color: #C8C8CE;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     min-width: 0; font-size: 10px;
   }
-  .mt-songinfo-row.missing .mt-songinfo-fname { color: #4A4A50; }
-  /* SELECTED SONG: assigned 行は drag-source */
-  .mt-songinfo-row.has { cursor: grab; }
-  .mt-songinfo-row.has:active { cursor: grabbing; }
-  .mt-songinfo-row.has:hover { background: rgba(255,255,255,0.05); }
-  .mt-songinfo-row.dragging { opacity: 0.4; }
-  /* UNASSIGNED プールの見出し */
-  .mt-songinfo-pool-head {
-    font-size: 9px; letter-spacing: 1.5px; color: #F0C75E; font-weight: 700;
-    margin: 8px 4px 4px; padding-top: 6px;
-    border-top: 0.5px solid #1F1F22;
-  }
-  .mt-songinfo-row.pool {
-    grid-template-columns: 6px 20px minmax(0, 1fr) 16px;
-    background: rgba(240,199,94,0.05);
-    border: 0.5px solid rgba(240,199,94,0.2);
-    cursor: grab;
-  }
-  .mt-songinfo-row.pool:active { cursor: grabbing; }
-  .mt-songinfo-row.pool:hover { background: rgba(240,199,94,0.1); border-color: rgba(240,199,94,0.4); }
   .mt-songinfo-del {
     background: transparent; border: none; color: #4A4A50; cursor: pointer;
     font-size: 11px; padding: 0;
@@ -2663,7 +2687,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.16';
+const APP_VERSION = 'v7.17';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9040,8 +9064,10 @@ async function mtEnsureBufferLoaded(sampleId, askPermission = false) {
 // SELECTED SONG → mixer fader の drag で呼ばれる
 // 指定 sampleId のファイルを、target グループに割り当てる
 // 元の場所（unassigned もしくは別グループ）からは外す
+// targetGroup = null/'' なら unassigned プールに戻す
 async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
-  if (!MT_GROUPS.includes(targetGroup)) return;
+  const toUnassigned = !targetGroup;
+  if (!toUnassigned && !MT_GROUPS.includes(targetGroup)) return;
   const song = state.multitrack.songs[songIdx];
   if (!song) return;
   if (!song.unassigned) song.unassigned = [];
@@ -9066,8 +9092,9 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
     }
   }
   if (!entry) return;
-  // 同じグループ内の操作は無視
+  // 同じ場所への移動は無視
   if (srcKind === 'group' && srcGroup === targetGroup) return;
+  if (srcKind === 'unassigned' && toUnassigned) return;
   // 1.5) バッファ lazy-load（permission 要求あり）
   if (!mtDecodedCache[sampleId]) {
     const buf = await mtEnsureBufferLoaded(sampleId, true);
@@ -9086,17 +9113,26 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
     if (layers.length === 0) delete song.tracks[srcGroup];
     else song.tracks[srcGroup] = layers;
   }
-  // 3) target に追加（layer として push）
-  const targetLayers = mtGetLayers(song, targetGroup);
-  song.tracks[targetGroup] = [...targetLayers, entry];
+  // 3) 行き先へ
+  if (toUnassigned) {
+    if (!song.unassigned) song.unassigned = [];
+    song.unassigned.push(entry);
+  } else {
+    const targetLayers = mtGetLayers(song, targetGroup);
+    song.tracks[targetGroup] = [...targetLayers, entry];
+  }
   mtSave();
   mtRecomputeSongDuration();
   mtRenderSetlist();
   mtRenderNow();
-  const count = song.tracks[targetGroup].length;
-  showToast(count > 1
-    ? `${MT_GROUP_LABELS[targetGroup]} に追加 (layer ${count}): ${entry.name}`
-    : `${MT_GROUP_LABELS[targetGroup]} ← ${entry.name}`);
+  if (toUnassigned) {
+    showToast(`未割当に戻し: ${entry.name}`);
+  } else {
+    const count = song.tracks[targetGroup].length;
+    showToast(count > 1
+      ? `${MT_GROUP_LABELS[targetGroup]} に追加 (layer ${count}): ${entry.name}`
+      : `${MT_GROUP_LABELS[targetGroup]} ← ${entry.name}`);
+  }
 }
 
 // グループから layer を外して unassigned に戻す（sampleId 指定で1個だけ、無指定で全部）
@@ -10168,10 +10204,10 @@ function mtRenderNow() {
 }
 
 // 右下の "SELECTED SONG":
-//   - 各グループ枠（CLICK/VOCAL/.../DRUMS）— 割当済はファイル名を表示、未割当は「— 未割当 —」
-//   - その下に「📦 UNASSIGNED」プールを表示（曲にドロップしたがまだフェーダーへ割当ていないファイル）
-//   - 各ファイル行は drag-source（→ mixer fader に drop で割当）
-//   - 各グループ行も drag-source（既に割当てたファイルを別グループへ移動可能）
+//   - 選択中の曲の「全ファイル」を縦にフラットリスト表示（増えていく）
+//   - 各行: グループセレクタ（badge）+ ファイル名 + 削除 (グループ変更は select で)
+//   - ファイル名行は draggable - drop on fader = アサイン、drop on selected song = 並べ替え/グループ変更
+//   - 上部に external file drop ゾーン（"+ ADD" の見た目）
 function mtRenderSongInfo() {
   const nameEl = document.getElementById('mtSongInfoName');
   const list = document.getElementById('mtSongInfoList');
@@ -10188,93 +10224,128 @@ function mtRenderSongInfo() {
   nameEl.style.color = '';
   list.innerHTML = '';
 
-  // === 各グループの全 layer を行表示（同グループ複数ファイル対応）===
-  for (const g of MT_GROUPS) {
-    const layers = mtGetLayers(song, g);
-    if (layers.length === 0) {
-      // 空グループ
-      const row = document.createElement('div');
-      row.className = 'mt-songinfo-row missing';
-      const dot = document.createElement('span');
-      dot.className = 'mt-songinfo-dot';
-      dot.style.background = MT_GROUP_COLORS[g];
-      dot.style.color = MT_GROUP_COLORS[g];
-      row.appendChild(dot);
-      const lbl = document.createElement('span');
-      lbl.className = 'mt-songinfo-lbl';
-      lbl.textContent = MT_GROUP_LABELS[g].slice(0, 2);
-      lbl.style.color = MT_GROUP_COLORS[g];
-      row.appendChild(lbl);
-      const fname = document.createElement('span');
-      fname.className = 'mt-songinfo-fname';
-      fname.textContent = '— 未割当 —';
-      row.appendChild(fname);
-      list.appendChild(row);
-      continue;
+  // === 上部: ドロップゾーン（外部ファイル受付） ===
+  const dropZone = document.createElement('div');
+  dropZone.className = 'mt-songinfo-drop';
+  dropZone.innerHTML = '<span>📂 ファイルをここにドロップ / フェーダーへ直接でも OK</span>';
+  dropZone.addEventListener('dragover', (e) => {
+    const types = Array.from(e.dataTransfer.types || []);
+    if (!types.includes('Files')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    dropZone.classList.add('drop-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-over'));
+  dropZone.addEventListener('drop', async (e) => {
+    const types = Array.from(e.dataTransfer.types || []);
+    if (!types.includes('Files')) return;
+    e.preventDefault();
+    dropZone.classList.remove('drop-over');
+    const items = await mtExtractFilesWithHandles(e.dataTransfer);
+    if (items.length === 0) return;
+    // 全て unassigned で投入 → ユーザーが select で割当
+    for (const it of items) {
+      await mtLoadTrackFile(idx, it.file, it.handle, null);
     }
-    // layer 毎に行
-    layers.forEach((t, layerIdx) => {
-      const row = document.createElement('div');
-      row.className = 'mt-songinfo-row has';
-      row.draggable = true;
-      row.dataset.sampleId = t.sampleId;
-      row.title = 'フェーダーへドラッグで別グループへ移動 / Shift+クリックで削除';
-      row.addEventListener('dragstart', (e) => {
-        e.dataTransfer.setData('application/x-mt-file', JSON.stringify({
-          songIdx: idx, sampleId: t.sampleId, name: t.name, fromGroup: g
-        }));
-        e.dataTransfer.effectAllowed = 'move';
-        row.classList.add('dragging');
-      });
-      row.addEventListener('dragend', () => row.classList.remove('dragging'));
-      row.addEventListener('click', (e) => {
-        if (e.shiftKey) {
-          if (confirm(`${MT_GROUP_LABELS[g]} の「${t.name}」を削除（layer ${layerIdx+1}/${layers.length}）`)) {
-            mtRemoveTrack(idx, g, t.sampleId);
-          }
-        }
-      });
-      const dot = document.createElement('span');
-      dot.className = 'mt-songinfo-dot';
-      dot.style.background = MT_GROUP_COLORS[g];
-      dot.style.color = MT_GROUP_COLORS[g];
-      row.appendChild(dot);
-      const lbl = document.createElement('span');
-      lbl.className = 'mt-songinfo-lbl';
-      // 多 layer のときは "DR ②" のように layer 番号
-      lbl.textContent = layers.length > 1
-        ? `${MT_GROUP_LABELS[g].slice(0, 2)} ${layerIdx + 1}`
-        : MT_GROUP_LABELS[g].slice(0, 2);
-      lbl.style.color = MT_GROUP_COLORS[g];
-      row.appendChild(lbl);
-      const fname = document.createElement('span');
-      fname.className = 'mt-songinfo-fname';
-      fname.textContent = t.name;
-      fname.title = t.name + (mtDecodedCache[t.sampleId] ? '' : ' (未ロード)');
-      if (!mtDecodedCache[t.sampleId]) fname.style.color = '#EF9F27';
-      row.appendChild(fname);
-      list.appendChild(row);
-    });
+    showToast(`📂 ${items.length} 個のファイルを追加。各行のグループセレクタで割当を変更`);
+  });
+  list.appendChild(dropZone);
+
+  // === フラット成長リスト: 全ファイル（assigned + unassigned）を順番に ===
+  const allFiles = [];
+  for (const g of MT_GROUPS) {
+    mtGetLayers(song, g).forEach((t, li) => allFiles.push({ ...t, currentGroup: g, layerIdx: li }));
+  }
+  (song.unassigned || []).forEach(u => allFiles.push({ ...u, currentGroup: null, layerIdx: -1 }));
+
+  // 件数ヘッダー
+  const head = document.createElement('div');
+  head.className = 'mt-songinfo-counthead';
+  head.innerHTML = `<span class="mt-songinfo-count-label">FILES</span> <span class="mt-songinfo-count">${allFiles.length}</span>`;
+  list.appendChild(head);
+
+  if (allFiles.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'mt-songinfo-empty';
+    empty.textContent = 'ファイルなし — 上にドロップ';
+    list.appendChild(empty);
+    return;
   }
 
-  // 旧バージョンで蓄積された unassigned があれば自動で空きグループへ流し込む
-  // （新WFはフェーダー直接ドロップなので pool UI は廃止）
-  const unassigned = song.unassigned || [];
-  if (unassigned.length > 0) {
-    let migrated = 0;
+  // 各ファイル行
+  allFiles.forEach((f) => {
+    const row = document.createElement('div');
+    row.className = 'mt-songinfo-row' + (f.currentGroup ? ' assigned' : ' pool');
+    row.draggable = true;
+    row.dataset.sampleId = f.sampleId;
+    row.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('application/x-mt-file', JSON.stringify({
+        songIdx: idx, sampleId: f.sampleId, name: f.name, fromGroup: f.currentGroup
+      }));
+      e.dataTransfer.effectAllowed = 'move';
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+
+    // グループ select (色付き)
+    const sel = document.createElement('select');
+    sel.className = 'mt-songinfo-groupsel';
+    if (f.currentGroup) {
+      sel.style.color = MT_GROUP_COLORS[f.currentGroup];
+      sel.style.borderColor = MT_GROUP_COLORS[f.currentGroup];
+    }
+    const optNull = document.createElement('option');
+    optNull.value = ''; optNull.textContent = '— 未';
+    sel.appendChild(optNull);
     for (const g of MT_GROUPS) {
-      if (unassigned.length === 0) break;
-      if (song.tracks && song.tracks[g]) continue;
-      song.tracks[g] = unassigned.shift();
-      migrated++;
+      const o = document.createElement('option');
+      o.value = g; o.textContent = MT_GROUP_LABELS[g].slice(0, 2);
+      sel.appendChild(o);
     }
-    if (migrated > 0) {
+    sel.value = f.currentGroup || '';
+    sel.addEventListener('change', (e) => {
+      e.stopPropagation();
+      mtAssignFileToGroup(idx, f.sampleId, sel.value || null);
+    });
+    sel.addEventListener('click', e => e.stopPropagation());
+    row.appendChild(sel);
+
+    // ファイル名
+    const fname = document.createElement('span');
+    fname.className = 'mt-songinfo-fname';
+    fname.textContent = f.name;
+    fname.title = f.name + (mtDecodedCache[f.sampleId] ? '' : ' (未ロード)');
+    if (!mtDecodedCache[f.sampleId]) fname.style.color = '#EF9F27';
+    row.appendChild(fname);
+
+    // 削除
+    const del = document.createElement('button');
+    del.className = 'mt-songinfo-del';
+    del.textContent = '✕';
+    del.title = 'このファイルを削除';
+    del.onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm(`「${f.name}」を削除しますか？`)) return;
+      try { await deleteSampleFromDB(f.sampleId); } catch(_) {}
+      try { await mtDeleteHandleFromDB(f.sampleId); } catch(_) {}
+      delete mtDecodedCache[f.sampleId];
+      if (f.currentGroup) {
+        // 割当中の layer から外す
+        const layers = mtGetLayers(song, f.currentGroup).filter(l => l.sampleId !== f.sampleId);
+        if (layers.length === 0) delete song.tracks[f.currentGroup];
+        else song.tracks[f.currentGroup] = layers;
+      } else {
+        song.unassigned = (song.unassigned || []).filter(u => u.sampleId !== f.sampleId);
+      }
       mtSave();
-      showToast(`旧プールから ${migrated} 個を空フェーダーへ自動割当`);
-      // 再描画で反映
-      setTimeout(() => mtRenderSongInfo(), 50);
-    }
-  }
+      mtRecomputeSongDuration();
+      mtRenderSetlist();
+      mtRenderNow();
+    };
+    row.appendChild(del);
+
+    list.appendChild(row);
+  });
 }
 
 // hex "#RRGGBB" → [r,g,b]
