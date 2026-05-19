@@ -636,18 +636,20 @@
   #doorPage { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
   /* 上段は 3 カラム（NOW / DOOR BGM / WORKOUT BGM）に戻す */
   .do-top { display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(220px, 1fr) minmax(220px, 1fr); gap: 8px; }
-  /* LOGO カード（amber #C9A96A テーマ）— 左下に大きく配置 */
-  .do-logo-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+  /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
+  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .do-logo-head-left { display: flex; align-items: center; gap: 8px; }
   .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
     background: rgba(201,169,106,0.18); color: #C9A96A;
   }
   .do-logo-sub { font-size: 9px; color: #6A6A70; }
-  .do-logo-name { font-size: 11px; color: #C8C8CE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
-  /* 16:9 プレビュー — サブモニターの実際の見た目を反映 */
+  .do-logo-name { font-size: 11px; color: #C8C8CE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+  /* 本体: プレビュー（左、固定幅）+ スライダー群（右、伸縮） */
+  .do-logo-body { display: flex; gap: 10px; align-items: stretch; }
+  /* 16:9 プレビュー — 小さく抑える */
   .do-logo-preview {
-    width: 100%; aspect-ratio: 16/9;
+    width: 180px; aspect-ratio: 16/9; flex: none;
     background: #000;
     border: 0.5px solid rgba(201,169,106,0.3); border-radius: 4px;
     position: relative; overflow: hidden;
@@ -677,6 +679,13 @@
   }
   .do-logo-preview:hover .do-logo-preview-hint { opacity: 1; }
   .do-logo-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  /* スライダー群のコンテナ（プレビュー横） */
+  .do-logo-sliders { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; justify-content: center; }
+  /* スライダー行の余白を詰める */
+  .do-logo-card .do-logo-size-row { gap: 5px; }
+  .do-logo-card .do-logo-size-label { min-width: 32px; font-size: 8px; }
+  .do-logo-card .do-logo-size-slider { height: 14px; }
+  .do-logo-card .do-logo-size-val { font-size: 9px; min-width: 30px; }
   .do-logo-btn {
     background: transparent; border: 0.5px solid rgba(201,169,106,0.35); color: #C9A96A;
     padding: 4px 10px; border-radius: 3px; font-size: 9px; letter-spacing: 1px; font-weight: 600;
@@ -1548,34 +1557,38 @@
             </div>
             <span class="do-logo-name" id="doLogoName" style="color:#6A6A70; text-align:right; flex:none;">— 未読込</span>
           </div>
-          <div class="do-logo-preview empty" id="doLogoPreview">
-            <span id="doLogoPreviewEmptyText">+ 画像 / 動画 を ドロップ</span>
-            <div class="do-logo-preview-content" id="doLogoPreviewContent"></div>
-            <div class="do-logo-preview-hint">DRAG TO REPOSITION</div>
-          </div>
-          <div class="do-logo-size-row" id="doLogoSizeRow" style="display:none;">
-            <span class="do-logo-size-label">SIZE</span>
-            <div class="do-logo-size-slider" id="doLogoSizeSlider">
-              <div class="do-logo-size-fill" id="doLogoSizeFill" style="width:50%;"></div>
-              <div class="do-logo-size-thumb" id="doLogoSizeThumb" style="left:50%;"></div>
+          <div class="do-logo-body">
+            <div class="do-logo-preview empty" id="doLogoPreview">
+              <span id="doLogoPreviewEmptyText">+ 画像 / 動画 を ドロップ</span>
+              <div class="do-logo-preview-content" id="doLogoPreviewContent"></div>
+              <div class="do-logo-preview-hint">DRAG TO REPOSITION</div>
             </div>
-            <span class="do-logo-size-val" id="doLogoSizeVal">100%</span>
-          </div>
-          <div class="do-logo-size-row" id="doLogoXRow" style="display:none;">
-            <span class="do-logo-size-label">X POS</span>
-            <div class="do-logo-size-slider" id="doLogoXSlider">
-              <div class="do-logo-size-fill" id="doLogoXFill" style="width:50%;"></div>
-              <div class="do-logo-size-thumb" id="doLogoXThumb" style="left:50%;"></div>
+            <div class="do-logo-sliders">
+              <div class="do-logo-size-row" id="doLogoSizeRow" style="display:none;">
+                <span class="do-logo-size-label">SIZE</span>
+                <div class="do-logo-size-slider" id="doLogoSizeSlider">
+                  <div class="do-logo-size-fill" id="doLogoSizeFill" style="width:50%;"></div>
+                  <div class="do-logo-size-thumb" id="doLogoSizeThumb" style="left:50%;"></div>
+                </div>
+                <span class="do-logo-size-val" id="doLogoSizeVal">100%</span>
+              </div>
+              <div class="do-logo-size-row" id="doLogoXRow" style="display:none;">
+                <span class="do-logo-size-label">X POS</span>
+                <div class="do-logo-size-slider" id="doLogoXSlider">
+                  <div class="do-logo-size-fill" id="doLogoXFill" style="width:50%;"></div>
+                  <div class="do-logo-size-thumb" id="doLogoXThumb" style="left:50%;"></div>
+                </div>
+                <span class="do-logo-size-val" id="doLogoXVal">0</span>
+              </div>
+              <div class="do-logo-size-row" id="doLogoYRow" style="display:none;">
+                <span class="do-logo-size-label">Y POS</span>
+                <div class="do-logo-size-slider" id="doLogoYSlider">
+                  <div class="do-logo-size-fill" id="doLogoYFill" style="width:50%;"></div>
+                  <div class="do-logo-size-thumb" id="doLogoYThumb" style="left:50%;"></div>
+                </div>
+                <span class="do-logo-size-val" id="doLogoYVal">0</span>
+              </div>
             </div>
-            <span class="do-logo-size-val" id="doLogoXVal">0</span>
-          </div>
-          <div class="do-logo-size-row" id="doLogoYRow" style="display:none;">
-            <span class="do-logo-size-label">Y POS</span>
-            <div class="do-logo-size-slider" id="doLogoYSlider">
-              <div class="do-logo-size-fill" id="doLogoYFill" style="width:50%;"></div>
-              <div class="do-logo-size-thumb" id="doLogoYThumb" style="left:50%;"></div>
-            </div>
-            <span class="do-logo-size-val" id="doLogoYVal">0</span>
           </div>
           <div class="do-logo-actions">
             <button class="do-logo-btn" onclick="doLogoLoad()">LOAD</button>
@@ -1628,7 +1641,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.6.1';
+const APP_VERSION = 'v6.6.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
