@@ -1228,9 +1228,8 @@
     display: flex; flex-direction: column; gap: 6px;
   }
   /* 上段: チップ+曲名 | transport */
-  .mt-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  .mt-hero-meta { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
-  /* NOW チップ — 大きく・緑で目立たせる（本番視認用） */
+  .mt-hero-top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  /* NOW チップ（緑） — 本番視認用に大きく */
   .mt-hero-trackchip {
     font-family: 'SF Mono', monospace;
     font-size: 22px; font-weight: 800;
@@ -1243,38 +1242,38 @@
     box-shadow: 0 0 12px rgba(125,184,158,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
     text-shadow: 0 1px 0 rgba(255,255,255,0.2);
   }
-  /* NEXT SONG 表示（右端、本番視認用に大きく） */
-  .mt-hero-nextchip {
-    display: flex; align-items: center; gap: 12px;
-    padding: 7px 16px;
-    background: linear-gradient(180deg, #2A2210 0%, #1A1408 100%);
-    border: 1px solid #5A4A20;
-    border-radius: 8px;
-    flex-shrink: 0;
-    max-width: 380px;
-    box-shadow: 0 0 10px rgba(240,199,94,0.18), inset 0 1px 0 rgba(255,255,255,0.05);
+  /* NEXT SONG チップ（黄） — NOW と同じ造形、色違い */
+  .mt-hero-trackchip--next {
+    color: #2A1F08;
+    background: linear-gradient(180deg, #F0C75E, #D8A93D);
+    border-color: #C99828;
+    box-shadow: 0 0 12px rgba(240,199,94,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
   }
-  .mt-hero-nextchip-label {
-    font-family: 'SF Mono', monospace;
-    font-size: 14px; font-weight: 800;
-    color: #F0C75E;
-    letter-spacing: 1.8px;
+  /* NOW → NEXT を繋ぐ矢印（囲みなし、文字だけ） */
+  .mt-hero-arrow {
+    font-size: 26px; font-weight: 300;
+    color: #6A6A75;
     flex-shrink: 0;
-    text-shadow: 0 0 8px rgba(240,199,94,0.5);
+    margin: 0 4px;
+    line-height: 1;
   }
-  .mt-hero-nextchip-name {
-    font-size: 20px; font-weight: 600; color: #FFFFFF;
+  /* 次の曲名タイトル — NOW のタイトルと同じ流儀で表示 */
+  .mt-hero-nexttitle {
+    font-size: 26px; font-weight: 500; color: #C8C8CE;
+    letter-spacing: -0.3px; line-height: 1.1;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 300px;
-    letter-spacing: -0.3px;
+    min-width: 0; flex: 0 1 auto;
+    max-width: 320px;
+    padding: 4px 10px;
   }
   /* 再生中の chip 色変化も廃止 */
   /* input as title (rename here) — 本番で遠目に見えるよう大きめ */
   .mt-hero-title {
-    font-size: 32px; font-weight: 500; color: #F0F0F4;
-    letter-spacing: -0.5px; line-height: 1.1;
+    font-size: 26px; font-weight: 500; color: #FFFFFF;
+    letter-spacing: -0.3px; line-height: 1.1;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    min-width: 0; flex: 1;
+    min-width: 0; flex: 0 1 auto;
+    max-width: 320px;
     background: transparent;
     border: 0.5px solid transparent;
     border-radius: 4px;
@@ -2666,16 +2665,13 @@
       <div class="mt-hero-bg" id="mtHeroBg"></div>
       <div class="mt-hero-inner">
         <div class="mt-hero-top">
-          <div class="mt-hero-meta">
-            <span class="mt-hero-trackchip" id="mtHeroTrackChip">NOW</span>
-            <input class="mt-hero-title" id="mtNowName" type="text"
-                   placeholder="— 待機中 —"
-                   title="クリックして曲名を変更（選択中の曲）" />
-          </div>
-          <div class="mt-hero-nextchip" id="mtHeroNextChipWrap">
-            <span class="mt-hero-nextchip-label">NEXT SONG</span>
-            <span class="mt-hero-nextchip-name" id="mtHeroNextChipName">— なし —</span>
-          </div>
+          <span class="mt-hero-trackchip" id="mtHeroTrackChip">NOW</span>
+          <input class="mt-hero-title" id="mtNowName" type="text"
+                 placeholder="— 待機中 —"
+                 title="クリックして曲名を変更（選択中の曲）" />
+          <span class="mt-hero-arrow">→</span>
+          <span class="mt-hero-trackchip mt-hero-trackchip--next">NEXT SONG</span>
+          <span class="mt-hero-nexttitle" id="mtHeroNextChipName">— なし —</span>
         </div>
         <div class="mt-hero-bottom">
           <!-- スクラバー（クリック/ドラッグでシーク）+ ロケート ドロップハンドル -->
@@ -2849,7 +2845,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.27.4';
+const APP_VERSION = 'v7.28.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
