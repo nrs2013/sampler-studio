@@ -1498,14 +1498,19 @@
 
   /* MIXER (console-style strips, more compact) */
   .mt-mixer-card {
+    position: relative;
     background: linear-gradient(180deg, #131316, #0E0E12);
     border: 0.5px solid #1F1F22; border-radius: 10px; padding: 10px 12px 12px;
     box-shadow: 0 2px 24px rgba(0,0,0,0.4);
     display: flex; flex-direction: column; min-width: 0;
   }
+  /* FADE OUT を MIXER カード右上にフロート（ヘッダーなしの分スペース節約） */
+  .mt-fadeout-float {
+    position: absolute; top: 8px; right: 10px; z-index: 2;
+  }
   .mt-mixer-strips {
     display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
-    padding: 4px 0 0;
+    padding: 0;
     flex: 1; min-height: 0;
   }
   .mt-strip {
@@ -1550,11 +1555,11 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  /* Fader + Meter 横並びエリア */
+  /* Fader + Meter 横並びエリア（ヘッダー廃止分、フェーダーを長く） */
   .mt-strip-faderwrap {
     display: flex; gap: 5px; align-items: stretch; justify-content: center;
-    height: 130px; padding: 3px 0;
-    flex: 1; min-height: 60px;
+    height: 175px; padding: 3px 0;
+    flex: 1; min-height: 80px;
   }
   /* Fader */
   .mt-strip-fader {
@@ -2275,19 +2280,12 @@
 
     <!-- 3. BOTTOM ROW: MIXER | AUDIO IFACE | CHANNEL ROUTING -->
     <div class="mt-bottom-row">
-      <!-- MIXER (左) -->
+      <!-- MIXER (左) — ヘッダーは廃止して FADE OUT だけ右上にフロート -->
       <div class="mt-mixer-card">
-        <div class="mt-section-head compact">
-          <div class="mt-section-head-l">
-            <span class="mt-section-num">03</span>
-            <span class="mt-section-title">MIXER</span>
-            <span class="mt-section-count">5 GROUPS</span>
-          </div>
-          <button class="mt-fadeout-btn" onclick="mtFadeOut()" title="フェードアウト（パニックストップ）">
-            <span class="mt-fadeout-glyph">⌽</span>
-            <span class="mt-fadeout-text">FADE OUT</span>
-          </button>
-        </div>
+        <button class="mt-fadeout-btn mt-fadeout-float" onclick="mtFadeOut()" title="フェードアウト（パニックストップ）">
+          <span class="mt-fadeout-glyph">⌽</span>
+          <span class="mt-fadeout-text">FADE OUT</span>
+        </button>
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
 
@@ -2396,7 +2394,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.7';
+const APP_VERSION = 'v7.7.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
