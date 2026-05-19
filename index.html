@@ -1424,12 +1424,14 @@
     font-family: 'SF Mono', monospace; margin-right: 2px;
   }
   /* 3 カラム縦流し: 左列 1〜8 を上から下 → 中央 9〜16 → 右 17〜24
+     25 曲以上は自動で 4 列目以降に流れる（grid-auto-flow: column）
      本番中スクロールしないよう、視線は上から下へ単純に進む */
   .mt-setlist-list {
     display: grid;
     grid-auto-flow: column;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-    /* grid-template-rows は JS で設定 (1 列あたりの最大行数) */
+    grid-auto-columns: minmax(0, 1fr);  /* 4 列目以降も同じ幅で */
+    /* grid-template-rows は JS で repeat(8, auto) を設定 */
     gap: 4px 8px;
     overflow-y: auto; padding-right: 2px;
     flex: 1; min-height: 0;
@@ -2848,7 +2850,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.27.1';
+const APP_VERSION = 'v7.27.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10323,15 +10325,11 @@ function mtRenderSetlist() {
   const list = document.getElementById('mtSetlistList');
   if (!list) return;
   list.innerHTML = '';
-  // 3 カラム縦流し: 各列に最大 8 曲、左から順に埋める
+  // 3 カラム縦流し、1 列あたり常に 8 行：
   //   1 列目: 1〜8、2 列目: 9〜16、3 列目: 17〜24
-  // 曲数に応じて 1 列あたりの行数を決め、余白を最小化
-  const n = state.multitrack.songs.length;
-  const ROWS_PER_COL = 8;
-  const rows = n > 0 ? Math.min(ROWS_PER_COL, Math.max(1, Math.ceil(n / 3))) : 0;
-  // 25 曲以上の場合は 1 列あたり ROWS_PER_COL に固定し、4 列目以降に流す
-  const actualRows = n > 24 ? ROWS_PER_COL : (rows || 1);
-  list.style.gridTemplateRows = n > 0 ? `repeat(${actualRows}, auto)` : '';
+  // 25 曲以上は自動で 4 列目以降に流れる（grid-auto-flow: column）
+  // 曲数に関わらず常に 8 行を確保 → ユーザーの期待通り 1 列目に 8 曲まで入る
+  list.style.gridTemplateRows = 'repeat(8, auto)';
   // ヘッダー（旧 STYLE / NEXT START）は 3 カラム化で各列とは整列しなくなるので常時非表示
   const header = document.getElementById('mtSetlistHeader');
   if (header) header.style.display = 'none';
