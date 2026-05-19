@@ -1138,6 +1138,15 @@
     <video id="outputVideo" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000;" playsinline></video>
     <div id="outputIdle" style="position:absolute; bottom:16px; right:20px; color:#1E1E24; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif;">● OUTPUT READY</div>
     <div id="outputStatus" style="position:absolute; top:16px; left:16px; color:#4FD1C5; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif; display:none;"></div>
+    <!-- Click to enable autoplay (Chrome autoplay policy) -->
+    <div id="outputEnableOverlay" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:18px; background:rgba(0,0,0,0.95); cursor:pointer; z-index:10000;">
+      <div style="font-family:'Helvetica Neue',sans-serif; color:#4FD1C5; font-size:13px; letter-spacing:4px; font-weight:600;">CLICK TO ENABLE OUTPUT</div>
+      <div style="font-family:'Helvetica Neue',sans-serif; color:#5A5A60; font-size:10px; letter-spacing:1.5px; max-width:520px; text-align:center; line-height:1.6;">
+        Chrome の自動再生ポリシーにより、最初に一度このウィンドウをクリックする必要があります。<br>
+        本番リハーサル時に必ず最初にクリックしておいてください。
+      </div>
+      <div style="margin-top:12px; padding:8px 24px; border:0.5px solid #4FD1C5; border-radius:4px; color:#4FD1C5; font-family:'Helvetica Neue',sans-serif; font-size:11px; letter-spacing:2px;">▶ ENABLE</div>
+    </div>
   </div>
   <!-- ====================================================================== -->
 
@@ -1502,7 +1511,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.3.1';
+const APP_VERSION = 'v6.3.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -6478,6 +6487,32 @@ function initOutputMode() {
     else if (m.cmd === 'stop') stopVideo();
     else if (m.cmd === 'ping') bc.postMessage({ event: 'pong' });
   };
+
+  // === Autoplay 有効化 ===
+  // Chrome の autoplay ポリシーで「未操作のドキュメントで play() ブロック」を防ぐため、
+  // クリック時に muted の dummy 再生で autoplay 解除しておく。
+  const enableOverlay = document.getElementById('outputEnableOverlay');
+  let autoplayUnlocked = false;
+  const unlockAutoplay = async () => {
+    try {
+      // ダミーで一度だけ play→pause（ユーザージェスチャー内）で autoplay 解除
+      video.muted = true;
+      video.src = 'data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDE=';
+      await video.play().catch(() => {});
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      video.muted = false;
+    } catch(_) {}
+    autoplayUnlocked = true;
+    if (enableOverlay) enableOverlay.style.display = 'none';
+    bc.postMessage({ event: 'unlocked' });
+  };
+  if (enableOverlay) {
+    enableOverlay.addEventListener('click', unlockAutoplay);
+    document.addEventListener('keydown', unlockAutoplay, { once: true });
+  }
+
   // 起動を main に知らせる
   bc.postMessage({ event: 'ready' });
   window.addEventListener('beforeunload', () => bc.postMessage({ event: 'closed' }));
