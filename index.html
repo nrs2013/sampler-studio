@@ -1655,11 +1655,11 @@
     flex-shrink: 0;
   }
 
-  /* Fader + Meter 横並びエリア — ヘッダー1行化＆MIXERヘッダー廃止で大幅伸長 */
+  /* Fader + Meter 横並びエリア — 半分くらいに固定して MIXER カード全体を縮める */
   .mt-strip-faderwrap {
     display: flex; gap: 5px; align-items: stretch; justify-content: center;
-    height: 220px; padding: 3px 0;
-    flex: 1; min-height: 100px;
+    height: 120px; padding: 3px 0;
+    flex: none;
   }
   /* Fader */
   .mt-strip-fader {
@@ -2527,7 +2527,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.1';
+const APP_VERSION = 'v7.10.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
