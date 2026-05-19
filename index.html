@@ -1609,13 +1609,15 @@
   .mt-song-delay { -moz-appearance: textfield; }
 
   /* ============= 3. BOTTOM ROW: MIXER | IFACE | SELECTED SONG (横3列) ============= */
-  /* MIXER はコンテンツ幅、IFACE は最小幅、SELECTED SONG が残り */
+  /* MIXER はコンテンツ幅、IFACE は最小幅、SELECTED SONG が残り。
+     align-items はデフォルト stretch → 各カードが行の全高にフィット。
+     SELECTED SONG が height: 250px 固定なので、行全体が 250px+。
+     MIXER/IFACE もその高さまで伸びる → 下段カードの高さが揃う */
   .mt-bottom-row {
     display: grid;
     grid-template-columns: auto minmax(240px, 1fr) minmax(280px, 1.3fr);
     gap: 8px;
     flex-shrink: 0;
-    align-items: start;
   }
 
   /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
@@ -1660,9 +1662,10 @@
     border: 0.5px solid #1F1F22; border-radius: 10px; padding: 10px 12px 12px;
     box-shadow: 0 2px 24px rgba(0,0,0,0.4);
     min-width: 0;
-    align-self: start;        /* bottom-row grid セル内で縦伸びしない */
+    display: flex; flex-direction: column;
+    /* SELECTED SONG (250px) と高さを揃えるため、grid セルの stretch に任せる */
   }
-  /* FADE OUT を MIXER カード右上にフロート（ヘッダーなしの分スペース節約） */
+  /* FADE OUT を MIXER カード右上にフロート */
   .mt-fadeout-float {
     position: absolute; top: 8px; right: 10px; z-index: 2;
   }
@@ -1670,6 +1673,8 @@
     display: grid; grid-template-columns: repeat(6, 76px); gap: 4px;
     padding: 0;
     justify-content: start;
+    flex: 1;     /* カードの残り高さを全部使う */
+    min-height: 0;
   }
   .mt-strip {
     position: relative;
@@ -1679,11 +1684,10 @@
     border: 0.5px solid #1F1F22; border-radius: 5px;
     min-width: 0;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-    /* 案 A: ストリップを固定高にしてフェーダー以下を「下寄せ」 */
-    height: 200px;
+    /* height: 200px を削除 — grid セルにより親 (mt-mixer-strips) が flex:1 で
+       カード全高を確保しているため、strip は自動でその高さに伸びる */
   }
-  /* ヘッダーは上端、それ以外（フェーダー〜MUTE/SOLO）は下端へ */
-  .mt-strip-header { margin-bottom: auto; }
+  /* ヘッダーは上、フェーダーが flex:1 で中央を埋め、db / mute・solo が下に */
   /* 左端カラーストライプ（グループ識別） */
   .mt-strip::before {
     content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
@@ -1723,11 +1727,12 @@
     flex-shrink: 0;
   }
 
-  /* Fader + Meter 横並びエリア — 半分くらいに固定して MIXER カード全体を縮める */
+  /* Fader + Meter 横並びエリア — 下まで伸びる。
+     strip 内で flex:1 を取り、header/db/mute・solo の余りを全部使う */
   .mt-strip-faderwrap {
     display: flex; gap: 4px; align-items: stretch; justify-content: center;
-    height: 120px; padding: 3px 0;
-    flex: none;
+    flex: 1; min-height: 60px;
+    padding: 3px 0;
   }
   /* Fader */
   .mt-strip-fader {
@@ -2695,7 +2700,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.20';
+const APP_VERSION = 'v7.21';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
