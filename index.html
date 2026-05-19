@@ -1182,6 +1182,63 @@
   .mt-now-bar-fill { height: 100%; background: #7DB89E; width: 0%; transition: width 0.1s linear; }
   .mt-now-status { font-size: 10px; color: #6A6A70; margin-top: 4px; letter-spacing: 1px; }
 
+  /* MIXER (5ch strip) */
+  .mt-mixer-card { background: #131316; border: 1px solid #1F1F22; border-radius: 8px; padding: 12px 16px; }
+  .mt-mixer-strips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .mt-strip {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 4px; background: #16161B; border: 0.5px solid #1F1F22; border-radius: 5px;
+    min-width: 0;
+  }
+  .mt-strip-label {
+    font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; font-weight: 600;
+    text-align: center;
+  }
+  .mt-strip-label.drums  { color: #ED93B1; }
+  .mt-strip-label.bass   { color: #85B7EB; }
+  .mt-strip-label.other  { color: #EF9F27; }
+  .mt-strip-label.vocal  { color: #92C9B0; }
+  .mt-strip-label.chorus { color: #97C459; }
+  .mt-strip-faderwrap { display: flex; gap: 4px; align-items: stretch; height: 110px; width: 38px; }
+  .mt-strip-fader {
+    position: relative; width: 12px; background: #0E0E10; border-radius: 6px; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .mt-strip-fader-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, #5A6A65, #7DB89E);
+    border-radius: 6px;
+  }
+  .mt-strip-fader-thumb {
+    position: absolute; left: -4px; right: -4px; height: 10px;
+    background: #E6E6EA; border-radius: 2px; transform: translateY(50%);
+    pointer-events: none;
+  }
+  .mt-strip-meter {
+    width: 6px; background: #0E0E10; border-radius: 3px; position: relative; overflow: hidden;
+    flex-shrink: 0;
+  }
+  .mt-strip-meter-fill {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, #7DB89E 0%, #7DB89E 60%, #EF9F27 80%, #E24B4A 95%);
+    height: 0%;
+    transition: height 0.04s linear;
+  }
+  .mt-strip-db {
+    font-family: 'SF Mono', monospace; font-size: 9px; color: #C8C8CE;
+    background: #0E0E10; padding: 2px 4px; border-radius: 3px; min-width: 36px; text-align: center;
+  }
+  .mt-strip-mute {
+    background: #1A1A1E; color: #6A6A70; border: 0.5px solid #25252A;
+    padding: 2px 6px; border-radius: 3px; font-size: 8px; letter-spacing: 1px;
+    cursor: pointer; font-family: inherit; font-weight: 600;
+    transition: all 0.1s;
+  }
+  .mt-strip-mute:hover { color: #E6E6EA; border-color: #3A3A40; }
+  .mt-strip-mute.muted { background: #E24B4A; color: #2A0A0A; border-color: #E24B4A; }
+  .mt-strip.muted .mt-strip-fader-fill { opacity: 0.3; }
+  .mt-strip.muted .mt-strip-meter-fill { opacity: 0.2; }
+
   /* Channel matrix */
   .mt-ch-matrix { display: grid; grid-template-columns: 100px repeat(5, 1fr); gap: 6px; align-items: center; }
   .mt-ch-cell { font-size: 10px; color: #6A6A70; padding: 4px; text-align: center; }
@@ -1781,6 +1838,12 @@
       </div>
     </div>
 
+    <!-- MIXER -->
+    <div class="mt-mixer-card">
+      <div class="mt-card-head" style="margin-bottom:10px;">MIXER</div>
+      <div class="mt-mixer-strips" id="mtMixerStrips"></div>
+    </div>
+
     <!-- SETLIST -->
     <div class="mt-card mt-setlist-card">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
@@ -1828,7 +1891,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.1';
+const APP_VERSION = 'v7.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -2072,6 +2135,12 @@ const state = {
       other:  { L: 5, R: 6 },
       vocal:  { L: 7, R: 8 },
       chorus: { L: 9, R: 10 },
+    },
+    groupGains: {                 // 各グループの音量（linear 0..1.4 で +3dB まで）
+      drums: 1.0, bass: 1.0, other: 1.0, vocal: 1.0, chorus: 1.0,
+    },
+    groupMute: {                  // 各グループの mute
+      drums: false, bass: false, other: false, vocal: false, chorus: false,
     },
     songs: [],                    // [{ id, name, tracks: {drums:{sampleId,name}|null, bass:..., ...} }]
     currentSongIdx: -1,
@@ -7485,6 +7554,9 @@ let mtMasterGain = null;
 let mtMerger = null;            // ChannelMerger node (size = outputChannelCount)
 let mtDecodedCache = {};        // { sampleId: AudioBuffer }  in-memory cache
 let mtMeterRaf = null;
+let mtGroupGainNodes = {};      // { drums: GainNode, bass: GainNode, ... }
+let mtGroupAnalysers = {};      // { drums: AnalyserNode, ... }
+let mtGroupAnalyserData = {};   // { drums: Float32Array, ... }  reusable buffers
 
 // state を localStorage 用に整形
 function mtSerialize() {
@@ -7495,6 +7567,8 @@ function mtSerialize() {
     gapSec: m.gapSec,
     autoAdvance: m.autoAdvance,
     channelMap: m.channelMap,
+    groupGains: m.groupGains,
+    groupMute: m.groupMute,
     songs: m.songs.map(s => ({
       id: s.id, name: s.name,
       tracks: Object.fromEntries(
@@ -7512,6 +7586,8 @@ function mtRestore(saved) {
   if (typeof saved.gapSec === 'number') m.gapSec = saved.gapSec;
   if (typeof saved.autoAdvance === 'boolean') m.autoAdvance = saved.autoAdvance;
   if (saved.channelMap) m.channelMap = saved.channelMap;
+  if (saved.groupGains) m.groupGains = { ...m.groupGains, ...saved.groupGains };
+  if (saved.groupMute) m.groupMute = { ...m.groupMute, ...saved.groupMute };
   if (Array.isArray(saved.songs)) m.songs = saved.songs.map(s => ({
     id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
     name: s.name || '無題',
@@ -7540,8 +7616,62 @@ async function mtInitCtx() {
   mtCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
   mtMasterGain = mtCtx.createGain();
   mtMasterGain.gain.value = 1.0;
+  // 各グループ用 GainNode + AnalyserNode を構築
+  for (const g of MT_GROUPS) {
+    const gain = mtCtx.createGain();
+    const muted = !!state.multitrack.groupMute[g];
+    gain.gain.value = muted ? 0 : (state.multitrack.groupGains[g] ?? 1.0);
+    const an = mtCtx.createAnalyser();
+    an.fftSize = 1024;
+    an.smoothingTimeConstant = 0.4;
+    // gain → analyser はパラ接続（analyser は出力に影響しない sink-only）
+    gain.connect(an);
+    mtGroupGainNodes[g] = gain;
+    mtGroupAnalysers[g] = an;
+    mtGroupAnalyserData[g] = new Float32Array(an.fftSize);
+  }
   await mtRebuildRouting();
   return mtCtx;
+}
+
+// 1グループ分の音量設定
+function mtSetGroupGain(group, linear) {
+  let v = parseFloat(linear);
+  if (!isFinite(v) || v < 0) v = 0;
+  if (v > 1.4) v = 1.4; // +3dB cap (linear ≈ 1.413)
+  state.multitrack.groupGains[group] = v;
+  if (mtGroupGainNodes[group] && !state.multitrack.groupMute[group]) {
+    // 短いランプで click 防止
+    const t = mtCtx.currentTime;
+    mtGroupGainNodes[group].gain.cancelScheduledValues(t);
+    mtGroupGainNodes[group].gain.setTargetAtTime(v, t, 0.005);
+  }
+  mtSave();
+  mtRenderMixer(); // 表示更新
+}
+
+function mtToggleMute(group) {
+  const muted = !state.multitrack.groupMute[group];
+  state.multitrack.groupMute[group] = muted;
+  if (mtGroupGainNodes[group] && mtCtx) {
+    const t = mtCtx.currentTime;
+    const target = muted ? 0 : (state.multitrack.groupGains[group] ?? 1.0);
+    mtGroupGainNodes[group].gain.cancelScheduledValues(t);
+    mtGroupGainNodes[group].gain.setTargetAtTime(target, t, 0.008);
+  }
+  mtSave();
+  mtRenderMixer();
+}
+
+// linear (0..1.4) → dB
+function mtLinToDb(v) {
+  if (v <= 0.0001) return -Infinity;
+  return 20 * Math.log10(v);
+}
+// dB → linear
+function mtDbToLin(db) {
+  if (!isFinite(db)) return 0;
+  return Math.pow(10, db / 20);
 }
 
 // destination のチャンネル数を更新し、ChannelMerger を再構築
@@ -7889,6 +8019,7 @@ async function mtPlaySong(idx) {
     return;
   }
   // 全グループの source を作って同時 start
+  // ルート: BufferSource → groupGain → (analyser:tap) → splitter → merger
   const when = mtCtx.currentTime + 0.05; // 少し未来でスケジュール
   const sources = [];
   for (const g of MT_GROUPS) {
@@ -7896,23 +8027,22 @@ async function mtPlaySong(idx) {
     if (!buf) continue;
     const src = mtCtx.createBufferSource();
     src.buffer = buf;
+    const gain = mtGroupGainNodes[g];
+    src.connect(gain);
     const cm = state.multitrack.channelMap[g];
     const chL = Math.max(1, cm.L|0) - 1;
     const chR = Math.max(1, cm.R|0) - 1;
-    // バッファのチャンネル数で分岐
+    // バッファのチャンネル数で分岐（gain の下流に接続）
     if (buf.numberOfChannels >= 2 && mtMerger.numberOfInputs > Math.max(chL, chR)) {
-      // ステレオ → 個別ch
       const splitter = mtCtx.createChannelSplitter(2);
-      src.connect(splitter);
+      gain.connect(splitter);
       splitter.connect(mtMerger, 0, chL);
       splitter.connect(mtMerger, 1, chR);
     } else if (buf.numberOfChannels === 1 && mtMerger.numberOfInputs > chL) {
-      // モノラル → L のみ
-      src.connect(mtMerger, 0, chL);
-      if (chL !== chR && mtMerger.numberOfInputs > chR) src.connect(mtMerger, 0, chR);
+      gain.connect(mtMerger, 0, chL);
+      if (chL !== chR && mtMerger.numberOfInputs > chR) gain.connect(mtMerger, 0, chR);
     } else {
-      // チャンネル数が足りない場合は通常出力（master 経由でステレオダウンミックス）
-      src.connect(mtMasterGain);
+      gain.connect(mtMasterGain);
     }
     src.start(when);
     sources.push(src);
@@ -7953,6 +8083,16 @@ function mtStopSources() {
     try { src.disconnect(); } catch(_) {}
   }
   state.multitrack.activeSources = [];
+  // 各 group の gain の下流（splitter / merger 接続）を切る → analyser だけ残す
+  for (const g of MT_GROUPS) {
+    const gain = mtGroupGainNodes[g];
+    if (!gain) continue;
+    try { gain.disconnect(); } catch(_) {}
+    // analyser だけ再接続
+    if (mtGroupAnalysers[g]) {
+      try { gain.connect(mtGroupAnalysers[g]); } catch(_) {}
+    }
+  }
   if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
 }
 
@@ -8013,8 +8153,125 @@ function mtRenderAll() {
   if (gapInput) gapInput.value = state.multitrack.gapSec;
   const autoCB = document.getElementById('mtAutoAdvance');
   if (autoCB) autoCB.checked = state.multitrack.autoAdvance;
+  mtRenderMixer();
   mtRenderSetlist();
   mtRenderNow();
+}
+
+// ---- MIXER 描画 + フェーダーバインド ----
+function mtRenderMixer() {
+  const host = document.getElementById('mtMixerStrips');
+  if (!host) return;
+  host.innerHTML = '';
+  for (const g of MT_GROUPS) {
+    const strip = document.createElement('div');
+    strip.className = 'mt-strip';
+    if (state.multitrack.groupMute[g]) strip.classList.add('muted');
+    strip.dataset.mtStrip = g;
+
+    // ラベル
+    const lbl = document.createElement('div');
+    lbl.className = 'mt-strip-label ' + g;
+    lbl.textContent = MT_GROUP_LABELS[g];
+    strip.appendChild(lbl);
+
+    // fader + meter (横並び)
+    const wrap = document.createElement('div'); wrap.className = 'mt-strip-faderwrap';
+    const fader = document.createElement('div'); fader.className = 'mt-strip-fader'; fader.dataset.mtFader = g;
+    const fill = document.createElement('div'); fill.className = 'mt-strip-fader-fill'; fader.appendChild(fill);
+    const thumb = document.createElement('div'); thumb.className = 'mt-strip-fader-thumb'; fader.appendChild(thumb);
+    wrap.appendChild(fader);
+    const meter = document.createElement('div'); meter.className = 'mt-strip-meter';
+    const mfill = document.createElement('div'); mfill.className = 'mt-strip-meter-fill'; mfill.dataset.mtMeter = g;
+    meter.appendChild(mfill);
+    wrap.appendChild(meter);
+    strip.appendChild(wrap);
+
+    // dB readout
+    const db = document.createElement('div'); db.className = 'mt-strip-db'; db.dataset.mtDb = g;
+    strip.appendChild(db);
+
+    // MUTE ボタン
+    const mute = document.createElement('button'); mute.className = 'mt-strip-mute' + (state.multitrack.groupMute[g] ? ' muted' : '');
+    mute.textContent = 'MUTE';
+    mute.onclick = () => mtToggleMute(g);
+    strip.appendChild(mute);
+
+    host.appendChild(strip);
+    // フェーダー位置を反映
+    mtRenderFaderPos(g);
+    // フェーダー操作
+    mtBindFader(fader, g);
+  }
+}
+
+// linear gain (0..1.4) ↔ fader position (0..1) の変換
+// 0dB を 0.71 位置に置く（MASTER と同じ感覚）
+function mtGainToPos(v) {
+  if (v <= 0.0001) return 0;
+  // 0..1 (linear) → 0..0.71 (pos)、1..1.4 → 0.71..1
+  if (v <= 1.0) return v * 0.71;
+  return 0.71 + ((v - 1.0) / 0.4) * 0.29;
+}
+function mtPosToGain(p) {
+  if (p <= 0) return 0;
+  if (p <= 0.71) return p / 0.71;
+  return 1.0 + ((p - 0.71) / 0.29) * 0.4;
+}
+
+function mtRenderFaderPos(group) {
+  const v = state.multitrack.groupGains[group] ?? 1.0;
+  const pos = mtGainToPos(v); // 0..1
+  const fader = document.querySelector(`[data-mt-fader="${group}"]`);
+  if (!fader) return;
+  const fill = fader.querySelector('.mt-strip-fader-fill');
+  const thumb = fader.querySelector('.mt-strip-fader-thumb');
+  if (fill) fill.style.height = (pos * 100) + '%';
+  if (thumb) thumb.style.bottom = (pos * 100) + '%';
+  // dB readout
+  const db = document.querySelector(`[data-mt-db="${group}"]`);
+  if (db) {
+    if (state.multitrack.groupMute[group]) {
+      db.textContent = 'MUTE';
+      db.style.color = '#E24B4A';
+    } else {
+      const dbv = mtLinToDb(v);
+      db.textContent = isFinite(dbv) ? (dbv >= 0 ? '+' : '') + dbv.toFixed(1) : '-∞';
+      db.style.color = '#C8C8CE';
+    }
+  }
+}
+
+function mtBindFader(fader, group) {
+  let dragging = false;
+  const update = (clientY) => {
+    const rect = fader.getBoundingClientRect();
+    let pos = 1 - ((clientY - rect.top) / rect.height);
+    if (pos < 0) pos = 0;
+    if (pos > 1) pos = 1;
+    // 0dB スナップ（0.69〜0.73 の範囲は 0.71 に吸着）
+    if (pos > 0.685 && pos < 0.735) pos = 0.71;
+    const v = mtPosToGain(pos);
+    mtSetGroupGain(group, v);
+  };
+  fader.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    fader.setPointerCapture(e.pointerId);
+    update(e.clientY);
+    e.preventDefault();
+  });
+  fader.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    update(e.clientY);
+  });
+  const end = (e) => {
+    dragging = false;
+    try { fader.releasePointerCapture(e.pointerId); } catch(_) {}
+  };
+  fader.addEventListener('pointerup', end);
+  fader.addEventListener('pointercancel', end);
+  // ダブルクリックで 0dB リセット
+  fader.addEventListener('dblclick', () => mtSetGroupGain(group, 1.0));
 }
 
 function mtRenderSetlist() {
@@ -8185,10 +8442,38 @@ function mtFmtTime(s) {
   return `${m}:${sec.toString().padStart(2,'0')}`;
 }
 
+// AnalyserNode から RMS を読み取り、メーター高さを更新（dB scale）
+function mtUpdateMeters() {
+  for (const g of MT_GROUPS) {
+    const an = mtGroupAnalysers[g];
+    const data = mtGroupAnalyserData[g];
+    const fill = document.querySelector(`[data-mt-meter="${g}"]`);
+    if (!an || !data || !fill) continue;
+    if (typeof an.getFloatTimeDomainData === 'function') {
+      an.getFloatTimeDomainData(data);
+    } else {
+      continue;
+    }
+    // RMS 計算
+    let sumSq = 0;
+    for (let i = 0; i < data.length; i++) sumSq += data[i] * data[i];
+    const rms = Math.sqrt(sumSq / data.length);
+    // dB に変換し、メーター範囲（-60dB..+3dB）にマップ
+    const db = rms > 0.00001 ? 20 * Math.log10(rms) : -Infinity;
+    let pct;
+    if (!isFinite(db)) pct = 0;
+    else if (db <= -60) pct = 0;
+    else if (db >= 3) pct = 100;
+    else pct = ((db + 60) / 63) * 100;
+    fill.style.height = pct + '%';
+  }
+}
+
 function mtStartMeter() {
   if (mtMeterRaf) return;
   const tick = () => {
     mtUpdateProgress();
+    mtUpdateMeters();
     if (state.multitrack.isPlaying) mtMeterRaf = requestAnimationFrame(tick);
     else mtMeterRaf = null;
   };
@@ -8196,6 +8481,11 @@ function mtStartMeter() {
 }
 function mtStopMeter() {
   if (mtMeterRaf) { cancelAnimationFrame(mtMeterRaf); mtMeterRaf = null; }
+  // メーターを 0 に
+  for (const g of MT_GROUPS) {
+    const fill = document.querySelector(`[data-mt-meter="${g}"]`);
+    if (fill) fill.style.height = '0%';
+  }
 }
 
 // デバイス変化を監視（USB の抜き差し）
