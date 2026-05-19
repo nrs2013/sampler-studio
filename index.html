@@ -1109,144 +1109,443 @@
   /* ====================================================================== */
 
   /* ====================== MULTI-TRACK MODE ====================== */
-  #multiPage { display: none; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
-  .mt-top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .mt-card { background: #131316; border: 1px solid #1F1F22; border-radius: 8px; padding: 12px; }
-  .mt-card-head { font-size: 10px; color: #6A6A70; letter-spacing: 2px; font-weight: 600; margin-bottom: 8px; text-transform: uppercase; }
-  .mt-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
-  .mt-label { font-size: 10px; letter-spacing: 1.5px; color: #6A6A70; font-weight: 600; min-width: 90px; }
-  .mt-select {
-    flex: 1; background: #1A1A1E; border: 0.5px solid #25252A; color: #C8C8CE;
-    padding: 6px 10px; border-radius: 4px; font-family: inherit; font-size: 11px; cursor: pointer;
+  /*  デザインコンセプト：
+      - 上から NOW PLAYING (hero) → SETLIST → MIXER → CONFIG の流れ
+      - グループ別アクセントカラーを各所で活用：drums/bass/other/chorus/vocal
+      - コンソール調の縦フェーダー、デジタルメーター
+      - 微妙なグロー＋グラデーション、再生中は微かに脈動                                 */
+  #multiPage {
+    display: none; flex-direction: column; gap: 12px;
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 2px 0 16px;
   }
-  .mt-select:focus { outline: none; border-color: #7DB89E; }
-  .mt-input-num {
-    width: 60px; background: #1A1A1E; border: 0.5px solid #25252A; color: #C8C8CE;
-    padding: 4px 8px; border-radius: 3px; font-family: inherit; font-size: 11px; text-align: right;
+
+  /* --- 共通 --- */
+  .mt-card {
+    background: linear-gradient(180deg, #131316, #101013);
+    border: 0.5px solid #1F1F22; border-radius: 10px; padding: 14px 16px;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
   }
+  .mt-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 12px; }
+  .mt-section-head.compact { margin-bottom: 8px; }
+  .mt-section-head-l { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .mt-section-num {
+    font-family: 'SF Mono', monospace; font-size: 10px; color: #3A3A42;
+    background: #0B0B0D; padding: 2px 6px; border-radius: 3px; letter-spacing: 1px;
+    border: 0.5px solid #1A1A1E;
+  }
+  .mt-section-title { font-size: 11px; letter-spacing: 3px; color: #E6E6EA; font-weight: 600; text-transform: uppercase; }
+  .mt-section-count { font-size: 9px; letter-spacing: 1.5px; color: #5A5A60; text-transform: uppercase; }
+  .mt-section-actions { display: flex; gap: 6px; }
+
   .mt-btn {
     background: transparent; border: 0.5px solid #25252A; color: #C8C8CE;
-    padding: 6px 12px; border-radius: 4px; font-family: inherit; font-size: 10px;
+    padding: 6px 14px; border-radius: 4px; font-family: inherit; font-size: 10px;
     letter-spacing: 1.5px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
   }
-  .mt-btn:hover { border-color: #7DB89E; color: #7DB89E; }
+  .mt-btn:hover { border-color: #7DB89E; color: #7DB89E; background: rgba(125,184,158,0.04); }
+  .mt-btn.ghost { background: rgba(255,255,255,0.02); }
+  .mt-btn.ghost.subtle { color: #5A5A60; border-color: #1F1F22; }
+  .mt-btn.ghost.subtle:hover { color: #E24B4A; border-color: rgba(226,75,74,0.4); background: rgba(226,75,74,0.05); }
   .mt-btn.primary { background: #7DB89E; color: #0E1A14; border: none; }
   .mt-btn.primary:hover { background: #92C9B0; }
   .mt-btn.danger { color: #E24B4A; border-color: rgba(226,75,74,0.4); }
   .mt-btn.danger:hover { background: rgba(226,75,74,0.1); }
 
-  /* Setlist */
-  .mt-setlist-card { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-  .mt-setlist-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; min-height: 200px; }
-  .mt-song-row {
-    display: grid; grid-template-columns: 24px 22px 1fr repeat(5, 50px) 32px;
-    gap: 6px; align-items: center;
-    padding: 6px 8px; border: 0.5px solid #25252A; border-radius: 4px;
-    background: #1A1A1E;
+  .mt-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
+  .mt-label {
+    font-size: 9px; letter-spacing: 2px; color: #6A6A70; font-weight: 600;
+    min-width: 82px; text-transform: uppercase;
   }
-  .mt-song-row.playing { border-color: #7DB89E; background: rgba(125,184,158,0.06); }
+  .mt-row-note { font-size: 10px; color: #5A5A60; letter-spacing: 0.5px; }
+  .mt-num-readout {
+    font-family: 'SF Mono', monospace; font-size: 12px; color: #92C9B0;
+    background: #0B0B0D; padding: 3px 8px; border-radius: 3px;
+    border: 0.5px solid #1F1F22; text-shadow: 0 0 8px rgba(146,201,176,0.3);
+  }
+  .mt-select {
+    flex: 1; background: #0E0E10; border: 0.5px solid #25252A; color: #E6E6EA;
+    padding: 7px 10px; border-radius: 4px; font-family: inherit; font-size: 11px; cursor: pointer;
+  }
+  .mt-select:focus { outline: none; border-color: #7DB89E; }
+  .mt-input-num {
+    width: 60px; background: #0E0E10; border: 0.5px solid #25252A; color: #E6E6EA;
+    padding: 5px 8px; border-radius: 3px; font-family: 'SF Mono', monospace;
+    font-size: 11px; text-align: right;
+  }
+  .mt-input-num:focus { outline: none; border-color: #7DB89E; }
+
+  /* iOS風 toggle switch */
+  .mt-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .mt-switch input { display: none; }
+  .mt-switch-track {
+    width: 32px; height: 18px; background: #1F1F22; border-radius: 9px;
+    position: relative; transition: background 0.18s;
+    border: 0.5px solid #25252A;
+  }
+  .mt-switch-thumb {
+    position: absolute; top: 1px; left: 1px;
+    width: 14px; height: 14px; background: #6A6A70; border-radius: 50%;
+    transition: all 0.18s;
+  }
+  .mt-switch input:checked + .mt-switch-track { background: rgba(125,184,158,0.3); border-color: #7DB89E; }
+  .mt-switch input:checked + .mt-switch-track .mt-switch-thumb { left: 15px; background: #7DB89E; box-shadow: 0 0 6px rgba(125,184,158,0.6); }
+  .mt-switch-text { font-size: 10px; color: #C8C8CE; letter-spacing: 0.5px; }
+
+  /* ============= 1. NOW PLAYING HERO ============= */
+  .mt-hero {
+    position: relative; overflow: hidden;
+    border-radius: 12px;
+    border: 0.5px solid #1F1F22;
+    background: #0A0A0C;
+    min-height: 168px;
+  }
+  /* 背景にうっすらグラデーション。playing時は色が動く */
+  .mt-hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(800px 200px at 8% 20%, rgba(125,184,158,0.10), transparent 60%),
+      radial-gradient(600px 180px at 85% 70%, rgba(133,183,235,0.06), transparent 60%),
+      linear-gradient(180deg, #16161B 0%, #0C0C0F 100%);
+    transition: opacity 0.3s;
+  }
+  .mt-hero.playing .mt-hero-bg {
+    background:
+      radial-gradient(900px 250px at 15% 30%, rgba(125,184,158,0.22), transparent 55%),
+      radial-gradient(700px 220px at 80% 70%, rgba(240,199,94,0.10), transparent 55%),
+      linear-gradient(180deg, #17181C 0%, #0E0E12 100%);
+    animation: mtHeroPulse 4s ease-in-out infinite;
+  }
+  @keyframes mtHeroPulse {
+    0%, 100% { filter: brightness(1.0); }
+    50%      { filter: brightness(1.08); }
+  }
+  .mt-hero-inner {
+    position: relative; z-index: 1;
+    padding: 18px 24px 20px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .mt-hero-meta { display: flex; align-items: center; gap: 12px; }
+  .mt-hero-trackchip {
+    font-family: 'SF Mono', monospace; font-size: 11px; color: #92C9B0;
+    background: rgba(125,184,158,0.10); border: 0.5px solid rgba(125,184,158,0.3);
+    padding: 3px 10px; border-radius: 3px; letter-spacing: 1.5px;
+  }
+  .mt-hero.playing .mt-hero-trackchip {
+    color: #B8E0CC; background: rgba(125,184,158,0.18); border-color: rgba(125,184,158,0.5);
+    box-shadow: 0 0 12px rgba(125,184,158,0.2);
+  }
+  .mt-hero-divider { width: 1px; height: 12px; background: #25252A; }
+  .mt-hero-status { font-size: 10px; letter-spacing: 2px; color: #6A6A70; text-transform: uppercase; }
+  .mt-hero.playing .mt-hero-status { color: #92C9B0; }
+  .mt-hero-title {
+    font-size: 34px; font-weight: 300; color: #F8F8F8;
+    letter-spacing: -0.8px; line-height: 1.15;
+    text-shadow: 0 0 30px rgba(125,184,158,0.05);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mt-hero.playing .mt-hero-title {
+    color: #FFFFFF;
+    text-shadow: 0 0 24px rgba(125,184,158,0.18);
+  }
+  .mt-hero-progress { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+  .mt-hero-bar {
+    height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px;
+    overflow: hidden; position: relative;
+  }
+  .mt-hero-bar-fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #7DB89E, #F0C75E);
+    border-radius: 3px;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px rgba(125,184,158,0.4);
+  }
+  .mt-hero-times {
+    display: flex; justify-content: space-between;
+    font-family: 'SF Mono', monospace; font-size: 11px;
+    color: #6A6A70; letter-spacing: 0.5px;
+  }
+  .mt-hero.playing .mt-time-now { color: #E6E6EA; }
+  .mt-hero-stems { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; min-height: 22px; }
+  .mt-hero-stem-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.02); border: 0.5px solid;
+    padding: 2px 8px; border-radius: 3px;
+    font-size: 9px; letter-spacing: 1px; font-weight: 600;
+    text-transform: uppercase;
+  }
+  .mt-hero-stem-chip.missing { opacity: 0.25; }
+  .mt-hero-transport {
+    position: absolute; top: 22px; right: 24px;
+    display: flex; gap: 8px;
+  }
+  .mt-tbtn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); border: 0.5px solid #25252A;
+    color: #E6E6EA; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-family: inherit; letter-spacing: 0;
+    transition: all 0.15s;
+  }
+  .mt-tbtn:hover { background: rgba(255,255,255,0.08); border-color: #3A3A42; }
+  .mt-tbtn.play {
+    background: linear-gradient(180deg, #7DB89E, #5DA084);
+    color: #0A1410; border: none; width: 52px; height: 52px; font-size: 16px;
+    box-shadow: 0 4px 20px rgba(125,184,158,0.25);
+  }
+  .mt-tbtn.play:hover { background: linear-gradient(180deg, #92C9B0, #6CB096); }
+  .mt-tbtn.play.playing {
+    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    box-shadow: 0 4px 24px rgba(240,199,94,0.3);
+  }
+  .mt-tbtn.stop { color: #E24B4A; border-color: rgba(226,75,74,0.3); }
+  .mt-tbtn.stop:hover { background: rgba(226,75,74,0.08); border-color: #E24B4A; }
+  .mt-tbtn-glyph { line-height: 1; pointer-events: none; }
+
+  /* ============= 2. SETLIST ============= */
+  .mt-setlist-card { display: flex; flex-direction: column; min-height: 0; max-height: 360px; }
+  .mt-setlist-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; min-height: 120px; padding-right: 2px; }
+  .mt-song-row {
+    display: grid; grid-template-columns: 24px 26px 1fr repeat(5, 56px) 32px;
+    gap: 8px; align-items: center;
+    padding: 8px 10px; border: 0.5px solid #1F1F22; border-radius: 6px;
+    background: rgba(255,255,255,0.015);
+    position: relative;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .mt-song-row:hover { border-color: #2A2A30; background: rgba(255,255,255,0.025); }
+  .mt-song-row.playing {
+    border-color: #7DB89E;
+    background: linear-gradient(90deg, rgba(125,184,158,0.10), rgba(125,184,158,0.02) 60%);
+    box-shadow: inset 3px 0 0 #7DB89E;
+  }
   .mt-song-row.queued  { border-color: rgba(125,184,158,0.4); }
-  .mt-song-row.drop-target { border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed; }
-  .mt-song-num { font-family: 'SF Mono', monospace; font-size: 10px; color: #6A6A70; text-align: right; }
-  .mt-song-play { width: 22px; height: 22px; border-radius: 50%; background: #1F1F22; color: #C8C8CE; border: none; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; }
-  .mt-song-play:hover { background: #7DB89E; color: #0E1A14; }
-  .mt-song-row.playing .mt-song-play { background: #7DB89E; color: #0E1A14; }
+  .mt-song-row.drop-target {
+    border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed;
+    box-shadow: 0 0 0 1px rgba(125,184,158,0.2);
+  }
+  .mt-song-num { font-family: 'SF Mono', monospace; font-size: 10px; color: #5A5A60; text-align: right; font-weight: 600; letter-spacing: 0.5px; }
+  .mt-song-row.playing .mt-song-num { color: #7DB89E; }
+  .mt-song-play {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); color: #C8C8CE; border: 0.5px solid #25252A;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; cursor: pointer; transition: all 0.15s;
+  }
+  .mt-song-play:hover { background: #7DB89E; color: #0E1A14; border-color: #7DB89E; }
+  .mt-song-row.playing .mt-song-play {
+    background: #7DB89E; color: #0E1A14; border-color: #7DB89E;
+    box-shadow: 0 0 12px rgba(125,184,158,0.4);
+  }
   .mt-song-name-input {
     background: transparent; border: 0.5px solid transparent; color: #E6E6EA;
-    font-family: inherit; font-size: 12px; padding: 3px 6px; border-radius: 3px; width: 100%;
+    font-family: inherit; font-size: 13px; padding: 4px 8px; border-radius: 3px; width: 100%;
   }
-  .mt-song-name-input:hover, .mt-song-name-input:focus { border-color: #25252A; background: #131316; outline: none; }
+  .mt-song-name-input:hover, .mt-song-name-input:focus { border-color: #2A2A30; background: rgba(0,0,0,0.3); outline: none; }
+  .mt-song-row.playing .mt-song-name-input { color: #FFFFFF; }
+
   .mt-track-slot {
-    width: 100%; height: 28px; border-radius: 3px;
-    border: 0.5px dashed #2A2A30; background: rgba(125,184,158,0.04);
+    width: 100%; height: 30px; border-radius: 4px;
+    border: 0.5px dashed #2A2A30; background: rgba(255,255,255,0.015);
     color: #5A5A65; font-size: 9px; letter-spacing: 0.5px;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
-    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 4px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 6px;
+    transition: all 0.12s;
+    font-weight: 600;
   }
-  .mt-track-slot.has-content { background: rgba(125,184,158,0.15); border-color: rgba(125,184,158,0.5); color: #92C9B0; border-style: solid; }
-  .mt-track-slot.has-content:hover { color: #7DB89E; }
-  .mt-track-slot.drop-over { border-color: #7DB89E; background: rgba(125,184,158,0.25); color: #E6E6EA; }
-  .mt-track-slot.loading { color: #EF9F27; border-color: #EF9F27; }
-  .mt-track-headers { display: grid; grid-template-columns: 24px 22px 1fr repeat(5, 50px) 32px; gap: 6px; padding: 0 8px 4px; }
-  .mt-track-headers > span { font-size: 8px; letter-spacing: 1px; color: #4A4A50; text-align: center; }
-  .mt-track-headers > span:nth-child(3) { text-align: left; padding-left: 6px; }
-  .mt-song-del { color: #5A5A65; background: transparent; border: none; cursor: pointer; font-size: 14px; }
+  .mt-track-slot.has-content {
+    background: rgba(125,184,158,0.10); border-color: rgba(125,184,158,0.4);
+    color: #B8E0CC; border-style: solid;
+  }
+  .mt-track-slot.has-content:hover { background: rgba(125,184,158,0.18); color: #FFFFFF; }
+  .mt-track-slot.drop-over {
+    border-color: #7DB89E; background: rgba(125,184,158,0.28); color: #FFFFFF;
+    border-style: solid; box-shadow: 0 0 0 1px rgba(125,184,158,0.4);
+  }
+  .mt-track-slot.loading { color: #EF9F27; border-color: #EF9F27; background: rgba(239,159,39,0.08); }
+
+  .mt-track-headers {
+    display: grid; grid-template-columns: 24px 26px 1fr repeat(5, 56px) 32px;
+    gap: 8px; padding: 0 10px 6px;
+    border-bottom: 0.5px solid #1F1F22; margin-bottom: 4px;
+  }
+  .mt-track-headers > span {
+    font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; text-align: center; font-weight: 700;
+  }
+  .mt-track-headers > span:nth-child(3) { text-align: left; padding-left: 8px; }
+  .mt-track-headers > span:nth-child(4) { color: #ED93B1; }  /* drums */
+  .mt-track-headers > span:nth-child(5) { color: #85B7EB; }  /* bass */
+  .mt-track-headers > span:nth-child(6) { color: #EF9F27; }  /* other */
+  .mt-track-headers > span:nth-child(7) { color: #97C459; }  /* chorus */
+  .mt-track-headers > span:nth-child(8) { color: #F0C75E; }  /* vocal */
+  .mt-song-del {
+    color: #4A4A50; background: transparent; border: none; cursor: pointer; font-size: 14px;
+    transition: color 0.12s;
+  }
   .mt-song-del:hover { color: #E24B4A; }
 
-  /* Now Playing */
-  .mt-now-card { background: linear-gradient(180deg, #131316, #16161A); border: 0.5px solid #25252A; padding: 16px 20px; }
-  .mt-now-label { font-size: 9px; letter-spacing: 2.5px; color: #6A6A70; font-weight: 600; margin-bottom: 4px; }
-  .mt-now-name { font-size: 22px; font-weight: 500; color: #F8F8F8; letter-spacing: -0.5px; margin-bottom: 8px; }
-  .mt-now-time { font-family: 'SF Mono', monospace; font-size: 14px; color: #C8C8CE; }
-  .mt-now-bar { height: 4px; background: #1F1F22; border-radius: 2px; margin: 10px 0; overflow: hidden; }
-  .mt-now-bar-fill { height: 100%; background: #7DB89E; width: 0%; transition: width 0.1s linear; }
-  .mt-now-status { font-size: 10px; color: #6A6A70; margin-top: 4px; letter-spacing: 1px; }
-
-  /* MIXER (5ch strip) */
-  .mt-mixer-card { background: #131316; border: 1px solid #1F1F22; border-radius: 8px; padding: 12px 16px; }
-  .mt-mixer-strips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
-  .mt-strip {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    padding: 8px 4px; background: #16161B; border: 0.5px solid #1F1F22; border-radius: 5px;
-    min-width: 0;
+  /* ============= 3. MIXER (console-style strips) ============= */
+  .mt-mixer-card {
+    background: linear-gradient(180deg, #131316, #0E0E12);
+    border: 0.5px solid #1F1F22; border-radius: 10px; padding: 14px 18px 16px;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.4);
   }
+  .mt-mixer-strips {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
+    padding: 4px 0 6px;
+  }
+  .mt-strip {
+    position: relative;
+    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
+    padding: 12px 8px 10px 14px;
+    background: linear-gradient(180deg, #16161B 0%, #101013 100%);
+    border: 0.5px solid #1F1F22; border-radius: 6px;
+    min-width: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+  /* 左端カラーストライプ（グループ識別） */
+  .mt-strip::before {
+    content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+    border-radius: 0 2px 2px 0; opacity: 0.8;
+  }
+  .mt-strip[data-mt-strip="drums"]::before  { background: #ED93B1; }
+  .mt-strip[data-mt-strip="bass"]::before   { background: #85B7EB; }
+  .mt-strip[data-mt-strip="other"]::before  { background: #EF9F27; }
+  .mt-strip[data-mt-strip="chorus"]::before { background: #97C459; }
+  .mt-strip[data-mt-strip="vocal"]::before  { background: #F0C75E; }
+  .mt-strip.active::before { opacity: 1; box-shadow: 0 0 10px currentColor; }
+
+  .mt-strip-header { display: flex; flex-direction: column; gap: 1px; }
   .mt-strip-label {
-    font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; font-weight: 600;
-    text-align: center;
+    font-size: 11px; letter-spacing: 2px; font-weight: 700;
+    text-align: left;
   }
   .mt-strip-label.drums  { color: #ED93B1; }
   .mt-strip-label.bass   { color: #85B7EB; }
   .mt-strip-label.other  { color: #EF9F27; }
-  .mt-strip-label.vocal  { color: #92C9B0; }
   .mt-strip-label.chorus { color: #97C459; }
-  .mt-strip-faderwrap { display: flex; gap: 4px; align-items: stretch; height: 110px; width: 38px; }
+  .mt-strip-label.vocal  { color: #F0C75E; }
+  .mt-strip-sublabel {
+    font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  /* Fader + Meter 横並びエリア（縦に長く） */
+  .mt-strip-faderwrap {
+    display: flex; gap: 8px; align-items: stretch;
+    height: 150px; padding: 4px 0;
+  }
+  /* Fader (太め、消費型グラデ) */
   .mt-strip-fader {
-    position: relative; width: 12px; background: #0E0E10; border-radius: 6px; cursor: pointer;
+    position: relative; width: 14px;
+    background: linear-gradient(180deg, #08080A, #0E0E10);
+    border-radius: 4px; cursor: pointer;
     flex-shrink: 0;
+    border: 0.5px solid #1A1A1E;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+  }
+  /* 0dB ティック */
+  .mt-strip-fader::after {
+    content: ''; position: absolute; left: -3px; right: -3px;
+    bottom: 71%; height: 1px;
+    background: #3A3A42;
   }
   .mt-strip-fader-fill {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #5A6A65, #7DB89E);
-    border-radius: 6px;
+    position: absolute; bottom: 0; left: 1px; right: 1px;
+    background: linear-gradient(to top, #5A6A65, #7DB89E 85%);
+    border-radius: 3px;
+    box-shadow: 0 0 8px rgba(125,184,158,0.2);
   }
   .mt-strip-fader-thumb {
-    position: absolute; left: -4px; right: -4px; height: 10px;
-    background: #E6E6EA; border-radius: 2px; transform: translateY(50%);
+    position: absolute; left: -7px; right: -7px; height: 14px;
+    background: linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%);
+    border-radius: 3px; transform: translateY(50%);
     pointer-events: none;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4);
+    /* グリップ線 */
+    background-image:
+      linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%),
+      repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 3px);
   }
+  /* Meter (デジタル風セグメント) */
   .mt-strip-meter {
-    width: 6px; background: #0E0E10; border-radius: 3px; position: relative; overflow: hidden;
+    width: 9px; background: #06060A; border-radius: 3px;
+    position: relative; overflow: hidden;
     flex-shrink: 0;
+    border: 0.5px solid #1A1A1E;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
   }
   .mt-strip-meter-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #7DB89E 0%, #7DB89E 60%, #EF9F27 80%, #E24B4A 95%);
+    background: linear-gradient(to top,
+      #2E7A5B 0%,
+      #7DB89E 55%,
+      #EF9F27 78%,
+      #E24B4A 93%);
     height: 0%;
     transition: height 0.04s linear;
+    /* セグメント風の細い線 */
+    background-image:
+      linear-gradient(to top, #2E7A5B 0%, #7DB89E 55%, #EF9F27 78%, #E24B4A 93%),
+      repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.35) 3px, rgba(0,0,0,0.35) 4px);
   }
+  .mt-strip-meter-fill.clip { box-shadow: 0 0 8px #E24B4A; }
+  /* ピークホールド */
+  .mt-strip-peak {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: #F0C75E; box-shadow: 0 0 6px #F0C75E;
+    transition: bottom 0.3s ease-out, opacity 0.3s;
+    opacity: 0;
+  }
+
+  /* dB readout digital LCD-style */
   .mt-strip-db {
-    font-family: 'SF Mono', monospace; font-size: 9px; color: #C8C8CE;
-    background: #0E0E10; padding: 2px 4px; border-radius: 3px; min-width: 36px; text-align: center;
+    font-family: 'SF Mono', monospace; font-size: 10px; color: #92C9B0;
+    background: #06060A; padding: 3px 6px; border-radius: 3px;
+    text-align: center; letter-spacing: 0.5px;
+    border: 0.5px solid #1A1A1E;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    text-shadow: 0 0 4px rgba(146,201,176,0.5);
   }
+  .mt-strip.muted .mt-strip-db { color: #E24B4A; text-shadow: 0 0 4px rgba(226,75,74,0.5); }
+
   .mt-strip-mute {
-    background: #1A1A1E; color: #6A6A70; border: 0.5px solid #25252A;
-    padding: 2px 6px; border-radius: 3px; font-size: 8px; letter-spacing: 1px;
-    cursor: pointer; font-family: inherit; font-weight: 600;
-    transition: all 0.1s;
+    background: linear-gradient(180deg, #1A1A1E, #131316);
+    color: #6A6A70; border: 0.5px solid #25252A;
+    padding: 5px 8px; border-radius: 3px; font-size: 9px; letter-spacing: 1.5px;
+    cursor: pointer; font-family: inherit; font-weight: 700;
+    transition: all 0.12s;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   }
   .mt-strip-mute:hover { color: #E6E6EA; border-color: #3A3A40; }
-  .mt-strip-mute.muted { background: #E24B4A; color: #2A0A0A; border-color: #E24B4A; }
-  .mt-strip.muted .mt-strip-fader-fill { opacity: 0.3; }
-  .mt-strip.muted .mt-strip-meter-fill { opacity: 0.2; }
-
-  /* Channel matrix */
-  .mt-ch-matrix { display: grid; grid-template-columns: 100px repeat(5, 1fr); gap: 6px; align-items: center; }
-  .mt-ch-cell { font-size: 10px; color: #6A6A70; padding: 4px; text-align: center; }
-  .mt-ch-input {
-    width: 100%; background: #1A1A1E; border: 0.5px solid #25252A; color: #C8C8CE;
-    padding: 4px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 10px;
-    text-align: center;
+  .mt-strip-mute.muted {
+    background: linear-gradient(180deg, #E24B4A, #B83C3B);
+    color: #FFFFFF; border-color: #E24B4A;
+    box-shadow: 0 0 12px rgba(226,75,74,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
   }
+  .mt-strip.muted .mt-strip-fader-fill { opacity: 0.2; }
+  .mt-strip.muted .mt-strip-meter-fill { opacity: 0.15; }
+
+  /* ============= 4. AUDIO IFACE / CHANNEL ROUTING ============= */
+  .mt-config-row { display: grid; grid-template-columns: 1fr 1.3fr; gap: 12px; }
+  .mt-config-card { padding: 12px 14px; }
+  .mt-ch-matrix {
+    display: grid; grid-template-columns: 50px repeat(5, 1fr); gap: 6px; align-items: center;
+  }
+  .mt-ch-cell { font-size: 10px; color: #6A6A70; padding: 4px; text-align: center; letter-spacing: 0.5px; }
+  .mt-ch-header { font-weight: 700; letter-spacing: 1.5px; }
+  .mt-ch-rowlabel {
+    font-family: 'SF Mono', monospace; text-align: left;
+    color: #6A6A70; font-size: 10px; padding-left: 2px;
+  }
+  .mt-ch-input {
+    width: 100%; background: #06060A; border: 0.5px solid #1F1F22; color: #92C9B0;
+    padding: 5px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 11px;
+    text-align: center; font-weight: 600;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .mt-ch-input:focus { outline: none; border-color: #7DB89E; color: #FFFFFF; }
 
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -1759,10 +2058,74 @@
 
   <!-- ====================== MULTI-TRACK PAGE ====================== -->
   <div id="multiPage">
-    <div class="mt-top">
-      <!-- AUDIO INTERFACE -->
-      <div class="mt-card">
-        <div class="mt-card-head">AUDIO INTERFACE</div>
+    <!-- 1. NOW PLAYING — hero -->
+    <div class="mt-hero" id="mtHero">
+      <div class="mt-hero-bg" id="mtHeroBg"></div>
+      <div class="mt-hero-inner">
+        <div class="mt-hero-meta">
+          <span class="mt-hero-trackchip" id="mtHeroTrackChip">— / —</span>
+          <span class="mt-hero-divider"></span>
+          <span class="mt-hero-status" id="mtNowStatus">READY · SPACE で再生</span>
+        </div>
+        <div class="mt-hero-title" id="mtNowName">— 待機中 —</div>
+        <div class="mt-hero-progress">
+          <div class="mt-hero-bar"><div class="mt-hero-bar-fill" id="mtNowBarFill"></div></div>
+          <div class="mt-hero-times">
+            <span class="mt-time-now" id="mtNowTimeCur">0:00</span>
+            <span class="mt-time-tot" id="mtNowTimeTot">0:00</span>
+          </div>
+        </div>
+        <div class="mt-hero-stems" id="mtHeroStems"></div>
+        <div class="mt-hero-transport">
+          <button class="mt-tbtn play" id="mtPlayBtn" onclick="mtPlayPause()" aria-label="Play"><span class="mt-tbtn-glyph" id="mtPlayGlyph">▶</span></button>
+          <button class="mt-tbtn" onclick="mtPlayNext()" title="次の曲へ" aria-label="Next">▶▶</button>
+          <button class="mt-tbtn stop" onclick="mtStop()" aria-label="Stop">■</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. SETLIST -->
+    <div class="mt-card mt-setlist-card">
+      <div class="mt-section-head">
+        <div class="mt-section-head-l">
+          <span class="mt-section-num">02</span>
+          <span class="mt-section-title">SETLIST</span>
+          <span class="mt-section-count" id="mtSetlistCount">0 SONGS</span>
+        </div>
+        <div class="mt-section-actions">
+          <button class="mt-btn ghost" onclick="mtAddSong()">＋ ADD SONG</button>
+          <button class="mt-btn ghost subtle" onclick="mtClearAll()">CLEAR</button>
+        </div>
+      </div>
+      <div class="mt-track-headers">
+        <span></span><span></span><span>SONG</span>
+        <span>DRUMS</span><span>BASS</span><span>OTHER</span><span>CHORUS</span><span>VOCAL</span>
+        <span></span>
+      </div>
+      <div class="mt-setlist-list" id="mtSetlistList"></div>
+    </div>
+
+    <!-- 3. MIXER -->
+    <div class="mt-mixer-card">
+      <div class="mt-section-head">
+        <div class="mt-section-head-l">
+          <span class="mt-section-num">03</span>
+          <span class="mt-section-title">MIXER</span>
+          <span class="mt-section-count">5 GROUPS</span>
+        </div>
+      </div>
+      <div class="mt-mixer-strips" id="mtMixerStrips"></div>
+    </div>
+
+    <!-- 4. AUDIO INTERFACE & CHANNEL ROUTING -->
+    <div class="mt-config-row">
+      <div class="mt-card mt-config-card">
+        <div class="mt-section-head compact">
+          <div class="mt-section-head-l">
+            <span class="mt-section-num">04</span>
+            <span class="mt-section-title">AUDIO IFACE</span>
+          </div>
+        </div>
         <div class="mt-row">
           <span class="mt-label">DEVICE</span>
           <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
@@ -1772,93 +2135,54 @@
         </div>
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
-          <span id="mtChCount" style="font-family:'SF Mono',monospace; font-size:11px; color:#C8C8CE;">—</span>
-          <span style="font-size:10px; color:#6A6A70; margin-left:8px;" id="mtChStatus">ブラウザで使用可能なチャンネル数</span>
+          <span id="mtChCount" class="mt-num-readout">—</span>
+          <span class="mt-row-note" id="mtChStatus">未検出</span>
         </div>
         <div class="mt-row">
           <span class="mt-label">GAP</span>
           <input type="number" class="mt-input-num" id="mtGapSec" min="0" max="60" step="0.5" value="3.0" onchange="mtSetGap(this.value)">
-          <span style="font-size:10px; color:#6A6A70;">秒（曲間の自動隙間）</span>
+          <span class="mt-row-note">秒（曲間の自動隙間）</span>
         </div>
         <div class="mt-row">
-          <span class="mt-label">AUTO ADVANCE</span>
-          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:10px; color:#C8C8CE;">
-            <input type="checkbox" id="mtAutoAdvance" checked onchange="mtSetAutoAdvance(this.checked)" style="cursor:pointer;">
-            <span>曲終了後に次の曲を自動再生</span>
+          <span class="mt-label">AUTO ADV</span>
+          <label class="mt-switch">
+            <input type="checkbox" id="mtAutoAdvance" checked onchange="mtSetAutoAdvance(this.checked)">
+            <span class="mt-switch-track"><span class="mt-switch-thumb"></span></span>
+            <span class="mt-switch-text">曲終了→自動で次曲</span>
           </label>
         </div>
       </div>
 
-      <!-- CHANNEL ROUTING -->
-      <div class="mt-card">
-        <div class="mt-card-head">CHANNEL ROUTING (パラ出力)</div>
+      <div class="mt-card mt-config-card">
+        <div class="mt-section-head compact">
+          <div class="mt-section-head-l">
+            <span class="mt-section-num">05</span>
+            <span class="mt-section-title">CHANNEL ROUTING</span>
+            <span class="mt-section-count">PARA-OUT</span>
+          </div>
+        </div>
         <div class="mt-ch-matrix" id="mtChMatrix">
-          <span class="mt-ch-cell" style="text-align:left;">GROUP</span>
-          <span class="mt-ch-cell">DRUMS</span>
-          <span class="mt-ch-cell">BASS</span>
-          <span class="mt-ch-cell">OTHER</span>
-          <span class="mt-ch-cell">VOCAL</span>
-          <span class="mt-ch-cell">CHORUS</span>
-          <span class="mt-ch-cell" style="text-align:left;">L ch</span>
+          <span class="mt-ch-cell mt-ch-header" style="text-align:left;">GROUP</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#ED93B1;">DRUMS</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#85B7EB;">BASS</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#EF9F27;">OTHER</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#97C459;">CHORUS</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#F0C75E;">VOCAL</span>
+          <span class="mt-ch-cell mt-ch-rowlabel">L ch</span>
           <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)">
           <input type="number" class="mt-ch-input" id="mtChBassL"  min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)">
           <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="7" onchange="mtSetCh('vocal','L',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="9" onchange="mtSetCh('chorus','L',this.value)">
-          <span class="mt-ch-cell" style="text-align:left;">R ch</span>
+          <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="7" onchange="mtSetCh('chorus','L',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="9" onchange="mtSetCh('vocal','L',this.value)">
+          <span class="mt-ch-cell mt-ch-rowlabel">R ch</span>
           <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)">
           <input type="number" class="mt-ch-input" id="mtChBassR"  min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)">
           <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="8" onchange="mtSetCh('vocal','R',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="10" onchange="mtSetCh('chorus','R',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="8" onchange="mtSetCh('chorus','R',this.value)">
+          <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)">
         </div>
-        <div style="font-size:9px; color:#5A5A60; margin-top:8px; letter-spacing:0.5px;">
-          ※ オーディオI/Fが10ch出力に対応していれば自動でパラ送り。それ未満なら通常ステレオにミックス。
-        </div>
+        <div class="mt-row-note" style="margin-top:8px;">※ 10ch対応I/Fで自動パラ送り。未満なら通常ステレオMIX。</div>
       </div>
-    </div>
-
-    <!-- NOW PLAYING -->
-    <div class="mt-now-card">
-      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
-        <div style="flex:1; min-width:0;">
-          <div class="mt-now-label">NOW PLAYING</div>
-          <div class="mt-now-name" id="mtNowName">— 待機中 —</div>
-          <div class="mt-now-bar"><div class="mt-now-bar-fill" id="mtNowBarFill"></div></div>
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div class="mt-now-time"><span id="mtNowTimeCur">0:00</span> / <span id="mtNowTimeTot">0:00</span></div>
-            <div class="mt-now-status" id="mtNowStatus">SPACE で再生 / 次曲</div>
-          </div>
-        </div>
-        <div style="display:flex; gap:8px; flex-shrink:0;">
-          <button class="mt-btn primary" id="mtPlayBtn" onclick="mtPlayPause()" style="min-width:90px;">▶ PLAY</button>
-          <button class="mt-btn" onclick="mtPlayNext()" title="次の曲へ">NEXT ▶</button>
-          <button class="mt-btn danger" onclick="mtStop()">■ STOP</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MIXER -->
-    <div class="mt-mixer-card">
-      <div class="mt-card-head" style="margin-bottom:10px;">MIXER</div>
-      <div class="mt-mixer-strips" id="mtMixerStrips"></div>
-    </div>
-
-    <!-- SETLIST -->
-    <div class="mt-card mt-setlist-card">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
-        <div class="mt-card-head" style="margin-bottom:0;">SETLIST</div>
-        <div style="display:flex; gap:6px;">
-          <button class="mt-btn" onclick="mtAddSong()">＋ 曲を追加</button>
-          <button class="mt-btn" onclick="mtClearAll()" style="color:#6A6A70;">CLEAR ALL</button>
-        </div>
-      </div>
-      <div class="mt-track-headers">
-        <span></span><span></span><span>SONG</span>
-        <span>DRUMS</span><span>BASS</span><span>OTHER</span><span>VOCAL</span><span>CHORUS</span>
-        <span></span>
-      </div>
-      <div class="mt-setlist-list" id="mtSetlistList"></div>
     </div>
   </div>
 
@@ -1891,7 +2215,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.2';
+const APP_VERSION = 'v7.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -2129,12 +2453,12 @@ const state = {
     outputChannelCount: 2,        // detected channel count of selected device
     gapSec: 3.0,                  // 曲間の自動隙間
     autoAdvance: true,
-    channelMap: {                 // 各グループの出力ch（1始まり）
+    channelMap: {                 // 各グループの出力ch（1始まり）— 左→右の表示順に合わせる
       drums:  { L: 1, R: 2 },
       bass:   { L: 3, R: 4 },
       other:  { L: 5, R: 6 },
-      vocal:  { L: 7, R: 8 },
-      chorus: { L: 9, R: 10 },
+      chorus: { L: 7, R: 8 },
+      vocal:  { L: 9, R: 10 },
     },
     groupGains: {                 // 各グループの音量（linear 0..1.4 で +3dB まで）
       drums: 1.0, bass: 1.0, other: 1.0, vocal: 1.0, chorus: 1.0,
@@ -7546,8 +7870,11 @@ function initOutputMode() {
 //  - 本番中に止まらないよう、AudioBuffer に decode 済みで持ち、source は使い捨て
 //  - 曲の終わり -> gapSec 待機 -> 次曲を auto-advance（trigger は setTimeout で堅牢に）
 
-const MT_GROUPS = ['drums', 'bass', 'other', 'vocal', 'chorus'];
-const MT_GROUP_LABELS = { drums:'DRUMS', bass:'BASS', other:'OTHER', vocal:'VOCAL', chorus:'CHORUS' };
+// 表示順は リズム → ベース → OTHER → コーラス → ボーカル
+const MT_GROUPS = ['drums', 'bass', 'other', 'chorus', 'vocal'];
+const MT_GROUP_LABELS = { drums:'DRUMS', bass:'BASS', other:'OTHER', chorus:'CHORUS', vocal:'VOCAL' };
+const MT_GROUP_LABELS_JP = { drums:'リズム', bass:'ベース', other:'OTHER', chorus:'コーラス', vocal:'ボーカル' };
+const MT_GROUP_COLORS = { drums:'#ED93B1', bass:'#85B7EB', other:'#EF9F27', chorus:'#97C459', vocal:'#F0C75E' };
 
 let mtCtx = null;
 let mtMasterGain = null;
@@ -8168,12 +8495,19 @@ function mtRenderMixer() {
     strip.className = 'mt-strip';
     if (state.multitrack.groupMute[g]) strip.classList.add('muted');
     strip.dataset.mtStrip = g;
+    strip.style.color = MT_GROUP_COLORS[g]; // ::before の glow 用 currentColor
 
-    // ラベル
+    // ヘッダー（英 + 和ラベル）
+    const header = document.createElement('div'); header.className = 'mt-strip-header';
     const lbl = document.createElement('div');
     lbl.className = 'mt-strip-label ' + g;
     lbl.textContent = MT_GROUP_LABELS[g];
-    strip.appendChild(lbl);
+    header.appendChild(lbl);
+    const sub = document.createElement('div'); sub.className = 'mt-strip-sublabel';
+    const cm = state.multitrack.channelMap[g] || { L:0, R:0 };
+    sub.textContent = `${MT_GROUP_LABELS_JP[g]} · CH ${cm.L}/${cm.R}`;
+    header.appendChild(sub);
+    strip.appendChild(header);
 
     // fader + meter (横並び)
     const wrap = document.createElement('div'); wrap.className = 'mt-strip-faderwrap';
@@ -8184,6 +8518,8 @@ function mtRenderMixer() {
     const meter = document.createElement('div'); meter.className = 'mt-strip-meter';
     const mfill = document.createElement('div'); mfill.className = 'mt-strip-meter-fill'; mfill.dataset.mtMeter = g;
     meter.appendChild(mfill);
+    const peak = document.createElement('div'); peak.className = 'mt-strip-peak'; peak.dataset.mtPeak = g;
+    meter.appendChild(peak);
     wrap.appendChild(meter);
     strip.appendChild(wrap);
 
@@ -8193,7 +8529,7 @@ function mtRenderMixer() {
 
     // MUTE ボタン
     const mute = document.createElement('button'); mute.className = 'mt-strip-mute' + (state.multitrack.groupMute[g] ? ' muted' : '');
-    mute.textContent = 'MUTE';
+    mute.textContent = state.multitrack.groupMute[g] ? '● MUTED' : 'MUTE';
     mute.onclick = () => mtToggleMute(g);
     strip.appendChild(mute);
 
@@ -8202,6 +8538,15 @@ function mtRenderMixer() {
     mtRenderFaderPos(g);
     // フェーダー操作
     mtBindFader(fader, g);
+  }
+  // 再生中なら active を付ける
+  if (state.multitrack.isPlaying) mtMarkActiveStrips(true);
+}
+
+function mtMarkActiveStrips(active) {
+  for (const g of MT_GROUPS) {
+    const s = document.querySelector(`[data-mt-strip="${g}"]`);
+    if (s) s.classList.toggle('active', !!active);
   }
 }
 
@@ -8402,17 +8747,69 @@ function mtRenderSetlist() {
 function mtRenderNow() {
   const m = state.multitrack;
   const cur = (m.currentSongIdx >= 0) ? m.songs[m.currentSongIdx] : null;
+  const hero = document.getElementById('mtHero');
   const nameEl = document.getElementById('mtNowName');
+  const trackChip = document.getElementById('mtHeroTrackChip');
   const playBtn = document.getElementById('mtPlayBtn');
+  const playGlyph = document.getElementById('mtPlayGlyph');
   const status = document.getElementById('mtNowStatus');
-  if (nameEl) nameEl.textContent = cur ? `${String(m.currentSongIdx+1).padStart(2,'0')}. ${cur.name}` : '— 待機中 —';
-  if (playBtn) playBtn.textContent = m.isPlaying ? '■ STOP' : '▶ PLAY';
-  if (status) {
-    if (m.isPlaying) status.textContent = `再生中 — SPACE で次曲`;
-    else if (cur) status.textContent = 'SPACE で再生';
-    else status.textContent = 'セットリストに曲を追加';
+  const stems = document.getElementById('mtHeroStems');
+  const setlistCount = document.getElementById('mtSetlistCount');
+
+  // ヒーロー playing class
+  if (hero) hero.classList.toggle('playing', m.isPlaying);
+  if (playBtn) playBtn.classList.toggle('playing', m.isPlaying);
+
+  // タイトル
+  if (nameEl) nameEl.textContent = cur ? cur.name : '— 待機中 —';
+  // トラックチップ
+  if (trackChip) {
+    const total = m.songs.length;
+    const cur1 = (m.currentSongIdx >= 0) ? (m.currentSongIdx + 1) : 0;
+    trackChip.textContent = total > 0 ? `TRACK ${String(cur1).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : 'NO SETLIST';
   }
+  // ステータス
+  if (status) {
+    if (m.isPlaying) status.textContent = 'PLAYING · SPACE で次曲';
+    else if (cur) status.textContent = 'READY · SPACE で再生';
+    else status.textContent = 'EMPTY · 曲を追加';
+  }
+  // 再生ボタン記号
+  if (playGlyph) playGlyph.textContent = m.isPlaying ? '■' : '▶';
+  if (playBtn) playBtn.setAttribute('aria-label', m.isPlaying ? 'Stop' : 'Play');
+
+  // STEM チップ
+  if (stems) {
+    stems.innerHTML = '';
+    if (cur) {
+      for (const g of MT_GROUPS) {
+        const t = cur.tracks && cur.tracks[g];
+        const chip = document.createElement('span');
+        chip.className = 'mt-hero-stem-chip' + (t ? '' : ' missing');
+        const color = MT_GROUP_COLORS[g];
+        chip.style.borderColor = color;
+        chip.style.color = color;
+        chip.style.background = `rgba(${mtHex2Rgb(color).join(',')},0.08)`;
+        chip.textContent = MT_GROUP_LABELS[g];
+        stems.appendChild(chip);
+      }
+    }
+  }
+
+  // セットリスト件数
+  if (setlistCount) setlistCount.textContent = `${m.songs.length} SONG${m.songs.length === 1 ? '' : 'S'}`;
+
+  // アクティブストリップ反映
+  mtMarkActiveStrips(m.isPlaying);
+
   mtUpdateProgress();
+}
+
+// hex "#RRGGBB" → [r,g,b]
+function mtHex2Rgb(h) {
+  const m = /^#?([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})$/i.exec(h);
+  if (!m) return [125, 184, 158];
+  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
 }
 
 function mtUpdateProgress() {
