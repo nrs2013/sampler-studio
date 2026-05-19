@@ -1146,6 +1146,7 @@
   }
   .mt-song-row.playing { border-color: #7DB89E; background: rgba(125,184,158,0.06); }
   .mt-song-row.queued  { border-color: rgba(125,184,158,0.4); }
+  .mt-song-row.drop-target { border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed; }
   .mt-song-num { font-family: 'SF Mono', monospace; font-size: 10px; color: #6A6A70; text-align: right; }
   .mt-song-play { width: 22px; height: 22px; border-radius: 50%; background: #1F1F22; color: #C8C8CE; border: none; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; }
   .mt-song-play:hover { background: #7DB89E; color: #0E1A14; }
@@ -1827,7 +1828,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.0';
+const APP_VERSION = 'v7.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -7704,6 +7705,103 @@ function mtClearAll() {
 }
 
 // ---- トラック読込 ----
+// ファイル名からグループを推定
+// drums/drum/dr/kick → drums
+// bass/bs/ba/低音 → bass
+// vocal/vocals/vo/lead/lead vocal/メイン → vocal
+// chorus/cho/ch/backing/bv/back vocal/コーラス → chorus
+// other/oth/inst/instr/piano/synth/keys/guitar/gt → other
+function mtGuessGroup(filename) {
+  if (!filename) return null;
+  const n = filename.toLowerCase().replace(/\.[^.]+$/, ''); // 拡張子削除
+  // 完全一致 / 単語境界マッチを優先
+  // drums
+  if (/(^|[_\-\s\(\.])(drums?|drum|dr|kicks?|kick)([_\-\s\)\.]|$)/.test(n) || /ドラム/.test(filename)) return 'drums';
+  // bass
+  if (/(^|[_\-\s\(\.])(bass|bs|ba)([_\-\s\)\.]|$)/.test(n) || /ベース|低音/.test(filename)) return 'bass';
+  // chorus（vocal より先に判定：「chorus_vocal」「back_vocal」など vocal を含むケースで誤判定を防ぐ）
+  if (/(^|[_\-\s\(\.])(chorus|cho|backing|back\s*vocal|bv|bgv|harmon[yi])([_\-\s\)\.]|$)/.test(n) || /コーラス|ハモ/.test(filename)) return 'chorus';
+  // vocal
+  if (/(^|[_\-\s\(\.])(vocals?|vox?|vo|lead|melody|main)([_\-\s\)\.]|$)/.test(n) || /ボーカル|ヴォーカル|メイン|主旋律/.test(filename)) return 'vocal';
+  // other
+  if (/(^|[_\-\s\(\.])(others?|other|oth|inst|instr|piano|synth|keys?|guitar|gtr?|strings?|brass|other_inst)([_\-\s\)\.]|$)/.test(n) || /その他|楽器|オケ/.test(filename)) return 'other';
+  return null;
+}
+
+// 複数ファイルを 1 曲のスロットへ自動振り分けして読込
+async function mtLoadMultipleFiles(songIdx, files) {
+  if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
+  if (!files || files.length === 0) return;
+  const song = state.multitrack.songs[songIdx];
+  // すでに埋まっているグループを除外
+  const occupied = new Set();
+  for (const g of MT_GROUPS) if (song.tracks && song.tracks[g]) occupied.add(g);
+
+  // 第1パス：ファイル名からグループを推定
+  const assignments = []; // [{file, group}]
+  const unassigned = [];
+  const usedThisDrop = new Set();
+  for (const f of files) {
+    const g = mtGuessGroup(f.name);
+    if (g && !occupied.has(g) && !usedThisDrop.has(g)) {
+      assignments.push({ file: f, group: g });
+      usedThisDrop.add(g);
+    } else {
+      unassigned.push(f);
+    }
+  }
+  // 第2パス：マッチしなかったファイルを空きスロットに順番に詰める
+  for (const f of unassigned) {
+    const g = MT_GROUPS.find(gg => !occupied.has(gg) && !usedThisDrop.has(gg));
+    if (!g) break; // もう空きがない
+    assignments.push({ file: f, group: g });
+    usedThisDrop.add(g);
+  }
+  if (assignments.length === 0) {
+    showToast('空きスロットがありません');
+    return;
+  }
+  // 曲名がデフォルトのままなら、共通プレフィクスから推定して付ける
+  if (/^曲 \d+$/.test(song.name)) {
+    const guessedName = mtGuessSongName(files);
+    if (guessedName) {
+      song.name = guessedName;
+      mtSave();
+    }
+  }
+  // 順次読込（並列だと decode が重くて UI が固まるので直列）
+  showToast(`STEM ${assignments.length} 個を振り分け中…`);
+  for (const a of assignments) {
+    await mtLoadTrackFile(songIdx, a.group, a.file);
+  }
+  const skipped = files.length - assignments.length;
+  if (skipped > 0) {
+    showToast(`${skipped} 個のファイルはスロット不足でスキップ`);
+  } else {
+    showToast(`STEM ${assignments.length} 個読込完了`);
+  }
+}
+
+// ファイル群から共通の曲名を推定（"songname_drums.wav", "songname_bass.wav" → "songname"）
+function mtGuessSongName(files) {
+  if (!files || files.length < 2) return null;
+  const names = Array.from(files).map(f => f.name.toLowerCase().replace(/\.[^.]+$/, ''));
+  // 共通プレフィクス
+  let prefix = names[0];
+  for (let i = 1; i < names.length; i++) {
+    let j = 0;
+    while (j < prefix.length && j < names[i].length && prefix[j] === names[i][j]) j++;
+    prefix = prefix.slice(0, j);
+  }
+  // 末尾の区切り文字や grp 名を削除
+  prefix = prefix.replace(/[_\-\s\.\(]+(drums?|bass|vocals?|other|chorus|inst|instr).*$/i, '');
+  prefix = prefix.replace(/[_\-\s\.\(]+$/, '').trim();
+  if (prefix.length < 2) return null;
+  // 元ファイル名のケースを保持して返す
+  const orig = files[0].name.replace(/\.[^.]+$/, '');
+  return orig.slice(0, prefix.length);
+}
+
 async function mtLoadTrackFile(songIdx, group, file) {
   if (!file) return;
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
@@ -7972,16 +8070,44 @@ function mtRenderSetlist() {
         };
       }
       // Drag-drop（既存／空問わず）
-      slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drop-over'); };
+      slot.ondragover = (e) => { e.preventDefault(); e.stopPropagation(); slot.classList.add('drop-over'); };
       slot.ondragleave = () => slot.classList.remove('drop-over');
       slot.ondrop = (e) => {
         e.preventDefault();
+        e.stopPropagation();
         slot.classList.remove('drop-over');
-        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-        if (f) mtLoadTrackFile(idx, g, f);
+        const files = e.dataTransfer && e.dataTransfer.files;
+        if (!files || files.length === 0) return;
+        if (files.length === 1) {
+          // 単一ファイル：このスロットに読込
+          mtLoadTrackFile(idx, g, files[0]);
+        } else {
+          // 複数ファイル：このスロットを優先しつつ自動振り分け
+          mtLoadMultipleFiles(idx, files);
+        }
       };
       row.appendChild(slot);
     }
+    // 行全体に複数ファイルをドロップ：自動振り分け
+    row.ondragover = (e) => { e.preventDefault(); row.classList.add('drop-target'); };
+    row.ondragleave = (e) => {
+      // 子要素の dragleave は無視（slot を出入りするたび発火するので）
+      if (e.target === row) row.classList.remove('drop-target');
+    };
+    row.ondrop = (e) => {
+      e.preventDefault();
+      row.classList.remove('drop-target');
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (!files || files.length === 0) return;
+      if (files.length === 1) {
+        // 単一は最初の空きスロットへ
+        const emptyG = MT_GROUPS.find(gg => !(song.tracks && song.tracks[gg]));
+        if (emptyG) mtLoadTrackFile(idx, emptyG, files[0]);
+        else showToast('空きスロットがありません');
+      } else {
+        mtLoadMultipleFiles(idx, files);
+      }
+    };
     // 削除ボタン
     const del = document.createElement('button'); del.className = 'mt-song-del'; del.textContent = '✕';
     del.title = '曲を削除';
@@ -7994,9 +8120,26 @@ function mtRenderSetlist() {
   if (state.multitrack.songs.length === 0) {
     const empty = document.createElement('div');
     empty.style.cssText = 'padding:24px; text-align:center; color:#5A5A60; font-size:11px; letter-spacing:1px;';
-    empty.textContent = '＋ 曲を追加 でセットリストを作成';
+    empty.textContent = '＋ 曲を追加 or STEM ファイル群をドロップ';
     list.appendChild(empty);
   }
+  // セットリスト全体（空きエリア）への drop → 新曲を作って自動振り分け
+  list.ondragover = (e) => { e.preventDefault(); };
+  list.ondrop = (e) => {
+    // 行や slot で既に処理済みの場合は来ない（stopPropagation）が、空きエリア drop だけここに来る
+    e.preventDefault();
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    // 新曲を追加
+    mtAddSong();
+    const newIdx = state.multitrack.songs.length - 1;
+    if (files.length === 1) {
+      // 単一はとりあえず drums スロットへ
+      mtLoadTrackFile(newIdx, 'drums', files[0]);
+    } else {
+      mtLoadMultipleFiles(newIdx, files);
+    }
+  };
 }
 
 function mtRenderNow() {
