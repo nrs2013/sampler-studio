@@ -1511,7 +1511,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.3.3';
+const APP_VERSION = 'v6.3.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5123,7 +5123,7 @@ function doOutOpen() {
   }
   // BC は OPEN 前に初期化しておく（output 側の ready を取りこぼさないため）
   if (!_outBC) _outBC = doOutInitBC();
-  const url = location.origin + location.pathname + '?mode=output';
+  const url = location.origin + location.pathname + '?mode=output&cv=' + Date.now();
   _outWindow = window.open(url, 'samplerStudioOutput', 'width=1280,height=720,menubar=no,toolbar=no');
   if (!_outWindow) {
     if (confirm(
