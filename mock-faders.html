@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>MIXER フェーダー配置モック比較</title>
+<style>
+  *,*:before,*:after{box-sizing:border-box}
+  body{
+    margin:0; padding:24px; background:#0A0A0C;
+    font-family:'Inter',-apple-system,'SF Pro Display',sans-serif;
+    color:#E6E6EA; font-size:13px;
+  }
+  h1{font-size:14px; letter-spacing:3px; color:#7DB89E; margin:0 0 24px; font-weight:600;}
+  .variant{margin-bottom:28px;}
+  .variant-title{
+    font-size:11px; letter-spacing:2px; color:#E6E6EA; font-weight:700;
+    margin-bottom:4px;
+  }
+  .variant-desc{font-size:11px; color:#6A6A70; margin-bottom:10px; letter-spacing:0.3px;}
+
+  /* mixer card (real app から transplant) */
+  .mt-mixer-card{
+    background: linear-gradient(180deg, #131316, #0E0E12);
+    border: 0.5px solid #1F1F22; border-radius: 10px;
+    padding: 10px 12px 12px;
+    box-shadow: 0 2px 24px rgba(0,0,0,0.4);
+    min-width: 0;
+  }
+  .mt-mixer-strips{
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    padding: 0;
+  }
+  .mt-strip{
+    position: relative;
+    display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+    padding: 6px 5px 6px 9px;
+    background: linear-gradient(180deg, #16161B 0%, #101013 100%);
+    border: 0.5px solid #1F1F22; border-radius: 5px;
+    min-width: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+  .mt-strip::before{
+    content:''; position:absolute; left:0; top:6px; bottom:6px; width:3px;
+    border-radius:0 2px 2px 0; opacity:0.8;
+  }
+  .mt-strip[data-g="drums"]::before  { background:#ED93B1; }
+  .mt-strip[data-g="bass"]::before   { background:#85B7EB; }
+  .mt-strip[data-g="other"]::before  { background:#EF9F27; }
+  .mt-strip[data-g="chorus"]::before { background:#97C459; }
+  .mt-strip[data-g="vocal"]::before  { background:#F0C75E; }
+
+  .mt-strip-header{display:flex; align-items:baseline; justify-content:space-between; gap:4px;}
+  .mt-strip-label{font-size:9px; letter-spacing:1.2px; font-weight:700;}
+  .lbl-drums{color:#ED93B1;} .lbl-bass{color:#85B7EB;} .lbl-other{color:#EF9F27;}
+  .lbl-chorus{color:#97C459;} .lbl-vocal{color:#F0C75E;}
+  .mt-strip-sublabel{font-family:'SF Mono',monospace; font-size:8px; color:#4A4A50; font-weight:600;}
+
+  .mt-strip-faderwrap{
+    display:flex; gap:5px; align-items:stretch; justify-content:center;
+    height:120px; padding:3px 0;
+    flex:none;
+  }
+  .mt-strip-fader{
+    position:relative; width:11px;
+    background: linear-gradient(180deg, #08080A, #0E0E10);
+    border-radius:3px; border:0.5px solid #1A1A1E;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+    flex-shrink:0;
+  }
+  .mt-strip-fader::after{
+    content:''; position:absolute; left:-3px; right:-3px; bottom:71%; height:1px;
+    background:#3A3A42;
+  }
+  .mt-strip-fader-fill{
+    position:absolute; bottom:0; left:1px; right:1px; height:71%;
+    background: linear-gradient(to top, #5A6A65, #7DB89E 85%);
+    border-radius:2px;
+    box-shadow: 0 0 6px rgba(125,184,158,0.2);
+  }
+  .mt-strip-fader-thumb{
+    position:absolute; left:-6px; right:-6px; height:12px;
+    bottom:71%; transform: translateY(50%);
+    background: linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%);
+    border-radius:2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4);
+    background-image:
+      linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%),
+      repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 3px);
+  }
+  .mt-strip-meter{
+    width:7px; background:#06060A; border-radius:2px;
+    position:relative; overflow:hidden;
+    border:0.5px solid #1A1A1E;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+    flex-shrink:0;
+  }
+  .mt-strip-meter-fill{
+    position:absolute; bottom:0; left:0; right:0; height:32%;
+    background:linear-gradient(to top, #2E7A5B 0%, #7DB89E 55%, #EF9F27 78%, #E24B4A 93%);
+  }
+  .mt-strip-db{
+    font-family:'SF Mono',monospace; font-size:9px; color:#92C9B0;
+    background:#06060A; padding:2px 4px; border-radius:3px;
+    text-align:center; letter-spacing:0.5px;
+    border:0.5px solid #1A1A1E;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    text-shadow: 0 0 4px rgba(146,201,176,0.5);
+  }
+  .mt-strip-btns{display:grid; grid-template-columns:1fr 1fr; gap:3px;}
+  .mt-stripbtn{
+    background: linear-gradient(180deg, #1A1A1E, #131316);
+    color:#6A6A70; border:0.5px solid #25252A;
+    padding:4px 0; border-radius:3px; font-size:8px; letter-spacing:1px;
+    font-family:inherit; font-weight:700; text-align:center;
+  }
+
+  /* --- VARIANT A: 下寄せ --- */
+  .mt-strip.opt-a{
+    height: 210px;
+    justify-content: flex-end;
+  }
+  .mt-strip.opt-a .mt-strip-header{
+    position: absolute; top: 6px; left: 9px; right: 5px;
+  }
+  /* ::before の領域が変わるので調整 */
+  .mt-strip.opt-a::before{ top:6px; bottom:6px; }
+
+  /* --- VARIANT B: タイトに絞る（現状とほぼ同じ、ストリップを自然サイズ） --- */
+  .mt-strip.opt-b{
+    /* デフォルトのまま (自然サイズ) */
+  }
+
+  /* --- VARIANT C: フェーダーを伸ばす --- */
+  .mt-strip.opt-c .mt-strip-faderwrap{
+    height: 200px;
+  }
+
+  /* --- VARIANT D: 余白に波形ミニ --- */
+  .mt-strip.opt-d{
+    height: 210px;
+  }
+  .mt-strip.opt-d .mt-mini-wave{
+    flex: 1;
+    background: #06060A;
+    border: 0.5px solid #1A1A1E;
+    border-radius: 3px;
+    margin: 2px 0;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  /* 偽の波形 (DRUMS) */
+  .mt-strip.opt-d[data-g="drums"] .mt-mini-wave::before{
+    content:''; position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 8px 14px at 10% 50%, #ED93B1 0%, transparent 60%),
+      radial-gradient(ellipse 8px 18px at 30% 50%, #ED93B1 0%, transparent 60%),
+      radial-gradient(ellipse 8px 10px at 55% 50%, #ED93B1 0%, transparent 60%),
+      radial-gradient(ellipse 8px 16px at 80% 50%, #ED93B1 0%, transparent 60%);
+    opacity: 0.5;
+  }
+  .mt-strip.opt-d[data-g="bass"]   .mt-mini-wave::before{ content:''; position:absolute; inset:0;
+    background: linear-gradient(90deg, transparent 0%, #85B7EB 5%, transparent 10%, transparent 25%, #85B7EB 30%, transparent 35%, transparent 50%, #85B7EB 55%, transparent 60%, transparent 75%, #85B7EB 80%, transparent 85%);
+    opacity: 0.35; transform: scaleY(0.6);}
+  .mt-strip.opt-d[data-g="other"]  .mt-mini-wave::before{ content:''; position:absolute; inset:0;
+    background: repeating-linear-gradient(90deg, transparent 0, transparent 3px, #EF9F27 3px, #EF9F27 4px); opacity: 0.3;}
+  .mt-strip.opt-d[data-g="chorus"] .mt-mini-wave::before{ content:''; position:absolute; inset:0;
+    background:
+      linear-gradient(90deg, transparent, #97C459 50%, transparent);
+    opacity: 0.3; mask: linear-gradient(180deg, transparent 30%, white 50%, transparent 70%);}
+  .mt-strip.opt-d[data-g="vocal"]  .mt-mini-wave::before{ content:''; position:absolute; inset:0;
+    background: linear-gradient(90deg, transparent 10%, #F0C75E 15%, transparent 20%, transparent 35%, #F0C75E 45%, transparent 55%, transparent 70%, #F0C75E 80%, transparent 90%);
+    opacity: 0.35;}
+</style>
+</head>
+<body>
+
+<h1>MIXER フェーダー配置案 比較モック</h1>
+
+<!-- A -->
+<div class="variant">
+  <div class="variant-title">A — 下寄せ (コンソール感)</div>
+  <div class="variant-desc">ヘッダーは上端固定、フェーダー以下を strip 下半分に集約。本物のコンソールっぽい。strip は固定 210px。</div>
+  <div class="mt-mixer-card">
+    <div class="mt-mixer-strips">
+      <!-- 5 strips with opt-a -->
+      <div class="mt-strip opt-a" data-g="drums">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-drums">DRUMS</span><span class="mt-strip-sublabel">1/2</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-a" data-g="bass">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-bass">BASS</span><span class="mt-strip-sublabel">3/4</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-a" data-g="other">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-other">OTHER</span><span class="mt-strip-sublabel">5/6</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-a" data-g="chorus">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-chorus">CHORUS</span><span class="mt-strip-sublabel">7/8</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-a" data-g="vocal">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-vocal">VOCAL</span><span class="mt-strip-sublabel">9/10</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- B -->
+<div class="variant">
+  <div class="variant-title">B — タイト (空白なし)</div>
+  <div class="variant-desc">strip を内容自然サイズに。MIXER カード全体が縮み、SETLIST に縦スペース譲渡。一番コンパクト。</div>
+  <div class="mt-mixer-card">
+    <div class="mt-mixer-strips">
+      <div class="mt-strip opt-b" data-g="drums">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-drums">DRUMS</span><span class="mt-strip-sublabel">1/2</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-b" data-g="bass">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-bass">BASS</span><span class="mt-strip-sublabel">3/4</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-b" data-g="other">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-other">OTHER</span><span class="mt-strip-sublabel">5/6</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-b" data-g="chorus">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-chorus">CHORUS</span><span class="mt-strip-sublabel">7/8</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-b" data-g="vocal">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-vocal">VOCAL</span><span class="mt-strip-sublabel">9/10</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- C -->
+<div class="variant">
+  <div class="variant-title">C — フェーダー伸ばす</div>
+  <div class="variant-desc">fader 120 → 200px。操作性 ↑、SETLIST スペース ↓。</div>
+  <div class="mt-mixer-card">
+    <div class="mt-mixer-strips">
+      <div class="mt-strip opt-c" data-g="drums">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-drums">DRUMS</span><span class="mt-strip-sublabel">1/2</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-c" data-g="bass">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-bass">BASS</span><span class="mt-strip-sublabel">3/4</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-c" data-g="other">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-other">OTHER</span><span class="mt-strip-sublabel">5/6</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-c" data-g="chorus">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-chorus">CHORUS</span><span class="mt-strip-sublabel">7/8</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-c" data-g="vocal">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-vocal">VOCAL</span><span class="mt-strip-sublabel">9/10</span></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- D -->
+<div class="variant">
+  <div class="variant-title">D — 上に波形ミニ（イメージ）</div>
+  <div class="variant-desc">strip 上半分に各 STEM の小さな波形プレビュー。情報量 ↑、実装の手間も ↑。波形は今回ダミー描画。</div>
+  <div class="mt-mixer-card">
+    <div class="mt-mixer-strips">
+      <div class="mt-strip opt-d" data-g="drums">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-drums">DRUMS</span><span class="mt-strip-sublabel">1/2</span></div>
+        <div class="mt-mini-wave"></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-d" data-g="bass">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-bass">BASS</span><span class="mt-strip-sublabel">3/4</span></div>
+        <div class="mt-mini-wave"></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-d" data-g="other">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-other">OTHER</span><span class="mt-strip-sublabel">5/6</span></div>
+        <div class="mt-mini-wave"></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-d" data-g="chorus">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-chorus">CHORUS</span><span class="mt-strip-sublabel">7/8</span></div>
+        <div class="mt-mini-wave"></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+      <div class="mt-strip opt-d" data-g="vocal">
+        <div class="mt-strip-header"><span class="mt-strip-label lbl-vocal">VOCAL</span><span class="mt-strip-sublabel">9/10</span></div>
+        <div class="mt-mini-wave"></div>
+        <div class="mt-strip-faderwrap">
+          <div class="mt-strip-fader"><div class="mt-strip-fader-fill"></div><div class="mt-strip-fader-thumb"></div></div>
+          <div class="mt-strip-meter"><div class="mt-strip-meter-fill"></div></div>
+        </div>
+        <div class="mt-strip-db">+0.0</div>
+        <div class="mt-strip-btns"><div class="mt-stripbtn">MUTE</div><div class="mt-stripbtn">SOLO</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
