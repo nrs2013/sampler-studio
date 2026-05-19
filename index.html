@@ -1497,7 +1497,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.0.2';
+const APP_VERSION = 'v6.0.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4821,12 +4821,30 @@ function bindDoLibDrop() {
     if (e.target === card) card.classList.remove('drop-over');
   });
   card.addEventListener('drop', async e => {
-    // 既存スロットの drop ハンドラが先に発火して stopPropagation した場合はここまで来ない
     const files = e.dataTransfer.files;
     if (!files || files.length === 0) { card.classList.remove('drop-over'); return; }
     e.preventDefault();
     card.classList.remove('drop-over');
+    // 映像ファイルが混ざっていたら VIDEO LIBRARY へ振り分け
+    const audioFiles = [];
+    const videoFiles = [];
     for (const f of files) {
+      if (typeof _isVideoFile === 'function' && _isVideoFile(f)) videoFiles.push(f);
+      else audioFiles.push(f);
+    }
+    if (videoFiles.length > 0) {
+      showToast(`📹 映像ファイル ${videoFiles.length}個 を VIDEO LIBRARY へ振り分け`);
+      for (const f of videoFiles) {
+        let emptyIdx = (state.door.videoLibrary || []).findIndex(x => !x);
+        if (emptyIdx < 0) {
+          if (!Array.isArray(state.door.videoLibrary)) state.door.videoLibrary = [];
+          state.door.videoLibrary.push(null);
+          emptyIdx = state.door.videoLibrary.length - 1;
+        }
+        await doVidLoadFile(emptyIdx, f);
+      }
+    }
+    for (const f of audioFiles) {
       await doLibAppendFile(f);
     }
   });
@@ -4851,28 +4869,55 @@ function doVidLoadEmpty(slotIdx) {
   inp.click();
 }
 async function doVidLoadFile(slotIdx, f) {
-  if (!f) return;
+  if (!f) { showToast('⚠️ ファイルが指定されていません'); return; }
+  console.log('[doVidLoadFile] start', { slotIdx, name: f.name, size: f.size, type: f.type });
   if (!Array.isArray(state.door.videoLibrary)) state.door.videoLibrary = [];
   while (state.door.videoLibrary.length <= slotIdx) state.door.videoLibrary.push(null);
   try {
-    showToast(`📹 映像読込中: ${f.name}...`);
-    const arrBuf = await f.arrayBuffer();
+    showToast(`📹 V${slotIdx+1} 読込中: ${f.name} (${(f.size/1024/1024).toFixed(1)} MB)`);
+    // Step 1: arrayBuffer
+    let arrBuf;
+    try {
+      arrBuf = await f.arrayBuffer();
+      console.log('[doVidLoadFile] arrayBuffer ok', arrBuf.byteLength);
+    } catch (e) {
+      showToast('❌ ファイル読込失敗: ' + (e.message || e));
+      console.error('arrayBuffer error', e);
+      return;
+    }
+    // Step 2: save to IndexedDB
     const id = `door-vid-${slotIdx}-${Date.now()}`;
-    try { await saveSampleToDB(id, arrBuf, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); showToast('⚠️ 映像保存失敗（EXPORT に含まれない可能性）'); }
-    // メタデータ取得（duration、サムネ）
+    try {
+      await saveSampleToDB(id, arrBuf, f.name);
+      console.log('[doVidLoadFile] saveSampleToDB ok', id);
+    } catch (e) {
+      console.error('saveSampleToDB failed', e);
+      showToast('⚠️ IndexedDB 保存失敗（容量超過の可能性）: ' + (e.message || e));
+      // 保存失敗でも続行（再生は memory blob URL で可能）
+    }
+    // Step 3: extract meta
     const blob = new Blob([arrBuf], { type: f.type || 'video/mp4' });
     const url = URL.createObjectURL(blob);
-    const meta = await _videoExtractMeta(url, f.name);
+    let meta;
+    try {
+      meta = await _videoExtractMeta(url, f.name);
+      console.log('[doVidLoadFile] meta ok', meta);
+    } catch (e) {
+      console.warn('meta extract failed', e);
+      meta = { duration: NaN, thumb: null };
+    }
     URL.revokeObjectURL(url);
+    // Step 4: register in state
     state.door.videoLibrary[slotIdx] = {
       sampleId: id, sampleName: f.name,
       duration: meta.duration, thumbDataUrl: meta.thumb,
     };
+    console.log('[doVidLoadFile] state set', state.door.videoLibrary[slotIdx]);
     doRenderVideoLibrary();
     doSave();
-    showToast(`✅ 映像読込: ${f.name}（${(arrBuf.byteLength/1024/1024).toFixed(1)} MB）`);
+    showToast(`✅ V${slotIdx+1} 読込完了: ${f.name}`);
   } catch (err) {
-    console.error('映像読込失敗', err);
+    console.error('映像読込失敗 (outer)', err);
     showToast('❌ 映像読込失敗: ' + (err.message || err));
   }
 }
