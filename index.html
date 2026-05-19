@@ -1259,6 +1259,29 @@
     flex-shrink: 0;
     box-shadow: inset 0 0 8px rgba(125,184,158,0.06);
     text-shadow: none;
+    transition: color 0.2s, border-color 0.2s, background 0.2s;
+  }
+  /* ロード中: NOW チップをオレンジで明滅 → 視覚的に「まだ待って」 */
+  .mt-hero-trackchip.loading {
+    color: #EF9F27;
+    background: rgba(239,159,39,0.10);
+    border-color: rgba(239,159,39,0.8);
+    box-shadow: inset 0 0 8px rgba(239,159,39,0.12), 0 0 12px rgba(239,159,39,0.25);
+    animation: mt-loading-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes mt-loading-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+  /* ロード中: ステータスもオレンジに、PLAY ボタン縁もオレンジパルス */
+  .mt-hero.mt-loading .mt-hero-status {
+    color: #EF9F27;
+    font-weight: 700;
+  }
+  .mt-hero.mt-loading .mt-tbtn.play {
+    border-color: rgba(239,159,39,0.8);
+    box-shadow: 0 0 12px rgba(239,159,39,0.4);
+    animation: mt-loading-pulse 1.2s ease-in-out infinite;
   }
   /* NEXT SONG チップ（黄） — 外枠だけ黄色、中は半透明でクールに */
   .mt-hero-trackchip--next {
@@ -2896,7 +2919,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.31.0';
+const APP_VERSION = 'v7.32.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9614,6 +9637,8 @@ async function mtRestoreBuffers() {
             const arr = await f.arrayBuffer();
             const buf = await mtRobustDecode(arr, {name: "restored"});
             mtDecodedCache[t.sampleId] = buf;
+            // 1 ファイル読み終わったら UI 更新 → ロード進捗が見える
+            try { mtRenderNow(); } catch(_) {}
             continue;
           } catch(e) {
             console.warn('mt handle read failed', t.sampleId, e);
@@ -9632,6 +9657,8 @@ async function mtRestoreBuffers() {
       if (rec && rec.data) {
         const buf = await mtRobustDecode(rec.data, {name: rec.name||"blob"});
         mtDecodedCache[t.sampleId] = buf;
+        // 1 ファイル読み終わったら UI 更新
+        try { mtRenderNow(); } catch(_) {}
       }
     } catch(e) { console.warn('mt blob restore failed', t.sampleId, e); }
   }
@@ -10773,9 +10800,32 @@ function mtRenderNow() {
       nextChipName.textContent = '— なし —';
     }
   }
+  // 読込状況を集計（選択中の曲のファイルが何個 / 全部かをチェック）
+  // ※ 読込が終わっていないと再生してもファイル無し扱いになるので、状態を明示する
+  const selSongForLoad = (m.selectedIdx >= 0) ? m.songs[m.selectedIdx] : null;
+  let loaded = 0, total = 0;
+  if (selSongForLoad) {
+    for (const g of MT_GROUPS) {
+      mtGetLayers(selSongForLoad, g).forEach(l => {
+        if (l && l.sampleId) { total++; if (mtDecodedCache[l.sampleId]) loaded++; }
+      });
+    }
+    (selSongForLoad.unassigned || []).forEach(u => {
+      if (u && u.sampleId) { total++; if (mtDecodedCache[u.sampleId]) loaded++; }
+    });
+  }
+  const isLoading = total > 0 && loaded < total;
+
+  // ヘッダーチップに loading クラスを付け外し → CSS でオレンジパルスに切替
+  const nowChip = document.getElementById('mtHeroTrackChip');
+  if (nowChip) nowChip.classList.toggle('loading', isLoading);
+  if (hero) hero.classList.toggle('mt-loading', isLoading);
+
   // ステータス
   if (status) {
-    if (m.isPlaying) status.textContent = 'PLAYING · ESC で停止';
+    if (isLoading) {
+      status.textContent = `📂 LOADING ${loaded}/${total} ファイル...`;
+    } else if (m.isPlaying) status.textContent = 'PLAYING · ESC で停止';
     else if (cur) status.textContent = 'READY · SPACE 再生 / ESC 停止';
     else status.textContent = 'EMPTY · 曲を追加';
   }
