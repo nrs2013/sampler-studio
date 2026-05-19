@@ -970,16 +970,8 @@
   /* ===================================================================== */
 
   /* ====================== VIDEO LIBRARY (cyan #4FD1C5) ====================== */
-  .do-vid-section { margin-top: 6px; }
-  .do-vid-head-row {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
-  }
-  .do-vid-head-left { display: flex; align-items: center; gap: 12px; }
-  .do-vid-head-title {
-    font-size: 10px; color: #B0B0B6; letter-spacing: 2px; font-weight: 600;
-  }
-  .do-vid-head-sub { font-size: 9px; color: #5A5A60; letter-spacing: 1px; }
-  .do-vid-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  /* ANNOUNCE LIBRARY と同じ寸法・同じパターンで揃える */
+  .do-vid-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
   .do-vid-slot {
     border: 0.5px solid rgba(79,209,197,0.5); background: rgba(79,209,197,0.06);
     border-radius: 6px; padding: 10px;
@@ -1002,41 +994,38 @@
     font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
     background: rgba(79,209,197,0.2); color: #4FD1C5;
   }
+  /* サムネは 56px 固定の薄い帯（LIBRARY の枠と同じリズム維持） */
   .do-vid-thumb {
-    width: 100%; aspect-ratio: 16/9; background: #0A0A0D;
+    width: 100%; height: 56px; background: #0A0A0D;
     border-radius: 3px; margin-top: 4px;
     display: flex; align-items: center; justify-content: center;
-    color: #4FD1C5; font-size: 16px; overflow: hidden;
-    object-fit: cover;
+    color: #4FD1C5; font-size: 14px; overflow: hidden;
   }
   .do-vid-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .do-vid-name { font-size: 12px; font-weight: 500; color: #E6E6EA; word-break: break-all; line-height: 1.3; margin-top: 4px; }
   .do-vid-meta { font-size: 10px; color: #8A8A92; margin-top: 3px; font-family: inherit; }
+  /* アクションは ANNOUNCE LIBRARY と完全に同じスタイル */
   .do-vid-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
   .do-vid-act:hover { color: #4FD1C5; }
   .do-vid-act.del:hover { color: #E24B4A; }
-  .do-vid-act.play { font-size: 13px; }
+  .do-vid-act.play { font-size: 14px; }
   .do-vid-act.play.playing-btn { background: #4FD1C5; color: #093B36; font-weight: 600; padding: 2px 8px; }
-  /* OPEN OUTPUT button */
+  /* OPEN OUTPUT は ANNOUNCE 停止ボタンと同じ「ピル」スタイル */
   .do-out-btn {
-    background: rgba(79,209,197,0.1); border: 0.5px solid #4FD1C5; color: #4FD1C5;
-    padding: 6px 12px; border-radius: 4px; font-size: 10px; letter-spacing: 2px;
+    background: transparent; border: 0.5px solid rgba(79,209,197,0.4); color: #4FD1C5;
+    padding: 4px 10px; border-radius: 3px; font-size: 9px; letter-spacing: 1px;
     font-weight: 600; cursor: pointer; font-family: inherit;
     transition: all 0.15s;
   }
-  .do-out-btn:hover { background: rgba(79,209,197,0.2); }
-  .do-out-btn.open { background: #4FD1C5; color: #093B36; }
-  .do-out-btn::before { content: '● '; }
-  /* ヘッダー内 OUTPUT 状態ピル */
+  .do-out-btn:hover { background: rgba(79,209,197,0.12); }
+  .do-out-btn.open { background: #4FD1C5; color: #093B36; border-color: #4FD1C5; }
+  /* ヘッダー内 OUTPUT 状態ピル — 影アナ件数表示と同じ控えめスタイル */
   .out-status-pill {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 9px; color: #5A5A60; letter-spacing: 1px;
-    margin-left: 8px;
+    font-size: 9px; color: #5A5A60; letter-spacing: 0.5px;
   }
   .out-status-pill.open { color: #4FD1C5; }
   /* チェーン内 V チップ */
   .do-chip-badge.color-vid { background: #4FD1C5; color: #093B36; }
-  .do-lib-slot.slot-vid { background: rgba(79,209,197,0.06); border-color: rgba(79,209,197,0.5); }
   /* ====================================================================== */
 
   /* SCHEDULE */
@@ -1457,14 +1446,13 @@
     </div>
 
     <!-- VIDEO LIBRARY -->
-    <div class="do-card do-vid-section">
-      <div class="do-vid-head-row">
-        <div class="do-vid-head-left">
-          <span class="do-vid-head-title">VIDEO LIBRARY</span>
-          <span class="do-vid-head-sub">映像素材プール（ドロップで追加・チェーンに混在可・サブモニターで再生）</span>
-          <span class="out-status-pill" id="doOutStatusPill">○ OUTPUT closed</span>
+    <div class="do-card" id="doVidCard">
+      <div class="do-sched-head">
+        <span class="do-card-head" style="margin:0;">VIDEO LIBRARY — 映像素材プール（ドロップで追加・チェーンに混在可）</span>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="do-out-btn" id="doOutOpenBtn" onclick="doOutOpen()" title="サブモニター用ウィンドウを開く（2画面目に配置してフルスクリーン化）">OPEN OUTPUT</button>
+          <span class="out-status-pill" id="doOutStatusPill">○ closed</span>
         </div>
-        <button class="do-out-btn" id="doOutOpenBtn" onclick="doOutOpen()" title="サブモニター用ウィンドウを開く（2画面目に配置してフルスクリーン化）">OPEN OUTPUT</button>
       </div>
       <div class="do-vid-grid" id="doVidGrid"></div>
       <input type="file" id="doVidFileInput" accept="video/*" style="display:none;">
@@ -1509,7 +1497,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.0.1';
+const APP_VERSION = 'v6.0.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5146,7 +5134,7 @@ function doOutUpdateStatus() {
   const btn = document.getElementById('doOutOpenBtn');
   const open = _outWindow && !_outWindow.closed;
   if (pill) {
-    pill.textContent = open ? '● OUTPUT open' : '○ OUTPUT closed';
+    pill.textContent = open ? '● open' : '○ closed';
     pill.classList.toggle('open', !!open);
   }
   if (btn) {
