@@ -2395,7 +2395,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.7.3';
+const APP_VERSION = 'v7.7.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9237,20 +9237,21 @@ function mtRenderSetlist() {
       slot.className = 'mt-track-slot';
       slot.dataset.mtSlot = `${idx}-${g}`;
       slot.dataset.group = g;
+      // グループの略号（DR / BA / OT / CH / VO）
+      const abbr = MT_GROUP_LABELS[g].slice(0, 2);
       const t = song.tracks && song.tracks[g];
       if (t) {
         slot.classList.add('has-content');
-        // 短く表示：拡張子除いて先頭 4 文字
-        const base = t.name.replace(/\.[^.]+$/, '');
-        slot.textContent = base.length > 4 ? base.slice(0, 4) + '…' : (base || '●');
+        // ファイル名は表示せずグループ略号のみ。ファイル名は hover で確認可能。
+        slot.textContent = abbr;
         slot.title = `${MT_GROUP_LABELS[g]}: ${t.name}\n（クリックで削除）`;
         slot.onclick = (e) => {
           if (!confirm(`${MT_GROUP_LABELS[g]} の「${t.name}」を削除しますか？`)) return;
           mtRemoveTrack(idx, g);
         };
       } else {
-        slot.textContent = '+';
-        slot.style.fontSize = '11px';
+        // 空 slot もグループ略号を薄く表示（どこに何を入れるか分かるように）
+        slot.textContent = abbr;
         slot.title = `ドラッグで ${MT_GROUP_LABELS[g]} ファイルを選択（クリックで OS ファイルピッカー）`;
         slot.onclick = async () => {
           // File System Access API のファイルピッカーを使う（ハンドルが取れる）
