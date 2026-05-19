@@ -1497,7 +1497,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.0.4';
+const APP_VERSION = 'v6.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4868,6 +4868,9 @@ function doVidLoadEmpty(slotIdx) {
   };
   inp.click();
 }
+// 映像はファイル本体をコピーせず、File 参照だけ持つ（30GB+ でも瞬時に登録完了）
+// メタデータ（名前・時間・サムネ）だけ localStorage に保存。
+// リロードすると File 参照は消えるが、メタデータは残るので「再リンク」UI を表示。
 async function doVidLoadFile(slotIdx, f) {
   if (!f) { showToast('⚠️ ファイルが指定されていません'); return; }
   console.log('[doVidLoadFile] start', { slotIdx, name: f.name, size: f.size, type: f.type });
@@ -4875,54 +4878,32 @@ async function doVidLoadFile(slotIdx, f) {
   while (state.door.videoLibrary.length <= slotIdx) state.door.videoLibrary.push(null);
   try {
     const sizeMB = (f.size/1024/1024).toFixed(1);
-    showToast(`📹 V${slotIdx+1} 読込中: ${f.name} (${sizeMB} MB)`);
-
-    // 大容量対応: File/Blob を直接 IndexedDB へ保存（arrayBuffer 化しない → メモリ食わない）
-    const id = `door-vid-${slotIdx}-${Date.now()}`;
+    showToast(`📹 V${slotIdx+1} 登録中: ${f.name} (${sizeMB} MB)`);
+    // メタ抽出のみ（サムネ取得のために短時間ファイル読みを試行。失敗してもOK）
+    let meta = { duration: NaN, thumb: null };
     try {
-      await saveBlobToDB(id, f, f.name);
-      console.log('[doVidLoadFile] saveBlobToDB ok', id);
-    } catch (e) {
-      console.error('saveBlobToDB failed', e);
-      showToast('⚠️ IndexedDB 保存失敗（' + (e.message || e) + '）。メモリ上のみで継続します');
-      // 失敗しても続行：sampleId なしで state に登録（リロードで消える）
-    }
-
-    // メタデータ取得：File オブジェクトから直接 URL 生成（メモリに乗らない）
-    const url = URL.createObjectURL(f);
-    let meta;
-    try {
+      const url = URL.createObjectURL(f);
       meta = await _videoExtractMeta(url, f.name);
-      console.log('[doVidLoadFile] meta ok', meta);
+      URL.revokeObjectURL(url);
+      console.log('[doVidLoadFile] meta ok', { duration: meta.duration, hasThumb: !!meta.thumb });
     } catch (e) {
-      console.warn('meta extract failed', e);
-      meta = { duration: NaN, thumb: null };
+      console.warn('meta extract failed (using fallback)', e);
     }
-    URL.revokeObjectURL(url);
-
     state.door.videoLibrary[slotIdx] = {
-      sampleId: id, sampleName: f.name,
-      duration: meta.duration, thumbDataUrl: meta.thumb,
+      sampleName: f.name,
+      duration: meta.duration,
+      thumbDataUrl: meta.thumb,
+      file: f, // ← in-memory File 参照（永続化されない）
+      size: f.size,
     };
-    console.log('[doVidLoadFile] state set', state.door.videoLibrary[slotIdx]);
+    console.log('[doVidLoadFile] state set');
     doRenderVideoLibrary();
     doSave();
-    showToast(`✅ V${slotIdx+1} 読込完了: ${f.name} (${sizeMB} MB)`);
+    showToast(`✅ V${slotIdx+1} 登録完了: ${f.name} (${sizeMB} MB)`);
   } catch (err) {
-    console.error('映像読込失敗 (outer)', err);
-    showToast('❌ 映像読込失敗: ' + (err.message || err));
+    console.error('映像登録失敗', err);
+    showToast('❌ 映像登録失敗: ' + (err.message || err));
   }
-}
-// File/Blob を IndexedDB に直接保存する版（arrayBuffer 経由しない）
-async function saveBlobToDB(id, blob, name) {
-  if (!db) await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('samples', 'readwrite');
-    tx.objectStore('samples').put({ id, data: blob, name, mime: blob.type || 'video/mp4', isBlob: true });
-    tx.oncomplete = () => resolve();
-    tx.onerror = e => reject(e.target.error || e);
-    tx.onabort = e => reject(e.target.error || new Error('transaction aborted'));
-  });
 }
 // blob URL を渡すと duration とサムネ data URL を返す
 function _videoExtractMeta(url, name) {
@@ -4966,16 +4947,23 @@ function doVidClear(slotIdx) {
 function doVidPreview(slotIdx) {
   const it = state.door.videoLibrary && state.door.videoLibrary[slotIdx];
   if (!it) return;
+  if (!it.file) {
+    showToast('⚠️ V' + (slotIdx+1) + ' のファイル参照がありません。📁ボタンで再リンクしてください');
+    return;
+  }
   if (!_outWindow || _outWindow.closed) {
     showToast('まず「OPEN OUTPUT」でサブモニターを開いてください');
     return;
   }
-  // BGM をフェードアウト
   _vidFadeBgm(true);
   _outActiveVideoSlot = slotIdx;
-  _outBC.postMessage({ cmd: 'play', sampleId: it.sampleId, name: it.sampleName });
+  // 同一オリジンのウィンドウ間では blob URL がそのまま通る
+  const url = URL.createObjectURL(it.file);
+  _outCurrentBlobUrl = url; // 後で revoke するため main 側で保持
+  _outBC.postMessage({ cmd: 'play', blobUrl: url, name: it.sampleName });
   doRenderVideoLibrary();
 }
+let _outCurrentBlobUrl = null;
 function doVidStopPreview() {
   doOutStop();
 }
@@ -5029,28 +5017,43 @@ function doRenderVideoLibrary() {
       });
     } else {
       const durStr = isFinite(it.duration) ? `${Math.floor(it.duration/60)}:${Math.floor(it.duration%60).toString().padStart(2,'0')}` : '--:--';
+      const needsRelink = !it.file;
       slot.innerHTML = `
         <div class="do-vid-slot-head">
           <span class="do-vid-badge">V${i+1}</span>
           <div style="display:flex; gap:2px;">
-            <button class="do-vid-act play${isPlaying ? ' playing-btn' : ''}" data-action="play" title="${isPlaying ? '停止' : 'サブモニターで再生'}">${isPlaying ? '■' : '▶'}</button>
+            ${needsRelink
+              ? `<button class="do-vid-act" data-action="relink" title="ファイルを再選択" style="color:#EF9F27;">📁</button>`
+              : `<button class="do-vid-act play${isPlaying ? ' playing-btn' : ''}" data-action="play" title="${isPlaying ? '停止' : 'サブモニターで再生'}">${isPlaying ? '■' : '▶'}</button>`}
             <button class="do-vid-act del" data-action="del" title="削除">×</button>
           </div>
         </div>
-        <div class="do-vid-thumb">${it.thumbDataUrl ? `<img src="${it.thumbDataUrl}" alt="">` : '▶'}</div>
+        <div class="do-vid-thumb" style="${needsRelink ? 'opacity:0.5;' : ''}">${it.thumbDataUrl ? `<img src="${it.thumbDataUrl}" alt="">` : '▶'}</div>
         <div class="do-vid-name">${escapeHtml(it.sampleName || '')}</div>
-        <div class="do-vid-meta">${durStr}</div>
+        <div class="do-vid-meta">${durStr}${needsRelink ? ' &nbsp;<span style="color:#EF9F27;">⚠ 再リンクが必要</span>' : ''}</div>
       `;
-      slot.querySelector('[data-action=play]').addEventListener('click', e => {
-        e.stopPropagation();
-        if (isPlaying) doVidStopPreview();
-        else doVidPreview(i);
-      });
+      if (!needsRelink) {
+        slot.querySelector('[data-action=play]').addEventListener('click', e => {
+          e.stopPropagation();
+          if (isPlaying) doVidStopPreview();
+          else doVidPreview(i);
+        });
+      } else {
+        slot.querySelector('[data-action=relink]').addEventListener('click', e => {
+          e.stopPropagation();
+          doVidLoadEmpty(i); // ファイル選択を開く → doVidLoadFile で再登録
+        });
+        // クリックでも再リンク
+        slot.addEventListener('click', e => {
+          if (e.target.closest('[data-action]')) return;
+          doVidLoadEmpty(i);
+        });
+      }
       slot.querySelector('[data-action=del]').addEventListener('click', e => {
         e.stopPropagation();
         if (confirm(`「${it.sampleName}」をライブラリから削除しますか？`)) doVidClear(i);
       });
-      // チェーンへ drag できる
+      // チェーンへ drag できる（再リンク必要状態でも、チェーン上では識別子として機能）
       slot.addEventListener('dragstart', e => {
         e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'door-vid', slot: i }));
         e.dataTransfer.effectAllowed = 'copy';
@@ -5154,12 +5157,14 @@ function doOutStop() {
   if (_outBC && _outWindow && !_outWindow.closed) {
     _outBC.postMessage({ cmd: 'stop' });
   }
+  if (_outCurrentBlobUrl) { try { URL.revokeObjectURL(_outCurrentBlobUrl); } catch(_) {} _outCurrentBlobUrl = null; }
   _outActiveVideoSlot = -1;
   _outChainContext = null;
   _vidFadeBgm(false);
   doRenderVideoLibrary();
 }
 function doOutOnVideoEnded() {
+  if (_outCurrentBlobUrl) { try { URL.revokeObjectURL(_outCurrentBlobUrl); } catch(_) {} _outCurrentBlobUrl = null; }
   _outActiveVideoSlot = -1;
   doRenderVideoLibrary();
   // チェーン文脈で再生していたなら次へ
@@ -5892,8 +5897,13 @@ function doPlayNextInChain() {
   // ============== V (映像) ==============
   if (chainItem.type === 'v') {
     const v = (state.door.videoLibrary || [])[chainItem.idx];
-    if (!v || !v.sampleId) {
+    if (!v) {
       setTimeout(doPlayNextInChain, 0); // 未登録ならスキップ
+      return;
+    }
+    if (!v.file) {
+      showToast('⚠️ V' + (chainItem.idx+1) + ' はファイル再リンクが必要なためスキップ');
+      setTimeout(doPlayNextInChain, 0);
       return;
     }
     if (!_outWindow || _outWindow.closed) {
@@ -5901,14 +5911,14 @@ function doPlayNextInChain() {
       setTimeout(doPlayNextInChain, 0);
       return;
     }
-    // BGM をフェードアウト
     _vidFadeBgm(true);
     _outActiveVideoSlot = chainItem.idx;
     _outChainContext = { rowId: state.door.activeRowId, chainIdx: state.door.activeChainIdx };
-    _outBC.postMessage({ cmd: 'play', sampleId: v.sampleId, name: v.sampleName });
+    const url = URL.createObjectURL(v.file);
+    _outCurrentBlobUrl = url;
+    _outBC.postMessage({ cmd: 'play', blobUrl: url, name: v.sampleName });
     doRenderVideoLibrary();
     doRenderSchedule();
-    // 終了通知は doOutOnVideoEnded → doPlayNextInChain で受ける
     return;
   }
 
@@ -6080,8 +6090,9 @@ function doSave() {
       library: state.door.library.map(it => it ? ({
         sampleId: it.sampleId, sampleName: it.sampleName, level: it.level ?? 1.0,
       }) : null),
+      // 映像は file 参照本体は永続化できないので、メタデータだけ保存（リロード後は再リンク要）
       videoLibrary: (state.door.videoLibrary || []).map(it => it ? ({
-        sampleId: it.sampleId, sampleName: it.sampleName, duration: it.duration, thumbDataUrl: it.thumbDataUrl,
+        sampleName: it.sampleName, duration: it.duration, thumbDataUrl: it.thumbDataUrl, size: it.size,
       }) : null),
       schedule: state.door.schedule.map(r => ({
         id: r.id, time: r.time, chain: [...r.chain], played: false,
@@ -6129,8 +6140,10 @@ function doLoad() {
     }
     if (Array.isArray(s.videoLibrary)) {
       state.door.videoLibrary = s.videoLibrary.map(it => it ? {
-        sampleId: it.sampleId, sampleName: it.sampleName,
+        sampleName: it.sampleName,
         duration: it.duration, thumbDataUrl: it.thumbDataUrl,
+        size: it.size,
+        file: null, // リロード後は再リンク必要
       } : null);
     }
     if (Array.isArray(s.schedule)) {
@@ -6319,22 +6332,10 @@ function initOutputMode() {
     r.onerror = e => rej(e);
   });
 
-  let currentObjectUrl = null;
-  const playVideo = async (sampleId, name) => {
+  // main から blob URL を受け取って再生（同一オリジンウィンドウ間で blob URL は共有可能）
+  const playFromUrl = async (blobUrl, name) => {
     try {
-      if (!db) await openLocalDB();
-      const rec = await getSample(sampleId);
-      if (!rec || !rec.data) { status.textContent = '● 音源が見つかりません: ' + sampleId; status.style.display=''; return; }
-      // rec.data は Blob/File なら直接、ArrayBuffer なら Blob でラップ
-      let blob;
-      if (rec.data instanceof Blob) {
-        blob = rec.data;
-      } else {
-        blob = new Blob([rec.data], { type: rec.mime || 'video/mp4' });
-      }
-      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-      currentObjectUrl = URL.createObjectURL(blob);
-      video.src = currentObjectUrl;
+      video.src = blobUrl;
       status.textContent = '● PLAYING — ' + (name || '');
       status.style.display = '';
       idle.style.display = 'none';
@@ -6343,11 +6344,11 @@ function initOutputMode() {
       console.warn('output play failed', e);
       status.textContent = '● 再生失敗: ' + (e.message || e);
       status.style.display = '';
+      bc.postMessage({ event: 'error', message: e.message || String(e) });
     }
   };
   const stopVideo = () => {
     try { video.pause(); video.removeAttribute('src'); video.load(); } catch(_) {}
-    if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
     status.style.display = 'none';
     idle.style.display = '';
   };
@@ -6364,7 +6365,7 @@ function initOutputMode() {
   const bc = new BroadcastChannel('sampler-studio-output');
   bc.onmessage = e => {
     const m = e.data || {};
-    if (m.cmd === 'play' && m.sampleId) playVideo(m.sampleId, m.name);
+    if (m.cmd === 'play' && m.blobUrl) playFromUrl(m.blobUrl, m.name);
     else if (m.cmd === 'stop') stopVideo();
     else if (m.cmd === 'ping') bc.postMessage({ event: 'pong' });
   };
