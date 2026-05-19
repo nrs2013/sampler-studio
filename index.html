@@ -2634,11 +2634,6 @@
                    placeholder="— 待機中 —"
                    title="クリックして曲名を変更（選択中の曲）" />
           </div>
-          <div class="mt-hero-transport">
-            <button class="mt-tbtn play" id="mtPlayBtn" onclick="mtPlayPause()" aria-label="Play"><span class="mt-tbtn-glyph" id="mtPlayGlyph">▶</span></button>
-            <button class="mt-tbtn" onclick="mtPlayNext()" title="次の曲へ" aria-label="Next">▶▶</button>
-            <button class="mt-tbtn stop" onclick="mtStop()" aria-label="Stop">■</button>
-          </div>
         </div>
         <div class="mt-hero-bottom">
           <!-- スクラバー（クリック/ドラッグでシーク）+ ロケート ドロップハンドル -->
@@ -2812,7 +2807,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.25.4';
+const APP_VERSION = 'v7.25.5';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9033,18 +9028,22 @@ function mtClearAll() {
 // other/oth/inst/instr/piano/synth/keys/guitar/gt → other
 function mtGuessGroup(filename) {
   if (!filename) return null;
-  const n = filename.toLowerCase().replace(/\.[^.]+$/, ''); // 拡張子削除
-  // 完全一致 / 単語境界マッチを優先
-  // drums
-  if (/(^|[_\-\s\(\.])(drums?|drum|dr|kicks?|kick)([_\-\s\)\.]|$)/.test(n) || /ドラム/.test(filename)) return 'drums';
+  // 拡張子と末尾の数字 / トラック番号などを削除して綺麗にしてからマッチ
+  const n = filename.toLowerCase()
+    .replace(/\.[^.]+$/, '')           // 拡張子
+    .replace(/[\[\]【】（）()]/g, ' '); // 括弧をスペースに置換（[Rhythm] → ' Rhythm '）
+  // click（メトロノーム / カウント）
+  if (/(^|[_\-\s\(\.])(clicks?|click|cue|count|metronome|cl)([_\-\s\)\.]|$)/.test(n) || /クリック|メトロ|カウント/.test(filename)) return 'click';
+  // drums / rhythm / percussion — RHYTHM 系の表記揺れに全方位対応
+  if (/(^|[_\-\s\(\.])(drums?|drum|dr|drm|kicks?|kick|snare?|hat|hihat|cymb|percs?|perc|percussions?|rhythms?|rhythm|rhy|rhyt|ryhthm|beats?|beat|rhthm)([_\-\s\)\.]|$)/.test(n) || /ドラム|リズム|パーカ|打楽器|ビート/.test(filename)) return 'drums';
   // bass
-  if (/(^|[_\-\s\(\.])(bass|bs|ba)([_\-\s\)\.]|$)/.test(n) || /ベース|低音/.test(filename)) return 'bass';
+  if (/(^|[_\-\s\(\.])(bass|bs|ba|bassline|低音|sub)([_\-\s\)\.]|$)/.test(n) || /ベース|低音/.test(filename)) return 'bass';
   // chorus（vocal より先に判定：「chorus_vocal」「back_vocal」など vocal を含むケースで誤判定を防ぐ）
   if (/(^|[_\-\s\(\.])(chorus|cho|backing|back\s*vocal|bv|bgv|harmon[yi])([_\-\s\)\.]|$)/.test(n) || /コーラス|ハモ/.test(filename)) return 'chorus';
   // vocal
   if (/(^|[_\-\s\(\.])(vocals?|vox?|vo|lead|melody|main)([_\-\s\)\.]|$)/.test(n) || /ボーカル|ヴォーカル|メイン|主旋律/.test(filename)) return 'vocal';
-  // other
-  if (/(^|[_\-\s\(\.])(others?|other|oth|inst|instr|piano|synth|keys?|guitar|gtr?|strings?|brass|other_inst)([_\-\s\)\.]|$)/.test(n) || /その他|楽器|オケ/.test(filename)) return 'other';
+  // other（最後に判定 — 他のグループに当てはまらない場合のキャッチオール）
+  if (/(^|[_\-\s\(\.])(others?|other|oth|inst|instr|piano|synth|keys?|guitar|gtr?|strings?|brass|other_inst|backing|orch|orchestra|mix)([_\-\s\)\.]|$)/.test(n) || /その他|楽器|オケ/.test(filename)) return 'other';
   return null;
 }
 
@@ -9060,10 +9059,43 @@ async function mtLoadMultipleFiles(songIdx, items) {
       if (guessedName) { song.name = guessedName; mtSave(); }
     }
     showToast(`${items.length} ファイルを読込中…`);
-    for (const it of items) {
-      await mtLoadTrackFile(songIdx, it.file, it.handle);
+    // 既に埋まっているグループを記録
+    const usedGroups = new Set();
+    for (const g of MT_GROUPS) {
+      if (song.tracks && song.tracks[g] && (Array.isArray(song.tracks[g]) ? song.tracks[g].length : 1) > 0) {
+        usedGroups.add(g);
+      }
     }
-    showToast(`✓ ${items.length} ファイル読込完了。SELECTED SONG → フェーダーへドラッグでアサイン`);
+    // === Phase 1: ファイル名から推測してアサイン ===
+    const remaining = [];
+    for (const it of items) {
+      const guessed = mtGuessGroup(it.file.name);
+      if (guessed && !usedGroups.has(guessed)) {
+        await mtLoadTrackFile(songIdx, it.file, it.handle, guessed);
+        usedGroups.add(guessed);
+      } else {
+        remaining.push(it);
+      }
+    }
+    // === Phase 2: 推測できなかったファイルは空きグループへ順番に ===
+    let fileI = 0;
+    for (const g of MT_GROUPS) {
+      if (fileI >= remaining.length) break;
+      if (usedGroups.has(g)) continue;
+      await mtLoadTrackFile(songIdx, remaining[fileI].file, remaining[fileI].handle, g);
+      usedGroups.add(g);
+      fileI++;
+    }
+    // === Phase 3: 余りは未割当プールへ ===
+    for (; fileI < remaining.length; fileI++) {
+      await mtLoadTrackFile(songIdx, remaining[fileI].file, remaining[fileI].handle, null);
+    }
+    const extraCount = remaining.length - fileI;
+    if (extraCount === 0) {
+      showToast(`✓ ${items.length} ファイルを自動振り分け完了`);
+    } else {
+      showToast(`✓ ${items.length} ファイル: ${items.length - extraCount} 個振り分け + ${extraCount} 個未割当`);
+    }
   });
 }
 
@@ -10084,28 +10116,47 @@ function mtRenderMixer() {
         if (items.length === 0) return;
         // 一連の読込をまとめて 1 つの undo に
         await mtBatchUndo(async () => {
-          // 1) 最初の 1 個をこのグループへ（layer として push）
+          // 1) 最初の 1 個は明示的にこのグループへ（ユーザーの意思を尊重）
           await mtLoadTrackFile(idx, items[0].file, items[0].handle, g);
           if (items.length > 1) {
-            // 2) 続けて隣接する空きグループに順次
-            const startPos = MT_GROUPS.indexOf(g);
+            // 既に埋まっているグループを記録
             const song = state.multitrack.songs[idx];
-            let fileI = 1;
-            for (let i = 1; i < MT_GROUPS.length && fileI < items.length; i++) {
+            const usedGroups = new Set();
+            for (const gg of MT_GROUPS) {
+              if (song.tracks && song.tracks[gg] && (Array.isArray(song.tracks[gg]) ? song.tracks[gg].length : 1) > 0) {
+                usedGroups.add(gg);
+              }
+            }
+            // 2) 残りはファイル名から推測して該当グループへ
+            const remaining = [];
+            for (let i = 1; i < items.length; i++) {
+              const guessed = mtGuessGroup(items[i].file.name);
+              if (guessed && !usedGroups.has(guessed)) {
+                await mtLoadTrackFile(idx, items[i].file, items[i].handle, guessed);
+                usedGroups.add(guessed);
+              } else {
+                remaining.push(items[i]);
+              }
+            }
+            // 3) 推測できなかった分は、ドロップ位置を起点に空きグループへ順次
+            const startPos = MT_GROUPS.indexOf(g);
+            let fileI = 0;
+            for (let i = 1; i < MT_GROUPS.length && fileI < remaining.length; i++) {
               const targetG = MT_GROUPS[(startPos + i) % MT_GROUPS.length];
-              if (!song.tracks[targetG]) {
-                await mtLoadTrackFile(idx, items[fileI].file, items[fileI].handle, targetG);
+              if (!usedGroups.has(targetG)) {
+                await mtLoadTrackFile(idx, remaining[fileI].file, remaining[fileI].handle, targetG);
+                usedGroups.add(targetG);
                 fileI++;
               }
             }
-            // 3) 残りは未割当プールへ
-            const filled = fileI;
-            for (; fileI < items.length; fileI++) {
-              await mtLoadTrackFile(idx, items[fileI].file, items[fileI].handle, null);
+            // 4) それでも余ったら未割当プールへ
+            for (; fileI < remaining.length; fileI++) {
+              await mtLoadTrackFile(idx, remaining[fileI].file, remaining[fileI].handle, null);
             }
-            const extra = items.length - filled;
-            if (extra > 0) {
-              showToast(`✓ ${items.length} 個: ${filled} 個フェーダー＋${extra} 個未割当`);
+            const extraCount = remaining.length - fileI;
+            const filled = items.length - extraCount;
+            if (extraCount > 0) {
+              showToast(`✓ ${items.length} 個: ${filled} 個フェーダー＋${extraCount} 個未割当`);
             }
           }
         });
@@ -10352,18 +10403,39 @@ function mtRenderSetlist() {
           const guessed = mtGuessSongName(items.map(it => it.file));
           if (guessed) { song.name = guessed; mtSave(); }
         }
+        // === Phase 1: ファイル名から自動振り分け（drums/bass/vocal/chorus/click/other）===
+        // 既に使われているグループには重ね置きせず、別パスで処理
+        const usedGroups = new Set();
+        for (const g of MT_GROUPS) {
+          if (song.tracks && song.tracks[g] && (Array.isArray(song.tracks[g]) ? song.tracks[g].length : 1) > 0) {
+            usedGroups.add(g);
+          }
+        }
+        const remaining = [];
+        for (const it of items) {
+          const guessed = mtGuessGroup(it.file.name);
+          if (guessed && !usedGroups.has(guessed)) {
+            await mtLoadTrackFile(idx, it.file, it.handle, guessed);
+            usedGroups.add(guessed);
+          } else {
+            remaining.push(it);
+          }
+        }
+        // === Phase 2: 自動振り分けできなかったファイルは、空きグループに順番に ===
         let fileI = 0;
         for (const g of MT_GROUPS) {
-          if (fileI >= items.length) break;
-          if (song.tracks && song.tracks[g]) continue;
-          const it = items[fileI++];
+          if (fileI >= remaining.length) break;
+          if (usedGroups.has(g)) continue;
+          const it = remaining[fileI++];
           await mtLoadTrackFile(idx, it.file, it.handle, g);
+          usedGroups.add(g);
         }
-        filled = fileI;
-        for (; fileI < items.length; fileI++) {
-          const it = items[fileI];
+        // === Phase 3: それでも余ったら未割当プールへ ===
+        for (; fileI < remaining.length; fileI++) {
+          const it = remaining[fileI];
           await mtLoadTrackFile(idx, it.file, it.handle, null);
         }
+        filled = items.length - (remaining.length - fileI);
       });
       const extra = items.length - filled;
       if (extra > 0) {
