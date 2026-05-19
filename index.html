@@ -2851,7 +2851,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.29.1';
+const APP_VERSION = 'v7.29.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11076,12 +11076,16 @@ if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
 // MULTI-TRACK 初期化（init から呼ぶ）
 async function mtInit() {
   mtLoad();
-  // mtLoad で state.multitrack.songs が初めて populate される。
-  // この時点で MULTI-TRACK タブが既に active だと、setAppMode は songs が空の状態で
-  // 一度 mtRenderAll を呼んでしまっているので、ここで明示的に再描画してミキサーの
-  // ファイル数バッジ等を最新化する。
-  if (state.appMode === 'multi' && typeof mtRenderAll === 'function') {
+  // mtLoad で state.multitrack.songs が初めて populate されるので、
+  // 必ず再描画する。setAppMode は songs が空の状態で一度 mtRenderAll を
+  // 呼んでしまっているため、ここで上書きする必要がある。
+  // appMode に関わらず描画（裏で multi-page DOM を準備しておく）。
+  if (typeof mtRenderAll === 'function') {
     mtRenderAll();
+    // DOM タイミングのため次フレームでも再描画（保険）
+    requestAnimationFrame(() => {
+      try { mtRenderAll(); } catch(e) { console.warn('mt re-render frame failed', e); }
+    });
   }
   // バッファ復元は async でバックグラウンド
   mtRestoreBuffers().catch(e => console.warn('mtRestoreBuffers failed', e));
