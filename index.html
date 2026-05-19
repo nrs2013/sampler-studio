@@ -1502,7 +1502,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.2';
+const APP_VERSION = 'v6.2.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5169,6 +5169,10 @@ function doOutInitBC() {
     }
     else if (m.event === 'ended') doOutOnVideoEnded();
     else if (m.event === 'error') { showToast('⚠️ 映像再生エラー: ' + (m.message || '')); doOutOnVideoEnded(); }
+    else if (m.event === 'codec-unsupported') {
+      showToast('⚠️ ブラウザがこのコーデックを再生できません。H.264 MP4 に変換してください');
+      console.warn('[output] codec unsupported:', m.message);
+    }
   };
   return bc;
 }
@@ -6359,6 +6363,17 @@ function initOutputMode() {
       status.style.display = '';
       idle.style.display = 'none';
       await video.play();
+      // 再生開始したように見えても、ProRes 等で videoWidth が 0 なら実際は描画できていない
+      setTimeout(() => {
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+          const msg = 'コーデック未対応の可能性（ProRes / HEVC 等）。H.264 MP4 に変換してください。\n' +
+                      '元ファイル: ' + (name || '') + '\n' +
+                      'videoWidth=' + video.videoWidth + ', videoHeight=' + video.videoHeight;
+          status.style.color = '#EF9F27';
+          status.textContent = '⚠ 映像が表示されません: ' + msg;
+          bc.postMessage({ event: 'codec-unsupported', message: msg });
+        }
+      }, 800);
     } catch (e) {
       console.warn('output play failed', e);
       status.textContent = '● 再生失敗: ' + (e.message || e);
