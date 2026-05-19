@@ -1599,7 +1599,11 @@
     border: 0.5px solid #1F1F22; border-radius: 5px;
     min-width: 0;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+    /* 案 A: ストリップを固定高にしてフェーダー以下を「下寄せ」 */
+    height: 200px;
   }
+  /* ヘッダーは上端、それ以外（フェーダー〜MUTE/SOLO）は下端へ */
+  .mt-strip-header { margin-bottom: auto; }
   /* 左端カラーストライプ（グループ識別） */
   .mt-strip::before {
     content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
@@ -2510,7 +2514,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.5';
+const APP_VERSION = 'v7.10.6';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
