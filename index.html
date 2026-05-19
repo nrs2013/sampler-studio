@@ -2536,7 +2536,7 @@
             </button>
           </div>
           <div class="mt-hero-meta-bottom">
-            <span class="mt-hero-status" id="mtNowStatus">READY · SPACE で再生 / ↑↓で選択 / ENTER で再生</span>
+            <span class="mt-hero-status" id="mtNowStatus">READY · SPACE 再生 / ESC 停止 / ↑↓ 選択</span>
             <span class="mt-hero-times">
               <span class="mt-time-now" id="mtNowTimeCur">0:00</span>
               <span style="opacity:0.5;"> / </span>
@@ -2688,7 +2688,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.18';
+const APP_VERSION = 'v7.19';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3349,6 +3349,10 @@ function computeFadeCurve(_type, from, to, points = 96) {
 
 function stopAll() {
   state.banks.forEach(b => b.pads.forEach(p => stopPad(p)));
+  // MULTI-TRACK も即停止（fadeOutAll と違って瞬時に切る、ESC=パニックストップ的）
+  if (typeof mtStop === 'function' && state.multitrack && state.multitrack.isPlaying) {
+    try { mtStop(); } catch(e) { console.warn('mtStop failed', e); }
+  }
   render();
 }
 
@@ -9346,7 +9350,25 @@ async function mtPlaySong(idx, offset, options) {
     mtMasterGain.gain.setValueAtTime(1.0, t);
   }
   const song = state.multitrack.songs[idx];
-  // groupBuffers: { drums: [AudioBuffer, ...], bass: [...] } 各グループの全 layer
+  // groupBuffers: { drums: [AudioBuffer, ...], bass: [...] }
+  // 未ロードの layer があれば lazy-load してから集計
+  let needsLoad = false;
+  for (const g of MT_GROUPS) {
+    for (const layer of mtGetLayers(song, g)) {
+      if (!mtDecodedCache[layer.sampleId]) { needsLoad = true; break; }
+    }
+    if (needsLoad) break;
+  }
+  if (needsLoad) {
+    showToast('ファイル読込中…');
+    for (const g of MT_GROUPS) {
+      for (const layer of mtGetLayers(song, g)) {
+        if (!mtDecodedCache[layer.sampleId]) {
+          await mtEnsureBufferLoaded(layer.sampleId, true);
+        }
+      }
+    }
+  }
   const groupBuffers = {};
   let hasAny = false;
   let maxDur = 0;
@@ -9360,7 +9382,13 @@ async function mtPlaySong(idx, offset, options) {
     if (bufs.length > 0) { groupBuffers[g] = bufs; hasAny = true; }
   }
   if (!hasAny) {
-    showToast('再生するトラックがありません');
+    // 全フェーダー空 or 全 buffer ロード失敗
+    const assignedTotal = MT_GROUPS.reduce((n, g) => n + mtGetLayers(song, g).length, 0);
+    if (assignedTotal === 0) {
+      showToast('フェーダーに何も割当てられていません。SELECTED SONG で割当てるかフェーダーへドロップ');
+    } else {
+      showToast('⚠️ 割当てたファイルが読み込めません。RECONNECT をクリックしてください');
+    }
     return;
   }
   // offset が曲長を超えていたら 0 に戻す
@@ -9612,22 +9640,29 @@ function mtPlayNext() {
   mtPlaySong(next, 0);
 }
 
-// SPACE キーハンドラ
+// SPACE キーハンドラ: 常にハイライト曲を再生（トグルなし）
+// ストップは ESC 専用。SPACE はとにかく「再生」
 function mtSpaceKey() {
   if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
-  if (!state.multitrack.isPlaying) {
-    // 停止中：selectedIdx から再生
-    mtPlaySong(state.multitrack.selectedIdx, state.multitrack.seekOffset || 0);
-  } else {
-    // 再生中：次の曲へ
-    mtPlayNext();
+  const idx = state.multitrack.selectedIdx >= 0 ? state.multitrack.selectedIdx : 0;
+  // 何か鳴っていれば一度クリアしてからハイライト曲を頭/seekOffset から再生
+  if (state.multitrack.isPlaying) {
+    mtStopSources();
+    state.multitrack.isPlaying = false;
+    mtStopMeter();
   }
+  mtPlaySong(idx, state.multitrack.seekOffset || 0);
 }
 
-// ENTER キー：選択曲を頭から再生
+// ENTER キー：選択曲を「頭」から再生（seekOffset をリセット）
 function mtEnterKey() {
   if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
   state.multitrack.seekOffset = 0;
+  if (state.multitrack.isPlaying) {
+    mtStopSources();
+    state.multitrack.isPlaying = false;
+    mtStopMeter();
+  }
   mtPlaySong(state.multitrack.selectedIdx, 0);
 }
 
@@ -10224,8 +10259,8 @@ function mtRenderNow() {
   }
   // ステータス
   if (status) {
-    if (m.isPlaying) status.textContent = 'PLAYING · SPACE で次曲';
-    else if (cur) status.textContent = 'READY · SPACE で再生';
+    if (m.isPlaying) status.textContent = 'PLAYING · ESC で停止';
+    else if (cur) status.textContent = 'READY · SPACE 再生 / ESC 停止';
     else status.textContent = 'EMPTY · 曲を追加';
   }
   // 再生ボタン記号
