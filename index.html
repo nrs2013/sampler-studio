@@ -1437,6 +1437,24 @@
     flex-shrink: 0;
   }
 
+  /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
+  .mt-reconnect-banner {
+    display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(90deg, rgba(240,199,94,0.10), rgba(240,199,94,0.04));
+    border: 0.5px solid rgba(240,199,94,0.4); border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 11px; color: #F0C75E; letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .mt-reconnect-icon { font-size: 14px; }
+  .mt-reconnect-text { flex: 1; }
+  .mt-reconnect-text strong { color: #FFE89A; font-weight: 700; }
+  .mt-reconnect-banner .mt-btn.primary {
+    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    color: #2A1F08; border: none;
+    padding: 6px 16px; font-weight: 700;
+  }
+
   /* MIXER FADE OUT ボタン (パニックストップ) */
   .mt-fadeout-btn {
     background: linear-gradient(180deg, rgba(226,75,74,0.10), rgba(226,75,74,0.04));
@@ -2324,7 +2342,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.5';
+const APP_VERSION = 'v7.6';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3095,7 +3113,7 @@ function fadeOutAll() {
 // ===========================
 let db;
 const DB_NAME = 'samplerStudio';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // v2: 'mtHandles' ストア追加（File System Access ハンドル保存用）
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -3108,9 +3126,42 @@ function openDB() {
       if (!d.objectStoreNames.contains('presets')) {
         d.createObjectStore('presets', { keyPath: 'name' });
       }
+      // v2 migration: MULTI-TRACK の FileSystemHandle 用ストア
+      if (!d.objectStoreNames.contains('mtHandles')) {
+        d.createObjectStore('mtHandles', { keyPath: 'id' });
+      }
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
     req.onerror = e => reject(e);
+  });
+}
+
+// ---- MULTI-TRACK FileSystemHandle 永続化 ----
+async function mtSaveHandleToDB(id, handle, name) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('mtHandles', 'readwrite');
+    tx.objectStore('mtHandles').put({ id, handle, name });
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e);
+  });
+}
+async function mtGetHandleFromDB(id) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('mtHandles', 'readonly');
+    const req = tx.objectStore('mtHandles').get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = e => reject(e);
+  });
+}
+async function mtDeleteHandleFromDB(id) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('mtHandles', 'readwrite');
+    tx.objectStore('mtHandles').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e);
   });
 }
 
@@ -8299,21 +8350,26 @@ function mtRenameSong(idx, name) {
 }
 
 function mtClearAll() {
-  if (!confirm('セットリストを全クリアしますか？（音源ファイルは IndexedDB から削除されます）')) return;
-  // IDB からも削除
+  if (!confirm('セットリストを全クリアしますか？（音源ファイル自体は消えません — ローカルへの参照だけが消去されます）')) return;
   for (const s of state.multitrack.songs) {
     for (const g of MT_GROUPS) {
       const t = s.tracks && s.tracks[g];
-      if (t && t.sampleId) { try { deleteSampleFromDB(t.sampleId); } catch(_) {} }
+      if (t && t.sampleId) {
+        try { deleteSampleFromDB(t.sampleId); } catch(_) {}
+        try { mtDeleteHandleFromDB(t.sampleId); } catch(_) {}
+      }
     }
   }
   mtStop();
   state.multitrack.songs = [];
   state.multitrack.currentSongIdx = -1;
+  state.multitrack.selectedIdx = 0;
+  state.multitrack.needsReconnect = false;
   mtDecodedCache = {};
   mtSave();
   mtRenderSetlist();
   mtRenderNow();
+  mtRenderReconnectUI();
 }
 
 // ---- トラック読込 ----
@@ -8341,32 +8397,34 @@ function mtGuessGroup(filename) {
 }
 
 // 複数ファイルを 1 曲のスロットへ自動振り分けして読込
-async function mtLoadMultipleFiles(songIdx, files) {
+// items: [{file, handle}] の配列
+async function mtLoadMultipleFiles(songIdx, items) {
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
-  if (!files || files.length === 0) return;
+  if (!items || items.length === 0) return;
   const song = state.multitrack.songs[songIdx];
   // すでに埋まっているグループを除外
   const occupied = new Set();
   for (const g of MT_GROUPS) if (song.tracks && song.tracks[g]) occupied.add(g);
 
   // 第1パス：ファイル名からグループを推定
-  const assignments = []; // [{file, group}]
+  const assignments = []; // [{file, handle, group}]
   const unassigned = [];
   const usedThisDrop = new Set();
-  for (const f of files) {
-    const g = mtGuessGroup(f.name);
+  for (const it of items) {
+    const name = it.file && it.file.name || '';
+    const g = mtGuessGroup(name);
     if (g && !occupied.has(g) && !usedThisDrop.has(g)) {
-      assignments.push({ file: f, group: g });
+      assignments.push({ file: it.file, handle: it.handle, group: g });
       usedThisDrop.add(g);
     } else {
-      unassigned.push(f);
+      unassigned.push(it);
     }
   }
   // 第2パス：マッチしなかったファイルを空きスロットに順番に詰める
-  for (const f of unassigned) {
+  for (const it of unassigned) {
     const g = MT_GROUPS.find(gg => !occupied.has(gg) && !usedThisDrop.has(gg));
-    if (!g) break; // もう空きがない
-    assignments.push({ file: f, group: g });
+    if (!g) break;
+    assignments.push({ file: it.file, handle: it.handle, group: g });
     usedThisDrop.add(g);
   }
   if (assignments.length === 0) {
@@ -8375,18 +8433,18 @@ async function mtLoadMultipleFiles(songIdx, files) {
   }
   // 曲名がデフォルトのままなら、共通プレフィクスから推定して付ける
   if (/^曲 \d+$/.test(song.name)) {
-    const guessedName = mtGuessSongName(files);
+    const guessedName = mtGuessSongName(assignments.map(a => a.file));
     if (guessedName) {
       song.name = guessedName;
       mtSave();
     }
   }
-  // 順次読込（並列だと decode が重くて UI が固まるので直列）
+  // 順次読込
   showToast(`STEM ${assignments.length} 個を振り分け中…`);
   for (const a of assignments) {
-    await mtLoadTrackFile(songIdx, a.group, a.file);
+    await mtLoadTrackFile(songIdx, a.group, a.file, a.handle);
   }
-  const skipped = files.length - assignments.length;
+  const skipped = items.length - assignments.length;
   if (skipped > 0) {
     showToast(`${skipped} 個のファイルはスロット不足でスキップ`);
   } else {
@@ -8414,7 +8472,31 @@ function mtGuessSongName(files) {
   return orig.slice(0, prefix.length);
 }
 
-async function mtLoadTrackFile(songIdx, group, file) {
+// Drop イベントから {file, handle} を取り出す
+// handle が取れたファイルは IDB に handle のみ保存（ブラウザに音データ自体は保存しない）
+async function mtExtractFilesWithHandles(dataTransfer) {
+  const out = [];
+  const items = Array.from(dataTransfer && dataTransfer.items || []);
+  for (const it of items) {
+    if (it.kind !== 'file') continue;
+    let handle = null;
+    if (typeof it.getAsFileSystemHandle === 'function') {
+      try {
+        const h = await it.getAsFileSystemHandle();
+        if (h && h.kind === 'file') handle = h;
+      } catch(e) { /* fallthrough */ }
+    }
+    const file = it.getAsFile();
+    if (file) out.push({ file, handle });
+  }
+  // items が使えなかった場合は files から（handle なし）
+  if (out.length === 0 && dataTransfer && dataTransfer.files) {
+    for (const f of dataTransfer.files) out.push({ file: f, handle: null });
+  }
+  return out;
+}
+
+async function mtLoadTrackFile(songIdx, group, file, handle) {
   if (!file) return;
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
   try {
@@ -8424,21 +8506,40 @@ async function mtLoadTrackFile(songIdx, group, file) {
     if (slot) { slot.classList.add('loading'); slot.textContent = 'LOADING…'; }
     const arrBuf = await file.arrayBuffer();
     const sampleId = `mt-${state.multitrack.songs[songIdx].id}-${group}`;
-    // 既存があれば置き換え
+    // 既存の handle / blob を削除
+    try { await mtDeleteHandleFromDB(sampleId); } catch(_) {}
     try { await deleteSampleFromDB(sampleId); } catch(_) {}
-    try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
-      console.warn('mt saveSampleToDB failed', e);
-      showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
+    // 保存方針：
+    //   handle が取れたとき → IDB には handle だけ（音データは保存しない、ローカル参照）
+    //   handle が取れない場合（古いブラウザ・コピペ等）→ 警告して blob 保存にフォールバック
+    let usingHandle = false;
+    if (handle) {
+      try {
+        await mtSaveHandleToDB(sampleId, handle, file.name);
+        usingHandle = true;
+      } catch(e) {
+        console.warn('mt saveHandleToDB failed (falling back to blob)', e);
+      }
     }
-    // decode してキャッシュ
+    if (!usingHandle) {
+      // フォールバック: blob を IDB へ
+      try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
+        console.warn('mt saveSampleToDB failed', e);
+        showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
+      }
+    }
+    // decode してメモリにキャッシュ
     const buffer = await mtCtx.decodeAudioData(arrBuf.slice(0));
     mtDecodedCache[sampleId] = buffer;
-    state.multitrack.songs[songIdx].tracks[group] = { sampleId, name: file.name };
+    state.multitrack.songs[songIdx].tracks[group] = {
+      sampleId, name: file.name, byHandle: usingHandle,
+    };
     mtSave();
     mtRecomputeSongDuration();
     mtRenderSetlist();
     mtRenderNow();
-    showToast(`${MT_GROUP_LABELS[group]} 読込: ${file.name} (${buffer.duration.toFixed(1)}秒)`);
+    const where = usingHandle ? 'ローカル参照' : 'ブラウザ保存（フォールバック）';
+    showToast(`${MT_GROUP_LABELS[group]} 読込: ${file.name} (${buffer.duration.toFixed(1)}秒・${where})`);
   } catch(e) {
     console.error('mtLoadTrackFile failed', e);
     showToast('読込失敗: ' + (e.message || e));
@@ -8454,31 +8555,153 @@ async function mtRemoveTrack(songIdx, group) {
   if (t.sampleId) {
     delete mtDecodedCache[t.sampleId];
     try { await deleteSampleFromDB(t.sampleId); } catch(_) {}
+    try { await mtDeleteHandleFromDB(t.sampleId); } catch(_) {}
   }
   delete s.tracks[group];
   mtSave();
+  mtRecomputeSongDuration();
   mtRenderSetlist();
+  mtRenderNow();
 }
 
-// IDB からバッファ復元（ページ起動時）
+// 起動時バッファ復元
+// 1. handle がある場合：permission granted なら即 read & decode
+//                       prompt 必要なら needsReconnect 旗を立てて待機
+// 2. handle がない（旧形式）：IDB blob から復元
 async function mtRestoreBuffers() {
   if (!state.multitrack.songs.length) return;
   await mtInitCtx();
+  let needsReconnect = false;
+  let reconnectCount = 0;
   for (const s of state.multitrack.songs) {
     for (const g of MT_GROUPS) {
       const t = s.tracks && s.tracks[g];
       if (!t || !t.sampleId) continue;
       if (mtDecodedCache[t.sampleId]) continue;
+      // 1) handle 優先
+      try {
+        const rec = await mtGetHandleFromDB(t.sampleId);
+        if (rec && rec.handle) {
+          let perm = 'denied';
+          try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(e) {}
+          if (perm === 'granted') {
+            try {
+              const f = await rec.handle.getFile();
+              const arr = await f.arrayBuffer();
+              const buf = await mtCtx.decodeAudioData(arr);
+              mtDecodedCache[t.sampleId] = buf;
+              continue;
+            } catch(e) {
+              console.warn('mt handle read failed', t.sampleId, e);
+              needsReconnect = true; reconnectCount++;
+              continue;
+            }
+          } else {
+            // 'prompt' or 'denied' → ユーザー操作必要
+            needsReconnect = true; reconnectCount++;
+            continue;
+          }
+        }
+      } catch(e) { /* fall through to blob */ }
+      // 2) blob フォールバック
       try {
         const rec = await getSampleFromDB(t.sampleId);
         if (rec && rec.data) {
           const buf = await mtCtx.decodeAudioData(rec.data.slice(0));
           mtDecodedCache[t.sampleId] = buf;
         }
-      } catch(e) { console.warn('mt decode restore failed', t.sampleId, e); }
+      } catch(e) { console.warn('mt blob restore failed', t.sampleId, e); }
     }
   }
+  if (needsReconnect) {
+    state.multitrack.needsReconnect = true;
+    state.multitrack.reconnectCount = reconnectCount;
+  }
+  mtRecomputeSongDuration();
   mtRenderSetlist();
+  mtRenderNow();
+  mtRenderReconnectUI();
+}
+
+// 再接続：ユーザージェスチャーから呼ばれる（permission 要求あり）
+async function mtReconnectFiles() {
+  await mtInitCtx();
+  let granted = 0, denied = 0;
+  for (const s of state.multitrack.songs) {
+    for (const g of MT_GROUPS) {
+      const t = s.tracks && s.tracks[g];
+      if (!t || !t.sampleId) continue;
+      if (mtDecodedCache[t.sampleId]) continue; // 既にメモリにある
+      try {
+        const rec = await mtGetHandleFromDB(t.sampleId);
+        if (!rec || !rec.handle) {
+          // blob があれば使う（一応）
+          try {
+            const r = await getSampleFromDB(t.sampleId);
+            if (r && r.data) {
+              const buf = await mtCtx.decodeAudioData(r.data.slice(0));
+              mtDecodedCache[t.sampleId] = buf;
+              granted++;
+            }
+          } catch(_) {}
+          continue;
+        }
+        let perm = 'denied';
+        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(e) {}
+        if (perm !== 'granted') {
+          try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(e) { perm = 'denied'; }
+        }
+        if (perm === 'granted') {
+          const f = await rec.handle.getFile();
+          const arr = await f.arrayBuffer();
+          const buf = await mtCtx.decodeAudioData(arr);
+          mtDecodedCache[t.sampleId] = buf;
+          granted++;
+        } else {
+          denied++;
+        }
+      } catch(e) {
+        console.warn('mt reconnect failed', t.sampleId, e);
+        denied++;
+      }
+    }
+  }
+  state.multitrack.needsReconnect = (denied > 0);
+  state.multitrack.reconnectCount = denied;
+  mtRecomputeSongDuration();
+  mtRenderSetlist();
+  mtRenderNow();
+  mtRenderReconnectUI();
+  if (denied === 0) {
+    showToast(`✓ 再接続完了 (${granted} ファイル)`);
+  } else {
+    showToast(`⚠️ ${granted} 成功 / ${denied} 失敗 — フォルダごと再選択を試してください`);
+  }
+}
+
+// 再接続バナーの表示・非表示
+function mtRenderReconnectUI() {
+  const hero = document.getElementById('mtHero');
+  if (!hero) return;
+  let banner = document.getElementById('mtReconnectBanner');
+  if (state.multitrack.needsReconnect) {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'mtReconnectBanner';
+      banner.className = 'mt-reconnect-banner';
+      banner.innerHTML = `
+        <span class="mt-reconnect-icon">📁</span>
+        <span class="mt-reconnect-text">ローカルファイル <strong id="mtReconnectCount">${state.multitrack.reconnectCount||0}</strong> 件にアクセス許可が必要です</span>
+        <button class="mt-btn primary" onclick="mtReconnectFiles()">RECONNECT</button>
+      `;
+      hero.parentNode.insertBefore(banner, hero.nextSibling);
+    } else {
+      const cnt = banner.querySelector('#mtReconnectCount');
+      if (cnt) cnt.textContent = state.multitrack.reconnectCount || 0;
+    }
+  } else {
+    if (banner) banner.remove();
+  }
 }
 
 // ---- 再生エンジン ----
@@ -8971,32 +9194,44 @@ function mtRenderSetlist() {
         };
       } else {
         slot.textContent = '+ DROP';
-        slot.title = `クリック or ドラッグで ${MT_GROUP_LABELS[g]} ファイルを選択`;
-        slot.onclick = () => {
-          const inp = document.getElementById('mtFileInput');
-          inp.onchange = (ev) => {
-            const f = ev.target.files && ev.target.files[0];
-            if (f) mtLoadTrackFile(idx, g, f);
-            inp.value = '';
-          };
-          inp.click();
+        slot.title = `ドラッグで ${MT_GROUP_LABELS[g]} ファイルを選択（クリックで OS ファイルピッカー）`;
+        slot.onclick = async () => {
+          // File System Access API のファイルピッカーを使う（ハンドルが取れる）
+          if (typeof window.showOpenFilePicker === 'function') {
+            try {
+              const [h] = await window.showOpenFilePicker({
+                multiple: false,
+                types: [{ description: 'Audio', accept: { 'audio/*': ['.wav','.mp3','.m4a','.aac','.ogg','.oga','.flac'] } }],
+              });
+              if (!h) return;
+              const f = await h.getFile();
+              mtLoadTrackFile(idx, g, f, h);
+            } catch(e) { if (e && e.name !== 'AbortError') showToast('ファイル選択失敗: ' + (e.message||e)); }
+          } else {
+            // 古いブラウザ：通常 input（ハンドルは取れない）
+            const inp = document.getElementById('mtFileInput');
+            inp.onchange = (ev) => {
+              const f = ev.target.files && ev.target.files[0];
+              if (f) mtLoadTrackFile(idx, g, f, null);
+              inp.value = '';
+            };
+            inp.click();
+          }
         };
       }
-      // Drag-drop（既存／空問わず）
+      // Drag-drop（既存／空問わず）— handle 経由でローカル参照
       slot.ondragover = (e) => { e.preventDefault(); e.stopPropagation(); slot.classList.add('drop-over'); };
       slot.ondragleave = () => slot.classList.remove('drop-over');
-      slot.ondrop = (e) => {
+      slot.ondrop = async (e) => {
         e.preventDefault();
         e.stopPropagation();
         slot.classList.remove('drop-over');
-        const files = e.dataTransfer && e.dataTransfer.files;
-        if (!files || files.length === 0) return;
-        if (files.length === 1) {
-          // 単一ファイル：このスロットに読込
-          mtLoadTrackFile(idx, g, files[0]);
+        const items = await mtExtractFilesWithHandles(e.dataTransfer);
+        if (items.length === 0) return;
+        if (items.length === 1) {
+          mtLoadTrackFile(idx, g, items[0].file, items[0].handle);
         } else {
-          // 複数ファイル：このスロットを優先しつつ自動振り分け
-          mtLoadMultipleFiles(idx, files);
+          mtLoadMultipleFiles(idx, items);
         }
       };
       row.appendChild(slot);
@@ -9004,21 +9239,19 @@ function mtRenderSetlist() {
     // 行全体に複数ファイルをドロップ：自動振り分け
     row.ondragover = (e) => { e.preventDefault(); row.classList.add('drop-target'); };
     row.ondragleave = (e) => {
-      // 子要素の dragleave は無視（slot を出入りするたび発火するので）
       if (e.target === row) row.classList.remove('drop-target');
     };
-    row.ondrop = (e) => {
+    row.ondrop = async (e) => {
       e.preventDefault();
       row.classList.remove('drop-target');
-      const files = e.dataTransfer && e.dataTransfer.files;
-      if (!files || files.length === 0) return;
-      if (files.length === 1) {
-        // 単一は最初の空きスロットへ
+      const items = await mtExtractFilesWithHandles(e.dataTransfer);
+      if (items.length === 0) return;
+      if (items.length === 1) {
         const emptyG = MT_GROUPS.find(gg => !(song.tracks && song.tracks[gg]));
-        if (emptyG) mtLoadTrackFile(idx, emptyG, files[0]);
+        if (emptyG) mtLoadTrackFile(idx, emptyG, items[0].file, items[0].handle);
         else showToast('空きスロットがありません');
       } else {
-        mtLoadMultipleFiles(idx, files);
+        mtLoadMultipleFiles(idx, items);
       }
     };
     // 削除ボタン
