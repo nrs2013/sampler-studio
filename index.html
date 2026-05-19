@@ -1797,24 +1797,22 @@
     display: inline-flex; align-items: center; justify-content: center;
     font-family: 'SF Mono', monospace;
     font-size: 12px; font-weight: 800;
-    color: #0E1A14; background: linear-gradient(180deg, #92C9B0, #7DB89E);
+    color: #FFFFFF;
+    background: transparent;
     border: none;
     border-radius: 4px;
     padding: 2px 5px;
     min-width: 18px;     /* 1桁でも見栄え確保 */
     max-width: 36px;     /* 3桁以上でも崩れない */
     flex-shrink: 0;
-    box-shadow: 0 0 6px rgba(125,184,158,0.45);
     letter-spacing: -0.3px;
     overflow: hidden;
   }
   .mt-strip-fcount.empty {
-    color: #6A6A70; background: #14141A;
-    box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
+    color: #5A5A65;
   }
   .mt-strip-fcount.pending {
-    color: #2A1F08; background: linear-gradient(180deg, #F5C470, #E5A53D);
-    box-shadow: 0 0 6px rgba(239,159,39,0.5);
+    color: #F5C470;
   }
   /* フェーダー横の dB ラベル (0 / +3 / -3 / -6 / -12) — 白に統一 */
   .mt-strip-fader-lab {
@@ -2032,7 +2030,7 @@
   .mt-songinfo-groupsel:focus { outline: none; box-shadow: 0 0 0 1.5px rgba(125,184,158,0.4); }
   .mt-songinfo-groupsel:hover { filter: brightness(1.25); }
   .mt-songinfo-fname {
-    color: #C8C8CE;
+    color: #FFFFFF;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     min-width: 0; font-size: 10px;
   }
@@ -2851,7 +2849,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.27.3';
+const APP_VERSION = 'v7.27.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10759,7 +10757,7 @@ function mtRenderSongInfo() {
     fname.className = 'mt-songinfo-fname';
     fname.textContent = f.name;
     fname.title = f.name + (mtDecodedCache[f.sampleId] ? '' : ' (未ロード)');
-    if (!mtDecodedCache[f.sampleId]) fname.style.color = '#EF9F27';
+    // 未ロード状態は色ではなく行の左に小さな ⚠ で示す（文字は白のまま視認性確保）
     row.appendChild(fname);
 
     // 削除
