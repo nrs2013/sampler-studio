@@ -1423,12 +1423,13 @@
     font-size: 8px; letter-spacing: 0.5px; color: #5A5A60;
     font-family: 'SF Mono', monospace; margin-right: 2px;
   }
-  /* 3 カラム: 1, 2, 3 が左から右へ → 4, 5, 6 が次の行 ... と単純に流れる。
-     本番中スクロールしないよう、横方向に広く使う。 */
+  /* 3 カラム縦流し: 左列 1〜8 を上から下 → 中央 9〜16 → 右 17〜24
+     本番中スクロールしないよう、視線は上から下へ単純に進む */
   .mt-setlist-list {
     display: grid;
-    grid-auto-flow: row;
+    grid-auto-flow: column;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    /* grid-template-rows は JS で設定 (1 列あたりの最大行数) */
     gap: 4px 8px;
     overflow-y: auto; padding-right: 2px;
     flex: 1; min-height: 0;
@@ -1442,6 +1443,8 @@
   @media (max-width: 720px) {
     .mt-setlist-list {
       grid-template-columns: 1fr;
+      grid-auto-flow: row;
+      grid-template-rows: none !important;
     }
   }
   .mt-song-row {
@@ -2845,7 +2848,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.27.0';
+const APP_VERSION = 'v7.27.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10320,10 +10323,16 @@ function mtRenderSetlist() {
   const list = document.getElementById('mtSetlistList');
   if (!list) return;
   list.innerHTML = '';
-  // 3 カラム横流し: 1,2,3 → 4,5,6 ... 行数は CSS の自動 layout に任せる
+  // 3 カラム縦流し: 各列に最大 8 曲、左から順に埋める
+  //   1 列目: 1〜8、2 列目: 9〜16、3 列目: 17〜24
+  // 曲数に応じて 1 列あたりの行数を決め、余白を最小化
   const n = state.multitrack.songs.length;
-  list.style.gridTemplateRows = '';
-  // ヘッダー（旧 STYLE / NEXT START）は 3 カラム化で 1 列目とは整列しなくなるので常時非表示
+  const ROWS_PER_COL = 8;
+  const rows = n > 0 ? Math.min(ROWS_PER_COL, Math.max(1, Math.ceil(n / 3))) : 0;
+  // 25 曲以上の場合は 1 列あたり ROWS_PER_COL に固定し、4 列目以降に流す
+  const actualRows = n > 24 ? ROWS_PER_COL : (rows || 1);
+  list.style.gridTemplateRows = n > 0 ? `repeat(${actualRows}, auto)` : '';
+  // ヘッダー（旧 STYLE / NEXT START）は 3 カラム化で各列とは整列しなくなるので常時非表示
   const header = document.getElementById('mtSetlistHeader');
   if (header) header.style.display = 'none';
   state.multitrack.songs.forEach((song, idx) => {
