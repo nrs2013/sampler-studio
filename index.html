@@ -97,15 +97,6 @@
   .section-head .badge-mini { display: flex; gap: 3px; }
   .divider { height: 0.5px; background: #1F1F22; margin: 2px 0; }
 
-  /* PLAY MODE */
-  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
-  .mode-btn {
-    background: #14141A; padding: 6px 0; text-align: center; border-radius: 4px;
-    font-size: 9px; color: #6A6A70; cursor: pointer; border: none; font-family: inherit;
-  }
-  .mode-btn:hover { background: #25252A; color: #E6E6EA; }
-  .mode-btn.active { background: #7DB89E; color: #0E1A14; font-weight: 500; }
-
   /* MASTER FADER */
   .master-area { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-height: 0; }
   .master-head { display: flex; align-items: center; justify-content: space-between; width: 100%; }
@@ -1249,17 +1240,8 @@
     color: #FFFFFF; font-weight: 500;
     text-shadow: 0 0 16px rgba(125,184,158,0.15);
   }
-  /* 下段: stems chips | progress bar | meta */
+  /* 下段: progress bar + meta */
   .mt-hero-bottom { display: flex; flex-direction: column; gap: 4px; }
-  .mt-hero-stems { display: flex; gap: 5px; flex-wrap: wrap; min-height: 18px; }
-  .mt-hero-stem-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: rgba(255,255,255,0.02); border: 0.5px solid;
-    padding: 1px 7px; border-radius: 3px;
-    font-size: 9px; letter-spacing: 1px; font-weight: 600;
-    text-transform: uppercase;
-  }
-  .mt-hero-stem-chip.missing { opacity: 0.22; }
   /* Timeline scrubber + ロケートドロップ ハンドル */
   .mt-hero-timeline-wrap {
     display: flex; align-items: center; gap: 8px;
@@ -1806,8 +1788,7 @@
   }
   .mt-songinfo-row.missing .mt-songinfo-fname { color: #4A4A50; }
 
-  /* CHANNEL ROUTING - 横並びピル形式（コンパクト） */
-  .mt-routing-card { padding: 8px 12px 10px; }
+  /* CHANNEL ROUTING - 横並びピル形式（AUDIO IFACE 内にインライン配置） */
   .mt-ch-strip {
     display: flex; gap: 5px; flex-wrap: wrap; align-items: stretch;
   }
@@ -2079,7 +2060,7 @@
       <div class="divider"></div>
 
       <!-- FADE TIME -->
-      <div class="panel-section" data-sampler-only>
+      <div class="panel-section">
         <div class="section-head">
           <span>FADE TIME (sec)</span>
         </div>
@@ -2097,7 +2078,7 @@
       </div>
 
       <!-- FADE CURVE -->
-      <div class="panel-section" data-sampler-only>
+      <div class="panel-section">
         <div class="section-head">
           <span>FADE CURVE</span>
         </div>
@@ -2529,7 +2510,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.3';
+const APP_VERSION = 'v7.10.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
