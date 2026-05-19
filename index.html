@@ -1817,10 +1817,11 @@
     border-top: 0.5px solid #1F1F22;
   }
 
-  /* SELECTED SONG カード — フラット成長リスト */
+  /* SELECTED SONG カード — 高さ固定、内部スクロール */
   .mt-songinfo-card {
     padding: 10px 12px; display: flex; flex-direction: column; min-width: 0;
-    max-height: 280px;
+    height: 250px;
+    flex-shrink: 0;
   }
   .mt-songinfo-name {
     font-size: 12px; color: #E6E6EA; font-weight: 500;
@@ -2687,7 +2688,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.17.1';
+const APP_VERSION = 'v7.18';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9322,13 +9323,23 @@ function mtRenderReconnectUI() {
 }
 
 // ---- 再生エンジン ----
-async function mtPlaySong(idx, offset) {
+// options.keepPrevious=true で前曲の source を止めない（オーバーラップ）
+async function mtPlaySong(idx, offset, options) {
   if (idx < 0 || idx >= state.multitrack.songs.length) return;
   if (!isFinite(offset) || offset < 0) offset = 0;
+  const keepPrevious = options && options.keepPrevious === true;
   await mtInitCtx();
   if (mtCtx.state === 'suspended') await mtCtx.resume();
-  mtStopSources(); // 念のため停止
-  // master gain を必ず 1.0 に戻す（前回 fadeout 後の状態を解除）
+  if (!keepPrevious) {
+    mtStopSources(); // 通常: 前曲を止めて新曲に切替
+  } else {
+    // オーバーラップ: 前曲の advance timer は止めるが source は鳴ったまま
+    if (state.multitrack.advanceTimer) {
+      clearTimeout(state.multitrack.advanceTimer);
+      state.multitrack.advanceTimer = null;
+    }
+  }
+  // master gain を 1.0 に戻す（オーバーラップ中は前曲と新曲を同じ master 上でミックス）
   if (mtMasterGain) {
     const t = mtCtx.currentTime;
     mtMasterGain.gain.cancelScheduledValues(t);
@@ -9365,10 +9376,10 @@ async function mtPlaySong(idx, offset) {
     const cm = state.multitrack.channelMap[g];
     const chL = Math.max(1, cm.L|0) - 1;
     const chR = Math.max(1, cm.R|0) - 1;
-    // gain の下流ルーティング（一度だけ）：ステレオなら splitter→merger
-    // gain は既に Phase で構築済みなので、ここでは "新規 source → gain" 接続のみ
-    // gain → merger 経路は、複数 source が gain に集まったときも 1 経路で済む
-    let routedDownstream = false;
+    // keepPrevious=true のとき gain は既に下流 (splitter→merger) と繋がっている可能性がある。
+    // 新規 source → gain を接続するだけで、下流は既存経路に乗る（gain は fan-out なので重複 OK）
+    // keepPrevious=false のときは mtStopSources で gain.disconnect 済 → 再接続が必要
+    let routedDownstream = keepPrevious; // overlap時は既存ルートを再利用
     for (const buf of bufs) {
       const src = mtCtx.createBufferSource();
       src.buffer = buf;
@@ -9387,11 +9398,22 @@ async function mtPlaySong(idx, offset) {
         }
         routedDownstream = true;
       }
+      // 自然終端時の自動クリーンアップ（overlap 中の旧 source も対象）
+      src.onended = () => {
+        try { src.disconnect(); } catch(_) {}
+        const i = state.multitrack.activeSources.indexOf(src);
+        if (i >= 0) state.multitrack.activeSources.splice(i, 1);
+      };
       src.start(when, offset);
       sources.push(src);
     }
   }
-  state.multitrack.activeSources = sources;
+  // activeSources: 通常は置換、オーバーラップ時は追加
+  if (keepPrevious) {
+    state.multitrack.activeSources.push(...sources);
+  } else {
+    state.multitrack.activeSources = sources;
+  }
   // startTime は「曲の頭が ctx.currentTime のどこに当たるか」と見立てる
   // → progress = ctx.currentTime - startTime
   state.multitrack.startTime = when - offset;
@@ -9423,7 +9445,13 @@ async function mtPlaySong(idx, offset) {
       // 次曲を自動再生
       const next = state.multitrack.currentSongIdx + 1;
       if (next < state.multitrack.songs.length) {
-        mtPlaySong(next, 0);
+        // 負の delay = 前曲をそのまま鳴らしつつ次曲を重ねる（オーバーラップ）
+        // 正の delay / 0 = 前曲を停止して切替（通常）
+        const overlap = songDelay < 0;
+        mtPlaySong(next, 0, { keepPrevious: overlap });
+        if (overlap) {
+          showToast(`▶ オーバーラップ ${Math.abs(songDelay).toFixed(1)}s で次曲開始`);
+        }
       } else {
         mtStop();
         showToast('セットリスト終了');
@@ -10536,12 +10564,18 @@ function mtRenderLocates() {
     const m = document.createElement('span');
     m.className = 'mt-locate-marker';
     m.style.left = pct + '%';
-    m.title = `${mtFmtTime(loc.time)} — クリックでジャンプ / Shift+クリックで削除`;
+    m.title = `${mtFmtTime(loc.time)}\nクリック: ジャンプ\n右クリック / Shift+クリック: 削除`;
     m.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
     m.addEventListener('click', (e) => {
       e.stopPropagation();
       if (e.shiftKey) mtRemoveLocate(li);
       else mtSeekTo(loc.time);
+    });
+    // 右クリックで削除（context menu を抑止して直接削除）
+    m.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (confirm(`ロケート ${mtFmtTime(loc.time)} を削除しますか？`)) mtRemoveLocate(li);
     });
     track.appendChild(m);
   });
