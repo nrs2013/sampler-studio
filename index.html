@@ -969,6 +969,76 @@
   #appPage.hidden { display: none !important; }
   /* ===================================================================== */
 
+  /* ====================== VIDEO LIBRARY (cyan #4FD1C5) ====================== */
+  .do-vid-section { margin-top: 6px; }
+  .do-vid-head-row {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+  }
+  .do-vid-head-left { display: flex; align-items: center; gap: 12px; }
+  .do-vid-head-title {
+    font-size: 10px; color: #B0B0B6; letter-spacing: 2px; font-weight: 600;
+  }
+  .do-vid-head-sub { font-size: 9px; color: #5A5A60; letter-spacing: 1px; }
+  .do-vid-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+  .do-vid-slot {
+    border: 0.5px solid rgba(79,209,197,0.5); background: rgba(79,209,197,0.06);
+    border-radius: 6px; padding: 10px;
+    display: flex; flex-direction: column; min-height: 100px; position: relative;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .do-vid-slot.has-content { cursor: grab; }
+  .do-vid-slot.has-content:hover { border-color: rgba(230,230,234,0.5); }
+  .do-vid-slot.empty {
+    border-style: dashed; cursor: pointer;
+    background: rgba(79,209,197,0.03); border-color: rgba(79,209,197,0.35);
+  }
+  .do-vid-slot.empty:hover { border-color: rgba(230,230,234,0.4); }
+  .do-vid-slot.dragging { opacity: 0.4; }
+  .do-vid-slot.drop-over { border-color: rgba(230,230,234,0.7); background: rgba(255,255,255,0.04); }
+  .do-vid-slot.playing { border: 1px solid #4FD1C5; }
+  .do-vid-slot-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .do-vid-badge {
+    display: inline-block; padding: 2px 7px; border-radius: 3px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+    background: rgba(79,209,197,0.2); color: #4FD1C5;
+  }
+  .do-vid-thumb {
+    width: 100%; aspect-ratio: 16/9; background: #0A0A0D;
+    border-radius: 3px; margin-top: 4px;
+    display: flex; align-items: center; justify-content: center;
+    color: #4FD1C5; font-size: 16px; overflow: hidden;
+    object-fit: cover;
+  }
+  .do-vid-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .do-vid-name { font-size: 12px; font-weight: 500; color: #E6E6EA; word-break: break-all; line-height: 1.3; margin-top: 4px; }
+  .do-vid-meta { font-size: 10px; color: #8A8A92; margin-top: 3px; font-family: inherit; }
+  .do-vid-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
+  .do-vid-act:hover { color: #4FD1C5; }
+  .do-vid-act.del:hover { color: #E24B4A; }
+  .do-vid-act.play { font-size: 13px; }
+  .do-vid-act.play.playing-btn { background: #4FD1C5; color: #093B36; font-weight: 600; padding: 2px 8px; }
+  /* OPEN OUTPUT button */
+  .do-out-btn {
+    background: rgba(79,209,197,0.1); border: 0.5px solid #4FD1C5; color: #4FD1C5;
+    padding: 6px 12px; border-radius: 4px; font-size: 10px; letter-spacing: 2px;
+    font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: all 0.15s;
+  }
+  .do-out-btn:hover { background: rgba(79,209,197,0.2); }
+  .do-out-btn.open { background: #4FD1C5; color: #093B36; }
+  .do-out-btn::before { content: '● '; }
+  /* ヘッダー内 OUTPUT 状態ピル */
+  .out-status-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 9px; color: #5A5A60; letter-spacing: 1px;
+    margin-left: 8px;
+  }
+  .out-status-pill.open { color: #4FD1C5; }
+  /* チェーン内 V チップ */
+  .do-chip-badge.color-vid { background: #4FD1C5; color: #093B36; }
+  .do-lib-slot.slot-vid { background: rgba(79,209,197,0.06); border-color: rgba(79,209,197,0.5); }
+  /* ====================================================================== */
+
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .do-sched-list { display: flex; flex-direction: column; }
@@ -1072,6 +1142,15 @@
 </style>
 </head>
 <body>
+
+  <!-- ====================== OUTPUT MODE (sub-monitor) ====================== -->
+  <!-- ?mode=output で別ウィンドウとして起動。普段は完全黒、コマンド受信で映像再生。 -->
+  <div id="outputMode" style="display:none; position:fixed; inset:0; background:#000; z-index:9999;">
+    <video id="outputVideo" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:#000;" playsinline></video>
+    <div id="outputIdle" style="position:absolute; bottom:16px; right:20px; color:#1E1E24; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif;">● OUTPUT READY</div>
+    <div id="outputStatus" style="position:absolute; top:16px; left:16px; color:#4FD1C5; font-size:10px; letter-spacing:2px; font-family:'Helvetica Neue',sans-serif; display:none;"></div>
+  </div>
+  <!-- ====================================================================== -->
 
   <!-- ====================== TOP PAGE (project picker) ====================== -->
   <div id="topPage">
@@ -1361,6 +1440,10 @@
       <span class="do-duck-label">フェード</span>
       <input type="number" id="doDuckFadeInput" min="0" max="30" step="0.1" value="0.8" class="do-duck-fade-input">
       <span style="font-size:11px; color:#8A8A92;">秒</span>
+      <span style="width:24px;"></span>
+      <span class="do-duck-label" style="color:#4FD1C5;">映像時 BGM フェード</span>
+      <input type="number" id="doVidFadeInput" min="0" max="30" step="0.1" value="2.0" class="do-duck-fade-input">
+      <span style="font-size:11px; color:#8A8A92;">秒</span>
       <span style="font-size:9px; color:#8A8A92; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
     </div>
 
@@ -1371,6 +1454,20 @@
         <span style="font-size:9px; color:#8A8A92;" id="doLibStatus">0 個</span>
       </div>
       <div class="do-lib-grid" id="doLibGrid"></div>
+    </div>
+
+    <!-- VIDEO LIBRARY -->
+    <div class="do-card do-vid-section">
+      <div class="do-vid-head-row">
+        <div class="do-vid-head-left">
+          <span class="do-vid-head-title">VIDEO LIBRARY</span>
+          <span class="do-vid-head-sub">映像素材プール（ドロップで追加・チェーンに混在可・サブモニターで再生）</span>
+          <span class="out-status-pill" id="doOutStatusPill">○ OUTPUT closed</span>
+        </div>
+        <button class="do-out-btn" id="doOutOpenBtn" onclick="doOutOpen()" title="サブモニター用ウィンドウを開く（2画面目に配置してフルスクリーン化）">OPEN OUTPUT</button>
+      </div>
+      <div class="do-vid-grid" id="doVidGrid"></div>
+      <input type="file" id="doVidFileInput" accept="video/*" style="display:none;">
     </div>
 
     <!-- SCHEDULE -->
@@ -1412,7 +1509,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v5.23';
+const APP_VERSION = 'v6.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -1660,8 +1757,9 @@ const state = {
       },
     },
     library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer, level}
-    schedule: [], // [{id, time:'HH:MM:SS', chain:[libIdx,...], played:bool}]
-    duck: { depthDb: -6.0, fadeSec: 0.8 },
+    videoLibrary: [null, null, null], // each: {sampleId, sampleName, duration, thumbDataUrl}
+    schedule: [], // [{id, time:'HH:MM:SS', chain:[{type:'a'|'v', idx} or legacy number],played:bool}]
+    duck: { depthDb: -6.0, fadeSec: 0.8, videoFadeSec: 2.0 },
     // runtime (not persisted)
     activeRowId: null,
     activeChainIdx: -1,
@@ -4627,6 +4725,21 @@ function bindDoDuck() {
     fadeInp.addEventListener('change', apply);
     fadeInp.addEventListener('blur', apply);
   }
+  // video fade
+  const vidInp = document.getElementById('doVidFadeInput');
+  if (vidInp) {
+    vidInp.value = (state.door.duck.videoFadeSec ?? 2.0).toFixed(1);
+    const apply2 = () => {
+      let v = parseFloat(vidInp.value);
+      if (!isFinite(v) || v < 0) v = 0;
+      if (v > 30) v = 30;
+      state.door.duck.videoFadeSec = v;
+      vidInp.value = v.toFixed(1);
+      doSave();
+    };
+    vidInp.addEventListener('change', apply2);
+    vidInp.addEventListener('blur', apply2);
+  }
 }
 
 function doRenderDuck() {
@@ -4641,6 +4754,8 @@ function doRenderDuck() {
   if (thumb) thumb.style.left = pctStr;
   const inp = document.getElementById('doDuckFadeInput');
   if (inp && document.activeElement !== inp) inp.value = (d.fadeSec ?? 0.8).toFixed(1);
+  const vinp = document.getElementById('doVidFadeInput');
+  if (vinp && document.activeElement !== vinp) vinp.value = (d.videoFadeSec ?? 2.0).toFixed(1);
 }
 
 // ---- LIBRARY ----
@@ -4736,6 +4851,273 @@ function doLibClear(slotIdx) {
   doRenderSchedule();
   doSave();
 }
+
+// ====================== VIDEO LIBRARY ======================
+function doVidLoadEmpty(slotIdx) {
+  const inp = document.getElementById('doVidFileInput');
+  inp.onchange = async (e) => {
+    const f = e.target.files[0];
+    if (f) await doVidLoadFile(slotIdx, f);
+    inp.value = '';
+  };
+  inp.click();
+}
+async function doVidLoadFile(slotIdx, f) {
+  if (!f) return;
+  if (!Array.isArray(state.door.videoLibrary)) state.door.videoLibrary = [];
+  while (state.door.videoLibrary.length <= slotIdx) state.door.videoLibrary.push(null);
+  try {
+    showToast(`📹 映像読込中: ${f.name}...`);
+    const arrBuf = await f.arrayBuffer();
+    const id = `door-vid-${slotIdx}-${Date.now()}`;
+    try { await saveSampleToDB(id, arrBuf, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); showToast('⚠️ 映像保存失敗（EXPORT に含まれない可能性）'); }
+    // メタデータ取得（duration、サムネ）
+    const blob = new Blob([arrBuf], { type: f.type || 'video/mp4' });
+    const url = URL.createObjectURL(blob);
+    const meta = await _videoExtractMeta(url, f.name);
+    URL.revokeObjectURL(url);
+    state.door.videoLibrary[slotIdx] = {
+      sampleId: id, sampleName: f.name,
+      duration: meta.duration, thumbDataUrl: meta.thumb,
+    };
+    doRenderVideoLibrary();
+    doSave();
+    showToast(`✅ 映像読込: ${f.name}（${(arrBuf.byteLength/1024/1024).toFixed(1)} MB）`);
+  } catch (err) {
+    console.error('映像読込失敗', err);
+    showToast('❌ 映像読込失敗: ' + (err.message || err));
+  }
+}
+// blob URL を渡すと duration とサムネ data URL を返す
+function _videoExtractMeta(url, name) {
+  return new Promise(resolve => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.muted = true;
+    v.playsInline = true;
+    v.src = url;
+    let done = false;
+    const finish = (data) => { if (!done) { done = true; resolve(data); } };
+    v.addEventListener('loadeddata', () => {
+      try {
+        v.currentTime = Math.min(0.5, v.duration / 4 || 0);
+      } catch(_) {}
+    });
+    v.addEventListener('seeked', () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 320; c.height = Math.round(320 * (v.videoHeight / v.videoWidth) || 180);
+        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+        finish({ duration: v.duration, thumb: c.toDataURL('image/jpeg', 0.6) });
+      } catch(e) {
+        finish({ duration: v.duration, thumb: null });
+      }
+    });
+    v.addEventListener('error', () => finish({ duration: NaN, thumb: null }));
+    // タイムアウト保険
+    setTimeout(() => finish({ duration: v.duration || NaN, thumb: null }), 5000);
+  });
+}
+function doVidClear(slotIdx) {
+  if (!Array.isArray(state.door.videoLibrary)) return;
+  // 出力中なら止める
+  if (_outActiveVideoSlot === slotIdx) doOutStop();
+  state.door.videoLibrary[slotIdx] = null;
+  doRenderVideoLibrary();
+  doRenderSchedule();
+  doSave();
+}
+function doVidPreview(slotIdx) {
+  const it = state.door.videoLibrary && state.door.videoLibrary[slotIdx];
+  if (!it) return;
+  if (!_outWindow || _outWindow.closed) {
+    showToast('まず「OPEN OUTPUT」でサブモニターを開いてください');
+    return;
+  }
+  // BGM をフェードアウト
+  _vidFadeBgm(true);
+  _outActiveVideoSlot = slotIdx;
+  _outBC.postMessage({ cmd: 'play', sampleId: it.sampleId, name: it.sampleName });
+  doRenderVideoLibrary();
+}
+function doVidStopPreview() {
+  doOutStop();
+}
+function doRenderVideoLibrary() {
+  const grid = document.getElementById('doVidGrid');
+  if (!grid) return;
+  // _vidVolActive 等は無いがレンダ中の不整合回避用に何かあればクリーンアップする余地
+  if (!Array.isArray(state.door.videoLibrary)) state.door.videoLibrary = [];
+  while (state.door.videoLibrary.length < 3) state.door.videoLibrary.push(null);
+  grid.innerHTML = '';
+  state.door.videoLibrary.forEach((it, i) => {
+    const slot = document.createElement('div');
+    const isEmpty = !it;
+    const isPlaying = (_outActiveVideoSlot === i);
+    slot.className = 'do-vid-slot' + (isEmpty ? ' empty' : ' has-content') + (isPlaying ? ' playing' : '');
+    slot.draggable = !isEmpty;
+    slot.dataset.vidIdx = i;
+    if (isEmpty) {
+      slot.innerHTML = `
+        <div class="do-vid-slot-head"><span class="do-vid-badge">V${i+1}</span></div>
+        <div style="display:flex; flex:1; align-items:center; justify-content:center; color:#5A5A60; font-size:11px;">+ 映像ファイルを<br>ドロップ</div>
+      `;
+      slot.addEventListener('click', () => doVidLoadEmpty(i));
+    } else {
+      const durStr = isFinite(it.duration) ? `${Math.floor(it.duration/60)}:${Math.floor(it.duration%60).toString().padStart(2,'0')}` : '--:--';
+      slot.innerHTML = `
+        <div class="do-vid-slot-head">
+          <span class="do-vid-badge">V${i+1}</span>
+          <div style="display:flex; gap:2px;">
+            <button class="do-vid-act play${isPlaying ? ' playing-btn' : ''}" data-action="play" title="${isPlaying ? '停止' : 'サブモニターで再生'}">${isPlaying ? '■' : '▶'}</button>
+            <button class="do-vid-act del" data-action="del" title="削除">×</button>
+          </div>
+        </div>
+        <div class="do-vid-thumb">${it.thumbDataUrl ? `<img src="${it.thumbDataUrl}" alt="">` : '▶'}</div>
+        <div class="do-vid-name">${escapeHtml(it.sampleName || '')}</div>
+        <div class="do-vid-meta">${durStr}</div>
+      `;
+      slot.querySelector('[data-action=play]').addEventListener('click', e => {
+        e.stopPropagation();
+        if (isPlaying) doVidStopPreview();
+        else doVidPreview(i);
+      });
+      slot.querySelector('[data-action=del]').addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm(`「${it.sampleName}」をライブラリから削除しますか？`)) doVidClear(i);
+      });
+      // チェーンへ drag できる
+      slot.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'door-vid', slot: i }));
+        e.dataTransfer.effectAllowed = 'copy';
+        slot.classList.add('dragging');
+      });
+      slot.addEventListener('dragend', () => slot.classList.remove('dragging'));
+    }
+    grid.appendChild(slot);
+  });
+  // grid 上での drop で空きスロットへ追加
+  grid.ondragover = e => {
+    if ([...(e.dataTransfer.types || [])].includes('Files')) { e.preventDefault(); }
+  };
+  grid.ondrop = async e => {
+    if (![...(e.dataTransfer.types || [])].includes('Files')) return;
+    e.preventDefault();
+    const files = [...(e.dataTransfer.files || [])].filter(f => f.type.startsWith('video/'));
+    for (const f of files) {
+      // 空きスロットを探す or 追加
+      let emptyIdx = state.door.videoLibrary.findIndex(x => !x);
+      if (emptyIdx < 0) {
+        if (state.door.videoLibrary.length >= 8) { showToast('VIDEO LIBRARY は最大 8 枠'); break; }
+        state.door.videoLibrary.push(null);
+        emptyIdx = state.door.videoLibrary.length - 1;
+      }
+      await doVidLoadFile(emptyIdx, f);
+    }
+  };
+}
+
+// ====================== OUTPUT WINDOW MANAGEMENT ======================
+let _outWindow = null;
+let _outBC = null;
+let _outActiveVideoSlot = -1;
+let _outChainContext = null; // { rowId, chainIdx } when video is being played from a chain
+function doOutOpen() {
+  if (_outWindow && !_outWindow.closed) {
+    _outWindow.focus();
+    return;
+  }
+  const url = location.origin + location.pathname + '?mode=output';
+  _outWindow = window.open(url, 'samplerStudioOutput', 'width=1280,height=720,menubar=no,toolbar=no');
+  if (!_outWindow) {
+    showToast('⚠️ ポップアップがブロックされました。ブラウザの許可設定を確認してください');
+    return;
+  }
+  if (!_outBC) _outBC = doOutInitBC();
+  doOutUpdateStatus();
+  // 5 秒以内に ready 応答が来なかったら警告
+  setTimeout(() => {
+    if (_outWindow && !_outWindow.closed) doOutUpdateStatus();
+  }, 1000);
+}
+function doOutInitBC() {
+  const bc = new BroadcastChannel('sampler-studio-output');
+  bc.onmessage = e => {
+    const m = e.data || {};
+    if (m.event === 'ready') { doOutUpdateStatus(); showToast('✅ サブモニター起動'); }
+    else if (m.event === 'closed') { doOutUpdateStatus(); _outActiveVideoSlot = -1; doRenderVideoLibrary(); }
+    else if (m.event === 'ended') doOutOnVideoEnded();
+    else if (m.event === 'error') { showToast('⚠️ 映像再生エラー'); doOutOnVideoEnded(); }
+  };
+  return bc;
+}
+function doOutStop() {
+  if (_outBC && _outWindow && !_outWindow.closed) {
+    _outBC.postMessage({ cmd: 'stop' });
+  }
+  _outActiveVideoSlot = -1;
+  _outChainContext = null;
+  _vidFadeBgm(false);
+  doRenderVideoLibrary();
+}
+function doOutOnVideoEnded() {
+  _outActiveVideoSlot = -1;
+  doRenderVideoLibrary();
+  // チェーン文脈で再生していたなら次へ
+  if (_outChainContext) {
+    const { rowId } = _outChainContext;
+    _outChainContext = null;
+    // BGM はチェーン終了まで戻さない（次のナレでまた DUCK されるため）
+    // ここでは映像分の fade だけ解除しない（チェーン完了時に doEndRow で戻る）
+    if (state.door.activeRowId === rowId) {
+      // 次のチェーンへ
+      doPlayNextInChain();
+    }
+  } else {
+    // 単発プレビューだった → BGM 復元
+    _vidFadeBgm(false);
+  }
+}
+function doOutUpdateStatus() {
+  const pill = document.getElementById('doOutStatusPill');
+  const btn = document.getElementById('doOutOpenBtn');
+  const open = _outWindow && !_outWindow.closed;
+  if (pill) {
+    pill.textContent = open ? '● OUTPUT open' : '○ OUTPUT closed';
+    pill.classList.toggle('open', !!open);
+  }
+  if (btn) {
+    btn.textContent = open ? 'FOCUS OUTPUT' : 'OPEN OUTPUT';
+    btn.classList.toggle('open', !!open);
+  }
+}
+// 映像時 BGM フェード
+let _vidBgmFadeOriginalDuckGain = null;
+function _vidFadeBgm(fadeOut) {
+  if (!ctx || !doBgmDuckGain) return;
+  const fadeSec = Math.max(0.05, state.door.duck.videoFadeSec || 2.0);
+  const t = ctx.currentTime;
+  try {
+    doBgmDuckGain.gain.cancelScheduledValues(t);
+    if (fadeOut) {
+      if (_vidBgmFadeOriginalDuckGain == null) _vidBgmFadeOriginalDuckGain = doBgmDuckGain.gain.value;
+      doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+      doBgmDuckGain.gain.linearRampToValueAtTime(0.0001, t + fadeSec);
+    } else {
+      const target = (_vidBgmFadeOriginalDuckGain != null) ? _vidBgmFadeOriginalDuckGain : 1.0;
+      _vidBgmFadeOriginalDuckGain = null;
+      doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+      doBgmDuckGain.gain.linearRampToValueAtTime(target, t + fadeSec);
+    }
+  } catch(_) {}
+}
+// 出力ウィンドウ閉鎖を定期チェック
+setInterval(() => {
+  if (_outWindow && _outWindow.closed) {
+    _outWindow = null;
+    doOutUpdateStatus();
+  }
+}, 1500);
 
 function doLibSetLevel(slotIdx, linear) {
   const item = state.door.library[slotIdx];
@@ -5017,7 +5399,7 @@ function doSchedDelConfirm(rowId) {
   if (!row) return;
   const chainStr = row.chain.length === 0
     ? '（チェーン未設定）'
-    : row.chain.map(i => 'A' + (i+1)).join(' → ');
+    : row.chain.map(it => (it.type === 'v' ? 'V' : 'A') + (it.idx+1)).join(' → ');
   const msg = `この予定を削除しますか？\n\n時刻: ${row.time}\nチェーン: ${chainStr}`;
   if (window.confirm(msg)) {
     doSchedDel(rowId);
@@ -5063,13 +5445,16 @@ function doSchedTimeChange(rowId, val) {
   doSave();
 }
 
-function doSchedChipAdd(rowId, libIdx, atPos) {
+function doSchedChipAdd(rowId, item, atPos) {
   const row = state.door.schedule.find(r => r.id === rowId);
   if (!row) return;
+  // item は {type:'a'|'v', idx} の object（旧コードからの数値呼び出しは audio 扱い）
+  if (typeof item === 'number') item = { type: 'a', idx: item };
+  if (!item || (item.type !== 'a' && item.type !== 'v')) return;
   if (atPos == null || atPos >= row.chain.length) {
-    row.chain.push(libIdx);
+    row.chain.push(item);
   } else {
-    row.chain.splice(atPos, 0, libIdx);
+    row.chain.splice(atPos, 0, item);
   }
   doRenderSchedule();
   doSave();
@@ -5096,12 +5481,12 @@ function doSchedChipMove(srcRowId, srcChipIdx, dstRowId, dstPos) {
   const src = state.door.schedule.find(r => r.id === srcRowId);
   const dst = state.door.schedule.find(r => r.id === dstRowId);
   if (!src || !dst) return;
-  const [libIdx] = src.chain.splice(srcChipIdx, 1);
-  if (libIdx == null) return;
+  const [item] = src.chain.splice(srcChipIdx, 1);
+  if (item == null) return;
   let pos = dstPos;
   if (src === dst && srcChipIdx < pos) pos--;
   if (pos == null || pos > dst.chain.length) pos = dst.chain.length;
-  dst.chain.splice(pos, 0, libIdx);
+  dst.chain.splice(pos, 0, item);
   doRenderSchedule();
   doSave();
 }
@@ -5118,10 +5503,14 @@ function doRenderSchedule() {
     if (row.id === state.door.activeRowId) div.classList.add('playing');
     if (!row.played && state.door.activeRowId == null && isNextRow(row)) div.classList.add('next');
 
-    // total duration
-    const total = row.chain.reduce((s, idx) => {
-      const it = state.door.library[idx];
-      return s + (it && it.audioBuffer ? it.audioBuffer.duration : 0);
+    // total duration（参考表示用：A/V の合計尺）
+    const total = row.chain.reduce((s, item) => {
+      if (item.type === 'v') {
+        const v = (state.door.videoLibrary || [])[item.idx];
+        return s + (v && isFinite(v.duration) ? v.duration : 0);
+      }
+      const a = state.door.library[item.idx];
+      return s + (a && a.audioBuffer ? a.audioBuffer.duration : 0);
     }, 0);
 
     // 左アクション：再生中＝停止/未済かつ次＝緑▶/通常＝▶
@@ -5145,16 +5534,26 @@ function doRenderSchedule() {
       </div>
       <input class="do-sched-time" type="text" value="${row.time}" data-row="${row.id}" />
       <div class="do-chain" data-row="${row.id}">
-        ${row.chain.map((libIdx, ci) => {
-          const it = state.door.library[libIdx];
+        ${row.chain.map((item, ci) => {
           const cls = (state.door.activeRowId === row.id && state.door.activeChainIdx === ci) ? 'playing'
                     : (state.door.activeRowId === row.id && state.door.activeChainIdx > ci) ? 'played'
                     : '';
-          const dur = it && it.audioBuffer ? fmtTime(it.audioBuffer.duration) : '--:--';
-          const name = it ? escapeHtml(it.sampleName.replace(/\.[^.]+$/, '')) : '<未登録>';
+          let badgeHTML, name, dur;
+          if (item.type === 'v') {
+            const v = (state.door.videoLibrary || [])[item.idx];
+            badgeHTML = `<span class="do-chip-badge color-vid">V${item.idx+1}</span>`;
+            name = v ? escapeHtml(v.sampleName.replace(/\.[^.]+$/, '')) : '<未登録>';
+            dur = v && isFinite(v.duration) ? fmtTime(v.duration) : '--:--';
+          } else {
+            const a = state.door.library[item.idx];
+            const c = (item.idx>=0) ? (item.idx%4) : 'missing';
+            badgeHTML = `<span class="do-chip-badge color-${c}">A${item.idx+1}</span>`;
+            name = a ? escapeHtml(a.sampleName.replace(/\.[^.]+$/, '')) : '<未登録>';
+            dur = a && a.audioBuffer ? fmtTime(a.audioBuffer.duration) : '--:--';
+          }
           return `
-            <span class="do-chip ${cls}" draggable="true" data-row="${row.id}" data-idx="${ci}" data-lib="${libIdx}">
-              <span class="do-chip-badge color-${(libIdx>=0)?(libIdx%4):'missing'}">A${libIdx+1}</span>
+            <span class="do-chip ${cls}" draggable="true" data-row="${row.id}" data-idx="${ci}">
+              ${badgeHTML}
               <span class="do-chip-label">${name}</span>
               <span class="do-chip-dur">${dur}</span>
               <span class="do-chip-x" onclick="event.stopPropagation(); doSchedChipDel('${row.id}', ${ci})">×</span>
@@ -5162,7 +5561,7 @@ function doRenderSchedule() {
             ${ci < row.chain.length - 1 ? '<span class="do-arrow">→</span>' : ''}
           `;
         }).join('')}
-        ${row.chain.length === 0 ? '<span class="do-chain-drop-hint">＋ ライブラリ A1〜A4 をドロップ</span>' : ''}
+        ${row.chain.length === 0 ? '<span class="do-chain-drop-hint">＋ ライブラリ（A1〜A4 / V1〜）をドロップ</span>' : ''}
         ${statusChipHTML}
       </div>
     `;
@@ -5198,7 +5597,9 @@ function doRenderSchedule() {
         if (e.clientX < r.left + r.width / 2) { pos = i; break; }
       }
       if (data.type === 'door-lib') {
-        doSchedChipAdd(row.id, data.slot, pos);
+        doSchedChipAdd(row.id, { type: 'a', idx: data.slot }, pos);
+      } else if (data.type === 'door-vid') {
+        doSchedChipAdd(row.id, { type: 'v', idx: data.slot }, pos);
       } else if (data.type === 'door-chip') {
         doSchedChipMove(data.row, data.idx, row.id, pos);
       }
@@ -5289,9 +5690,15 @@ function doTick() {
       if (nxt.chain.length === 0) {
         nameEl.innerHTML = '<span style="color:#5A5A60;">（チェーン未設定）</span>';
       } else {
-        nameEl.innerHTML = nxt.chain.map((idx, i) => {
-          const c = (idx >= 0) ? (idx % 4) : 'missing';
-          return `<span class="do-chip-badge color-${c}">A${idx+1}</span>${i < nxt.chain.length-1 ? '<span style="color:#5A5A60; font-size:11px;">→</span>' : ''}`;
+        nameEl.innerHTML = nxt.chain.map((item, i) => {
+          let badge;
+          if (item.type === 'v') {
+            badge = `<span class="do-chip-badge color-vid">V${item.idx+1}</span>`;
+          } else {
+            const c = (item.idx >= 0) ? (item.idx % 4) : 'missing';
+            badge = `<span class="do-chip-badge color-${c}">A${item.idx+1}</span>`;
+          }
+          return badge + (i < nxt.chain.length-1 ? '<span style="color:#5A5A60; font-size:11px;">→</span>' : '');
         }).join(' ');
       }
       const eta = timeStrToSec(nxt.time) - now;
@@ -5378,10 +5785,37 @@ function doPlayNextInChain() {
     doEndRow();
     return;
   }
-  const libIdx = row.chain[state.door.activeChainIdx];
+  const chainItem = row.chain[state.door.activeChainIdx];
+
+  // ============== V (映像) ==============
+  if (chainItem.type === 'v') {
+    const v = (state.door.videoLibrary || [])[chainItem.idx];
+    if (!v || !v.sampleId) {
+      setTimeout(doPlayNextInChain, 0); // 未登録ならスキップ
+      return;
+    }
+    if (!_outWindow || _outWindow.closed) {
+      showToast('⚠️ サブモニター未起動のため V' + (chainItem.idx+1) + ' をスキップ');
+      setTimeout(doPlayNextInChain, 0);
+      return;
+    }
+    // BGM をフェードアウト
+    _vidFadeBgm(true);
+    _outActiveVideoSlot = chainItem.idx;
+    _outChainContext = { rowId: state.door.activeRowId, chainIdx: state.door.activeChainIdx };
+    _outBC.postMessage({ cmd: 'play', sampleId: v.sampleId, name: v.sampleName });
+    doRenderVideoLibrary();
+    doRenderSchedule();
+    // 終了通知は doOutOnVideoEnded → doPlayNextInChain で受ける
+    return;
+  }
+
+  // ============== A (音声) ==============
+  // 再生前に、もし前が V で BGM が下がりっぱなしなら戻す
+  if (_vidBgmFadeOriginalDuckGain != null) _vidFadeBgm(false);
+  const libIdx = chainItem.idx;
   const item = state.door.library[libIdx];
   if (!item || !item.audioBuffer) {
-    // skip and continue — setTimeout でテール再帰を切る（チェーン全空時のスタック保護）
     setTimeout(doPlayNextInChain, 0);
     return;
   }
@@ -5389,21 +5823,17 @@ function doPlayNextInChain() {
   const src = ctx.createBufferSource();
   src.buffer = item.audioBuffer;
   const g = ctx.createGain();
-  // Anti-click: start at 0, ramp to level over 5ms — eliminates pop on announce start
-  // CRITICAL for production: scheduled announces fire automatically; any click is audible at venue
   connectAndStartBufferSource(src, g, doAnnGain, item.level ?? 1.0);
   state.door.activeAnnSource = src;
-  state.door.activeAnnGain = g;        // フェーダー連動用
-  state.door.activeAnnSlot = libIdx;   // どのスロットを鳴らしているか
+  state.door.activeAnnGain = g;
+  state.door.activeAnnSlot = libIdx;
   src.onended = () => {
     if (state.door.activeAnnSource === src) {
       state.door.activeAnnSource = null;
       state.door.activeAnnGain = null;
       state.door.activeAnnSlot = -1;
-      // Cleanup nodes to prevent leak over long sessions
       try { src.disconnect(); } catch(e){}
       try { g.disconnect(); } catch(e){}
-      // play next
       if (state.door.activeRowId) doPlayNextInChain();
     }
   };
@@ -5418,6 +5848,9 @@ function doEndRow() {
   state.door.activeAnnSource = null;
   state.door.activeAnnGain = null;
   state.door.activeAnnSlot = -1;
+  // 映像フェード中なら戻す
+  if (_vidBgmFadeOriginalDuckGain != null) _vidFadeBgm(false);
+  _outChainContext = null;
   doDuckRelease();
   doRenderSchedule();
   doSave();
@@ -5446,6 +5879,10 @@ function doAnnStopAll() {
   }
   state.door.activeRowId = null;
   state.door.activeChainIdx = -1;
+  // 映像が出力中なら停止
+  if (_outActiveVideoSlot >= 0) doOutStop();
+  if (_vidBgmFadeOriginalDuckGain != null) _vidFadeBgm(false);
+  _outChainContext = null;
   doDuckRelease();
   doRenderSchedule();
   showToast('影アナ停止');
@@ -5541,6 +5978,9 @@ function doSave() {
       library: state.door.library.map(it => it ? ({
         sampleId: it.sampleId, sampleName: it.sampleName, level: it.level ?? 1.0,
       }) : null),
+      videoLibrary: (state.door.videoLibrary || []).map(it => it ? ({
+        sampleId: it.sampleId, sampleName: it.sampleName, duration: it.duration, thumbDataUrl: it.thumbDataUrl,
+      }) : null),
       schedule: state.door.schedule.map(r => ({
         id: r.id, time: r.time, chain: [...r.chain], played: false,
       })),
@@ -5585,18 +6025,31 @@ function doLoad() {
         } : null;
       }
     }
+    if (Array.isArray(s.videoLibrary)) {
+      state.door.videoLibrary = s.videoLibrary.map(it => it ? {
+        sampleId: it.sampleId, sampleName: it.sampleName,
+        duration: it.duration, thumbDataUrl: it.thumbDataUrl,
+      } : null);
+    }
     if (Array.isArray(s.schedule)) {
       state.door.schedule = s.schedule.map(r => {
         // Normalize legacy "HH:MM:SS" → "HH:MM"
         let t = r.time || '00:00';
         const mm = String(t).match(/^(\d{1,2}):(\d{1,2})/);
         if (mm) t = mm[1].padStart(2,'0') + ':' + mm[2].padStart(2,'0');
-        return { id: r.id, time: t, chain: Array.isArray(r.chain) ? r.chain : [], played: false };
+        // chain アイテムの正規化（旧形式: 数値 → audio として {type:'a', idx} へ）
+        const chain = (Array.isArray(r.chain) ? r.chain : []).map(c => {
+          if (typeof c === 'number') return { type: 'a', idx: c };
+          if (c && typeof c === 'object' && (c.type === 'a' || c.type === 'v')) return { type: c.type, idx: c.idx };
+          return null;
+        }).filter(Boolean);
+        return { id: r.id, time: t, chain, played: false };
       });
     }
     if (s.duck) {
       state.door.duck.depthDb = s.duck.depthDb ?? -6.0;
       state.door.duck.fadeSec = s.duck.fadeSec ?? 0.8;
+      state.door.duck.videoFadeSec = s.duck.videoFadeSec ?? 2.0;
     }
     // リロード後に preDuckStarted が残らないようリセット
     state.door.schedule.forEach(r => { r.preDuckStarted = false; });
@@ -5650,6 +6103,7 @@ function doRenderAll() {
   doRenderBgm();
   doRenderDuck();
   doRenderLibrary();
+  doRenderVideoLibrary();
   doRenderSchedule();
 }
 
@@ -5733,7 +6187,90 @@ function doInit() {
   }).catch(e => console.warn('door restore err', e));
 }
 
+// ====================== OUTPUT MODE ======================
+// ?mode=output で起動された別ウィンドウ用の初期化。
+// 普段は完全黒。main からの BroadcastChannel コマンドで映像を再生。
+function initOutputMode() {
+  // メインアプリのページを完全に隠す
+  document.body.style.cssText = 'background:#000; margin:0; padding:0; overflow:hidden;';
+  const top = document.getElementById('topPage'); if (top) top.style.display = 'none';
+  const app = document.getElementById('appPage'); if (app) app.style.display = 'none';
+  const out = document.getElementById('outputMode');
+  out.style.display = 'block';
+  document.title = 'SAMPLER STUDIO — OUTPUT';
+
+  const video = document.getElementById('outputVideo');
+  const status = document.getElementById('outputStatus');
+  const idle = document.getElementById('outputIdle');
+
+  // 同一オリジン内なので IndexedDB を共有読み込みできる
+  let db = null;
+  const openLocalDB = () => new Promise((res, rej) => {
+    const req = indexedDB.open('samplerStudio', 1);
+    req.onsuccess = () => { db = req.result; res(); };
+    req.onerror = e => rej(e);
+  });
+  const getSample = (id) => new Promise((res, rej) => {
+    const tx = db.transaction('samples', 'readonly');
+    const r = tx.objectStore('samples').get(id);
+    r.onsuccess = () => res(r.result);
+    r.onerror = e => rej(e);
+  });
+
+  let currentObjectUrl = null;
+  const playVideo = async (sampleId, name) => {
+    try {
+      if (!db) await openLocalDB();
+      const rec = await getSample(sampleId);
+      if (!rec || !rec.data) { status.textContent = '● 音源が見つかりません'; status.style.display=''; return; }
+      const blob = new Blob([rec.data], { type: rec.mime || 'video/mp4' });
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+      currentObjectUrl = URL.createObjectURL(blob);
+      video.src = currentObjectUrl;
+      status.textContent = '● PLAYING — ' + (name || '');
+      status.style.display = '';
+      idle.style.display = 'none';
+      await video.play();
+    } catch (e) {
+      console.warn('output play failed', e);
+      status.textContent = '● 再生失敗: ' + (e.message || e);
+      status.style.display = '';
+    }
+  };
+  const stopVideo = () => {
+    try { video.pause(); video.removeAttribute('src'); video.load(); } catch(_) {}
+    if (currentObjectUrl) { URL.revokeObjectURL(currentObjectUrl); currentObjectUrl = null; }
+    status.style.display = 'none';
+    idle.style.display = '';
+  };
+  video.addEventListener('ended', () => {
+    bc.postMessage({ event: 'ended' });
+    stopVideo();
+  });
+  video.addEventListener('error', () => {
+    bc.postMessage({ event: 'error' });
+    status.textContent = '● ビデオエラー';
+  });
+
+  // BroadcastChannel で main と通信
+  const bc = new BroadcastChannel('sampler-studio-output');
+  bc.onmessage = e => {
+    const m = e.data || {};
+    if (m.cmd === 'play' && m.sampleId) playVideo(m.sampleId, m.name);
+    else if (m.cmd === 'stop') stopVideo();
+    else if (m.cmd === 'ping') bc.postMessage({ event: 'pong' });
+  };
+  // 起動を main に知らせる
+  bc.postMessage({ event: 'ready' });
+  window.addEventListener('beforeunload', () => bc.postMessage({ event: 'closed' }));
+}
+
 async function init() {
+  // 出力モードで起動された場合は別ルートへ
+  if (new URLSearchParams(location.search).get('mode') === 'output') {
+    initOutputMode();
+    return;
+  }
   // プロジェクト管理：旧データがあればマイグレ、active が無ければトップページへ
   projMigrateIfNeeded();
   const activeId = projGetActiveId();
