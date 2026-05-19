@@ -1412,8 +1412,8 @@
   }
   .mt-song-row {
     display: grid;
-    grid-template-columns: 22px 28px minmax(0, 1fr) 18px 22px 44px 20px;
-    /* num / play / name / count / autotoggle / delay / del */
+    grid-template-columns: 22px 28px minmax(0, 1fr) 32px 56px 22px;
+    /* num / play / name / autotoggle / delay / del */
     gap: 6px; align-items: center;
     padding: 6px 9px; border: 0.5px solid #1F1F22; border-radius: 6px;
     background: rgba(255,255,255,0.015);
@@ -1547,23 +1547,23 @@
 
   .mt-song-del {
     color: #4A4A50; background: transparent; border: none; cursor: pointer;
-    font-size: 12px; transition: color 0.12s; padding: 0;
+    font-size: 14px; transition: color 0.12s; padding: 0;
   }
   .mt-song-del:hover { color: #E24B4A; }
 
-  /* AUTO/STOP トグル */
+  /* AUTO/STOP トグル — 本番視認サイズに */
   .mt-song-autotoggle {
-    width: 22px; height: 20px; border-radius: 3px;
+    width: 32px; height: 28px; border-radius: 4px;
     border: 0.5px solid rgba(125,184,158,0.35);
     background: rgba(125,184,158,0.08);
     color: #7DB89E;
-    font-size: 8px; font-family: inherit; font-weight: 700;
+    font-size: 10px; font-family: inherit; font-weight: 700;
     cursor: pointer; padding: 0;
     line-height: 1; letter-spacing: 0;
     transition: all 0.12s;
     display: flex; align-items: center; justify-content: center;
   }
-  .mt-song-autotoggle svg { display: block; }
+  .mt-song-autotoggle svg { display: block; width: 16px; height: 16px; }
   .mt-song-autotoggle:hover { filter: brightness(1.25); }
   .mt-song-autotoggle.stop {
     background: rgba(226,75,74,0.10); color: #E24B4A;
@@ -1571,12 +1571,12 @@
   }
   .mt-song-autotoggle.is-last { opacity: 0.55; }
 
-  /* 次曲までの delay 秒数 */
+  /* 次曲までの delay 秒数 — 本番視認サイズ */
   .mt-song-delay {
-    width: 100%; min-width: 0;
+    width: 100%; min-width: 0; height: 28px;
     background: #06060A; border: 0.5px solid #1F1F22; color: #92C9B0;
-    padding: 2px 2px; border-radius: 3px;
-    font-family: 'SF Mono', monospace; font-size: 9px;
+    padding: 2px 4px; border-radius: 4px;
+    font-family: 'SF Mono', monospace; font-size: 12px;
     text-align: center; font-weight: 600;
     box-shadow: inset 0 1px 1px rgba(0,0,0,0.4);
   }
@@ -2678,7 +2678,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.23.1';
+const APP_VERSION = 'v7.23.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10119,19 +10119,7 @@ function mtRenderSetlist() {
     nameSpan.innerHTML = `${escapeHtml(song.name)}<span class="mt-song-nextbadge">▶ SPACE</span>`;
     nameSpan.title = song.name + '（リネームは上のタイトル欄で）';
     row.appendChild(nameSpan);
-    // 読込済ファイル数チップ（旧 5 スロット欄の代わり）
-    const assignedCount = MT_GROUPS.filter(g => song.tracks && song.tracks[g]).length;
-    const unassignedCount = (song.unassigned || []).length;
-    const totalCount = assignedCount + unassignedCount;
-    const chip = document.createElement('div');
-    chip.className = 'mt-song-loadcount';
-    if (unassignedCount > 0) chip.classList.add('has-unassigned');
-    else if (totalCount > 0) chip.classList.add('has-files');
-    chip.textContent = totalCount > 0 ? String(totalCount) : '·';
-    chip.title = totalCount > 0
-      ? `読込: ${totalCount} 件（割当 ${assignedCount} / 未割当 ${unassignedCount}）\nファイルをドロップで追加、SELECTED SONG からフェーダーへドラッグでアサイン`
-      : 'ファイルをドロップで追加';
-    row.appendChild(chip);
+    // 読込済ファイル数チップは廃止（SELECTED SONG カードで件数表示する）
 
     // 行 dragover: ファイル drop / 並べ替え drop の両方を受付（mt-file は無視）
     row.ondragover = (e) => {
@@ -10227,8 +10215,8 @@ function mtRenderSetlist() {
     //   AUTO (下線なし): ↓        — 設定秒数あけて次曲を自動再生
     //   STOP (下線あり): ↓ + ─    — 終わったら次曲の頭でスタンバイ、SPACE で再生
     togBtn.innerHTML = autoNext === 'auto'
-      ? '<svg viewBox="0 0 14 14" width="11" height="11"><path d="M7 1.5 L7 11 M3 7.5 L7 11.5 L11 7.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      : '<svg viewBox="0 0 14 14" width="11" height="11"><path d="M7 0.5 L7 8 M3.5 5 L7 8.5 L10.5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 11.5 L12.5 11.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+      ? '<svg viewBox="0 0 14 14"><path d="M7 1.5 L7 11 M3 7.5 L7 11.5 L11 7.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg viewBox="0 0 14 14"><path d="M7 0.5 L7 8 M3.5 5 L7 8.5 L10.5 5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 11.5 L12.5 11.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
     togBtn.title = autoNext === 'auto'
       ? `この曲のあと、隣の秒数あけて自動で次曲へ${isLast ? '（最終曲なので停止）' : ''}\nクリックで「次曲頭でスタンバイ」に切替`
       : `この曲のあとは次曲の頭でスタンバイ\nSPACE で再生開始\nクリックで「自動で次曲へ」に切替`;
