@@ -1641,13 +1641,13 @@
 
   /* Fader + Meter 横並びエリア — 半分くらいに固定して MIXER カード全体を縮める */
   .mt-strip-faderwrap {
-    display: flex; gap: 5px; align-items: stretch; justify-content: center;
+    display: flex; gap: 4px; align-items: stretch; justify-content: center;
     height: 120px; padding: 3px 0;
     flex: none;
   }
   /* Fader */
   .mt-strip-fader {
-    position: relative; width: 11px;
+    position: relative; width: 7px;
     background: linear-gradient(180deg, #08080A, #0E0E10);
     border-radius: 3px; cursor: pointer;
     flex-shrink: 0;
@@ -1667,7 +1667,7 @@
     box-shadow: 0 0 6px rgba(125,184,158,0.2);
   }
   .mt-strip-fader-thumb {
-    position: absolute; left: -6px; right: -6px; height: 12px;
+    position: absolute; left: -7px; right: -7px; height: 11px;
     background: linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%);
     border-radius: 2px; transform: translateY(50%);
     pointer-events: none;
@@ -1678,7 +1678,7 @@
   }
   /* Meter */
   .mt-strip-meter {
-    width: 7px; background: #06060A; border-radius: 2px;
+    width: 4px; background: #06060A; border-radius: 2px;
     position: relative; overflow: hidden;
     flex-shrink: 0;
     border: 0.5px solid #1A1A1E;
@@ -2510,7 +2510,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.4';
+const APP_VERSION = 'v7.10.5';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
