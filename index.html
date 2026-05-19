@@ -1230,32 +1230,43 @@
   /* 上段: チップ+曲名 | transport */
   .mt-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
   .mt-hero-meta { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+  /* NOW チップ — 大きく・緑で目立たせる（本番視認用） */
   .mt-hero-trackchip {
-    font-family: 'SF Mono', monospace; font-size: 10px; color: #92C9B0;
-    background: rgba(125,184,158,0.10); border: 0.5px solid rgba(125,184,158,0.3);
-    padding: 2px 8px; border-radius: 3px; letter-spacing: 1px;
+    font-family: 'SF Mono', monospace;
+    font-size: 22px; font-weight: 800;
+    color: #0E1A14;
+    background: linear-gradient(180deg, #92C9B0, #6FA889);
+    border: 1px solid #7DB89E;
+    padding: 8px 18px; border-radius: 8px;
+    letter-spacing: 2px;
     flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(125,184,158,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
   }
-  /* NEXT 表示（右端） */
+  /* NEXT SONG 表示（右端、本番視認用に大きく） */
   .mt-hero-nextchip {
-    display: flex; align-items: center; gap: 8px;
-    padding: 5px 12px;
-    background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
-    border: 1px solid #2A2A30;
-    border-radius: 7px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 7px 16px;
+    background: linear-gradient(180deg, #2A2210 0%, #1A1408 100%);
+    border: 1px solid #5A4A20;
+    border-radius: 8px;
     flex-shrink: 0;
-    max-width: 320px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+    max-width: 380px;
+    box-shadow: 0 0 10px rgba(240,199,94,0.18), inset 0 1px 0 rgba(255,255,255,0.05);
   }
   .mt-hero-nextchip-label {
-    font-family: 'SF Mono', monospace; font-size: 9px; font-weight: 700;
-    color: #6A6A75; letter-spacing: 1.2px;
+    font-family: 'SF Mono', monospace;
+    font-size: 14px; font-weight: 800;
+    color: #F0C75E;
+    letter-spacing: 1.8px;
     flex-shrink: 0;
+    text-shadow: 0 0 8px rgba(240,199,94,0.5);
   }
   .mt-hero-nextchip-name {
-    font-size: 13px; font-weight: 500; color: #E8E8EC;
+    font-size: 20px; font-weight: 600; color: #FFFFFF;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    max-width: 240px;
+    max-width: 300px;
+    letter-spacing: -0.3px;
   }
   /* 再生中の chip 色変化も廃止 */
   /* input as title (rename here) — 本番で遠目に見えるよう大きめ */
@@ -2656,7 +2667,7 @@
                    title="クリックして曲名を変更（選択中の曲）" />
           </div>
           <div class="mt-hero-nextchip" id="mtHeroNextChipWrap">
-            <span class="mt-hero-nextchip-label">NEXT</span>
+            <span class="mt-hero-nextchip-label">NEXT SONG</span>
             <span class="mt-hero-nextchip-name" id="mtHeroNextChipName">— なし —</span>
           </div>
         </div>
@@ -2832,7 +2843,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.26.0';
+const APP_VERSION = 'v7.26.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
