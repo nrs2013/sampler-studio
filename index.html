@@ -2606,7 +2606,7 @@
           <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
             <option value="">— 検出中… —</option>
           </select>
-          <button class="mt-btn" onclick="mtRefreshDevices()" title="デバイス再検出">⟳</button>
+          <button class="mt-btn" onclick="mtRefreshDevices(true)" title="デバイス再検出（マイク許可が必要・名前を表示するため）">⟳</button>
         </div>
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
@@ -2700,7 +2700,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.21';
+const APP_VERSION = 'v7.21.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8683,11 +8683,18 @@ function mtUpdateChStatus() {
 }
 
 // ---- デバイス一覧 / 選択 ----
-async function mtRefreshDevices() {
+// askPermission=true のときだけ getUserMedia でマイク権限を要求
+// (iOS/Safari でカメラ・マイクのインジケータが意図せず点灯するのを防ぐため
+//  自動呼び出しは廃止。ユーザーが ⟳ ボタンを明示的に押した時だけ問い合わせる)
+async function mtRefreshDevices(askPermission) {
   const sel = document.getElementById('mtDeviceSelect');
   if (!sel) return;
-  // 権限取得（labels を見せるため）
-  try { await navigator.mediaDevices.getUserMedia({ audio: true }).then(s => s.getTracks().forEach(t => t.stop())); } catch(_) {}
+  if (askPermission === true) {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach(t => t.stop());
+    } catch(_) {}
+  }
   const devices = await navigator.mediaDevices.enumerateDevices();
   const outs = devices.filter(d => d.kind === 'audiooutput');
   sel.innerHTML = '';
