@@ -1436,39 +1436,44 @@
       <span style="font-size:9px; color:#8A8A92; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
     </div>
 
-    <!-- LIBRARY -->
-    <div class="do-card" id="doLibCard">
-      <div class="do-sched-head">
-        <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材プール（ドロップで追加）</span>
-        <span style="font-size:9px; color:#8A8A92;" id="doLibStatus">0 個</span>
-      </div>
-      <div class="do-lib-grid" id="doLibGrid"></div>
-    </div>
+    <!-- 2カラム: 左=素材プール / 右=スケジュール -->
+    <div class="do-bottom" style="flex:1; min-height:0; display:grid; grid-template-columns: minmax(360px, 0.85fr) 1fr; gap:8px;">
 
-    <!-- VIDEO LIBRARY -->
-    <div class="do-card" id="doVidCard">
-      <div class="do-sched-head">
-        <span class="do-card-head" style="margin:0;">VIDEO LIBRARY — 映像素材プール（ドロップで追加・チェーンに混在可）</span>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <button class="do-out-btn" id="doOutOpenBtn" onclick="doOutOpen()" title="サブモニター用ウィンドウを開く（2画面目に配置してフルスクリーン化）">OPEN OUTPUT</button>
-          <span class="out-status-pill" id="doOutStatusPill">○ closed</span>
+      <!-- 左カラム: 素材プール（ANNOUNCE + VIDEO LIBRARY） -->
+      <div style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto;">
+        <div class="do-card" id="doLibCard">
+          <div class="do-sched-head">
+            <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材</span>
+            <span style="font-size:9px; color:#8A8A92;" id="doLibStatus">0 個</span>
+          </div>
+          <div class="do-lib-grid" id="doLibGrid"></div>
+        </div>
+        <div class="do-card" id="doVidCard">
+          <div class="do-sched-head">
+            <span class="do-card-head" style="margin:0;">VIDEO LIBRARY — 映像素材</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <button class="do-out-btn" id="doOutOpenBtn" onclick="doOutOpen()" title="サブモニター用ウィンドウを開く（2画面目に配置してフルスクリーン化）">OPEN OUTPUT</button>
+              <span class="out-status-pill" id="doOutStatusPill">○ closed</span>
+            </div>
+          </div>
+          <div class="do-vid-grid" id="doVidGrid"></div>
+          <input type="file" id="doVidFileInput" accept="video/*" style="display:none;">
         </div>
       </div>
-      <div class="do-vid-grid" id="doVidGrid"></div>
-      <input type="file" id="doVidFileInput" accept="video/*" style="display:none;">
-    </div>
 
-    <!-- SCHEDULE -->
-    <div class="do-card" style="flex:1; min-height:0; display:flex; flex-direction:column;">
-      <div class="do-sched-head">
-        <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <button class="do-bgm-load" id="doAnnStopBtn" onclick="doAnnStopAll()" style="color:#E24B4A; border:0.5px solid rgba(226,75,74,0.4);" title="再生中の影アナを止めて DUCK 解除">■ 影アナ停止</button>
-          <span style="font-size:9px; color:#8A8A92;" id="doSchedStatus">0 件</span>
+      <!-- 右カラム: SCHEDULE（フル高） -->
+      <div class="do-card" style="display:flex; flex-direction:column; min-height:0;">
+        <div class="do-sched-head">
+          <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <button class="do-bgm-load" id="doAnnStopBtn" onclick="doAnnStopAll()" style="color:#E24B4A; border:0.5px solid rgba(226,75,74,0.4);" title="再生中の影アナを止めて DUCK 解除">■ 影アナ停止</button>
+            <span style="font-size:9px; color:#8A8A92;" id="doSchedStatus">0 件</span>
+          </div>
         </div>
+        <div class="do-sched-list" id="doSchedList" style="overflow-y:auto; flex:1; min-height:0;"></div>
+        <button class="do-sched-add" onclick="doSchedAdd()">＋ 時刻を追加</button>
       </div>
-      <div class="do-sched-list" id="doSchedList" style="overflow-y:auto; flex:1; min-height:0;"></div>
-      <button class="do-sched-add" onclick="doSchedAdd()">＋ 時刻を追加</button>
+
     </div>
   </div>
     </div><!-- /#rightSide -->
@@ -1497,7 +1502,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.1.1';
+const APP_VERSION = 'v6.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
