@@ -1367,9 +1367,10 @@
     .mt-setlist-list { grid-template-columns: 1fr; }
   }
   .mt-song-row {
-    display: grid; grid-template-columns: 20px 22px minmax(0, 1fr) repeat(5, 30px) 22px;
+    display: grid;
+    grid-template-columns: 18px 22px minmax(0, 1fr) repeat(5, 26px) 22px 40px 18px;
     gap: 4px; align-items: center;
-    padding: 5px 8px; border: 0.5px solid #1F1F22; border-radius: 5px;
+    padding: 5px 7px; border: 0.5px solid #1F1F22; border-radius: 5px;
     background: rgba(255,255,255,0.015);
     position: relative;
     transition: border-color 0.15s, background 0.15s;
@@ -1452,6 +1453,39 @@
     font-size: 12px; transition: color 0.12s; padding: 0;
   }
   .mt-song-del:hover { color: #E24B4A; }
+
+  /* AUTO/STOP トグル */
+  .mt-song-autotoggle {
+    width: 22px; height: 20px; border-radius: 3px;
+    border: 0.5px solid rgba(125,184,158,0.35);
+    background: rgba(125,184,158,0.08);
+    color: #7DB89E;
+    font-size: 8px; font-family: inherit; font-weight: 700;
+    cursor: pointer; padding: 0;
+    line-height: 1; letter-spacing: 0;
+    transition: all 0.12s;
+  }
+  .mt-song-autotoggle:hover { filter: brightness(1.25); }
+  .mt-song-autotoggle.stop {
+    background: rgba(226,75,74,0.10); color: #E24B4A;
+    border-color: rgba(226,75,74,0.35);
+  }
+  .mt-song-autotoggle.is-last { opacity: 0.55; }
+
+  /* 次曲までの delay 秒数 */
+  .mt-song-delay {
+    width: 100%; min-width: 0;
+    background: #06060A; border: 0.5px solid #1F1F22; color: #92C9B0;
+    padding: 2px 2px; border-radius: 3px;
+    font-family: 'SF Mono', monospace; font-size: 9px;
+    text-align: center; font-weight: 600;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.4);
+  }
+  .mt-song-delay:focus { outline: none; border-color: #7DB89E; color: #FFFFFF; }
+  .mt-song-delay:disabled { opacity: 0.25; }
+  .mt-song-delay::-webkit-inner-spin-button { display: none; }
+  .mt-song-delay::-webkit-outer-spin-button { display: none; }
+  .mt-song-delay { -moz-appearance: textfield; }
 
   /* ============= 3. BOTTOM ROW (MIXER | IFACE | ROUTING) ============= */
   .mt-bottom-row {
@@ -2395,7 +2429,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.7.4';
+const APP_VERSION = 'v7.8';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8138,6 +8172,8 @@ function mtSerialize() {
     groupSolo: m.groupSolo,
     songs: m.songs.map(s => ({
       id: s.id, name: s.name,
+      autoNext: s.autoNext || 'auto',
+      nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : (m.gapSec || 3.0),
       tracks: Object.fromEntries(
         Object.entries(s.tracks || {}).map(([g, t]) => [g, t ? { sampleId: t.sampleId, name: t.name } : null])
       ),
@@ -8160,6 +8196,8 @@ function mtRestore(saved) {
     id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
     name: s.name || '無題',
     tracks: s.tracks || {},
+    autoNext: s.autoNext === 'stop' ? 'stop' : 'auto',
+    nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : (m.gapSec || 3.0),
   }));
   if (typeof saved.currentSongIdx === 'number') m.currentSongIdx = saved.currentSongIdx;
 }
@@ -8377,7 +8415,13 @@ function mtSetAutoAdvance(checked) {
 // ---- 曲の追加・削除 ----
 function mtAddSong() {
   const id = 'mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  state.multitrack.songs.push({ id, name: `曲 ${state.multitrack.songs.length + 1}`, tracks: {} });
+  state.multitrack.songs.push({
+    id,
+    name: `曲 ${state.multitrack.songs.length + 1}`,
+    tracks: {},
+    autoNext: 'auto',                    // 'auto' | 'stop' — この曲の後の挙動
+    nextDelay: state.multitrack.gapSec,   // 次曲までの秒数（負値で前倒し可）
+  });
   if (state.multitrack.currentSongIdx < 0) state.multitrack.currentSongIdx = 0;
   mtSave();
   mtRenderSetlist();
@@ -8825,11 +8869,18 @@ async function mtPlaySong(idx, offset) {
   state.multitrack.currentSongIdx = idx;
   state.multitrack.selectedIdx = idx;
   state.multitrack.isPlaying = true;
-  // 終了時 auto-advance（残り時間で計算）
+  // 終了時 auto-advance（残り時間と曲ごとの挙動で計算）
   if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
   const remainSec = maxDur - offset;
-  if (state.multitrack.autoAdvance) {
-    const totalMs = (remainSec + state.multitrack.gapSec) * 1000 + 50;
+  // 曲ごとの設定（無い場合のフォールバックは 'auto' / グローバル gapSec）
+  const songAutoNext = (song.autoNext || 'auto') === 'auto';
+  const songDelay = (typeof song.nextDelay === 'number') ? song.nextDelay : (state.multitrack.gapSec || 0);
+  // グローバル AUTO ADV がキルスイッチ。OFF なら一切自動進行しない。
+  // ON のとき、曲ごとの autoNext が 'stop' なら停止、'auto' なら nextDelay 後に次曲。
+  if (state.multitrack.autoAdvance && songAutoNext) {
+    // 負の delay は「終わる N 秒前に次曲を発火」= 前倒し
+    const triggerSec = remainSec + songDelay;
+    const totalMs = Math.max(0, triggerSec * 1000) + 50;
     state.multitrack.advanceTimer = setTimeout(() => {
       const next = state.multitrack.currentSongIdx + 1;
       if (next < state.multitrack.songs.length) {
@@ -8840,9 +8891,11 @@ async function mtPlaySong(idx, offset) {
       }
     }, totalMs);
   } else {
+    // 停止指定 or グローバル OFF — 曲が終わったら停止
     state.multitrack.advanceTimer = setTimeout(() => {
       state.multitrack.isPlaying = false;
       mtRenderNow();
+      mtRenderSetlist();
     }, remainSec * 1000 + 50);
   }
   mtRenderSetlist();
@@ -9312,6 +9365,43 @@ function mtRenderSetlist() {
         mtLoadMultipleFiles(idx, items);
       }
     };
+    // 曲後の挙動：AUTO（次曲へ）/ STOP（停止）+ delay 秒数
+    const autoNext = song.autoNext === 'stop' ? 'stop' : 'auto';
+    const nextDelay = (typeof song.nextDelay === 'number') ? song.nextDelay : (state.multitrack.gapSec || 0);
+    const isLast = idx === state.multitrack.songs.length - 1;
+
+    const togBtn = document.createElement('button');
+    togBtn.className = 'mt-song-autotoggle ' + autoNext + (isLast ? ' is-last' : '');
+    togBtn.textContent = autoNext === 'auto' ? '▶▶' : '■';
+    togBtn.title = autoNext === 'auto'
+      ? `この曲のあと自動で次曲へ${isLast ? '（最終曲なので停止）' : ''}\nクリックで「停止」に切替`
+      : `この曲の後で停止\nクリックで「自動で次曲へ」に切替`;
+    togBtn.onclick = (e) => {
+      e.stopPropagation();
+      song.autoNext = autoNext === 'auto' ? 'stop' : 'auto';
+      mtSave();
+      mtRenderSetlist();
+    };
+    row.appendChild(togBtn);
+
+    const delayInput = document.createElement('input');
+    delayInput.type = 'number';
+    delayInput.className = 'mt-song-delay';
+    delayInput.value = (Number.isInteger(nextDelay) ? nextDelay.toFixed(0) : nextDelay.toFixed(1));
+    delayInput.step = '0.5';
+    delayInput.min = -60; delayInput.max = 60;
+    delayInput.title = '次曲までの秒数（負値で前倒し）';
+    delayInput.disabled = (autoNext === 'stop');
+    delayInput.onclick = (e) => e.stopPropagation();
+    delayInput.onchange = () => {
+      let v = parseFloat(delayInput.value);
+      if (!isFinite(v)) v = 0;
+      if (v < -60) v = -60; if (v > 60) v = 60;
+      song.nextDelay = v;
+      mtSave();
+    };
+    row.appendChild(delayInput);
+
     // 削除ボタン
     const del = document.createElement('button'); del.className = 'mt-song-del'; del.textContent = '✕';
     del.title = '曲を削除';
