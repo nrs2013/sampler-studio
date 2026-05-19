@@ -1683,13 +1683,17 @@
     box-shadow: 0 0 0 0.5px currentColor, inset 0 0 18px rgba(240,199,94,0.04);
   }
 
-  /* 1 行ヘッダー: "DRUMS  1/2" */
+  /* ストリップヘッダー: グループ名 + ファイル数 / CH 番号 (2 行) */
   .mt-strip-header {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 4px;
+    display: flex; flex-direction: column; gap: 2px;
+    min-width: 0;
+  }
+  .mt-strip-label-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 4px;
     min-width: 0;
   }
   .mt-strip-label {
-    font-size: 9px; letter-spacing: 1.2px; font-weight: 700;
+    font-size: 10px; letter-spacing: 1.2px; font-weight: 700;
     text-align: left;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     min-width: 0;
@@ -1699,11 +1703,37 @@
   .mt-strip-label.other  { color: #EF9F27; }
   .mt-strip-label.chorus { color: #97C459; }
   .mt-strip-label.vocal  { color: #F0C75E; }
-  .mt-strip-sublabel {
+  .mt-strip-label.click  { color: #8DB7F5; }
+  /* 割当ファイル数: "×2" の小チップ */
+  .mt-strip-fcount {
+    display: inline-flex; align-items: center; justify-content: center;
     font-family: 'SF Mono', monospace;
-    font-size: 8px; letter-spacing: 0; color: #4A4A50; font-weight: 600;
+    font-size: 9px; font-weight: 700;
+    color: #B8E0CC; background: rgba(125,184,158,0.15);
+    border: 0.5px solid rgba(125,184,158,0.4);
+    border-radius: 3px;
+    padding: 1px 5px;
+    min-width: 22px;
     flex-shrink: 0;
   }
+  .mt-strip-fcount.pending {
+    color: #F5C470; background: rgba(239,159,39,0.15);
+    border-color: rgba(239,159,39,0.4);
+  }
+  /* CH 番号 — オーディオ I/F に出力されるチャンネルを明示 */
+  .mt-strip-ch-info {
+    display: flex; align-items: center; gap: 3px;
+    font-family: 'SF Mono', monospace;
+    font-size: 10px; letter-spacing: 0;
+  }
+  .mt-strip-ch-prefix {
+    font-size: 8px; color: #4A4A50; font-weight: 700; letter-spacing: 1px;
+  }
+  .mt-strip-ch-num {
+    color: #92C9B0; font-weight: 700;
+    text-shadow: 0 0 4px rgba(146,201,176,0.4);
+  }
+  .mt-strip-ch-sep { color: #3A3A42; }
 
   /* Fader + Meter 横並びエリア — 下まで伸びる。
      strip 内で flex:1 を取り、header/db/mute・solo の余りを全部使う */
@@ -1721,11 +1751,22 @@
     border: 0.5px solid #1A1A1E;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
   }
-  /* 0dB ティック */
-  .mt-strip-fader::after {
-    content: ''; position: absolute; left: -3px; right: -3px;
-    bottom: 71%; height: 1px;
-    background: #3A3A42;
+  /* dB tick marks — JS で fader 内に注入 */
+  .mt-strip-fader-tick {
+    position: absolute; left: -3px; right: -3px;
+    height: 1px;
+    background: rgba(255,255,255,0.18);
+    pointer-events: none;
+    transform: translateY(50%);
+  }
+  .mt-strip-fader-tick.zero {
+    left: -5px; right: -5px;
+    height: 1.5px;
+    background: #7DB89E;
+    box-shadow: 0 0 4px rgba(125,184,158,0.6);
+  }
+  .mt-strip-fader-tick.plus {
+    background: rgba(240,199,94,0.5);
   }
   .mt-strip-fader-fill {
     position: absolute; bottom: 0; left: 1px; right: 1px;
@@ -2669,7 +2710,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.23.3';
+const APP_VERSION = 'v7.24';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8826,7 +8867,7 @@ function mtAddSong() {
     tracks: {},                           // {drums: {sampleId, name}, ...} — 各グループに割り当て済み
     unassigned: [],                       // [{sampleId, name}] — 読み込み済みだがまだ未割り当てのファイル
     autoNext: 'auto',
-    nextDelay: state.multitrack.gapSec,
+    nextDelay: 0,                          // デフォルト 0 秒（曲を追加して即連結したい場合）
     locates: [],
   });
   if (state.multitrack.currentSongIdx < 0) state.multitrack.currentSongIdx = 0;
@@ -9816,26 +9857,52 @@ function mtRenderMixer() {
     strip.dataset.mtStrip = g;
     strip.style.color = MT_GROUP_COLORS[g]; // currentColor 経由で glow に使う
 
-    // ヘッダー（1 行コンパクト: "DRUMS · 1/2"）
+    // ヘッダー: グループ名 + ファイル数バッジ ／ CH 番号 (チャンネル明示)
     const header = document.createElement('div'); header.className = 'mt-strip-header';
+    const labelRow = document.createElement('div'); labelRow.className = 'mt-strip-label-row';
     const lbl = document.createElement('span');
     lbl.className = 'mt-strip-label ' + g;
     lbl.textContent = MT_GROUP_LABELS[g];
-    header.appendChild(lbl);
-    const sub = document.createElement('span'); sub.className = 'mt-strip-sublabel';
-    const cm = state.multitrack.channelMap[g] || { L:0, R:0 };
-    // layer 数も表示: "1/2"  (ch info の前に layer 数チップ)
+    labelRow.appendChild(lbl);
     if (hasLayers) {
-      sub.innerHTML = `<span class="mt-strip-layer-badge${allLoaded ? '' : ' pending'}">${layers.length > 1 ? '●'.repeat(Math.min(3, layers.length)) + (layers.length > 3 ? '+' : '') : '●'}</span> ${cm.L}/${cm.R}`;
-    } else {
-      sub.textContent = `${cm.L}/${cm.R}`;
+      const fcount = document.createElement('span');
+      fcount.className = 'mt-strip-fcount' + (allLoaded ? '' : ' pending');
+      fcount.textContent = '×' + layers.length;
+      fcount.title = `${layers.length} ファイル割当 (${allLoaded ? 'ロード済' : '一部未ロード'})`;
+      labelRow.appendChild(fcount);
     }
-    header.appendChild(sub);
+    header.appendChild(labelRow);
+    const cm = state.multitrack.channelMap[g] || { L:0, R:0 };
+    const chInfo = document.createElement('div');
+    chInfo.className = 'mt-strip-ch-info';
+    chInfo.innerHTML =
+      `<span class="mt-strip-ch-prefix">CH</span>` +
+      `<span class="mt-strip-ch-num">${cm.L}</span>` +
+      `<span class="mt-strip-ch-sep">·</span>` +
+      `<span class="mt-strip-ch-num">${cm.R}</span>`;
+    chInfo.title = `出力ch: ${cm.L} / ${cm.R} (オーディオI/F接続時)`;
+    header.appendChild(chInfo);
     strip.appendChild(header);
 
     // fader + meter (横並び)
     const wrap = document.createElement('div'); wrap.className = 'mt-strip-faderwrap';
     const fader = document.createElement('div'); fader.className = 'mt-strip-fader'; fader.dataset.mtFader = g;
+    // dB tick marks (bottom % で配置)
+    // 0dB が 71% 基準、+3 〜 -∞ の目盛
+    const ticks = [
+      { pos: 100, cls: 'plus', title: '+3 dB' },
+      { pos: 71,  cls: 'zero', title: '0 dB' },
+      { pos: 50,  cls: '',     title: '-3 dB' },
+      { pos: 36,  cls: '',     title: '-6 dB' },
+      { pos: 18,  cls: '',     title: '-12 dB' },
+    ];
+    for (const t of ticks) {
+      const tick = document.createElement('span');
+      tick.className = 'mt-strip-fader-tick' + (t.cls ? ' ' + t.cls : '');
+      tick.style.bottom = t.pos + '%';
+      tick.title = t.title;
+      fader.appendChild(tick);
+    }
     const fill = document.createElement('div'); fill.className = 'mt-strip-fader-fill'; fader.appendChild(fill);
     const thumb = document.createElement('div'); thumb.className = 'mt-strip-fader-thumb'; fader.appendChild(thumb);
     wrap.appendChild(fader);
@@ -10033,8 +10100,8 @@ function mtBindFader(fader, group) {
     let pos = 1 - ((clientY - rect.top) / rect.height);
     if (pos < 0) pos = 0;
     if (pos > 1) pos = 1;
-    // 0dB スナップ（0.69〜0.73 の範囲は 0.71 に吸着）
-    if (pos > 0.685 && pos < 0.735) pos = 0.71;
+    // 0dB スナップ（少し広めの 0.68〜0.74 で 0.71 に吸着）
+    if (pos > 0.675 && pos < 0.745) pos = 0.71;
     const v = mtPosToGain(pos);
     mtSetGroupGain(group, v);
   };
