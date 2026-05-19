@@ -1811,6 +1811,25 @@
     font-weight: 400;
     letter-spacing: 1px;
   }
+  /* ALL READY 状態 — 完了時に 2.5秒だけ緑で「OK」を伝える */
+  .mt-preload-banner.mt-preload-ready {
+    background: linear-gradient(90deg, rgba(125,184,158,0.20), rgba(125,184,158,0.06));
+    border-color: rgba(125,184,158,0.7);
+    color: #7DB89E;
+    box-shadow: 0 0 24px rgba(125,184,158,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+    animation: none;
+  }
+  .mt-preload-banner.mt-preload-ready .mt-preload-label,
+  .mt-preload-banner.mt-preload-ready .mt-preload-count {
+    color: #B8E0CC;
+  }
+  .mt-preload-banner.mt-preload-ready .mt-preload-hint {
+    color: rgba(184,224,204,0.85);
+  }
+  .mt-preload-banner.mt-preload-ready .mt-preload-bar-fill {
+    background: linear-gradient(90deg, #7DB89E, #B8E0CC);
+    box-shadow: 0 0 8px rgba(125,184,158,0.6);
+  }
 
   /* MIXER FADE OUT ボタン (パニックストップ) */
   .mt-fadeout-btn {
@@ -2987,7 +3006,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.34.1';
+const APP_VERSION = 'v7.34.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9731,9 +9750,12 @@ async function mtRestoreBuffers() {
 // CONCURRENCY=4 ワーカー並列で重いブラウザ work を時分割。
 // 完了後は SPACE 押した瞬間に再生（ゼロロス）になる。
 async function mtPreloadBuffers() {
-  if (!state.multitrack.songs.length) return;
+  if (!state.multitrack.songs.length) {
+    console.log('[mt-preload] no songs, skip');
+    return;
+  }
   await mtInitCtx();
-  // まだロードされていない sampleId を収集（handle/blob のどちらでも OK）
+  // まだロードされていない sampleId を収集
   const sampleIds = [];
   for (const s of state.multitrack.songs) {
     for (const g of MT_GROUPS) {
@@ -9745,7 +9767,12 @@ async function mtPreloadBuffers() {
       if (u && u.sampleId && !mtDecodedCache[u.sampleId]) sampleIds.push(u.sampleId);
     });
   }
-  if (sampleIds.length === 0) return;
+  console.log('[mt-preload] start', sampleIds.length, 'files');
+  if (sampleIds.length === 0) {
+    // 既にすべて読み込み済み → ✓ ALL READY を 2 秒表示してユーザーに知らせる
+    showAllReadyFlash();
+    return;
+  }
   mtPreloadTotal = sampleIds.length;
   mtPreloadDone = 0;
   mtPreloadAbort = false;
@@ -9753,18 +9780,22 @@ async function mtPreloadBuffers() {
 
   const CONCURRENCY = 4;
   let idx = 0;
+  let successCount = 0;
+  let failCount = 0;
   async function worker() {
     while (idx < sampleIds.length) {
       if (mtPreloadAbort) return;
       const i = idx++;
       const sid = sampleIds[i];
+      let ok = false;
       try {
-        await mtEnsureBufferLoaded(sid, false);
+        const buf = await mtEnsureBufferLoaded(sid, false);
+        if (buf) ok = true;
       } catch(e) {
-        console.warn('preload entry failed', sid, e);
+        console.warn('[mt-preload] entry failed', sid, e);
       }
+      if (ok) successCount++; else failCount++;
       mtPreloadDone++;
-      // 2 ファイルごと OR 完了時に render（バナー進捗のため少し細かめ）
       if (mtPreloadDone % 2 === 0 || mtPreloadDone === mtPreloadTotal) {
         try { mtRenderNow(); } catch(_) {}
       }
@@ -9773,12 +9804,38 @@ async function mtPreloadBuffers() {
   const workers = [];
   for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
   await Promise.all(workers);
+  console.log('[mt-preload] done', { success: successCount, fail: failCount });
   // 完了 → 状態リセット
   mtPreloadTotal = 0;
   mtPreloadDone = 0;
   try { mtRenderNow(); } catch(_) {}
   try { mtRecomputeSongDuration(); } catch(_) {}
-  showToast('✓ 全ファイル読込完了');
+  if (successCount > 0) {
+    showToast(`✓ ${successCount} ファイル読込完了` + (failCount > 0 ? ` (${failCount} 件は要 RECONNECT)` : ''));
+    showAllReadyFlash();
+  }
+}
+
+// 「✓ ALL READY」バナーを 2 秒だけ表示してユーザーに「準備 OK」を伝える
+let _mtAllReadyTimer = null;
+function showAllReadyFlash() {
+  const banner = document.getElementById('mtPreloadBanner');
+  if (!banner) return;
+  banner.classList.add('mt-preload-ready');
+  banner.style.display = 'flex';
+  const label = banner.querySelector('.mt-preload-label');
+  const count = banner.querySelector('#mtPreloadCount');
+  const fill = banner.querySelector('#mtPreloadBarFill');
+  const hint = banner.querySelector('.mt-preload-hint');
+  if (label) label.textContent = 'ALL READY';
+  if (count) count.textContent = '✓';
+  if (fill) fill.style.width = '100%';
+  if (hint) hint.textContent = '全ファイル準備完了。SPACE で即時再生 OK';
+  if (_mtAllReadyTimer) clearTimeout(_mtAllReadyTimer);
+  _mtAllReadyTimer = setTimeout(() => {
+    banner.classList.remove('mt-preload-ready');
+    banner.style.display = 'none';
+  }, 2500);
 }
 
 // 再接続：ユーザージェスチャーから呼ばれる（permission 要求あり）
@@ -10923,11 +10980,18 @@ function mtRenderNow() {
   const preloadCount = document.getElementById('mtPreloadCount');
   if (preloadBanner) {
     if (isPreloading) {
+      // ready クラスが残ってる場合は外す（preload 再開時のクリーンアップ）
+      preloadBanner.classList.remove('mt-preload-ready');
+      const label = preloadBanner.querySelector('.mt-preload-label');
+      const hint = preloadBanner.querySelector('.mt-preload-hint');
+      if (label) label.textContent = 'FILES LOADING';
+      if (hint) hint.textContent = '本番前にロード完了するまでお待ちください';
       preloadBanner.style.display = 'flex';
       const pct = mtPreloadTotal > 0 ? (mtPreloadDone / mtPreloadTotal) * 100 : 0;
       if (preloadFill) preloadFill.style.width = pct.toFixed(1) + '%';
       if (preloadCount) preloadCount.textContent = `${mtPreloadDone} / ${mtPreloadTotal}`;
-    } else {
+    } else if (!preloadBanner.classList.contains('mt-preload-ready')) {
+      // ready 表示中は触らない、それ以外は隠す
       preloadBanner.style.display = 'none';
     }
   }
