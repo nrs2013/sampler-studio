@@ -1412,10 +1412,10 @@
   }
   .mt-song-row {
     display: grid;
-    grid-template-columns: 20px 24px minmax(0, 1fr) 18px 22px 44px 20px;
+    grid-template-columns: 22px 28px minmax(0, 1fr) 18px 22px 44px 20px;
     /* num / play / name / count / autotoggle / delay / del */
     gap: 6px; align-items: center;
-    padding: 5px 8px; border: 0.5px solid #1F1F22; border-radius: 5px;
+    padding: 6px 9px; border: 0.5px solid #1F1F22; border-radius: 6px;
     background: rgba(255,255,255,0.015);
     position: relative;
     transition: border-color 0.15s, background 0.15s;
@@ -1481,13 +1481,13 @@
     border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed;
     box-shadow: 0 0 0 1px rgba(125,184,158,0.2);
   }
-  .mt-song-num { font-family: 'SF Mono', monospace; font-size: 9px; color: #5A5A60; text-align: right; font-weight: 600; letter-spacing: 0.5px; }
+  .mt-song-num { font-family: 'SF Mono', monospace; font-size: 11px; color: #5A5A60; text-align: right; font-weight: 600; letter-spacing: 0.3px; }
   .mt-song-row.playing .mt-song-num { color: #7DB89E; }
   .mt-song-play {
-    width: 22px; height: 22px; border-radius: 50%;
+    width: 26px; height: 26px; border-radius: 50%;
     background: rgba(255,255,255,0.04); color: #C8C8CE; border: 0.5px solid #25252A;
     display: flex; align-items: center; justify-content: center;
-    font-size: 9px; cursor: pointer; transition: all 0.15s;
+    font-size: 11px; cursor: pointer; transition: all 0.15s;
     padding: 0;
   }
   .mt-song-play:hover { background: #7DB89E; color: #0E1A14; border-color: #7DB89E; }
@@ -1495,14 +1495,15 @@
     background: #7DB89E; color: #0E1A14; border-color: #7DB89E;
     box-shadow: 0 0 10px rgba(125,184,158,0.4);
   }
-  /* 曲名テキスト (リネーム不可。リネームは NOW PLAYING タイトル input で) */
+  /* 曲名テキスト (リネーム不可。リネームは NOW PLAYING タイトル input で) — 本番視認サイズ */
   .mt-song-name {
-    color: #E6E6EA; font-size: 12px; padding: 3px 6px;
+    color: #E6E6EA; font-size: 17px; font-weight: 500;
+    letter-spacing: -0.2px; padding: 3px 6px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     min-width: 0;
     user-select: none;
   }
-  .mt-song-row.playing .mt-song-name { color: #FFFFFF; font-weight: 500; }
+  .mt-song-row.playing .mt-song-name { color: #FFFFFF; font-weight: 600; }
   /* 並べ替えドラッグの視覚化 */
   .mt-song-row { cursor: grab; }
   .mt-song-row:active { cursor: grabbing; }
@@ -2677,7 +2678,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.23';
+const APP_VERSION = 'v7.23.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
