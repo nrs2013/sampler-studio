@@ -1502,6 +1502,7 @@
         </div>
         <div class="do-logo-actions">
           <button class="do-logo-btn" onclick="doLogoLoad()">LOAD</button>
+          <button class="do-logo-btn" onclick="doLogoShow()" id="doLogoShowBtn" style="display:none; background:rgba(201,169,106,0.18); color:#C9A96A;">▶ SHOW</button>
           <button class="do-logo-btn del" onclick="doLogoClear()" id="doLogoClearBtn" style="display:none;">CLEAR</button>
         </div>
         <input type="file" id="doLogoFileInput" accept="image/*,video/*" style="display:none;">
@@ -1591,7 +1592,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.5.5';
+const APP_VERSION = 'v6.5.6';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5311,10 +5312,37 @@ function doRenderLogo() {
     else thumbEl.innerHTML = (it.type === 'video' ? '▶' : '▣');
     thumbEl.onclick = reLink ? () => doLogoLoad() : null;
     if (clearBtn) clearBtn.style.display = '';
+    const showBtn = document.getElementById('doLogoShowBtn');
+    if (showBtn) showBtn.style.display = reLink ? 'none' : '';
     if (sizeRow) {
       sizeRow.style.display = '';
       doRenderLogoSize();
     }
+  }
+}
+
+// LOGO を OUTPUT に強制再送 + 再描画。OUTPUT が表示されない時の救済ボタン用
+function doLogoShow() {
+  const it = state.door.logo;
+  if (!it || !it.file) {
+    showToast('⚠️ LOGO ファイルがありません');
+    return;
+  }
+  // OUTPUT が閉じてれば開く
+  if (!_outWindow || _outWindow.closed) {
+    showToast('🖥 サブモニターを開きます');
+    doOutOpen();
+    // ready を受けたら自動で送る (doOutInitBC 内)
+    return;
+  }
+  // OUTPUT に強制再送（image/video 両対応）。clear → 100ms 後に setLogo で完全リフレッシュ
+  if (_outBC) {
+    _outBC.postMessage({ cmd: 'logo-clear' });
+    setTimeout(() => {
+      doLogoSendToOutput();
+      showToast('✅ LOGO を OUTPUT に再送信');
+      try { _outWindow.focus(); } catch(_) {}
+    }, 100);
   }
 }
 
