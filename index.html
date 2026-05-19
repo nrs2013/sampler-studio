@@ -1432,8 +1432,8 @@
   /* ============= 3. BOTTOM ROW (MIXER | IFACE | ROUTING) ============= */
   .mt-bottom-row {
     display: grid;
-    grid-template-columns: minmax(380px, 1.4fr) minmax(220px, 1fr) minmax(240px, 1fr);
-    gap: 10px;
+    grid-template-columns: minmax(360px, 1.5fr) minmax(200px, 0.8fr) minmax(200px, 0.9fr);
+    gap: 8px;
     flex-shrink: 0;
   }
 
@@ -1634,23 +1634,46 @@
 
   /* AUDIO IFACE / ROUTING (in bottom row) */
   .mt-config-card { padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
-  .mt-ch-matrix {
-    display: grid; grid-template-columns: 20px repeat(5, 1fr); gap: 4px; align-items: center;
+
+  /* CHANNEL ROUTING - 横並びピル形式（コンパクト） */
+  .mt-routing-card { padding: 8px 12px 10px; }
+  .mt-ch-strip {
+    display: flex; gap: 5px; flex-wrap: wrap; align-items: stretch;
   }
-  .mt-ch-cell { font-size: 9px; color: #6A6A70; padding: 2px; text-align: center; letter-spacing: 0.5px; }
-  .mt-ch-header { font-weight: 700; letter-spacing: 1px; font-size: 9px; }
-  .mt-ch-rowlabel {
-    font-family: 'SF Mono', monospace; text-align: left;
-    color: #6A6A70; font-size: 9px; padding-left: 0; font-weight: 700;
+  .mt-ch-pill {
+    display: flex; align-items: center; gap: 3px;
+    padding: 4px 6px;
+    background: #0B0B0E;
+    border: 0.5px solid #1A1A1E;
+    border-left: 2px solid var(--c, #5A5A60);
+    border-radius: 3px;
+    flex: 1; min-width: 0;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+  }
+  .mt-ch-glabel {
+    font-size: 9px; letter-spacing: 1px; font-weight: 700;
+    color: var(--c, #C8C8CE);
+    margin-right: 2px;
+    flex-shrink: 0;
+  }
+  .mt-ch-sep {
+    color: #4A4A50; font-family: 'SF Mono', monospace; font-size: 9px;
+    flex-shrink: 0;
   }
   .mt-ch-input {
-    width: 100%; background: #06060A; border: 0.5px solid #1F1F22; color: #92C9B0;
-    padding: 4px 2px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 10px;
+    width: 22px; min-width: 0;
+    background: transparent; border: none; color: #92C9B0;
+    padding: 1px 0; border-radius: 0;
+    font-family: 'SF Mono', monospace; font-size: 11px;
     text-align: center; font-weight: 600;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
-    min-width: 0;
+    text-shadow: 0 0 4px rgba(146,201,176,0.4);
   }
-  .mt-ch-input:focus { outline: none; border-color: #7DB89E; color: #FFFFFF; }
+  .mt-ch-input:focus {
+    outline: none; color: #FFFFFF;
+    background: rgba(125,184,158,0.1); border-radius: 2px;
+  }
+  .mt-ch-input::-webkit-inner-spin-button { display: none; }
+  .mt-ch-input { -moz-appearance: textfield; }
 
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -2259,56 +2282,60 @@
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
           <span id="mtChCount" class="mt-num-readout">—</span>
-        </div>
-        <div class="mt-row" style="margin-top:-4px;">
-          <span class="mt-label"></span>
           <span class="mt-row-note" id="mtChStatus" style="font-size:9px;">未検出</span>
         </div>
         <div class="mt-row">
           <span class="mt-label">GAP</span>
           <input type="number" class="mt-input-num" id="mtGapSec" min="0" max="60" step="0.5" value="3.0" onchange="mtSetGap(this.value)">
-          <span class="mt-row-note">秒</span>
-        </div>
-        <div class="mt-row">
-          <span class="mt-label">AUTO ADV</span>
-          <label class="mt-switch">
+          <span class="mt-row-note">秒・自動で次曲</span>
+          <label class="mt-switch" style="margin-left:auto;">
             <input type="checkbox" id="mtAutoAdvance" checked onchange="mtSetAutoAdvance(this.checked)">
             <span class="mt-switch-track"><span class="mt-switch-thumb"></span></span>
-            <span class="mt-switch-text">自動で次曲</span>
           </label>
         </div>
       </div>
 
       <!-- CHANNEL ROUTING (右) -->
-      <div class="mt-card mt-config-card">
+      <div class="mt-card mt-config-card mt-routing-card">
         <div class="mt-section-head compact">
           <div class="mt-section-head-l">
             <span class="mt-section-num">05</span>
             <span class="mt-section-title">ROUTING</span>
-            <span class="mt-section-count">PARA-OUT</span>
+            <span class="mt-section-count" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">PARA-OUT</span>
           </div>
         </div>
-        <div class="mt-ch-matrix" id="mtChMatrix">
-          <span class="mt-ch-cell mt-ch-header" style="text-align:left;"></span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#ED93B1;">DR</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#85B7EB;">BA</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#EF9F27;">OT</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#97C459;">CH</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#F0C75E;">VO</span>
-          <span class="mt-ch-cell mt-ch-rowlabel">L</span>
-          <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChBassL"  min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="7" onchange="mtSetCh('chorus','L',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="9" onchange="mtSetCh('vocal','L',this.value)">
-          <span class="mt-ch-cell mt-ch-rowlabel">R</span>
-          <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChBassR"  min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="8" onchange="mtSetCh('chorus','R',this.value)">
-          <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)">
+        <div class="mt-ch-strip" id="mtChMatrix">
+          <div class="mt-ch-pill" style="--c:#ED93B1">
+            <span class="mt-ch-glabel">DR</span>
+            <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L">
+            <span class="mt-ch-sep">·</span>
+            <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R">
+          </div>
+          <div class="mt-ch-pill" style="--c:#85B7EB">
+            <span class="mt-ch-glabel">BA</span>
+            <input type="number" class="mt-ch-input" id="mtChBassL" min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)" title="BASS L">
+            <span class="mt-ch-sep">·</span>
+            <input type="number" class="mt-ch-input" id="mtChBassR" min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)" title="BASS R">
+          </div>
+          <div class="mt-ch-pill" style="--c:#EF9F27">
+            <span class="mt-ch-glabel">OT</span>
+            <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)" title="OTHER L">
+            <span class="mt-ch-sep">·</span>
+            <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)" title="OTHER R">
+          </div>
+          <div class="mt-ch-pill" style="--c:#97C459">
+            <span class="mt-ch-glabel">CH</span>
+            <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="7" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L">
+            <span class="mt-ch-sep">·</span>
+            <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="8" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R">
+          </div>
+          <div class="mt-ch-pill" style="--c:#F0C75E">
+            <span class="mt-ch-glabel">VO</span>
+            <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="9" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L">
+            <span class="mt-ch-sep">·</span>
+            <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
+          </div>
         </div>
-        <div class="mt-row-note" style="margin-top:6px; font-size:9px;">10ch対応I/Fでパラ送り</div>
       </div>
     </div>
   </div>
@@ -2342,7 +2369,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.6';
+const APP_VERSION = 'v7.6.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
