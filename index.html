@@ -1760,6 +1760,58 @@
     padding: 6px 16px; font-weight: 700;
   }
 
+  /* PRELOAD BANNER — ファイル準備中の大きな視認バナー */
+  .mt-preload-banner {
+    display: flex; align-items: center; gap: 18px;
+    background: linear-gradient(90deg, rgba(239,159,39,0.18), rgba(239,159,39,0.06));
+    border: 1.5px solid rgba(239,159,39,0.7);
+    border-radius: 10px;
+    padding: 14px 22px;
+    font-size: 16px; color: #F5C470;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(239,159,39,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+    animation: mt-preload-glow 1.8s ease-in-out infinite;
+  }
+  @keyframes mt-preload-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(239,159,39,0.25), inset 0 1px 0 rgba(255,255,255,0.05); }
+    50% { box-shadow: 0 0 32px rgba(239,159,39,0.45), inset 0 1px 0 rgba(255,255,255,0.1); }
+  }
+  .mt-preload-icon { font-size: 24px; }
+  .mt-preload-label {
+    font-size: 14px; letter-spacing: 1.5px;
+    color: #FFD580; font-weight: 800;
+  }
+  .mt-preload-bar-wrap {
+    flex: 1; min-width: 200px;
+    height: 10px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 5px;
+    overflow: hidden;
+    border: 0.5px solid rgba(239,159,39,0.4);
+  }
+  .mt-preload-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #EF9F27, #F5C470);
+    border-radius: 5px;
+    transition: width 0.2s ease-out;
+    box-shadow: 0 0 8px rgba(239,159,39,0.6);
+  }
+  .mt-preload-count {
+    font-family: 'SF Mono', monospace;
+    font-size: 18px; font-weight: 800;
+    color: #FFFFFF;
+    min-width: 90px;
+    text-align: right;
+  }
+  .mt-preload-hint {
+    font-size: 10px;
+    color: rgba(245,196,112,0.7);
+    font-weight: 400;
+    letter-spacing: 1px;
+  }
+
   /* MIXER FADE OUT ボタン (パニックストップ) */
   .mt-fadeout-btn {
     background: linear-gradient(180deg, rgba(226,75,74,0.10), rgba(226,75,74,0.04));
@@ -2737,6 +2789,16 @@
 
   <!-- ====================== MULTI-TRACK PAGE ====================== -->
   <div id="multiPage">
+    <!-- PRELOAD BANNER (大きく目立たせる、進捗バー付き、ロード中だけ表示) -->
+    <div class="mt-preload-banner" id="mtPreloadBanner" style="display:none;">
+      <span class="mt-preload-icon">📂</span>
+      <span class="mt-preload-label">FILES LOADING</span>
+      <div class="mt-preload-bar-wrap">
+        <div class="mt-preload-bar-fill" id="mtPreloadBarFill" style="width:0%"></div>
+      </div>
+      <span class="mt-preload-count" id="mtPreloadCount">0 / 0</span>
+      <span class="mt-preload-hint">本番前にロード完了するまでお待ちください</span>
+    </div>
     <!-- 1. NOW PLAYING — compact hero -->
     <div class="mt-hero compact" id="mtHero">
       <div class="mt-hero-bg" id="mtHeroBg"></div>
@@ -2925,7 +2987,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.34.0';
+const APP_VERSION = 'v7.34.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9702,8 +9764,8 @@ async function mtPreloadBuffers() {
         console.warn('preload entry failed', sid, e);
       }
       mtPreloadDone++;
-      // 8 ファイルごと OR 完了時のみ render（render を頻発させない）
-      if (mtPreloadDone % 8 === 0 || mtPreloadDone === mtPreloadTotal) {
+      // 2 ファイルごと OR 完了時に render（バナー進捗のため少し細かめ）
+      if (mtPreloadDone % 2 === 0 || mtPreloadDone === mtPreloadTotal) {
         try { mtRenderNow(); } catch(_) {}
       }
     }
@@ -10855,10 +10917,25 @@ function mtRenderNow() {
   if (nowChip) nowChip.classList.toggle('loading', isLoading);
   if (hero) hero.classList.toggle('mt-loading', isLoading);
 
-  // ステータス: preload 中は実進捗を表示 (X/Y)
+  // 大きなプリロードバナーの表示/更新（最重要 UI: 見落とさないように）
+  const preloadBanner = document.getElementById('mtPreloadBanner');
+  const preloadFill = document.getElementById('mtPreloadBarFill');
+  const preloadCount = document.getElementById('mtPreloadCount');
+  if (preloadBanner) {
+    if (isPreloading) {
+      preloadBanner.style.display = 'flex';
+      const pct = mtPreloadTotal > 0 ? (mtPreloadDone / mtPreloadTotal) * 100 : 0;
+      if (preloadFill) preloadFill.style.width = pct.toFixed(1) + '%';
+      if (preloadCount) preloadCount.textContent = `${mtPreloadDone} / ${mtPreloadTotal}`;
+    } else {
+      preloadBanner.style.display = 'none';
+    }
+  }
+
+  // ステータス（バナーと併用、こちらは小さく）
   if (status) {
     if (isPreloading) {
-      status.textContent = `📂 LOADING ${mtPreloadDone}/${mtPreloadTotal} ファイル (バックグラウンド)`;
+      status.textContent = `📂 ${mtPreloadDone}/${mtPreloadTotal} ファイル読込中`;
     } else if (mtRestoreInProgress) {
       status.textContent = '📂 起動中...';
     } else if (m.isPlaying) status.textContent = 'PLAYING · ESC で停止';
