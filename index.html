@@ -1509,7 +1509,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.0';
+const APP_VERSION = 'v6.0.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4943,10 +4943,16 @@ function doVidPreview(slotIdx) {
 function doVidStopPreview() {
   doOutStop();
 }
+// 動画ファイル判定（MIME が空でも拡張子で判定）
+function _isVideoFile(f) {
+  if (!f) return false;
+  if (f.type && f.type.startsWith('video/')) return true;
+  const name = (f.name || '').toLowerCase();
+  return /\.(mp4|mov|webm|avi|mkv|m4v|ogv|wmv|flv|3gp)$/i.test(name);
+}
 function doRenderVideoLibrary() {
   const grid = document.getElementById('doVidGrid');
   if (!grid) return;
-  // _vidVolActive 等は無いがレンダ中の不整合回避用に何かあればクリーンアップする余地
   if (!Array.isArray(state.door.videoLibrary)) state.door.videoLibrary = [];
   while (state.door.videoLibrary.length < 3) state.door.videoLibrary.push(null);
   grid.innerHTML = '';
@@ -4963,6 +4969,28 @@ function doRenderVideoLibrary() {
         <div style="display:flex; flex:1; align-items:center; justify-content:center; color:#5A5A60; font-size:11px;">+ 映像ファイルを<br>ドロップ</div>
       `;
       slot.addEventListener('click', () => doVidLoadEmpty(i));
+      // スロット単体にも drop ハンドラを付ける（grid だけだと取りこぼす場合がある）
+      slot.addEventListener('dragover', e => {
+        if ([...(e.dataTransfer.types || [])].includes('Files')) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = 'copy';
+          slot.classList.add('drop-over');
+        }
+      });
+      slot.addEventListener('dragleave', () => slot.classList.remove('drop-over'));
+      slot.addEventListener('drop', async e => {
+        if (![...(e.dataTransfer.types || [])].includes('Files')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        slot.classList.remove('drop-over');
+        const f = [...(e.dataTransfer.files || [])].find(_isVideoFile);
+        if (!f) {
+          showToast('⚠️ 映像ファイルが見つかりません（mp4/mov/webm 等）');
+          return;
+        }
+        await doVidLoadFile(i, f);
+      });
     } else {
       const durStr = isFinite(it.duration) ? `${Math.floor(it.duration/60)}:${Math.floor(it.duration%60).toString().padStart(2,'0')}` : '--:--';
       slot.innerHTML = `
@@ -4996,16 +5024,22 @@ function doRenderVideoLibrary() {
     }
     grid.appendChild(slot);
   });
-  // grid 上での drop で空きスロットへ追加
+  // grid 上での drop で空きスロットへ追加（スロット単体で受けたものは stopPropagation 済み）
   grid.ondragover = e => {
-    if ([...(e.dataTransfer.types || [])].includes('Files')) { e.preventDefault(); }
+    if ([...(e.dataTransfer.types || [])].includes('Files')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
   };
   grid.ondrop = async e => {
     if (![...(e.dataTransfer.types || [])].includes('Files')) return;
     e.preventDefault();
-    const files = [...(e.dataTransfer.files || [])].filter(f => f.type.startsWith('video/'));
+    const files = [...(e.dataTransfer.files || [])].filter(_isVideoFile);
+    if (files.length === 0) {
+      showToast('⚠️ 映像ファイルが見つかりません（mp4/mov/webm 等）');
+      return;
+    }
     for (const f of files) {
-      // 空きスロットを探す or 追加
       let emptyIdx = state.door.videoLibrary.findIndex(x => !x);
       if (emptyIdx < 0) {
         if (state.door.videoLibrary.length >= 8) { showToast('VIDEO LIBRARY は最大 8 枠'); break; }
@@ -5027,27 +5061,56 @@ function doOutOpen() {
     _outWindow.focus();
     return;
   }
+  // BC は OPEN 前に初期化しておく（output 側の ready を取りこぼさないため）
+  if (!_outBC) _outBC = doOutInitBC();
   const url = location.origin + location.pathname + '?mode=output';
   _outWindow = window.open(url, 'samplerStudioOutput', 'width=1280,height=720,menubar=no,toolbar=no');
   if (!_outWindow) {
-    showToast('⚠️ ポップアップがブロックされました。ブラウザの許可設定を確認してください');
+    if (confirm(
+      '⚠️ サブモニターウィンドウを開けませんでした。\n\n' +
+      'ブラウザのポップアップブロックが原因の可能性があります。\n' +
+      '・Chrome: アドレスバー右端の「ポップアップ」アイコンから「常に許可」\n' +
+      '・Safari: 環境設定 > Web サイト > ポップアップ > このサイトで許可\n\n' +
+      '設定方法を確認しますか？'
+    )) {
+      window.open('https://support.google.com/chrome/answer/95472?hl=ja', '_blank');
+    }
     return;
   }
-  if (!_outBC) _outBC = doOutInitBC();
   doOutUpdateStatus();
-  // 5 秒以内に ready 応答が来なかったら警告
+  // ready 応答チェック：1秒後に応答無ければ ping を送って再確認
   setTimeout(() => {
-    if (_outWindow && !_outWindow.closed) doOutUpdateStatus();
+    if (_outWindow && !_outWindow.closed && _outBC && !_outReadyReceived) {
+      _outBC.postMessage({ cmd: 'ping' });
+    }
   }, 1000);
+  // 5秒後にまだ ready 来なければ警告
+  setTimeout(() => {
+    if (_outWindow && !_outWindow.closed && !_outReadyReceived) {
+      showToast('⚠️ サブモニターと通信できていません。ウィンドウを閉じて再度 OPEN OUTPUT を試してください');
+    }
+  }, 5000);
 }
+let _outReadyReceived = false;
 function doOutInitBC() {
   const bc = new BroadcastChannel('sampler-studio-output');
   bc.onmessage = e => {
     const m = e.data || {};
-    if (m.event === 'ready') { doOutUpdateStatus(); showToast('✅ サブモニター起動'); }
-    else if (m.event === 'closed') { doOutUpdateStatus(); _outActiveVideoSlot = -1; doRenderVideoLibrary(); }
+    if (m.event === 'ready' || m.event === 'pong') {
+      if (!_outReadyReceived) {
+        _outReadyReceived = true;
+        doOutUpdateStatus();
+        showToast('✅ サブモニター接続完了');
+      }
+    }
+    else if (m.event === 'closed') {
+      _outReadyReceived = false;
+      doOutUpdateStatus();
+      _outActiveVideoSlot = -1;
+      doRenderVideoLibrary();
+    }
     else if (m.event === 'ended') doOutOnVideoEnded();
-    else if (m.event === 'error') { showToast('⚠️ 映像再生エラー'); doOutOnVideoEnded(); }
+    else if (m.event === 'error') { showToast('⚠️ 映像再生エラー: ' + (m.message || '')); doOutOnVideoEnded(); }
   };
   return bc;
 }
@@ -5115,7 +5178,10 @@ function _vidFadeBgm(fadeOut) {
 setInterval(() => {
   if (_outWindow && _outWindow.closed) {
     _outWindow = null;
+    _outReadyReceived = false;
+    _outActiveVideoSlot = -1;
     doOutUpdateStatus();
+    doRenderVideoLibrary();
   }
 }, 1500);
 
