@@ -1720,20 +1720,29 @@
     color: #F5C470; background: rgba(239,159,39,0.15);
     border-color: rgba(239,159,39,0.4);
   }
-  /* CH 番号 — オーディオ I/F に出力されるチャンネルを明示 */
-  .mt-strip-ch-info {
-    display: flex; align-items: center; gap: 3px;
+  /* フェーダー横の dB ラベル (0 / +3 / -3 / -6 / -12) */
+  .mt-strip-fader-lab {
+    position: absolute;
+    left: -17px;
+    bottom: 0;
+    transform: translateY(50%);
     font-family: 'SF Mono', monospace;
-    font-size: 10px; letter-spacing: 0;
+    font-size: 7.5px;
+    font-weight: 600;
+    color: #5A5A60;
+    pointer-events: none;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+    text-align: right;
+    width: 14px;
   }
-  .mt-strip-ch-prefix {
-    font-size: 8px; color: #4A4A50; font-weight: 700; letter-spacing: 1px;
+  .mt-strip-fader-lab.zero {
+    color: #7DB89E;
+    font-weight: 800;
+    font-size: 8.5px;
+    text-shadow: 0 0 4px rgba(125,184,158,0.5);
   }
-  .mt-strip-ch-num {
-    color: #92C9B0; font-weight: 700;
-    text-shadow: 0 0 4px rgba(146,201,176,0.4);
-  }
-  .mt-strip-ch-sep { color: #3A3A42; }
+  .mt-strip-fader-lab.plus { color: #F0C75E; font-weight: 700; }
 
   /* Fader + Meter 横並びエリア — 下まで伸びる。
      strip 内で flex:1 を取り、header/db/mute・solo の余りを全部使う */
@@ -2710,7 +2719,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.24';
+const APP_VERSION = 'v7.24.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9857,7 +9866,7 @@ function mtRenderMixer() {
     strip.dataset.mtStrip = g;
     strip.style.color = MT_GROUP_COLORS[g]; // currentColor 経由で glow に使う
 
-    // ヘッダー: グループ名 + ファイル数バッジ ／ CH 番号 (チャンネル明示)
+    // ヘッダー: グループ名 + ファイル数バッジのみ (CH 情報は ROUTING カード側で確認)
     const header = document.createElement('div'); header.className = 'mt-strip-header';
     const labelRow = document.createElement('div'); labelRow.className = 'mt-strip-label-row';
     const lbl = document.createElement('span');
@@ -9872,29 +9881,19 @@ function mtRenderMixer() {
       labelRow.appendChild(fcount);
     }
     header.appendChild(labelRow);
-    const cm = state.multitrack.channelMap[g] || { L:0, R:0 };
-    const chInfo = document.createElement('div');
-    chInfo.className = 'mt-strip-ch-info';
-    chInfo.innerHTML =
-      `<span class="mt-strip-ch-prefix">CH</span>` +
-      `<span class="mt-strip-ch-num">${cm.L}</span>` +
-      `<span class="mt-strip-ch-sep">·</span>` +
-      `<span class="mt-strip-ch-num">${cm.R}</span>`;
-    chInfo.title = `出力ch: ${cm.L} / ${cm.R} (オーディオI/F接続時)`;
-    header.appendChild(chInfo);
     strip.appendChild(header);
 
     // fader + meter (横並び)
     const wrap = document.createElement('div'); wrap.className = 'mt-strip-faderwrap';
     const fader = document.createElement('div'); fader.className = 'mt-strip-fader'; fader.dataset.mtFader = g;
-    // dB tick marks (bottom % で配置)
-    // 0dB が 71% 基準、+3 〜 -∞ の目盛
+    // dB tick marks + ラベル (bottom % で配置)
+    // 0dB が 71% 基準
     const ticks = [
-      { pos: 100, cls: 'plus', title: '+3 dB' },
-      { pos: 71,  cls: 'zero', title: '0 dB' },
-      { pos: 50,  cls: '',     title: '-3 dB' },
-      { pos: 36,  cls: '',     title: '-6 dB' },
-      { pos: 18,  cls: '',     title: '-12 dB' },
+      { pos: 100, cls: 'plus', label: '+3', title: '+3 dB' },
+      { pos: 71,  cls: 'zero', label: '0',  title: '0 dB' },
+      { pos: 50,  cls: '',     label: '-3', title: '-3 dB' },
+      { pos: 36,  cls: '',     label: '-6', title: '-6 dB' },
+      { pos: 18,  cls: '',     label: '-12', title: '-12 dB' },
     ];
     for (const t of ticks) {
       const tick = document.createElement('span');
@@ -9902,6 +9901,11 @@ function mtRenderMixer() {
       tick.style.bottom = t.pos + '%';
       tick.title = t.title;
       fader.appendChild(tick);
+      const lab = document.createElement('span');
+      lab.className = 'mt-strip-fader-lab' + (t.cls ? ' ' + t.cls : '');
+      lab.style.bottom = t.pos + '%';
+      lab.textContent = t.label;
+      fader.appendChild(lab);
     }
     const fill = document.createElement('div'); fill.className = 'mt-strip-fader-fill'; fader.appendChild(fill);
     const thumb = document.createElement('div'); thumb.className = 'mt-strip-fader-thumb'; fader.appendChild(thumb);
