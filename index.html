@@ -1502,7 +1502,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.2.3';
+const APP_VERSION = 'v6.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5191,22 +5191,14 @@ function doOutOnVideoEnded() {
   _outActiveVideoSlot = -1;
   doRenderVideoLibrary();
 
-  // 映像終了 → BGM をフェードインで戻す
-  _vidFadeBgm(false);
-  const fadeMs = Math.max(0, (state.door.duck.videoFadeSec ?? 2.0) * 1000);
-
   if (_outChainContext) {
-    const { rowId } = _outChainContext;
+    // チェーン文脈: doPlayNextInChain に BGM 遷移を任せる
     _outChainContext = null;
-    const savedChainIdx = state.door.activeChainIdx;
-    // BGM がフェードインしてから次のチェーンステップへ
-    setTimeout(() => {
-      if (state.door.activeRowId === rowId && state.door.activeChainIdx === savedChainIdx) {
-        doPlayNextInChain();
-      }
-    }, fadeMs);
+    doPlayNextInChain();
+  } else {
+    // 単発プレビュー: BGM をフェードイン
+    _vidFadeBgm(false);
   }
-  // 単発プレビュー: _vidFadeBgm(false) で十分（追加処理なし）
 }
 function doOutUpdateStatus() {
   const pill = document.getElementById('doOutStatusPill');
@@ -5910,68 +5902,70 @@ function doStartRowAlreadyDucked(rowId) {
   doRenderSchedule();
 }
 
+// チェーン再生エンジン（v6.3〜）
+// - 前→次の type ペアに応じて BGM 遷移とギャップを制御
+// - A→A: ギャップ有り（BGM そのまま）
+// - A→V: ギャップ中に BGM フェードアウト → V 再生
+// - V→A: ギャップ中に BGM フェードイン → A 再生
+// - V→V: ギャップ有り（BGM 無音のまま）
+// - (頭)→A: ギャップ無し（doStartRow の DUCK フェードが頭の助走）
+// - (頭)→V: BGM フェードアウト分待ってから V
+// - A→(終): ギャップ無しで DUCK 解除へ
+// - V→(終): BGM フェードイン → DUCK 解除へ
 function doPlayNextInChain() {
   const row = state.door.schedule.find(r => r.id === state.door.activeRowId);
   if (!row) { doEndRow(); return; }
+
+  const prevIdx = state.door.activeChainIdx;
   state.door.activeChainIdx++;
-  if (state.door.activeChainIdx >= row.chain.length) {
-    doEndRow();
-    return;
-  }
-  const chainItem = row.chain[state.door.activeChainIdx];
+  const isChainEnd = state.door.activeChainIdx >= row.chain.length;
+  const next = isChainEnd ? null : row.chain[state.door.activeChainIdx];
+  const prev = (prevIdx >= 0 && prevIdx < row.chain.length) ? row.chain[prevIdx] : null;
 
-  // ============== V (映像) ==============
-  if (chainItem.type === 'v') {
-    const v = (state.door.videoLibrary || [])[chainItem.idx];
-    if (!v) {
-      setTimeout(doPlayNextInChain, 0); // 未登録ならスキップ
-      return;
-    }
-    if (!v.file) {
-      showToast('⚠️ V' + (chainItem.idx+1) + ' はファイル再リンクが必要なためスキップ');
-      setTimeout(doPlayNextInChain, 0);
-      return;
-    }
-    if (!_outWindow || _outWindow.closed) {
-      showToast('⚠️ サブモニター未起動のため V' + (chainItem.idx+1) + ' をスキップ');
-      setTimeout(doPlayNextInChain, 0);
-      return;
-    }
-    // BGM フェードアウトを開始
-    _vidFadeBgm(true);
-    _outActiveVideoSlot = chainItem.idx;
-    _outChainContext = { rowId: state.door.activeRowId, chainIdx: state.door.activeChainIdx };
-    doRenderVideoLibrary();
-    doRenderSchedule();
-    // BGM フェード完了を待ってから映像再生コマンドを送る
-    const fadeMs = Math.max(0, (state.door.duck.videoFadeSec ?? 2.0) * 1000);
-    const savedRowId = state.door.activeRowId;
-    const savedChainIdx = state.door.activeChainIdx;
-    setTimeout(() => {
-      // チェーン停止 or 別予定に切替わっていたらスキップ
-      if (state.door.activeRowId !== savedRowId) return;
-      if (state.door.activeChainIdx !== savedChainIdx) return;
-      if (!_outWindow || _outWindow.closed) {
-        showToast('⚠️ サブモニターが閉じました');
-        doPlayNextInChain();
-        return;
-      }
-      const url = URL.createObjectURL(v.file);
-      _outCurrentBlobUrl = url;
-      _outBC.postMessage({ cmd: 'play', blobUrl: url, name: v.sampleName });
-    }, fadeMs);
-    return;
+  // BGM 遷移とギャップ要否を決定
+  const gapMs = Math.max(0, (state.door.duck.videoFadeSec ?? 2.0) * 1000);
+  let bgmAction = null; // 'fadeOut' | 'fadeIn' | null
+  let needsWait = false;
+
+  if (prev === null) {
+    // チェーンの先頭
+    if (next && next.type === 'v') { bgmAction = 'fadeOut'; needsWait = true; }
+    // A 先頭は DUCK 助走済みなのでギャップ無し
+  } else if (next === null) {
+    // チェーン末尾
+    if (prev.type === 'v') { bgmAction = 'fadeIn'; needsWait = true; }
+    // A 末尾はそのまま DUCK 解除へ
+  } else {
+    // チェーン中間
+    if (prev.type === 'a' && next.type === 'v') { bgmAction = 'fadeOut'; needsWait = true; }
+    else if (prev.type === 'v' && next.type === 'a') { bgmAction = 'fadeIn'; needsWait = true; }
+    else needsWait = true; // a→a, v→v は BGM 変化なしだがギャップは入れる
   }
 
-  // ============== A (音声) ==============
-  // 再生前に、もし前が V で BGM が下がりっぱなしなら戻す
-  if (_vidBgmFadeOriginalDuckGain != null) _vidFadeBgm(false);
-  const libIdx = chainItem.idx;
+  if (bgmAction === 'fadeOut') _vidFadeBgm(true);
+  else if (bgmAction === 'fadeIn') _vidFadeBgm(false);
+
+  doRenderSchedule();
+  doRenderVideoLibrary();
+
+  const savedRowId = state.door.activeRowId;
+  const savedChainIdx = state.door.activeChainIdx;
+  const proceed = () => {
+    if (state.door.activeRowId !== savedRowId) return;
+    if (state.door.activeChainIdx !== savedChainIdx) return;
+    if (next === null) { doEndRow(); return; }
+    if (next.type === 'a') _chainPlayA(next.idx);
+    else _chainPlayV(next.idx);
+  };
+
+  if (needsWait && gapMs > 0) setTimeout(proceed, gapMs);
+  else proceed();
+}
+
+// A 音声を実際に再生（チェーン内部用）
+function _chainPlayA(libIdx) {
   const item = state.door.library[libIdx];
-  if (!item || !item.audioBuffer) {
-    setTimeout(doPlayNextInChain, 0);
-    return;
-  }
+  if (!item || !item.audioBuffer) { setTimeout(doPlayNextInChain, 0); return; }
   if (ctx.state === 'suspended') ctx.resume();
   const src = ctx.createBufferSource();
   src.buffer = item.audioBuffer;
@@ -5993,6 +5987,28 @@ function doPlayNextInChain() {
   doRenderSchedule();
 }
 
+// V 映像を実際に再生（チェーン内部用）
+function _chainPlayV(vidIdx) {
+  const v = (state.door.videoLibrary || [])[vidIdx];
+  if (!v) { setTimeout(doPlayNextInChain, 0); return; }
+  if (!v.file) {
+    showToast('⚠️ V' + (vidIdx+1) + ' はファイル再リンクが必要なためスキップ');
+    setTimeout(doPlayNextInChain, 0);
+    return;
+  }
+  if (!_outWindow || _outWindow.closed) {
+    showToast('⚠️ サブモニター未起動のため V' + (vidIdx+1) + ' をスキップ');
+    setTimeout(doPlayNextInChain, 0);
+    return;
+  }
+  _outActiveVideoSlot = vidIdx;
+  _outChainContext = { rowId: state.door.activeRowId, chainIdx: state.door.activeChainIdx };
+  const url = URL.createObjectURL(v.file);
+  _outCurrentBlobUrl = url;
+  _outBC.postMessage({ cmd: 'play', blobUrl: url, name: v.sampleName });
+  doRenderVideoLibrary();
+}
+
 function doEndRow() {
   const row = state.door.schedule.find(r => r.id === state.door.activeRowId);
   if (row) row.played = true;
@@ -6001,8 +6017,8 @@ function doEndRow() {
   state.door.activeAnnSource = null;
   state.door.activeAnnGain = null;
   state.door.activeAnnSlot = -1;
-  // 映像フェード中なら戻す
-  if (_vidBgmFadeOriginalDuckGain != null) _vidFadeBgm(false);
+  // BGM の videoFade 状態が残っていればここで明示的にクリア（通常は doPlayNextInChain で済んでる）
+  _vidBgmFadeOriginalDuckGain = null;
   _outChainContext = null;
   doDuckRelease();
   doRenderSchedule();
