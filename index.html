@@ -1502,7 +1502,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.2.1';
+const APP_VERSION = 'v6.2.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5934,14 +5934,29 @@ function doPlayNextInChain() {
       setTimeout(doPlayNextInChain, 0);
       return;
     }
+    // BGM フェードアウトを開始
     _vidFadeBgm(true);
     _outActiveVideoSlot = chainItem.idx;
     _outChainContext = { rowId: state.door.activeRowId, chainIdx: state.door.activeChainIdx };
-    const url = URL.createObjectURL(v.file);
-    _outCurrentBlobUrl = url;
-    _outBC.postMessage({ cmd: 'play', blobUrl: url, name: v.sampleName });
     doRenderVideoLibrary();
     doRenderSchedule();
+    // BGM フェード完了を待ってから映像再生コマンドを送る
+    const fadeMs = Math.max(0, (state.door.duck.videoFadeSec ?? 2.0) * 1000);
+    const savedRowId = state.door.activeRowId;
+    const savedChainIdx = state.door.activeChainIdx;
+    setTimeout(() => {
+      // チェーン停止 or 別予定に切替わっていたらスキップ
+      if (state.door.activeRowId !== savedRowId) return;
+      if (state.door.activeChainIdx !== savedChainIdx) return;
+      if (!_outWindow || _outWindow.closed) {
+        showToast('⚠️ サブモニターが閉じました');
+        doPlayNextInChain();
+        return;
+      }
+      const url = URL.createObjectURL(v.file);
+      _outCurrentBlobUrl = url;
+      _outBC.postMessage({ cmd: 'play', blobUrl: url, name: v.sampleName });
+    }, fadeMs);
     return;
   }
 
