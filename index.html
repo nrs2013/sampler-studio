@@ -223,10 +223,10 @@
   .btn-stop:hover { background: rgba(226,75,74,0.1); }
   .btn-pause { border-color: #EF9F27; color: #EF9F27; }
   .btn-pause:hover { background: rgba(239,159,39,0.1); }
-  /* Bigger STOP / PAUSE */
+  /* STOP / PAUSE — 小さくしてフェーダーに高さを譲る */
   .btn-outline.btn-big {
-    padding: 14px 6px; font-size: 13px; font-weight: 500;
-    letter-spacing: 1.5px; border-width: 1px;
+    padding: 7px 4px; font-size: 10px; font-weight: 500;
+    letter-spacing: 1px; border-width: 0.5px;
   }
   /* Huge FADE OUT — 黄色テーマ */
   .btn-primary.big-fade.huge-fade {
@@ -1756,6 +1756,46 @@
 
   /* AUDIO IFACE / ROUTING (in bottom row) */
   .mt-config-card { padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+  /* ROUTING を AUDIO IFACE 内に統合した時の見出し */
+  .mt-routing-inline-label {
+    font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 700;
+    margin: 10px 0 5px; padding-top: 8px;
+    border-top: 0.5px solid #1F1F22;
+  }
+
+  /* SELECTED SONG カード — STEM ファイル名一覧 */
+  .mt-songinfo-card { padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+  .mt-songinfo-name {
+    font-size: 12px; color: #E6E6EA; font-weight: 500;
+    margin: 4px 0 8px; padding-bottom: 6px;
+    border-bottom: 0.5px solid #1F1F22;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mt-songinfo-list {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .mt-songinfo-row {
+    display: grid; grid-template-columns: 6px 20px minmax(0, 1fr);
+    gap: 6px; align-items: center;
+    padding: 3px 4px; border-radius: 3px;
+    font-size: 10px; min-width: 0;
+  }
+  .mt-songinfo-row.has { background: rgba(255,255,255,0.02); }
+  .mt-songinfo-row.missing { opacity: 0.35; }
+  .mt-songinfo-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    box-shadow: 0 0 4px currentColor;
+  }
+  .mt-songinfo-lbl {
+    font-weight: 700; font-family: 'SF Mono', monospace;
+    letter-spacing: 0.5px; font-size: 9px;
+  }
+  .mt-songinfo-fname {
+    color: #C8C8CE;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0; font-size: 10px;
+  }
+  .mt-songinfo-row.missing .mt-songinfo-fname { color: #4A4A50; }
 
   /* CHANNEL ROUTING - 横並びピル形式（コンパクト） */
   .mt-routing-card { padding: 8px 12px 10px; }
@@ -1980,21 +2020,6 @@
 
   <div class="main">
     <div class="left-panel">
-      <!-- PLAY MODE -->
-      <div class="panel-section" data-sampler-only>
-        <div class="section-head">
-          <span>PLAY MODE</span>
-        </div>
-        <div class="mode-grid" id="modeGrid">
-          <button class="mode-btn" data-mode="mono" onclick="setPlayMode('mono')">MONO</button>
-          <button class="mode-btn active" data-mode="poly" onclick="setPlayMode('poly')">POLY</button>
-          <button class="mode-btn" data-mode="xfade" onclick="setPlayMode('xfade')">X-FADE</button>
-          <button class="mode-btn" data-mode="trig" onclick="setPlayMode('trig')">TRIG</button>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
       <!-- STOP / PAUSE -->
       <div class="panel-section">
         <div class="btn-row">
@@ -2386,7 +2411,7 @@
 
       <!-- 右側スタック -->
       <div class="mt-right-stack">
-      <!-- AUDIO IFACE -->
+      <!-- AUDIO IFACE (ROUTING も内包) -->
       <div class="mt-card mt-config-card">
         <div class="mt-section-head compact">
           <div class="mt-section-head-l">
@@ -2415,17 +2440,8 @@
             <span class="mt-switch-track"><span class="mt-switch-thumb"></span></span>
           </label>
         </div>
-      </div>
-
-      <!-- CHANNEL ROUTING (右) -->
-      <div class="mt-card mt-config-card mt-routing-card">
-        <div class="mt-section-head compact">
-          <div class="mt-section-head-l">
-            <span class="mt-section-num">05</span>
-            <span class="mt-section-title">ROUTING</span>
-            <span class="mt-section-count" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">PARA-OUT</span>
-          </div>
-        </div>
+        <!-- ROUTING を AUDIO IFACE に統合（インライン、コンパクト） -->
+        <div class="mt-routing-inline-label" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">ROUTING · PARA-OUT</div>
         <div class="mt-ch-strip" id="mtChMatrix">
           <div class="mt-ch-pill" style="--c:#ED93B1">
             <span class="mt-ch-glabel">DR</span>
@@ -2458,7 +2474,19 @@
             <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
           </div>
         </div>
-      </div><!-- /.mt-routing-card -->
+      </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
+
+      <!-- SELECTED SONG: 選択中の曲の STEM ファイル名一覧 -->
+      <div class="mt-card mt-songinfo-card">
+        <div class="mt-section-head compact">
+          <div class="mt-section-head-l">
+            <span class="mt-section-num">05</span>
+            <span class="mt-section-title">SELECTED SONG</span>
+          </div>
+        </div>
+        <div class="mt-songinfo-name" id="mtSongInfoName">— 選択されていません —</div>
+        <div class="mt-songinfo-list" id="mtSongInfoList"></div>
+      </div>
       </div><!-- /.mt-right-stack -->
     </div><!-- /.mt-bottom-row -->
   </div>
@@ -2492,7 +2520,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.9';
+const APP_VERSION = 'v7.10';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9547,6 +9575,46 @@ function mtRenderNow() {
 
   mtUpdateProgress();
   mtRenderLocates();
+  mtRenderSongInfo();
+}
+
+// 右下の "SELECTED SONG" — 選択中の曲の STEM ファイル名一覧を表示
+function mtRenderSongInfo() {
+  const nameEl = document.getElementById('mtSongInfoName');
+  const list = document.getElementById('mtSongInfoList');
+  if (!nameEl || !list) return;
+  const idx = state.multitrack.selectedIdx;
+  if (idx < 0 || idx >= state.multitrack.songs.length) {
+    nameEl.textContent = '— 選択されていません —';
+    nameEl.style.color = '#5A5A60';
+    list.innerHTML = '';
+    return;
+  }
+  const song = state.multitrack.songs[idx];
+  nameEl.textContent = `${String(idx+1).padStart(2,'0')}.  ${song.name}`;
+  nameEl.style.color = '';
+  list.innerHTML = '';
+  for (const g of MT_GROUPS) {
+    const t = song.tracks && song.tracks[g];
+    const row = document.createElement('div');
+    row.className = 'mt-songinfo-row' + (t ? ' has' : ' missing');
+    const dot = document.createElement('span');
+    dot.className = 'mt-songinfo-dot';
+    dot.style.background = MT_GROUP_COLORS[g];
+    dot.style.color = MT_GROUP_COLORS[g];
+    row.appendChild(dot);
+    const lbl = document.createElement('span');
+    lbl.className = 'mt-songinfo-lbl';
+    lbl.textContent = MT_GROUP_LABELS[g].slice(0, 2); // DR/BA/OT/CH/VO
+    lbl.style.color = MT_GROUP_COLORS[g];
+    row.appendChild(lbl);
+    const fname = document.createElement('span');
+    fname.className = 'mt-songinfo-fname';
+    fname.textContent = t ? t.name : '— 未読込 —';
+    if (t) fname.title = t.name;
+    row.appendChild(fname);
+    list.appendChild(row);
+  }
 }
 
 // hex "#RRGGBB" → [r,g,b]
