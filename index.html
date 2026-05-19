@@ -1663,39 +1663,50 @@
     position: absolute; top: 8px; right: 10px; z-index: 2;
   }
   .mt-mixer-strips {
-    display: grid; grid-template-columns: repeat(6, 76px); gap: 4px;
+    display: grid; grid-template-columns: repeat(6, 76px); gap: 7px;
     padding: 0;
     justify-content: start;
     flex: 1;     /* カードの残り高さを全部使う */
     min-height: 0;
   }
+  /* 各フェーダーを「個別カード」として囲む — グループカラーの上端帯付き */
   .mt-strip {
     position: relative;
     display: flex; flex-direction: column; align-items: stretch; gap: 3px;
-    padding: 5px 3px 5px 7px;
-    background: linear-gradient(180deg, #16161B 0%, #101013 100%);
-    border: 0.5px solid #1F1F22; border-radius: 5px;
+    padding: 10px 4px 6px 4px;
+    background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
+    border: 1px solid #2A2A30;
+    border-radius: 7px;
     min-width: 0;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-    /* height: 200px を削除 — grid セルにより親 (mt-mixer-strips) が flex:1 で
-       カード全高を確保しているため、strip は自動でその高さに伸びる */
+    box-shadow:
+      0 2px 6px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      inset 0 -1px 0 rgba(0,0,0,0.4);
   }
-  /* ヘッダーは上、フェーダーが flex:1 で中央を埋め、db / mute・solo が下に */
-  /* 左端カラーストライプ（グループ識別） */
+  /* グループカラー（currentColor として使えるよう strip 本体に色付け） */
+  .mt-strip[data-mt-strip="click"]  { color: #8DB7F5; }
+  .mt-strip[data-mt-strip="vocal"]  { color: #F0C75E; }
+  .mt-strip[data-mt-strip="chorus"] { color: #97C459; }
+  .mt-strip[data-mt-strip="other"]  { color: #EF9F27; }
+  .mt-strip[data-mt-strip="bass"]   { color: #85B7EB; }
+  .mt-strip[data-mt-strip="drums"]  { color: #ED93B1; }
+  /* カード上端のカラーバンド — 横一線でグループ色を見せる */
   .mt-strip::before {
-    content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
-    border-radius: 0 2px 2px 0; opacity: 0.8;
+    content: ''; position: absolute; left: 4px; right: 4px; top: 3px;
+    height: 3px;
+    background: currentColor;
+    border-radius: 2px;
+    opacity: 0.85;
+    box-shadow: 0 0 6px currentColor;
   }
-  .mt-strip[data-mt-strip="drums"]::before  { background: #ED93B1; }
-  .mt-strip[data-mt-strip="bass"]::before   { background: #85B7EB; }
-  .mt-strip[data-mt-strip="other"]::before  { background: #EF9F27; }
-  .mt-strip[data-mt-strip="chorus"]::before { background: #97C459; }
-  .mt-strip[data-mt-strip="vocal"]::before  { background: #F0C75E; }
-  .mt-strip.active::before { opacity: 1; box-shadow: 0 0 10px currentColor; }
+  .mt-strip.active::before { opacity: 1; box-shadow: 0 0 12px currentColor; }
   /* SOLO 中 — グループカラーで囲む */
   .mt-strip.solo {
     border-color: currentColor;
-    box-shadow: 0 0 0 0.5px currentColor, inset 0 0 18px rgba(240,199,94,0.04);
+    box-shadow:
+      0 0 0 1px currentColor,
+      0 2px 8px rgba(0,0,0,0.5),
+      inset 0 0 20px rgba(255,255,255,0.03);
   }
 
   /* ストリップヘッダー: グループ名 + ファイル数 / CH 番号 (2 行) */
@@ -2743,7 +2754,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.24.7';
+const APP_VERSION = 'v7.25.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
