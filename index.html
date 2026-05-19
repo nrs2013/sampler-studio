@@ -2508,7 +2508,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.10.8';
+const APP_VERSION = 'v7.11';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8653,23 +8653,40 @@ function mtGuessSongName(files) {
 
 // Drop イベントから {file, handle} を取り出す
 // handle が取れたファイルは IDB に handle のみ保存（ブラウザに音データ自体は保存しない）
+//
+// 重要: DataTransferItem は drop ハンドラ内で同期的に消費しないと無効化される。
+// async await のあとで getAsFile() を呼ぶと null が返るバグがあるため、
+// File 参照と handle 取得 Promise を「await 前に」同期キャプチャしてから後で await する。
 async function mtExtractFilesWithHandles(dataTransfer) {
   const out = [];
-  const items = Array.from(dataTransfer && dataTransfer.items || []);
-  for (const it of items) {
-    if (it.kind !== 'file') continue;
-    let handle = null;
-    if (typeof it.getAsFileSystemHandle === 'function') {
-      try {
-        const h = await it.getAsFileSystemHandle();
-        if (h && h.kind === 'file') handle = h;
-      } catch(e) { /* fallthrough */ }
+  if (!dataTransfer) return out;
+  // === Phase 1: 同期キャプチャ ===
+  const pairs = []; // [{ file, handlePromise }]
+  if (dataTransfer.items) {
+    for (const it of dataTransfer.items) {
+      if (it.kind !== 'file') continue;
+      const file = it.getAsFile();            // 同期取得（先に！）
+      if (!file) continue;
+      let handlePromise = null;
+      if (typeof it.getAsFileSystemHandle === 'function') {
+        try { handlePromise = it.getAsFileSystemHandle(); } catch(_) {}
+      }
+      pairs.push({ file, handlePromise });
     }
-    const file = it.getAsFile();
-    if (file) out.push({ file, handle });
   }
-  // items が使えなかった場合は files から（handle なし）
-  if (out.length === 0 && dataTransfer && dataTransfer.files) {
+  // === Phase 2: 非同期で handle を取得（既に走っている Promise を await） ===
+  for (const p of pairs) {
+    let handle = null;
+    if (p.handlePromise) {
+      try {
+        const h = await p.handlePromise;
+        if (h && h.kind === 'file') handle = h;
+      } catch(_) {}
+    }
+    out.push({ file: p.file, handle });
+  }
+  // items が無効/空だった場合のフォールバック
+  if (out.length === 0 && dataTransfer.files) {
     for (const f of dataTransfer.files) out.push({ file: f, handle: null });
   }
   return out;
@@ -8975,7 +8992,17 @@ async function mtPlaySong(idx, offset) {
   } else {
     // 停止指定 or グローバル OFF — 曲が終わったら停止
     state.multitrack.advanceTimer = setTimeout(() => {
+      mtStopSources();                        // 念のため source を切断
       state.multitrack.isPlaying = false;
+      // STOP モード: 次曲の頭でスタンバイ → SPACE で再生開始
+      const curIdx = state.multitrack.currentSongIdx;
+      if (song.autoNext === 'stop' && curIdx + 1 < state.multitrack.songs.length) {
+        state.multitrack.selectedIdx = curIdx + 1;
+        state.multitrack.seekOffset = 0;
+        mtRecomputeSongDuration();
+        mtScrollSelectedIntoView();
+      }
+      mtStopMeter();
       mtRenderNow();
       mtRenderSetlist();
     }, remainSec * 1000 + 50);
@@ -9458,14 +9485,15 @@ function mtRenderSetlist() {
 
     const togBtn = document.createElement('button');
     togBtn.className = 'mt-song-autotoggle ' + autoNext + (isLast ? ' is-last' : '');
-    // 明示的なアイコン:
-    //   AUTO: ↓ (下の曲へ自動進行)   STOP: ◯ (この曲で終了)
+    // アイコン:
+    //   AUTO (下線なし): ↓        — 設定秒数あけて次曲を自動再生
+    //   STOP (下線あり): ↓ + ─    — 終わったら次曲の頭でスタンバイ、SPACE で再生
     togBtn.innerHTML = autoNext === 'auto'
       ? '<svg viewBox="0 0 14 14" width="11" height="11"><path d="M7 2 L7 11 M3.5 8 L7 11.5 L10.5 8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      : '<svg viewBox="0 0 14 14" width="11" height="11"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>';
+      : '<svg viewBox="0 0 14 14" width="11" height="11"><path d="M7 1 L7 9 M4 6 L7 9.5 L10 6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 12.2 L11 12.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
     togBtn.title = autoNext === 'auto'
-      ? `この曲のあと自動で次曲へ${isLast ? '（最終曲なので停止）' : ''}\nクリックで「停止」に切替`
-      : `この曲の後で停止\nクリックで「自動で次曲へ」に切替`;
+      ? `この曲のあと、隣の秒数あけて自動で次曲へ${isLast ? '（最終曲なので停止）' : ''}\nクリックで「次曲頭でスタンバイ」に切替`
+      : `この曲のあとは次曲の頭でスタンバイ\nSPACE で再生開始\nクリックで「自動で次曲へ」に切替`;
     togBtn.onclick = (e) => {
       e.stopPropagation();
       song.autoNext = autoNext === 'auto' ? 'stop' : 'auto';
