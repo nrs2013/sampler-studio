@@ -1592,7 +1592,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.5.6';
+const APP_VERSION = 'v6.5.7';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -6875,25 +6875,20 @@ function initOutputMode() {
       video.addEventListener('canplay', onCanPlay);
       // 念のため 500ms タイムアウトでも開始
       setTimeout(() => { if (video.style.opacity !== '1') startFade(); }, 500);
-      status.textContent = '● PLAYING — ' + (name || '');
-      status.style.display = '';
       idle.style.display = 'none';
+      // OUTPUT には status バッジを出さない（オーディエンス画面）
       await video.play();
       // 再生開始したように見えても、ProRes 等で videoWidth が 0 なら実際は描画できていない
       setTimeout(() => {
         if (video.videoWidth === 0 || video.videoHeight === 0) {
-          const msg = 'コーデック未対応の可能性（ProRes / HEVC 等）。H.264 MP4 に変換してください。\n' +
-                      '元ファイル: ' + (name || '') + '\n' +
-                      'videoWidth=' + video.videoWidth + ', videoHeight=' + video.videoHeight;
-          status.style.color = '#EF9F27';
-          status.textContent = '⚠ 映像が表示されません: ' + msg;
+          const msg = 'コーデック未対応の可能性（ProRes / HEVC 等）。H.264 MP4 に変換してください。元ファイル: ' + (name || '');
+          // OUTPUT には表示しない。main へ通知してトーストで知らせる
           bc.postMessage({ event: 'codec-unsupported', message: msg });
         }
       }, 800);
     } catch (e) {
       console.warn('output play failed', e);
-      status.textContent = '● 再生失敗: ' + (e.message || e);
-      status.style.display = '';
+      // OUTPUT には出さない。main にだけ送る
       bc.postMessage({ event: 'error', message: e.message || String(e) });
     }
   };
@@ -6917,12 +6912,10 @@ function initOutputMode() {
     const err = video.error;
     const codes = {1:'ABORTED',2:'NETWORK',3:'DECODE',4:'SRC_NOT_SUPPORTED'};
     const codeName = err ? (codes[err.code] || ('code='+err.code)) : 'unknown';
-    const msg = err && err.message ? err.message : codeName;
     let hint = '';
     if (err && err.code === 4) hint = ' — このコーデックは未対応の可能性（ProRes/HEVC など）。H.264 MP4 に変換してください';
+    // OUTPUT には表示しない (オーディエンス画面のため)。main 側のトーストでのみ通知
     bc.postMessage({ event: 'error', message: codeName + (hint || '') });
-    status.textContent = '● ビデオエラー: ' + codeName + hint;
-    status.style.display = '';
   });
 
   // BroadcastChannel で main と通信
