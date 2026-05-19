@@ -1115,9 +1115,9 @@
       - コンソール調の縦フェーダー、デジタルメーター
       - 微妙なグロー＋グラデーション、再生中は微かに脈動                                 */
   #multiPage {
-    display: none; flex-direction: column; gap: 12px;
-    flex: 1; min-height: 0; overflow-y: auto;
-    padding: 2px 0 16px;
+    display: none; flex-direction: column; gap: 10px;
+    flex: 1; min-height: 0;
+    padding: 2px 0 4px;
   }
 
   /* --- 共通 --- */
@@ -1193,20 +1193,20 @@
   .mt-switch input:checked + .mt-switch-track .mt-switch-thumb { left: 15px; background: #7DB89E; box-shadow: 0 0 6px rgba(125,184,158,0.6); }
   .mt-switch-text { font-size: 10px; color: #C8C8CE; letter-spacing: 0.5px; }
 
-  /* ============= 1. NOW PLAYING HERO ============= */
+  /* ============= 1. NOW PLAYING HERO (compact) ============= */
   .mt-hero {
     position: relative; overflow: hidden;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 0.5px solid #1F1F22;
     background: #0A0A0C;
-    min-height: 168px;
+    flex-shrink: 0;
   }
   /* 背景にうっすらグラデーション。playing時は色が動く */
   .mt-hero-bg {
     position: absolute; inset: 0;
     background:
-      radial-gradient(800px 200px at 8% 20%, rgba(125,184,158,0.10), transparent 60%),
-      radial-gradient(600px 180px at 85% 70%, rgba(133,183,235,0.06), transparent 60%),
+      radial-gradient(700px 160px at 8% 30%, rgba(125,184,158,0.10), transparent 60%),
+      radial-gradient(500px 140px at 85% 70%, rgba(133,183,235,0.06), transparent 60%),
       linear-gradient(180deg, #16161B 0%, #0C0C0F 100%);
     transition: opacity 0.3s;
   }
@@ -1219,99 +1219,100 @@
   }
   @keyframes mtHeroPulse {
     0%, 100% { filter: brightness(1.0); }
-    50%      { filter: brightness(1.08); }
+    50%      { filter: brightness(1.06); }
   }
   .mt-hero-inner {
     position: relative; z-index: 1;
-    padding: 18px 24px 20px;
-    display: flex; flex-direction: column; gap: 10px;
+    padding: 10px 16px 12px;
+    display: flex; flex-direction: column; gap: 6px;
   }
-  .mt-hero-meta { display: flex; align-items: center; gap: 12px; }
+  /* 上段: チップ+曲名 | transport */
+  .mt-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .mt-hero-meta { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
   .mt-hero-trackchip {
-    font-family: 'SF Mono', monospace; font-size: 11px; color: #92C9B0;
+    font-family: 'SF Mono', monospace; font-size: 10px; color: #92C9B0;
     background: rgba(125,184,158,0.10); border: 0.5px solid rgba(125,184,158,0.3);
-    padding: 3px 10px; border-radius: 3px; letter-spacing: 1.5px;
+    padding: 2px 8px; border-radius: 3px; letter-spacing: 1px;
+    flex-shrink: 0;
   }
   .mt-hero.playing .mt-hero-trackchip {
     color: #B8E0CC; background: rgba(125,184,158,0.18); border-color: rgba(125,184,158,0.5);
-    box-shadow: 0 0 12px rgba(125,184,158,0.2);
+    box-shadow: 0 0 10px rgba(125,184,158,0.2);
   }
-  .mt-hero-divider { width: 1px; height: 12px; background: #25252A; }
-  .mt-hero-status { font-size: 10px; letter-spacing: 2px; color: #6A6A70; text-transform: uppercase; }
-  .mt-hero.playing .mt-hero-status { color: #92C9B0; }
   .mt-hero-title {
-    font-size: 34px; font-weight: 300; color: #F8F8F8;
-    letter-spacing: -0.8px; line-height: 1.15;
-    text-shadow: 0 0 30px rgba(125,184,158,0.05);
+    font-size: 16px; font-weight: 400; color: #F0F0F4;
+    letter-spacing: -0.2px; line-height: 1.2;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0; flex: 1;
   }
   .mt-hero.playing .mt-hero-title {
-    color: #FFFFFF;
-    text-shadow: 0 0 24px rgba(125,184,158,0.18);
+    color: #FFFFFF; font-weight: 500;
+    text-shadow: 0 0 16px rgba(125,184,158,0.15);
   }
-  .mt-hero-progress { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+  /* 下段: stems chips | progress bar | meta */
+  .mt-hero-bottom { display: flex; flex-direction: column; gap: 4px; }
+  .mt-hero-stems { display: flex; gap: 5px; flex-wrap: wrap; min-height: 18px; }
+  .mt-hero-stem-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.02); border: 0.5px solid;
+    padding: 1px 7px; border-radius: 3px;
+    font-size: 9px; letter-spacing: 1px; font-weight: 600;
+    text-transform: uppercase;
+  }
+  .mt-hero-stem-chip.missing { opacity: 0.22; }
   .mt-hero-bar {
-    height: 6px; background: rgba(255,255,255,0.04); border-radius: 3px;
+    height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px;
     overflow: hidden; position: relative;
   }
   .mt-hero-bar-fill {
     height: 100%; width: 0%;
     background: linear-gradient(90deg, #7DB89E, #F0C75E);
-    border-radius: 3px;
+    border-radius: 2px;
     transition: width 0.1s linear;
-    box-shadow: 0 0 8px rgba(125,184,158,0.4);
+    box-shadow: 0 0 6px rgba(125,184,158,0.4);
   }
+  .mt-hero-meta-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; text-transform: uppercase; }
+  .mt-hero.playing .mt-hero-status { color: #92C9B0; }
   .mt-hero-times {
-    display: flex; justify-content: space-between;
-    font-family: 'SF Mono', monospace; font-size: 11px;
+    font-family: 'SF Mono', monospace; font-size: 10px;
     color: #6A6A70; letter-spacing: 0.5px;
   }
   .mt-hero.playing .mt-time-now { color: #E6E6EA; }
-  .mt-hero-stems { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; min-height: 22px; }
-  .mt-hero-stem-chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    background: rgba(255,255,255,0.02); border: 0.5px solid;
-    padding: 2px 8px; border-radius: 3px;
-    font-size: 9px; letter-spacing: 1px; font-weight: 600;
-    text-transform: uppercase;
-  }
-  .mt-hero-stem-chip.missing { opacity: 0.25; }
-  .mt-hero-transport {
-    position: absolute; top: 22px; right: 24px;
-    display: flex; gap: 8px;
-  }
+  /* Transport buttons (compact) */
+  .mt-hero-transport { display: flex; gap: 6px; flex-shrink: 0; }
   .mt-tbtn {
-    width: 44px; height: 44px; border-radius: 50%;
+    width: 34px; height: 34px; border-radius: 50%;
     background: rgba(255,255,255,0.04); border: 0.5px solid #25252A;
     color: #E6E6EA; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-family: inherit; letter-spacing: 0;
+    font-size: 11px; font-family: inherit; letter-spacing: 0;
     transition: all 0.15s;
   }
   .mt-tbtn:hover { background: rgba(255,255,255,0.08); border-color: #3A3A42; }
   .mt-tbtn.play {
     background: linear-gradient(180deg, #7DB89E, #5DA084);
-    color: #0A1410; border: none; width: 52px; height: 52px; font-size: 16px;
-    box-shadow: 0 4px 20px rgba(125,184,158,0.25);
+    color: #0A1410; border: none; width: 40px; height: 40px; font-size: 13px;
+    box-shadow: 0 3px 14px rgba(125,184,158,0.25);
   }
   .mt-tbtn.play:hover { background: linear-gradient(180deg, #92C9B0, #6CB096); }
   .mt-tbtn.play.playing {
     background: linear-gradient(180deg, #F0C75E, #C9A03D);
-    box-shadow: 0 4px 24px rgba(240,199,94,0.3);
+    box-shadow: 0 3px 18px rgba(240,199,94,0.3);
   }
   .mt-tbtn.stop { color: #E24B4A; border-color: rgba(226,75,74,0.3); }
   .mt-tbtn.stop:hover { background: rgba(226,75,74,0.08); border-color: #E24B4A; }
   .mt-tbtn-glyph { line-height: 1; pointer-events: none; }
 
-  /* ============= 2. SETLIST ============= */
+  /* ============= 2. SETLIST (flex-grow) ============= */
   .mt-setlist-card {
     display: flex; flex-direction: column;
-    /* 高さは内容に応じて伸縮（最低 1 行分 + ヘッダー、最大 360px）*/
+    flex: 1; min-height: 0;       /* 余ったスペースを全部占有 */
   }
   .mt-setlist-list {
     display: flex; flex-direction: column; gap: 5px;
     overflow-y: auto; padding-right: 2px;
-    max-height: 280px; min-height: 60px;
+    flex: 1; min-height: 0;
   }
   .mt-song-row {
     display: grid; grid-template-columns: 24px 26px 1fr repeat(5, 56px) 32px;
@@ -1392,28 +1393,38 @@
   }
   .mt-song-del:hover { color: #E24B4A; }
 
-  /* ============= 3. MIXER (console-style strips) ============= */
+  /* ============= 3. BOTTOM ROW (MIXER | IFACE | ROUTING) ============= */
+  .mt-bottom-row {
+    display: grid;
+    grid-template-columns: minmax(380px, 1.4fr) minmax(220px, 1fr) minmax(240px, 1fr);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* MIXER (console-style strips, more compact) */
   .mt-mixer-card {
     background: linear-gradient(180deg, #131316, #0E0E12);
-    border: 0.5px solid #1F1F22; border-radius: 10px; padding: 14px 18px 16px;
+    border: 0.5px solid #1F1F22; border-radius: 10px; padding: 10px 12px 12px;
     box-shadow: 0 2px 24px rgba(0,0,0,0.4);
+    display: flex; flex-direction: column; min-width: 0;
   }
   .mt-mixer-strips {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px;
-    padding: 4px 0 6px;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    padding: 4px 0 0;
+    flex: 1; min-height: 0;
   }
   .mt-strip {
     position: relative;
-    display: flex; flex-direction: column; align-items: stretch; gap: 8px;
-    padding: 12px 8px 10px 14px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 5px;
+    padding: 8px 5px 7px 9px;
     background: linear-gradient(180deg, #16161B 0%, #101013 100%);
-    border: 0.5px solid #1F1F22; border-radius: 6px;
+    border: 0.5px solid #1F1F22; border-radius: 5px;
     min-width: 0;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
   }
   /* 左端カラーストライプ（グループ識別） */
   .mt-strip::before {
-    content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px;
+    content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px;
     border-radius: 0 2px 2px 0; opacity: 0.8;
   }
   .mt-strip[data-mt-strip="drums"]::before  { background: #ED93B1; }
@@ -1422,10 +1433,15 @@
   .mt-strip[data-mt-strip="chorus"]::before { background: #97C459; }
   .mt-strip[data-mt-strip="vocal"]::before  { background: #F0C75E; }
   .mt-strip.active::before { opacity: 1; box-shadow: 0 0 10px currentColor; }
+  /* SOLO 中 — グループカラーで囲む */
+  .mt-strip.solo {
+    border-color: currentColor;
+    box-shadow: 0 0 0 0.5px currentColor, inset 0 0 18px rgba(240,199,94,0.04);
+  }
 
   .mt-strip-header { display: flex; flex-direction: column; gap: 1px; }
   .mt-strip-label {
-    font-size: 11px; letter-spacing: 2px; font-weight: 700;
+    font-size: 10px; letter-spacing: 1.5px; font-weight: 700;
     text-align: left;
   }
   .mt-strip-label.drums  { color: #ED93B1; }
@@ -1434,20 +1450,22 @@
   .mt-strip-label.chorus { color: #97C459; }
   .mt-strip-label.vocal  { color: #F0C75E; }
   .mt-strip-sublabel {
-    font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 600;
+    font-size: 7px; letter-spacing: 1px; color: #4A4A50; font-weight: 600;
     text-transform: uppercase;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
-  /* Fader + Meter 横並びエリア（縦に長く） */
+  /* Fader + Meter 横並びエリア */
   .mt-strip-faderwrap {
-    display: flex; gap: 8px; align-items: stretch;
-    height: 150px; padding: 4px 0;
+    display: flex; gap: 5px; align-items: stretch; justify-content: center;
+    height: 130px; padding: 3px 0;
+    flex: 1; min-height: 60px;
   }
-  /* Fader (太め、消費型グラデ) */
+  /* Fader */
   .mt-strip-fader {
-    position: relative; width: 14px;
+    position: relative; width: 11px;
     background: linear-gradient(180deg, #08080A, #0E0E10);
-    border-radius: 4px; cursor: pointer;
+    border-radius: 3px; cursor: pointer;
     flex-shrink: 0;
     border: 0.5px solid #1A1A1E;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
@@ -1461,23 +1479,22 @@
   .mt-strip-fader-fill {
     position: absolute; bottom: 0; left: 1px; right: 1px;
     background: linear-gradient(to top, #5A6A65, #7DB89E 85%);
-    border-radius: 3px;
-    box-shadow: 0 0 8px rgba(125,184,158,0.2);
+    border-radius: 2px;
+    box-shadow: 0 0 6px rgba(125,184,158,0.2);
   }
   .mt-strip-fader-thumb {
-    position: absolute; left: -7px; right: -7px; height: 14px;
+    position: absolute; left: -6px; right: -6px; height: 12px;
     background: linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%);
-    border-radius: 3px; transform: translateY(50%);
+    border-radius: 2px; transform: translateY(50%);
     pointer-events: none;
     box-shadow: 0 1px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4);
-    /* グリップ線 */
     background-image:
       linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%),
       repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 3px);
   }
-  /* Meter (デジタル風セグメント) */
+  /* Meter */
   .mt-strip-meter {
-    width: 9px; background: #06060A; border-radius: 3px;
+    width: 7px; background: #06060A; border-radius: 2px;
     position: relative; overflow: hidden;
     flex-shrink: 0;
     border: 0.5px solid #1A1A1E;
@@ -1492,13 +1509,11 @@
       #E24B4A 93%);
     height: 0%;
     transition: height 0.04s linear;
-    /* セグメント風の細い線 */
     background-image:
       linear-gradient(to top, #2E7A5B 0%, #7DB89E 55%, #EF9F27 78%, #E24B4A 93%),
       repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.35) 3px, rgba(0,0,0,0.35) 4px);
   }
   .mt-strip-meter-fill.clip { box-shadow: 0 0 8px #E24B4A; }
-  /* ピークホールド */
   .mt-strip-peak {
     position: absolute; left: 0; right: 0; height: 2px;
     background: #F0C75E; box-shadow: 0 0 6px #F0C75E;
@@ -1506,10 +1521,10 @@
     opacity: 0;
   }
 
-  /* dB readout digital LCD-style */
+  /* dB readout LCD-style */
   .mt-strip-db {
-    font-family: 'SF Mono', monospace; font-size: 10px; color: #92C9B0;
-    background: #06060A; padding: 3px 6px; border-radius: 3px;
+    font-family: 'SF Mono', monospace; font-size: 9px; color: #92C9B0;
+    background: #06060A; padding: 2px 4px; border-radius: 3px;
     text-align: center; letter-spacing: 0.5px;
     border: 0.5px solid #1A1A1E;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
@@ -1517,40 +1532,52 @@
   }
   .mt-strip.muted .mt-strip-db { color: #E24B4A; text-shadow: 0 0 4px rgba(226,75,74,0.5); }
 
-  .mt-strip-mute {
+  /* MUTE / SOLO buttons (横並びで2分割) */
+  .mt-strip-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+  .mt-stripbtn {
     background: linear-gradient(180deg, #1A1A1E, #131316);
     color: #6A6A70; border: 0.5px solid #25252A;
-    padding: 5px 8px; border-radius: 3px; font-size: 9px; letter-spacing: 1.5px;
+    padding: 4px 0; border-radius: 3px; font-size: 8px; letter-spacing: 1px;
     cursor: pointer; font-family: inherit; font-weight: 700;
     transition: all 0.12s;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    text-align: center;
   }
-  .mt-strip-mute:hover { color: #E6E6EA; border-color: #3A3A40; }
-  .mt-strip-mute.muted {
+  .mt-stripbtn:hover { color: #E6E6EA; border-color: #3A3A40; }
+  /* MUTE active */
+  .mt-stripbtn.mute.active {
     background: linear-gradient(180deg, #E24B4A, #B83C3B);
     color: #FFFFFF; border-color: #E24B4A;
-    box-shadow: 0 0 12px rgba(226,75,74,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+    box-shadow: 0 0 8px rgba(226,75,74,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  /* SOLO active (黄色) */
+  .mt-stripbtn.solo.active {
+    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    color: #2A1F08; border-color: #F0C75E;
+    box-shadow: 0 0 10px rgba(240,199,94,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .mt-strip.muted .mt-strip-fader-fill { opacity: 0.2; }
   .mt-strip.muted .mt-strip-meter-fill { opacity: 0.15; }
+  /* solo 外（他に solo がある時）— 薄く */
+  .mt-strip.dimmed { opacity: 0.45; }
 
-  /* ============= 4. AUDIO IFACE / CHANNEL ROUTING ============= */
-  .mt-config-row { display: grid; grid-template-columns: 1fr 1.3fr; gap: 12px; }
-  .mt-config-card { padding: 12px 14px; }
+  /* AUDIO IFACE / ROUTING (in bottom row) */
+  .mt-config-card { padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
   .mt-ch-matrix {
-    display: grid; grid-template-columns: 50px repeat(5, 1fr); gap: 6px; align-items: center;
+    display: grid; grid-template-columns: 20px repeat(5, 1fr); gap: 4px; align-items: center;
   }
-  .mt-ch-cell { font-size: 10px; color: #6A6A70; padding: 4px; text-align: center; letter-spacing: 0.5px; }
-  .mt-ch-header { font-weight: 700; letter-spacing: 1.5px; }
+  .mt-ch-cell { font-size: 9px; color: #6A6A70; padding: 2px; text-align: center; letter-spacing: 0.5px; }
+  .mt-ch-header { font-weight: 700; letter-spacing: 1px; font-size: 9px; }
   .mt-ch-rowlabel {
     font-family: 'SF Mono', monospace; text-align: left;
-    color: #6A6A70; font-size: 10px; padding-left: 2px;
+    color: #6A6A70; font-size: 9px; padding-left: 0; font-weight: 700;
   }
   .mt-ch-input {
     width: 100%; background: #06060A; border: 0.5px solid #1F1F22; color: #92C9B0;
-    padding: 5px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 11px;
+    padding: 4px 2px; border-radius: 3px; font-family: 'SF Mono', monospace; font-size: 10px;
     text-align: center; font-weight: 600;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    min-width: 0;
   }
   .mt-ch-input:focus { outline: none; border-color: #7DB89E; color: #FFFFFF; }
 
@@ -2065,33 +2092,37 @@
 
   <!-- ====================== MULTI-TRACK PAGE ====================== -->
   <div id="multiPage">
-    <!-- 1. NOW PLAYING — hero -->
-    <div class="mt-hero" id="mtHero">
+    <!-- 1. NOW PLAYING — compact hero -->
+    <div class="mt-hero compact" id="mtHero">
       <div class="mt-hero-bg" id="mtHeroBg"></div>
       <div class="mt-hero-inner">
-        <div class="mt-hero-meta">
-          <span class="mt-hero-trackchip" id="mtHeroTrackChip">— / —</span>
-          <span class="mt-hero-divider"></span>
-          <span class="mt-hero-status" id="mtNowStatus">READY · SPACE で再生</span>
-        </div>
-        <div class="mt-hero-title" id="mtNowName">— 待機中 —</div>
-        <div class="mt-hero-progress">
-          <div class="mt-hero-bar"><div class="mt-hero-bar-fill" id="mtNowBarFill"></div></div>
-          <div class="mt-hero-times">
-            <span class="mt-time-now" id="mtNowTimeCur">0:00</span>
-            <span class="mt-time-tot" id="mtNowTimeTot">0:00</span>
+        <div class="mt-hero-top">
+          <div class="mt-hero-meta">
+            <span class="mt-hero-trackchip" id="mtHeroTrackChip">— / —</span>
+            <span class="mt-hero-title" id="mtNowName">— 待機中 —</span>
+          </div>
+          <div class="mt-hero-transport">
+            <button class="mt-tbtn play" id="mtPlayBtn" onclick="mtPlayPause()" aria-label="Play"><span class="mt-tbtn-glyph" id="mtPlayGlyph">▶</span></button>
+            <button class="mt-tbtn" onclick="mtPlayNext()" title="次の曲へ" aria-label="Next">▶▶</button>
+            <button class="mt-tbtn stop" onclick="mtStop()" aria-label="Stop">■</button>
           </div>
         </div>
-        <div class="mt-hero-stems" id="mtHeroStems"></div>
-        <div class="mt-hero-transport">
-          <button class="mt-tbtn play" id="mtPlayBtn" onclick="mtPlayPause()" aria-label="Play"><span class="mt-tbtn-glyph" id="mtPlayGlyph">▶</span></button>
-          <button class="mt-tbtn" onclick="mtPlayNext()" title="次の曲へ" aria-label="Next">▶▶</button>
-          <button class="mt-tbtn stop" onclick="mtStop()" aria-label="Stop">■</button>
+        <div class="mt-hero-bottom">
+          <div class="mt-hero-stems" id="mtHeroStems"></div>
+          <div class="mt-hero-bar"><div class="mt-hero-bar-fill" id="mtNowBarFill"></div></div>
+          <div class="mt-hero-meta-bottom">
+            <span class="mt-hero-status" id="mtNowStatus">READY · SPACE で再生</span>
+            <span class="mt-hero-times">
+              <span class="mt-time-now" id="mtNowTimeCur">0:00</span>
+              <span style="opacity:0.5;"> / </span>
+              <span class="mt-time-tot" id="mtNowTimeTot">0:00</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- 2. SETLIST -->
+    <!-- 2. SETLIST (flex grow) -->
     <div class="mt-card mt-setlist-card">
       <div class="mt-section-head">
         <div class="mt-section-head-l">
@@ -2112,20 +2143,21 @@
       <div class="mt-setlist-list" id="mtSetlistList"></div>
     </div>
 
-    <!-- 3. MIXER -->
-    <div class="mt-mixer-card">
-      <div class="mt-section-head">
-        <div class="mt-section-head-l">
-          <span class="mt-section-num">03</span>
-          <span class="mt-section-title">MIXER</span>
-          <span class="mt-section-count">5 GROUPS</span>
+    <!-- 3. BOTTOM ROW: MIXER | AUDIO IFACE | CHANNEL ROUTING -->
+    <div class="mt-bottom-row">
+      <!-- MIXER (左) -->
+      <div class="mt-mixer-card">
+        <div class="mt-section-head compact">
+          <div class="mt-section-head-l">
+            <span class="mt-section-num">03</span>
+            <span class="mt-section-title">MIXER</span>
+            <span class="mt-section-count">5 GROUPS</span>
+          </div>
         </div>
+        <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
-      <div class="mt-mixer-strips" id="mtMixerStrips"></div>
-    </div>
 
-    <!-- 4. AUDIO INTERFACE & CHANNEL ROUTING -->
-    <div class="mt-config-row">
+      <!-- AUDIO IFACE (中央) -->
       <div class="mt-card mt-config-card">
         <div class="mt-section-head compact">
           <div class="mt-section-head-l">
@@ -2143,52 +2175,56 @@
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
           <span id="mtChCount" class="mt-num-readout">—</span>
-          <span class="mt-row-note" id="mtChStatus">未検出</span>
+        </div>
+        <div class="mt-row" style="margin-top:-4px;">
+          <span class="mt-label"></span>
+          <span class="mt-row-note" id="mtChStatus" style="font-size:9px;">未検出</span>
         </div>
         <div class="mt-row">
           <span class="mt-label">GAP</span>
           <input type="number" class="mt-input-num" id="mtGapSec" min="0" max="60" step="0.5" value="3.0" onchange="mtSetGap(this.value)">
-          <span class="mt-row-note">秒（曲間の自動隙間）</span>
+          <span class="mt-row-note">秒</span>
         </div>
         <div class="mt-row">
           <span class="mt-label">AUTO ADV</span>
           <label class="mt-switch">
             <input type="checkbox" id="mtAutoAdvance" checked onchange="mtSetAutoAdvance(this.checked)">
             <span class="mt-switch-track"><span class="mt-switch-thumb"></span></span>
-            <span class="mt-switch-text">曲終了→自動で次曲</span>
+            <span class="mt-switch-text">自動で次曲</span>
           </label>
         </div>
       </div>
 
+      <!-- CHANNEL ROUTING (右) -->
       <div class="mt-card mt-config-card">
         <div class="mt-section-head compact">
           <div class="mt-section-head-l">
             <span class="mt-section-num">05</span>
-            <span class="mt-section-title">CHANNEL ROUTING</span>
+            <span class="mt-section-title">ROUTING</span>
             <span class="mt-section-count">PARA-OUT</span>
           </div>
         </div>
         <div class="mt-ch-matrix" id="mtChMatrix">
-          <span class="mt-ch-cell mt-ch-header" style="text-align:left;">GROUP</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#ED93B1;">DRUMS</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#85B7EB;">BASS</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#EF9F27;">OTHER</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#97C459;">CHORUS</span>
-          <span class="mt-ch-cell mt-ch-header" style="color:#F0C75E;">VOCAL</span>
-          <span class="mt-ch-cell mt-ch-rowlabel">L ch</span>
+          <span class="mt-ch-cell mt-ch-header" style="text-align:left;"></span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#ED93B1;">DR</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#85B7EB;">BA</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#EF9F27;">OT</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#97C459;">CH</span>
+          <span class="mt-ch-cell mt-ch-header" style="color:#F0C75E;">VO</span>
+          <span class="mt-ch-cell mt-ch-rowlabel">L</span>
           <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)">
           <input type="number" class="mt-ch-input" id="mtChBassL"  min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)">
           <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)">
           <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="7" onchange="mtSetCh('chorus','L',this.value)">
           <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="9" onchange="mtSetCh('vocal','L',this.value)">
-          <span class="mt-ch-cell mt-ch-rowlabel">R ch</span>
+          <span class="mt-ch-cell mt-ch-rowlabel">R</span>
           <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)">
           <input type="number" class="mt-ch-input" id="mtChBassR"  min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)">
           <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)">
           <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="8" onchange="mtSetCh('chorus','R',this.value)">
           <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)">
         </div>
-        <div class="mt-row-note" style="margin-top:8px;">※ 10ch対応I/Fで自動パラ送り。未満なら通常ステレオMIX。</div>
+        <div class="mt-row-note" style="margin-top:6px; font-size:9px;">10ch対応I/Fでパラ送り</div>
       </div>
     </div>
   </div>
@@ -2222,7 +2258,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.3.1';
+const APP_VERSION = 'v7.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -2471,6 +2507,9 @@ const state = {
       drums: 1.0, bass: 1.0, other: 1.0, vocal: 1.0, chorus: 1.0,
     },
     groupMute: {                  // 各グループの mute
+      drums: false, bass: false, other: false, vocal: false, chorus: false,
+    },
+    groupSolo: {                  // 各グループの solo（いずれかが true の時、SOLO 外は無音）
       drums: false, bass: false, other: false, vocal: false, chorus: false,
     },
     songs: [],                    // [{ id, name, tracks: {drums:{sampleId,name}|null, bass:..., ...} }]
@@ -7903,6 +7942,7 @@ function mtSerialize() {
     channelMap: m.channelMap,
     groupGains: m.groupGains,
     groupMute: m.groupMute,
+    groupSolo: m.groupSolo,
     songs: m.songs.map(s => ({
       id: s.id, name: s.name,
       tracks: Object.fromEntries(
@@ -7922,6 +7962,7 @@ function mtRestore(saved) {
   if (saved.channelMap) m.channelMap = saved.channelMap;
   if (saved.groupGains) m.groupGains = { ...m.groupGains, ...saved.groupGains };
   if (saved.groupMute) m.groupMute = { ...m.groupMute, ...saved.groupMute };
+  if (saved.groupSolo) m.groupSolo = { ...m.groupSolo, ...saved.groupSolo };
   if (Array.isArray(saved.songs)) m.songs = saved.songs.map(s => ({
     id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
     name: s.name || '無題',
@@ -7953,8 +7994,7 @@ async function mtInitCtx() {
   // 各グループ用 GainNode + AnalyserNode を構築
   for (const g of MT_GROUPS) {
     const gain = mtCtx.createGain();
-    const muted = !!state.multitrack.groupMute[g];
-    gain.gain.value = muted ? 0 : (state.multitrack.groupGains[g] ?? 1.0);
+    gain.gain.value = mtIsAudible(g) ? (state.multitrack.groupGains[g] ?? 1.0) : 0;
     const an = mtCtx.createAnalyser();
     an.fftSize = 1024;
     an.smoothingTimeConstant = 0.4;
@@ -7968,31 +8008,50 @@ async function mtInitCtx() {
   return mtCtx;
 }
 
+// SOLO 状態判定：このグループは聴こえるか？
+function mtIsAudible(group) {
+  if (state.multitrack.groupMute[group]) return false;
+  const anySolo = MT_GROUPS.some(g => state.multitrack.groupSolo[g]);
+  if (anySolo) return !!state.multitrack.groupSolo[group];
+  return true;
+}
+
+// 1グループ分の実 gain（mute / solo 考慮）を反映
+function mtApplyGroupGain(group) {
+  if (!mtGroupGainNodes[group] || !mtCtx) return;
+  const target = mtIsAudible(group) ? (state.multitrack.groupGains[group] ?? 1.0) : 0;
+  const t = mtCtx.currentTime;
+  mtGroupGainNodes[group].gain.cancelScheduledValues(t);
+  mtGroupGainNodes[group].gain.setTargetAtTime(target, t, 0.008);
+}
+// 全グループに反映
+function mtApplyAllGroupGains() {
+  for (const g of MT_GROUPS) mtApplyGroupGain(g);
+}
+
 // 1グループ分の音量設定
 function mtSetGroupGain(group, linear) {
   let v = parseFloat(linear);
   if (!isFinite(v) || v < 0) v = 0;
   if (v > 1.4) v = 1.4; // +3dB cap (linear ≈ 1.413)
   state.multitrack.groupGains[group] = v;
-  if (mtGroupGainNodes[group] && !state.multitrack.groupMute[group]) {
-    // 短いランプで click 防止
-    const t = mtCtx.currentTime;
-    mtGroupGainNodes[group].gain.cancelScheduledValues(t);
-    mtGroupGainNodes[group].gain.setTargetAtTime(v, t, 0.005);
-  }
+  mtApplyGroupGain(group);
   mtSave();
-  mtRenderMixer(); // 表示更新
+  // フェーダー位置のみ更新（全体再描画はしない、フェーダードラッグ中に再描画するとつかみ直しが必要になる）
+  mtRenderFaderPos(group);
 }
 
 function mtToggleMute(group) {
-  const muted = !state.multitrack.groupMute[group];
-  state.multitrack.groupMute[group] = muted;
-  if (mtGroupGainNodes[group] && mtCtx) {
-    const t = mtCtx.currentTime;
-    const target = muted ? 0 : (state.multitrack.groupGains[group] ?? 1.0);
-    mtGroupGainNodes[group].gain.cancelScheduledValues(t);
-    mtGroupGainNodes[group].gain.setTargetAtTime(target, t, 0.008);
-  }
+  state.multitrack.groupMute[group] = !state.multitrack.groupMute[group];
+  mtApplyGroupGain(group);
+  mtSave();
+  mtRenderMixer();
+}
+
+function mtToggleSolo(group) {
+  state.multitrack.groupSolo[group] = !state.multitrack.groupSolo[group];
+  // SOLO は他のグループにも影響するので全部反映
+  mtApplyAllGroupGains();
   mtSave();
   mtRenderMixer();
 }
@@ -8497,12 +8556,16 @@ function mtRenderMixer() {
   const host = document.getElementById('mtMixerStrips');
   if (!host) return;
   host.innerHTML = '';
+  const anySolo = MT_GROUPS.some(g => state.multitrack.groupSolo[g]);
   for (const g of MT_GROUPS) {
     const strip = document.createElement('div');
     strip.className = 'mt-strip';
     if (state.multitrack.groupMute[g]) strip.classList.add('muted');
+    if (state.multitrack.groupSolo[g]) strip.classList.add('solo');
+    // 他に solo がある + 自分は solo じゃない場合は dim
+    if (anySolo && !state.multitrack.groupSolo[g] && !state.multitrack.groupMute[g]) strip.classList.add('dimmed');
     strip.dataset.mtStrip = g;
-    strip.style.color = MT_GROUP_COLORS[g]; // ::before の glow 用 currentColor
+    strip.style.color = MT_GROUP_COLORS[g]; // currentColor 経由で glow に使う
 
     // ヘッダー（英 + 和ラベル）
     const header = document.createElement('div'); header.className = 'mt-strip-header';
@@ -8512,7 +8575,7 @@ function mtRenderMixer() {
     header.appendChild(lbl);
     const sub = document.createElement('div'); sub.className = 'mt-strip-sublabel';
     const cm = state.multitrack.channelMap[g] || { L:0, R:0 };
-    sub.textContent = `${MT_GROUP_LABELS_JP[g]} · CH ${cm.L}/${cm.R}`;
+    sub.textContent = `CH ${cm.L}/${cm.R}`;
     header.appendChild(sub);
     strip.appendChild(header);
 
@@ -8534,11 +8597,21 @@ function mtRenderMixer() {
     const db = document.createElement('div'); db.className = 'mt-strip-db'; db.dataset.mtDb = g;
     strip.appendChild(db);
 
-    // MUTE ボタン
-    const mute = document.createElement('button'); mute.className = 'mt-strip-mute' + (state.multitrack.groupMute[g] ? ' muted' : '');
-    mute.textContent = state.multitrack.groupMute[g] ? '● MUTED' : 'MUTE';
+    // MUTE / SOLO ボタン
+    const btns = document.createElement('div'); btns.className = 'mt-strip-btns';
+    const mute = document.createElement('button');
+    mute.className = 'mt-stripbtn mute' + (state.multitrack.groupMute[g] ? ' active' : '');
+    mute.textContent = 'MUTE';
+    mute.title = 'ミュート（M）';
     mute.onclick = () => mtToggleMute(g);
-    strip.appendChild(mute);
+    btns.appendChild(mute);
+    const solo = document.createElement('button');
+    solo.className = 'mt-stripbtn solo' + (state.multitrack.groupSolo[g] ? ' active' : '');
+    solo.textContent = 'SOLO';
+    solo.title = 'ソロ（このグループだけ鳴らす）';
+    solo.onclick = () => mtToggleSolo(g);
+    btns.appendChild(solo);
+    strip.appendChild(btns);
 
     host.appendChild(strip);
     // フェーダー位置を反映
