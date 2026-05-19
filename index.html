@@ -1335,23 +1335,45 @@
   .mt-tbtn.stop:hover { background: rgba(226,75,74,0.08); border-color: #E24B4A; }
   .mt-tbtn-glyph { line-height: 1; pointer-events: none; }
 
-  /* ============= 2. SETLIST (flex-grow) ============= */
+  /* ============= 2. SETLIST (flex-grow, 2 カラム grid) ============= */
   .mt-setlist-card {
     display: flex; flex-direction: column;
-    flex: 1; min-height: 0;       /* 余ったスペースを全部占有 */
-  }
-  .mt-setlist-list {
-    display: flex; flex-direction: column; gap: 5px;
-    overflow-y: auto; padding-right: 2px;
     flex: 1; min-height: 0;
   }
+  /* STEM 凡例（ヘッダー右） */
+  .mt-legend {
+    display: flex; align-items: center; gap: 4px;
+    margin-left: 12px; padding-left: 12px;
+    border-left: 0.5px solid #1F1F22;
+  }
+  .mt-legend-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    box-shadow: 0 0 4px currentColor;
+  }
+  .mt-legend-lbl {
+    font-size: 8px; letter-spacing: 0.5px; color: #5A5A60;
+    font-family: 'SF Mono', monospace; margin-right: 2px;
+  }
+  /* 2 カラム: 800px 以上で 2 列、それ未満は 1 列 */
+  .mt-setlist-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 6px;
+    overflow-y: auto; padding-right: 2px;
+    flex: 1; min-height: 0;
+    align-content: start;
+  }
+  @media (max-width: 900px) {
+    .mt-setlist-list { grid-template-columns: 1fr; }
+  }
   .mt-song-row {
-    display: grid; grid-template-columns: 24px 26px 1fr repeat(5, 56px) 32px;
-    gap: 8px; align-items: center;
-    padding: 8px 10px; border: 0.5px solid #1F1F22; border-radius: 6px;
+    display: grid; grid-template-columns: 20px 22px minmax(0, 1fr) repeat(5, 30px) 22px;
+    gap: 4px; align-items: center;
+    padding: 5px 8px; border: 0.5px solid #1F1F22; border-radius: 5px;
     background: rgba(255,255,255,0.015);
     position: relative;
     transition: border-color 0.15s, background 0.15s;
+    min-width: 0;
   }
   .mt-song-row:hover { border-color: #2A2A30; background: rgba(255,255,255,0.025); }
   .mt-song-row.playing {
@@ -1369,63 +1391,65 @@
     border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed;
     box-shadow: 0 0 0 1px rgba(125,184,158,0.2);
   }
-  .mt-song-num { font-family: 'SF Mono', monospace; font-size: 10px; color: #5A5A60; text-align: right; font-weight: 600; letter-spacing: 0.5px; }
+  .mt-song-num { font-family: 'SF Mono', monospace; font-size: 9px; color: #5A5A60; text-align: right; font-weight: 600; letter-spacing: 0.5px; }
   .mt-song-row.playing .mt-song-num { color: #7DB89E; }
   .mt-song-play {
-    width: 26px; height: 26px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%;
     background: rgba(255,255,255,0.04); color: #C8C8CE; border: 0.5px solid #25252A;
     display: flex; align-items: center; justify-content: center;
-    font-size: 10px; cursor: pointer; transition: all 0.15s;
+    font-size: 9px; cursor: pointer; transition: all 0.15s;
+    padding: 0;
   }
   .mt-song-play:hover { background: #7DB89E; color: #0E1A14; border-color: #7DB89E; }
   .mt-song-row.playing .mt-song-play {
     background: #7DB89E; color: #0E1A14; border-color: #7DB89E;
-    box-shadow: 0 0 12px rgba(125,184,158,0.4);
+    box-shadow: 0 0 10px rgba(125,184,158,0.4);
   }
   .mt-song-name-input {
     background: transparent; border: 0.5px solid transparent; color: #E6E6EA;
-    font-family: inherit; font-size: 13px; padding: 4px 8px; border-radius: 3px; width: 100%;
+    font-family: inherit; font-size: 12px; padding: 3px 6px; border-radius: 3px; width: 100%;
+    min-width: 0;
   }
   .mt-song-name-input:hover, .mt-song-name-input:focus { border-color: #2A2A30; background: rgba(0,0,0,0.3); outline: none; }
   .mt-song-row.playing .mt-song-name-input { color: #FFFFFF; }
 
+  /* STEM スロット — グループ色の左ボーダーで識別、ヘッダー不要 */
   .mt-track-slot {
-    width: 100%; height: 30px; border-radius: 4px;
-    border: 0.5px dashed #2A2A30; background: rgba(255,255,255,0.015);
-    color: #5A5A65; font-size: 9px; letter-spacing: 0.5px;
+    width: 100%; height: 24px; border-radius: 3px;
+    border: 0.5px dashed #2A2A30;
+    border-left-width: 2px;
+    background: rgba(255,255,255,0.015);
+    color: #5A5A65; font-size: 8px; letter-spacing: 0.3px;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
-    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 6px;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 3px;
     transition: all 0.12s;
-    font-weight: 600;
+    font-weight: 700;
+    min-width: 0;
   }
-  .mt-track-slot.has-content {
-    background: rgba(125,184,158,0.10); border-color: rgba(125,184,158,0.4);
-    color: #B8E0CC; border-style: solid;
-  }
-  .mt-track-slot.has-content:hover { background: rgba(125,184,158,0.18); color: #FFFFFF; }
+  /* グループごとの左ボーダー色（空のときは薄く、has-content で濃く） */
+  .mt-track-slot[data-group="drums"]  { border-left-color: rgba(237,147,177,0.3); }
+  .mt-track-slot[data-group="bass"]   { border-left-color: rgba(133,183,235,0.3); }
+  .mt-track-slot[data-group="other"]  { border-left-color: rgba(239,159,39,0.3); }
+  .mt-track-slot[data-group="chorus"] { border-left-color: rgba(151,196,89,0.3); }
+  .mt-track-slot[data-group="vocal"]  { border-left-color: rgba(240,199,94,0.3); }
+
+  .mt-track-slot.has-content { border-style: solid; }
+  .mt-track-slot.has-content[data-group="drums"]  { background: rgba(237,147,177,0.10); border-color: rgba(237,147,177,0.5); border-left-color: #ED93B1; color: #F5B8CC; }
+  .mt-track-slot.has-content[data-group="bass"]   { background: rgba(133,183,235,0.10); border-color: rgba(133,183,235,0.5); border-left-color: #85B7EB; color: #ACCEF2; }
+  .mt-track-slot.has-content[data-group="other"]  { background: rgba(239,159,39,0.10); border-color: rgba(239,159,39,0.5); border-left-color: #EF9F27; color: #F5C470; }
+  .mt-track-slot.has-content[data-group="chorus"] { background: rgba(151,196,89,0.10); border-color: rgba(151,196,89,0.5); border-left-color: #97C459; color: #B8D88A; }
+  .mt-track-slot.has-content[data-group="vocal"]  { background: rgba(240,199,94,0.10); border-color: rgba(240,199,94,0.5); border-left-color: #F0C75E; color: #F5DC9A; }
+  .mt-track-slot.has-content:hover { color: #FFFFFF; filter: brightness(1.15); }
+
   .mt-track-slot.drop-over {
     border-color: #7DB89E; background: rgba(125,184,158,0.28); color: #FFFFFF;
     border-style: solid; box-shadow: 0 0 0 1px rgba(125,184,158,0.4);
   }
   .mt-track-slot.loading { color: #EF9F27; border-color: #EF9F27; background: rgba(239,159,39,0.08); }
 
-  .mt-track-headers {
-    display: grid; grid-template-columns: 24px 26px 1fr repeat(5, 56px) 32px;
-    gap: 8px; padding: 0 10px 6px;
-    border-bottom: 0.5px solid #1F1F22; margin-bottom: 4px;
-  }
-  .mt-track-headers > span {
-    font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; text-align: center; font-weight: 700;
-  }
-  .mt-track-headers > span:nth-child(3) { text-align: left; padding-left: 8px; }
-  .mt-track-headers > span:nth-child(4) { color: #ED93B1; }  /* drums */
-  .mt-track-headers > span:nth-child(5) { color: #85B7EB; }  /* bass */
-  .mt-track-headers > span:nth-child(6) { color: #EF9F27; }  /* other */
-  .mt-track-headers > span:nth-child(7) { color: #97C459; }  /* chorus */
-  .mt-track-headers > span:nth-child(8) { color: #F0C75E; }  /* vocal */
   .mt-song-del {
-    color: #4A4A50; background: transparent; border: none; cursor: pointer; font-size: 14px;
-    transition: color 0.12s;
+    color: #4A4A50; background: transparent; border: none; cursor: pointer;
+    font-size: 12px; transition: color 0.12s; padding: 0;
   }
   .mt-song-del:hover { color: #E24B4A; }
 
@@ -2225,23 +2249,26 @@
       </div>
     </div>
 
-    <!-- 2. SETLIST (flex grow) -->
+    <!-- 2. SETLIST (flex grow) — 2 カラムの grid -->
     <div class="mt-card mt-setlist-card">
       <div class="mt-section-head">
         <div class="mt-section-head-l">
           <span class="mt-section-num">02</span>
           <span class="mt-section-title">SETLIST</span>
           <span class="mt-section-count" id="mtSetlistCount">0 SONGS</span>
+          <!-- STEM 凡例（コンパクト） -->
+          <div class="mt-legend">
+            <span class="mt-legend-dot" style="background:#ED93B1"></span><span class="mt-legend-lbl">DR</span>
+            <span class="mt-legend-dot" style="background:#85B7EB"></span><span class="mt-legend-lbl">BA</span>
+            <span class="mt-legend-dot" style="background:#EF9F27"></span><span class="mt-legend-lbl">OT</span>
+            <span class="mt-legend-dot" style="background:#97C459"></span><span class="mt-legend-lbl">CH</span>
+            <span class="mt-legend-dot" style="background:#F0C75E"></span><span class="mt-legend-lbl">VO</span>
+          </div>
         </div>
         <div class="mt-section-actions">
           <button class="mt-btn ghost" onclick="mtAddSong()">＋ ADD SONG</button>
           <button class="mt-btn ghost subtle" onclick="mtClearAll()">CLEAR</button>
         </div>
-      </div>
-      <div class="mt-track-headers">
-        <span></span><span></span><span>SONG</span>
-        <span>DRUMS</span><span>BASS</span><span>OTHER</span><span>CHORUS</span><span>VOCAL</span>
-        <span></span>
       </div>
       <div class="mt-setlist-list" id="mtSetlistList"></div>
     </div>
@@ -2369,7 +2396,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.6.1';
+const APP_VERSION = 'v7.7';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9210,17 +9237,21 @@ function mtRenderSetlist() {
       const slot = document.createElement('div');
       slot.className = 'mt-track-slot';
       slot.dataset.mtSlot = `${idx}-${g}`;
+      slot.dataset.group = g;
       const t = song.tracks && song.tracks[g];
       if (t) {
         slot.classList.add('has-content');
-        slot.textContent = t.name.length > 8 ? t.name.slice(0, 6) + '…' : t.name;
-        slot.title = `${t.name}\n（クリックで削除）`;
+        // 短く表示：拡張子除いて先頭 4 文字
+        const base = t.name.replace(/\.[^.]+$/, '');
+        slot.textContent = base.length > 4 ? base.slice(0, 4) + '…' : (base || '●');
+        slot.title = `${MT_GROUP_LABELS[g]}: ${t.name}\n（クリックで削除）`;
         slot.onclick = (e) => {
           if (!confirm(`${MT_GROUP_LABELS[g]} の「${t.name}」を削除しますか？`)) return;
           mtRemoveTrack(idx, g);
         };
       } else {
-        slot.textContent = '+ DROP';
+        slot.textContent = '+';
+        slot.style.fontSize = '11px';
         slot.title = `ドラッグで ${MT_GROUP_LABELS[g]} ファイルを選択（クリックで OS ファイルピッカー）`;
         slot.onclick = async () => {
           // File System Access API のファイルピッカーを使う（ハンドルが取れる）
