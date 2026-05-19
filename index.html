@@ -1817,46 +1817,33 @@
     border-top: 0.5px solid #1F1F22;
   }
 
-  /* SELECTED SONG カード — 高さ固定、内部スクロール */
+  /* SELECTED SONG カード — ヘッダー無し、ファイル一覧最大化 */
   .mt-songinfo-card {
-    padding: 10px 12px; display: flex; flex-direction: column; min-width: 0;
+    padding: 8px 10px; display: flex; flex-direction: column; min-width: 0;
     height: 250px;
     flex-shrink: 0;
   }
-  .mt-songinfo-name {
-    font-size: 12px; color: #E6E6EA; font-weight: 500;
-    margin: 4px 0 6px; padding-bottom: 6px;
-    border-bottom: 0.5px solid #1F1F22;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    flex-shrink: 0;
-  }
   .mt-songinfo-list {
-    display: flex; flex-direction: column; gap: 3px;
+    display: flex; flex-direction: column; gap: 2px;
     flex: 1; min-height: 0; overflow-y: auto;
     padding-right: 2px;
   }
-  /* ドロップゾーン */
-  .mt-songinfo-drop {
-    border: 0.5px dashed #2A2A30; border-radius: 5px;
-    padding: 8px; text-align: center;
-    font-size: 10px; color: #5A5A60; letter-spacing: 0.5px;
-    margin-bottom: 6px;
-    transition: all 0.15s;
-  }
-  .mt-songinfo-drop.drop-over {
-    border-color: #7DB89E; color: #92C9B0;
-    background: rgba(125,184,158,0.08);
-    box-shadow: 0 0 8px rgba(125,184,158,0.25);
-  }
-  /* 件数ヘッダー */
+  /* 件数ヘッダー: "01. SONGNAME ····· 8 FILES" の 1 行のみ */
   .mt-songinfo-counthead {
-    display: flex; align-items: baseline; gap: 6px;
-    margin: 4px 2px 2px;
-    font-size: 9px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 700;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 4px 2px 6px;
+    border-bottom: 0.5px solid #1F1F22;
+    margin-bottom: 4px;
+  }
+  .mt-songinfo-songref {
+    font-size: 11px; color: #E6E6EA; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0; flex: 1;
   }
   .mt-songinfo-count {
-    font-family: 'SF Mono', monospace; font-size: 10px;
-    color: #92C9B0; letter-spacing: 0;
+    font-family: 'SF Mono', monospace; font-size: 9px;
+    color: #92C9B0; letter-spacing: 0.5px; font-weight: 700;
+    flex-shrink: 0;
   }
   .mt-songinfo-empty {
     font-size: 10px; color: #4A4A50; padding: 12px 4px; text-align: center;
@@ -2645,15 +2632,8 @@
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
-      <!-- SELECTED SONG: 選択中の曲の STEM ファイル名一覧 -->
+      <!-- SELECTED SONG: 選択中の曲のファイル一覧（最小ヘッダー、ドロップは不要） -->
       <div class="mt-card mt-songinfo-card">
-        <div class="mt-section-head compact">
-          <div class="mt-section-head-l">
-            <span class="mt-section-num">05</span>
-            <span class="mt-section-title">SELECTED SONG</span>
-          </div>
-        </div>
-        <div class="mt-songinfo-name" id="mtSongInfoName">— 選択されていません —</div>
         <div class="mt-songinfo-list" id="mtSongInfoList"></div>
       </div>
     </div><!-- /.mt-bottom-row -->
@@ -2688,7 +2668,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.19';
+const APP_VERSION = 'v7.19.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10284,65 +10264,39 @@ function mtRenderNow() {
 //   - ファイル名行は draggable - drop on fader = アサイン、drop on selected song = 並べ替え/グループ変更
 //   - 上部に external file drop ゾーン（"+ ADD" の見た目）
 function mtRenderSongInfo() {
-  const nameEl = document.getElementById('mtSongInfoName');
   const list = document.getElementById('mtSongInfoList');
-  if (!nameEl || !list) return;
+  if (!list) return;
+  list.innerHTML = '';
   const idx = state.multitrack.selectedIdx;
   if (idx < 0 || idx >= state.multitrack.songs.length) {
-    nameEl.textContent = '— 選択されていません —';
-    nameEl.style.color = '#5A5A60';
-    list.innerHTML = '';
+    const empty = document.createElement('div');
+    empty.className = 'mt-songinfo-empty';
+    empty.textContent = '— 曲を選択 —';
+    list.appendChild(empty);
     return;
   }
   const song = state.multitrack.songs[idx];
-  nameEl.textContent = `${String(idx+1).padStart(2,'0')}.  ${song.name}`;
-  nameEl.style.color = '';
-  list.innerHTML = '';
-
-  // === 上部: ドロップゾーン（外部ファイル受付） ===
-  const dropZone = document.createElement('div');
-  dropZone.className = 'mt-songinfo-drop';
-  dropZone.innerHTML = '<span>📂 ファイルをここにドロップ / フェーダーへ直接でも OK</span>';
-  dropZone.addEventListener('dragover', (e) => {
-    const types = Array.from(e.dataTransfer.types || []);
-    if (!types.includes('Files')) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    dropZone.classList.add('drop-over');
-  });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-over'));
-  dropZone.addEventListener('drop', async (e) => {
-    const types = Array.from(e.dataTransfer.types || []);
-    if (!types.includes('Files')) return;
-    e.preventDefault();
-    dropZone.classList.remove('drop-over');
-    const items = await mtExtractFilesWithHandles(e.dataTransfer);
-    if (items.length === 0) return;
-    // 全て unassigned で投入 → ユーザーが select で割当
-    for (const it of items) {
-      await mtLoadTrackFile(idx, it.file, it.handle, null);
-    }
-    showToast(`📂 ${items.length} 個のファイルを追加。各行のグループセレクタで割当を変更`);
-  });
-  list.appendChild(dropZone);
 
   // === フラット成長リスト: 全ファイル（assigned + unassigned）を順番に ===
+  // ※ ドロップゾーンは廃止。drop はフェーダーまたは SETLIST 行カードで受ける。
   const allFiles = [];
   for (const g of MT_GROUPS) {
     mtGetLayers(song, g).forEach((t, li) => allFiles.push({ ...t, currentGroup: g, layerIdx: li }));
   }
   (song.unassigned || []).forEach(u => allFiles.push({ ...u, currentGroup: null, layerIdx: -1 }));
 
-  // 件数ヘッダー
+  // 件数ヘッダー（1行コンパクト: "01. SONGNAME · 8 FILES"）
   const head = document.createElement('div');
   head.className = 'mt-songinfo-counthead';
-  head.innerHTML = `<span class="mt-songinfo-count-label">FILES</span> <span class="mt-songinfo-count">${allFiles.length}</span>`;
+  head.innerHTML =
+    `<span class="mt-songinfo-songref">${String(idx+1).padStart(2,'0')}. ${escapeHtml(song.name)}</span>` +
+    `<span class="mt-songinfo-count">${allFiles.length} FILES</span>`;
   list.appendChild(head);
 
   if (allFiles.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'mt-songinfo-empty';
-    empty.textContent = 'ファイルなし — 上にドロップ';
+    empty.textContent = 'ファイルなし — フェーダー or 曲行にドロップ';
     list.appendChild(empty);
     return;
   }
