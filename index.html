@@ -1591,7 +1591,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.5.3';
+const APP_VERSION = 'v6.5.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -2444,6 +2444,7 @@ async function exportProject() {
       if (dr && Array.isArray(dr.library)) {
         dr.library.forEach(it => { if (it && it.sampleId) refIds.add(it.sampleId); });
       }
+      if (dr && dr.logo && dr.logo.sampleId) refIds.add(dr.logo.sampleId);
     } catch(_){}
     const samples = allSamples.filter(s => refIds.has(s.id));
 
@@ -5225,7 +5226,17 @@ async function doLogoLoadFile(f) {
     } catch (e) { console.warn('logo thumb fail', e); }
     URL.revokeObjectURL(url);
     const prevScale = state.door.logo ? state.door.logo.scale : 1.0;
+    // IndexedDB に永続化（LOGO は通常小さいので OK。失敗してもメモリ参照は維持）
+    let sampleId = null;
+    try {
+      sampleId = 'door-logo-' + Date.now();
+      await saveBlobToDB(sampleId, f, f.name);
+    } catch (e) {
+      console.warn('LOGO IDB 保存失敗（メモリのみで継続）', e);
+      sampleId = null;
+    }
     state.door.logo = {
+      sampleId,
       sampleName: f.name,
       type: isVideo ? 'video' : 'image',
       thumbDataUrl: thumb,
@@ -5263,12 +5274,17 @@ function _imageExtractThumb(url) {
 function doLogoClear() {
   if (!state.door.logo) return;
   if (!confirm(`LOGO「${state.door.logo.sampleName}」を解除しますか？`)) return;
+  const sid = state.door.logo.sampleId;
   state.door.logo = null;
   doRenderLogo();
   doSave();
   // OUTPUT に解除コマンド
   if (_outBC && _outWindow && !_outWindow.closed) {
     _outBC.postMessage({ cmd: 'logo-clear' });
+  }
+  // IDB からも削除（他のプロジェクトで使われていない前提）
+  if (sid) {
+    try { deleteSampleFromDB(sid).catch(()=>{}); } catch(_) {}
   }
 }
 function doRenderLogo() {
@@ -5367,6 +5383,22 @@ function doLogoSendToOutput() {
   _outBC.postMessage({ cmd: 'logo', kind: it.type, url, name: it.sampleName, scale: it.scale || 1.0 });
 }
 let _outCurrentLogoUrl = null;
+// LOGO を IDB から復元（doRestoreAudioBuffers から呼ばれる）
+async function doRestoreLogoFromDB() {
+  const it = state.door.logo;
+  if (!it || !it.sampleId || it.file) return; // 既に復元済み or 元から無い
+  try {
+    const rec = await getSampleFromDB(it.sampleId);
+    if (rec && rec.data) {
+      const blob = rec.data instanceof Blob ? rec.data : new Blob([rec.data], { type: it.type === 'image' ? 'image/png' : 'video/mp4' });
+      it.file = new File([blob], it.sampleName || 'logo', { type: blob.type });
+      doRenderLogo();
+      doLogoSendToOutput();
+    }
+  } catch (e) {
+    console.warn('LOGO IDB 復元失敗', e);
+  }
+}
 // LOGO カードに drop 受付
 function bindDoLogoDrop() {
   const card = document.getElementById('doLogoCard');
@@ -5545,7 +5577,21 @@ setInterval(() => {
   if (_outWindow && _outWindow.closed) {
     _outWindow = null;
     _outReadyReceived = false;
-    _outActiveVideoSlot = -1;
+    // V 再生中だった場合、チェーンを停滞させずに復帰
+    if (_outChainContext) {
+      showToast('⚠️ サブモニター切断 — チェーンを継続します');
+      _outChainContext = null;
+      _outActiveVideoSlot = -1;
+      if (_outCurrentBlobUrl) { try { URL.revokeObjectURL(_outCurrentBlobUrl); } catch(_) {} _outCurrentBlobUrl = null; }
+      _vidFadeBgm(false);
+      if (state.door.activeRowId) {
+        setTimeout(() => doPlayNextInChain(), 100);
+      }
+    } else {
+      _outActiveVideoSlot = -1;
+      if (_vidBgmFadeOriginalDuckGain != null) _vidFadeBgm(false);
+    }
+    if (_outCurrentLogoUrl) { try { URL.revokeObjectURL(_outCurrentLogoUrl); } catch(_) {} _outCurrentLogoUrl = null; }
     doOutUpdateStatus();
     doRenderVideoLibrary();
   }
@@ -6484,6 +6530,7 @@ function doSave() {
         sampleName: it.sampleName, duration: it.duration, thumbDataUrl: it.thumbDataUrl, size: it.size,
       }) : null),
       logo: state.door.logo ? ({
+        sampleId: state.door.logo.sampleId || null,
         sampleName: state.door.logo.sampleName, type: state.door.logo.type,
         thumbDataUrl: state.door.logo.thumbDataUrl, size: state.door.logo.size,
         scale: state.door.logo.scale ?? 1.0,
@@ -6542,10 +6589,11 @@ function doLoad() {
     }
     if (s.logo) {
       state.door.logo = {
+        sampleId: s.logo.sampleId || null,
         sampleName: s.logo.sampleName, type: s.logo.type,
         thumbDataUrl: s.logo.thumbDataUrl, size: s.logo.size,
         scale: s.logo.scale ?? 1.0,
-        file: null, // 再リンク必要
+        file: null, // 直後は null。doRestoreLogoFromDB で IDB から復元
       };
     }
     if (Array.isArray(s.schedule)) {
@@ -6705,6 +6753,8 @@ function doInit() {
     doRenderLibrary();
     doRenderSchedule();
   }).catch(e => console.warn('door restore err', e));
+  // LOGO は別経路で IDB から復元（音源バッファの decode は不要）
+  doRestoreLogoFromDB().catch(e => console.warn('logo restore err', e));
 }
 
 // ====================== OUTPUT MODE ======================
@@ -6788,9 +6838,15 @@ function initOutputMode() {
   // main から blob URL を受け取って再生（同一オリジンウィンドウ間で blob URL は共有可能）
   const playFromUrl = async (blobUrl, name) => {
     try {
+      // V 再生中は LOGO video を pause（CPU/GPU 節約）
+      try { if (logoVideo.src && !logoVideo.paused) logoVideo.pause(); } catch(_) {}
       video.src = blobUrl;
-      // V レイヤーをフェードイン（LOGO がその裏に残るが見えなくなる）
-      video.style.opacity = '1';
+      // canplay まで待ってから opacity フェードイン（choppy 防止）
+      const startFade = () => { video.style.opacity = '1'; };
+      const onCanPlay = () => { video.removeEventListener('canplay', onCanPlay); startFade(); };
+      video.addEventListener('canplay', onCanPlay);
+      // 念のため 500ms タイムアウトでも開始
+      setTimeout(() => { if (video.style.opacity !== '1') startFade(); }, 500);
       status.textContent = '● PLAYING — ' + (name || '');
       status.style.display = '';
       idle.style.display = 'none';
@@ -6814,6 +6870,8 @@ function initOutputMode() {
     }
   };
   const stopVideo = () => {
+    // LOGO video を再開（V のフェードアウトと並行で滑らかに復帰）
+    try { if (logoVideo.src && logoVideo.paused) logoVideo.play().catch(()=>{}); } catch(_) {}
     // V レイヤーをフェードアウトして LOGO に戻す
     video.style.opacity = '0';
     setTimeout(() => {
@@ -6884,6 +6942,8 @@ function initOutputMode() {
     autoplayUnlocked = true;
     if (enableOverlay) enableOverlay.style.display = 'none';
     bc.postMessage({ event: 'unlocked' });
+    // autoplay 失敗で停止していた LOGO video を再開
+    try { if (logoVideo.src && logoVideo.paused) logoVideo.play().catch(()=>{}); } catch(_) {}
     // 保留中の play があれば実行
     if (_pendingPlay) {
       const p = _pendingPlay; _pendingPlay = null;
