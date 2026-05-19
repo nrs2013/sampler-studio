@@ -1497,7 +1497,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.1';
+const APP_VERSION = 'v6.1.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4951,19 +4951,26 @@ function doVidPreview(slotIdx) {
     showToast('⚠️ V' + (slotIdx+1) + ' のファイル参照がありません。📁ボタンで再リンクしてください');
     return;
   }
+  // OUTPUT が開いていなければ自動で開いて、開いた後で再生
   if (!_outWindow || _outWindow.closed) {
-    showToast('まず「OPEN OUTPUT」でサブモニターを開いてください');
+    showToast('🖥 OUTPUT を自動起動中...');
+    doOutOpen();
+    // ready 受信を 4 秒まで待ってから再生開始
+    _vidPendingPlay = { slotIdx, file: it.file, name: it.sampleName, deadline: Date.now() + 4000 };
     return;
   }
-  _vidFadeBgm(true);
-  _outActiveVideoSlot = slotIdx;
-  // 同一オリジンのウィンドウ間では blob URL がそのまま通る
-  const url = URL.createObjectURL(it.file);
-  _outCurrentBlobUrl = url; // 後で revoke するため main 側で保持
-  _outBC.postMessage({ cmd: 'play', blobUrl: url, name: it.sampleName });
-  doRenderVideoLibrary();
+  _vidLaunchPlay(slotIdx, it.file, it.sampleName);
 }
 let _outCurrentBlobUrl = null;
+let _vidPendingPlay = null;
+function _vidLaunchPlay(slotIdx, file, name) {
+  _vidFadeBgm(true);
+  _outActiveVideoSlot = slotIdx;
+  const url = URL.createObjectURL(file);
+  _outCurrentBlobUrl = url;
+  _outBC.postMessage({ cmd: 'play', blobUrl: url, name });
+  doRenderVideoLibrary();
+}
 function doVidStopPreview() {
   doOutStop();
 }
@@ -5140,6 +5147,13 @@ function doOutInitBC() {
         _outReadyReceived = true;
         doOutUpdateStatus();
         showToast('✅ サブモニター接続完了');
+      }
+      // 保留中の再生があれば実行
+      if (_vidPendingPlay && Date.now() < _vidPendingPlay.deadline) {
+        const p = _vidPendingPlay; _vidPendingPlay = null;
+        setTimeout(() => _vidLaunchPlay(p.slotIdx, p.file, p.name), 100);
+      } else {
+        _vidPendingPlay = null;
       }
     }
     else if (m.event === 'closed') {
@@ -6357,8 +6371,15 @@ function initOutputMode() {
     stopVideo();
   });
   video.addEventListener('error', () => {
-    bc.postMessage({ event: 'error' });
-    status.textContent = '● ビデオエラー';
+    const err = video.error;
+    const codes = {1:'ABORTED',2:'NETWORK',3:'DECODE',4:'SRC_NOT_SUPPORTED'};
+    const codeName = err ? (codes[err.code] || ('code='+err.code)) : 'unknown';
+    const msg = err && err.message ? err.message : codeName;
+    let hint = '';
+    if (err && err.code === 4) hint = ' — このコーデックは未対応の可能性（ProRes/HEVC など）。H.264 MP4 に変換してください';
+    bc.postMessage({ event: 'error', message: codeName + (hint || '') });
+    status.textContent = '● ビデオエラー: ' + codeName + hint;
+    status.style.display = '';
   });
 
   // BroadcastChannel で main と通信
