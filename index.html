@@ -1497,7 +1497,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.0.3';
+const APP_VERSION = 'v6.0.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4874,30 +4874,22 @@ async function doVidLoadFile(slotIdx, f) {
   if (!Array.isArray(state.door.videoLibrary)) state.door.videoLibrary = [];
   while (state.door.videoLibrary.length <= slotIdx) state.door.videoLibrary.push(null);
   try {
-    showToast(`📹 V${slotIdx+1} 読込中: ${f.name} (${(f.size/1024/1024).toFixed(1)} MB)`);
-    // Step 1: arrayBuffer
-    let arrBuf;
-    try {
-      arrBuf = await f.arrayBuffer();
-      console.log('[doVidLoadFile] arrayBuffer ok', arrBuf.byteLength);
-    } catch (e) {
-      showToast('❌ ファイル読込失敗: ' + (e.message || e));
-      console.error('arrayBuffer error', e);
-      return;
-    }
-    // Step 2: save to IndexedDB
+    const sizeMB = (f.size/1024/1024).toFixed(1);
+    showToast(`📹 V${slotIdx+1} 読込中: ${f.name} (${sizeMB} MB)`);
+
+    // 大容量対応: File/Blob を直接 IndexedDB へ保存（arrayBuffer 化しない → メモリ食わない）
     const id = `door-vid-${slotIdx}-${Date.now()}`;
     try {
-      await saveSampleToDB(id, arrBuf, f.name);
-      console.log('[doVidLoadFile] saveSampleToDB ok', id);
+      await saveBlobToDB(id, f, f.name);
+      console.log('[doVidLoadFile] saveBlobToDB ok', id);
     } catch (e) {
-      console.error('saveSampleToDB failed', e);
-      showToast('⚠️ IndexedDB 保存失敗（容量超過の可能性）: ' + (e.message || e));
-      // 保存失敗でも続行（再生は memory blob URL で可能）
+      console.error('saveBlobToDB failed', e);
+      showToast('⚠️ IndexedDB 保存失敗（' + (e.message || e) + '）。メモリ上のみで継続します');
+      // 失敗しても続行：sampleId なしで state に登録（リロードで消える）
     }
-    // Step 3: extract meta
-    const blob = new Blob([arrBuf], { type: f.type || 'video/mp4' });
-    const url = URL.createObjectURL(blob);
+
+    // メタデータ取得：File オブジェクトから直接 URL 生成（メモリに乗らない）
+    const url = URL.createObjectURL(f);
     let meta;
     try {
       meta = await _videoExtractMeta(url, f.name);
@@ -4907,7 +4899,7 @@ async function doVidLoadFile(slotIdx, f) {
       meta = { duration: NaN, thumb: null };
     }
     URL.revokeObjectURL(url);
-    // Step 4: register in state
+
     state.door.videoLibrary[slotIdx] = {
       sampleId: id, sampleName: f.name,
       duration: meta.duration, thumbDataUrl: meta.thumb,
@@ -4915,11 +4907,22 @@ async function doVidLoadFile(slotIdx, f) {
     console.log('[doVidLoadFile] state set', state.door.videoLibrary[slotIdx]);
     doRenderVideoLibrary();
     doSave();
-    showToast(`✅ V${slotIdx+1} 読込完了: ${f.name}`);
+    showToast(`✅ V${slotIdx+1} 読込完了: ${f.name} (${sizeMB} MB)`);
   } catch (err) {
     console.error('映像読込失敗 (outer)', err);
     showToast('❌ 映像読込失敗: ' + (err.message || err));
   }
+}
+// File/Blob を IndexedDB に直接保存する版（arrayBuffer 経由しない）
+async function saveBlobToDB(id, blob, name) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('samples', 'readwrite');
+    tx.objectStore('samples').put({ id, data: blob, name, mime: blob.type || 'video/mp4', isBlob: true });
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error || e);
+    tx.onabort = e => reject(e.target.error || new Error('transaction aborted'));
+  });
 }
 // blob URL を渡すと duration とサムネ data URL を返す
 function _videoExtractMeta(url, name) {
@@ -6321,8 +6324,14 @@ function initOutputMode() {
     try {
       if (!db) await openLocalDB();
       const rec = await getSample(sampleId);
-      if (!rec || !rec.data) { status.textContent = '● 音源が見つかりません'; status.style.display=''; return; }
-      const blob = new Blob([rec.data], { type: rec.mime || 'video/mp4' });
+      if (!rec || !rec.data) { status.textContent = '● 音源が見つかりません: ' + sampleId; status.style.display=''; return; }
+      // rec.data は Blob/File なら直接、ArrayBuffer なら Blob でラップ
+      let blob;
+      if (rec.data instanceof Blob) {
+        blob = rec.data;
+      } else {
+        blob = new Blob([rec.data], { type: rec.mime || 'video/mp4' });
+      }
       if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
       currentObjectUrl = URL.createObjectURL(blob);
       video.src = currentObjectUrl;
