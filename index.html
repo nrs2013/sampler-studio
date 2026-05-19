@@ -1304,8 +1304,15 @@
   .mt-tbtn-glyph { line-height: 1; pointer-events: none; }
 
   /* ============= 2. SETLIST ============= */
-  .mt-setlist-card { display: flex; flex-direction: column; min-height: 0; max-height: 360px; }
-  .mt-setlist-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; min-height: 120px; padding-right: 2px; }
+  .mt-setlist-card {
+    display: flex; flex-direction: column;
+    /* 高さは内容に応じて伸縮（最低 1 行分 + ヘッダー、最大 360px）*/
+  }
+  .mt-setlist-list {
+    display: flex; flex-direction: column; gap: 5px;
+    overflow-y: auto; padding-right: 2px;
+    max-height: 280px; min-height: 60px;
+  }
   .mt-song-row {
     display: grid; grid-template-columns: 24px 26px 1fr repeat(5, 56px) 32px;
     gap: 8px; align-items: center;
@@ -2215,7 +2222,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.3';
+const APP_VERSION = 'v7.3.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
