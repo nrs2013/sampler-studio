@@ -1221,17 +1221,7 @@
       linear-gradient(180deg, #16161B 0%, #0C0C0F 100%);
     transition: opacity 0.3s;
   }
-  .mt-hero.playing .mt-hero-bg {
-    background:
-      radial-gradient(900px 250px at 15% 30%, rgba(125,184,158,0.22), transparent 55%),
-      radial-gradient(700px 220px at 80% 70%, rgba(240,199,94,0.10), transparent 55%),
-      linear-gradient(180deg, #17181C 0%, #0E0E12 100%);
-    animation: mtHeroPulse 4s ease-in-out infinite;
-  }
-  @keyframes mtHeroPulse {
-    0%, 100% { filter: brightness(1.0); }
-    50%      { filter: brightness(1.06); }
-  }
+  /* 再生中の背景色変化は廃止（ダサいとの指摘）— 常に同じ落ち着いた背景に */
   .mt-hero-inner {
     position: relative; z-index: 1;
     padding: 10px 16px 12px;
@@ -1246,10 +1236,7 @@
     padding: 2px 8px; border-radius: 3px; letter-spacing: 1px;
     flex-shrink: 0;
   }
-  .mt-hero.playing .mt-hero-trackchip {
-    color: #B8E0CC; background: rgba(125,184,158,0.18); border-color: rgba(125,184,158,0.5);
-    box-shadow: 0 0 10px rgba(125,184,158,0.2);
-  }
+  /* 再生中の chip 色変化も廃止 */
   /* input as title (rename here) */
   .mt-hero-title {
     font-size: 16px; font-weight: 400; color: #F0F0F4;
@@ -1267,10 +1254,7 @@
   .mt-hero-title:hover:not(:disabled) { border-color: #25252A; background: rgba(0,0,0,0.2); }
   .mt-hero-title:focus { border-color: #7DB89E; background: rgba(0,0,0,0.35); color: #FFFFFF; }
   .mt-hero-title:disabled { cursor: default; color: #5A5A60; }
-  .mt-hero.playing .mt-hero-title:not(:focus) {
-    color: #FFFFFF; font-weight: 500;
-    text-shadow: 0 0 16px rgba(125,184,158,0.15);
-  }
+  /* 再生中のタイトル色変化も廃止 */
   /* 下段: progress bar + meta */
   .mt-hero-bottom { display: flex; flex-direction: column; gap: 4px; }
   /* Timeline scrubber + ロケートドロップ ハンドル */
@@ -1333,9 +1317,8 @@
   }
   .mt-hero-timeline-fill {
     position: absolute; top: 0; bottom: 0; left: 0; width: 0%;
-    background: linear-gradient(90deg, #7DB89E, #F0C75E);
+    background: #7DB89E;
     border-radius: 3px;
-    box-shadow: 0 0 8px rgba(125,184,158,0.4);
     transition: width 0.08s linear;
     pointer-events: none;
   }
@@ -1350,10 +1333,7 @@
     transition: left 0.08s linear;
   }
   .mt-hero-timeline:hover .mt-hero-timeline-thumb { box-shadow: 0 0 14px rgba(125,184,158,0.7), 0 1px 3px rgba(0,0,0,0.5); }
-  .mt-hero.playing .mt-hero-timeline-thumb {
-    background: linear-gradient(180deg, #F0C75E, #C9A03D);
-    box-shadow: 0 0 14px rgba(240,199,94,0.7);
-  }
+  /* 再生中の thumb 色変化も廃止（常に白いまま） */
   /* dragging時はトランジション解除 */
   .mt-hero-timeline.dragging .mt-hero-timeline-fill,
   .mt-hero-timeline.dragging .mt-hero-timeline-thumb { transition: none; }
@@ -1364,12 +1344,12 @@
   }
   .mt-hero-meta-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; text-transform: uppercase; }
-  .mt-hero.playing .mt-hero-status { color: #92C9B0; }
+  /* status の色変化も廃止 */
   .mt-hero-times {
     font-family: 'SF Mono', monospace; font-size: 10px;
     color: #6A6A70; letter-spacing: 0.5px;
   }
-  .mt-hero.playing .mt-time-now { color: #E6E6EA; }
+  /* time-now の色変化も廃止 */
   /* Transport buttons (compact) */
   .mt-hero-transport { display: flex; gap: 6px; flex-shrink: 0; }
   .mt-tbtn {
@@ -1387,10 +1367,7 @@
     box-shadow: 0 3px 14px rgba(125,184,158,0.25);
   }
   .mt-tbtn.play:hover { background: linear-gradient(180deg, #92C9B0, #6CB096); }
-  .mt-tbtn.play.playing {
-    background: linear-gradient(180deg, #F0C75E, #C9A03D);
-    box-shadow: 0 3px 18px rgba(240,199,94,0.3);
-  }
+  /* 再生中の PLAY ボタン金色化は廃止（常に緑のまま） */
   .mt-tbtn.stop { color: #E24B4A; border-color: rgba(226,75,74,0.3); }
   .mt-tbtn.stop:hover { background: rgba(226,75,74,0.08); border-color: #E24B4A; }
   .mt-tbtn-glyph { line-height: 1; pointer-events: none; }
@@ -2700,7 +2677,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.22';
+const APP_VERSION = 'v7.22.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
