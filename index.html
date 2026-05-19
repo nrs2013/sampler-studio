@@ -1477,6 +1477,21 @@
     box-shadow: 0 0 6px rgba(240,199,94,0.4);
     user-select: none;
   }
+  /* "▶ NOW PLAY" インラインバッジ — playing のときだけ表示 */
+  .mt-song-playingbadge { display: none; }
+  .mt-song-row.playing .mt-song-playingbadge {
+    display: inline-block;
+    background: linear-gradient(180deg, #7DB89E, #5DA084);
+    color: #0A1410;
+    font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+    padding: 1px 7px;
+    border-radius: 3px;
+    margin-left: 8px;
+    vertical-align: middle;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+    box-shadow: 0 0 6px rgba(125,184,158,0.5);
+    user-select: none;
+  }
   .mt-song-row.drop-target {
     border-color: #7DB89E; background: rgba(125,184,158,0.12); border-style: dashed;
     box-shadow: 0 0 0 1px rgba(125,184,158,0.2);
@@ -2719,7 +2734,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.24.1';
+const APP_VERSION = 'v7.24.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10174,10 +10189,16 @@ function mtRenderSetlist() {
       else mtPlaySong(idx);
     };
     row.appendChild(playBtn);
-    // 曲名 + "▶ SPACE" バッジ（バッジは CSS で selected:not(.playing) のとき表示）
+    // 曲名 + 状態バッジ
+    //   - playing 行: 緑 "▶ NOW PLAY"
+    //   - selected (= 次に SPACE で再生される): 金 "▶ SPACE"
+    // どちらも CSS で該当 row class のときだけ表示
     const nameSpan = document.createElement('span');
     nameSpan.className = 'mt-song-name';
-    nameSpan.innerHTML = `${escapeHtml(song.name)}<span class="mt-song-nextbadge">▶ SPACE</span>`;
+    nameSpan.innerHTML =
+      `${escapeHtml(song.name)}` +
+      `<span class="mt-song-playingbadge">▶ NOW PLAY</span>` +
+      `<span class="mt-song-nextbadge">▶ SPACE</span>`;
     nameSpan.title = song.name + '（リネームは上のタイトル欄で）';
     row.appendChild(nameSpan);
     // 読込済ファイル数チップは廃止（SELECTED SONG カードで件数表示する）
