@@ -1502,7 +1502,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.3';
+const APP_VERSION = 'v6.3.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5153,12 +5153,21 @@ function doOutInitBC() {
         doOutUpdateStatus();
         showToast('✅ サブモニター接続完了');
       }
-      // 保留中の再生があれば実行
+      // 保留中の手動再生があれば実行
       if (_vidPendingPlay && Date.now() < _vidPendingPlay.deadline) {
         const p = _vidPendingPlay; _vidPendingPlay = null;
         setTimeout(() => _vidLaunchPlay(p.slotIdx, p.file, p.name), 100);
       } else {
         _vidPendingPlay = null;
+      }
+      // 保留中のチェーン再生があれば実行
+      if (_vidPendingChainPlay && Date.now() < _vidPendingChainPlay.deadline) {
+        const p = _vidPendingChainPlay; _vidPendingChainPlay = null;
+        setTimeout(() => {
+          if (state.door.activeRowId === p.rowId && state.door.activeChainIdx === p.chainIdx) {
+            _doChainPlayV(p.vidIdx, p.v);
+          }
+        }, 100);
       }
     }
     else if (m.event === 'closed') {
@@ -5988,6 +5997,7 @@ function _chainPlayA(libIdx) {
 }
 
 // V 映像を実際に再生（チェーン内部用）
+let _vidPendingChainPlay = null;
 function _chainPlayV(vidIdx) {
   const v = (state.door.videoLibrary || [])[vidIdx];
   if (!v) { setTimeout(doPlayNextInChain, 0); return; }
@@ -5996,11 +6006,35 @@ function _chainPlayV(vidIdx) {
     setTimeout(doPlayNextInChain, 0);
     return;
   }
+  // OUTPUT 未起動なら自動で開く（手動 ▶ と同じ挙動）
   if (!_outWindow || _outWindow.closed) {
-    showToast('⚠️ サブモニター未起動のため V' + (vidIdx+1) + ' をスキップ');
-    setTimeout(doPlayNextInChain, 0);
+    showToast('🖥 サブモニターを自動起動中... V' + (vidIdx+1));
+    doOutOpen();
+    if (!_outWindow || _outWindow.closed) {
+      showToast('⚠️ サブモニターを開けませんでした。V' + (vidIdx+1) + ' をスキップ');
+      setTimeout(doPlayNextInChain, 0);
+      return;
+    }
+    // ready 受信を待ってから _doChainPlayV を呼ぶ
+    _vidPendingChainPlay = {
+      vidIdx, v, deadline: Date.now() + 5000,
+      rowId: state.door.activeRowId,
+      chainIdx: state.door.activeChainIdx,
+    };
+    // 5 秒経っても ready 来なければスキップ
+    setTimeout(() => {
+      if (_vidPendingChainPlay && _vidPendingChainPlay.vidIdx === vidIdx) {
+        _vidPendingChainPlay = null;
+        showToast('⚠️ サブモニター応答無し。V' + (vidIdx+1) + ' をスキップ');
+        if (state.door.activeRowId) doPlayNextInChain();
+      }
+    }, 5000);
     return;
   }
+  _doChainPlayV(vidIdx, v);
+}
+function _doChainPlayV(vidIdx, v) {
+  if (state.door.activeRowId == null) return; // 既に停止されていたら
   _outActiveVideoSlot = vidIdx;
   _outChainContext = { rowId: state.door.activeRowId, chainIdx: state.door.activeChainIdx };
   const url = URL.createObjectURL(v.file);
