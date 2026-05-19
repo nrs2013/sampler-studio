@@ -2591,15 +2591,6 @@
           <span id="mtChCount" class="mt-num-readout">—</span>
           <span class="mt-row-note" id="mtChStatus" style="font-size:9px;">未検出</span>
         </div>
-        <div class="mt-row">
-          <span class="mt-label">GAP</span>
-          <input type="number" class="mt-input-num" id="mtGapSec" min="0" max="60" step="0.5" value="3.0" onchange="mtSetGap(this.value)">
-          <span class="mt-row-note">秒・自動で次曲</span>
-          <label class="mt-switch" style="margin-left:auto;">
-            <input type="checkbox" id="mtAutoAdvance" checked onchange="mtSetAutoAdvance(this.checked)">
-            <span class="mt-switch-track"><span class="mt-switch-thumb"></span></span>
-          </label>
-        </div>
         <!-- ROUTING を AUDIO IFACE に統合（インライン、コンパクト） -->
         <div class="mt-routing-inline-label" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">ROUTING · PARA-OUT</div>
         <div class="mt-ch-strip" id="mtChMatrix">
@@ -2678,7 +2669,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.23.2';
+const APP_VERSION = 'v7.23.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8514,7 +8505,8 @@ function mtRestore(saved) {
   if (saved.outputDeviceId) m.outputDeviceId = saved.outputDeviceId;
   if (saved.outputDeviceLabel) m.outputDeviceLabel = saved.outputDeviceLabel;
   if (typeof saved.gapSec === 'number') m.gapSec = saved.gapSec;
-  if (typeof saved.autoAdvance === 'boolean') m.autoAdvance = saved.autoAdvance;
+  // autoAdvance: UI 廃止後は常に true（各曲ごとの autoNext / nextDelay が支配的）
+  m.autoAdvance = true;
   if (saved.channelMap) m.channelMap = saved.channelMap;
   if (saved.groupGains) m.groupGains = { ...m.groupGains, ...saved.groupGains };
   if (saved.groupMute) m.groupMute = { ...m.groupMute, ...saved.groupMute };
@@ -9790,10 +9782,8 @@ function mtRenderAll() {
     if (inL) inL.value = cm.L;
     if (inR) inR.value = cm.R;
   }
-  const gapInput = document.getElementById('mtGapSec');
-  if (gapInput) gapInput.value = state.multitrack.gapSec;
-  const autoCB = document.getElementById('mtAutoAdvance');
-  if (autoCB) autoCB.checked = state.multitrack.autoAdvance;
+  // グローバル GAP / AUTO ADV の UI は削除（各曲ごとに設定するため）
+  // state.multitrack.gapSec / autoAdvance は新曲 nextDelay のデフォルト値として残す
   mtRenderMixer();
   mtRenderSetlist();
   mtRenderNow();
