@@ -2237,7 +2237,6 @@
           </div>
         </div>
         <div class="mt-hero-bottom">
-          <div class="mt-hero-stems" id="mtHeroStems"></div>
           <!-- スクラバー（クリック/ドラッグでシーク） -->
           <div class="mt-hero-timeline" id="mtHeroTimeline" title="クリック / ドラッグでシーク">
             <div class="mt-hero-timeline-track">
@@ -2396,7 +2395,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.7.2';
+const APP_VERSION = 'v7.7.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9355,7 +9354,6 @@ function mtRenderNow() {
   const playBtn = document.getElementById('mtPlayBtn');
   const playGlyph = document.getElementById('mtPlayGlyph');
   const status = document.getElementById('mtNowStatus');
-  const stems = document.getElementById('mtHeroStems');
   const setlistCount = document.getElementById('mtSetlistCount');
 
   // ヒーロー playing class
@@ -9379,24 +9377,6 @@ function mtRenderNow() {
   // 再生ボタン記号
   if (playGlyph) playGlyph.textContent = m.isPlaying ? '■' : '▶';
   if (playBtn) playBtn.setAttribute('aria-label', m.isPlaying ? 'Stop' : 'Play');
-
-  // STEM チップ
-  if (stems) {
-    stems.innerHTML = '';
-    if (cur) {
-      for (const g of MT_GROUPS) {
-        const t = cur.tracks && cur.tracks[g];
-        const chip = document.createElement('span');
-        chip.className = 'mt-hero-stem-chip' + (t ? '' : ' missing');
-        const color = MT_GROUP_COLORS[g];
-        chip.style.borderColor = color;
-        chip.style.color = color;
-        chip.style.background = `rgba(${mtHex2Rgb(color).join(',')},0.08)`;
-        chip.textContent = MT_GROUP_LABELS[g];
-        stems.appendChild(chip);
-      }
-    }
-  }
 
   // セットリスト件数
   if (setlistCount) setlistCount.textContent = `${m.songs.length} SONG${m.songs.length === 1 ? '' : 'S'}`;
