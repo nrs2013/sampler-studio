@@ -1275,13 +1275,12 @@
     flex-shrink: 0;
     line-height: 1;
   }
-  /* 次の曲名タイトル — NOW のタイトルと同じ流儀で表示 */
+  /* 次の曲名タイトル — NOW のタイトルと同じ流儀で表示、できるだけフル表示 */
   .mt-hero-nexttitle {
     font-size: 26px; font-weight: 500; color: #C8C8CE;
     letter-spacing: -0.3px; line-height: 1.1;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    min-width: 0; flex: 0 1 auto;
-    max-width: 320px;
+    min-width: 0;
     padding: 4px 10px;
   }
   /* 再生中の chip 色変化も廃止 */
@@ -1290,8 +1289,7 @@
     font-size: 26px; font-weight: 500; color: #FFFFFF;
     letter-spacing: -0.3px; line-height: 1.1;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    min-width: 0; flex: 0 1 auto;
-    max-width: 320px;
+    min-width: 0; flex: 1 1 auto;
     background: transparent;
     border: 0.5px solid transparent;
     border-radius: 4px;
@@ -2695,7 +2693,6 @@
                    title="クリックして曲名を変更（選択中の曲）" />
           </div>
           <div class="mt-hero-center-group">
-            <span class="mt-hero-arrow">→</span>
             <span class="mt-hero-trackchip mt-hero-trackchip--next">NEXT SONG</span>
           </div>
           <span class="mt-hero-nexttitle" id="mtHeroNextChipName">— なし —</span>
@@ -2872,7 +2869,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.29.4';
+const APP_VERSION = 'v7.29.5';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
