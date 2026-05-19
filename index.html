@@ -1236,6 +1236,27 @@
     padding: 2px 8px; border-radius: 3px; letter-spacing: 1px;
     flex-shrink: 0;
   }
+  /* NEXT 表示（右端） */
+  .mt-hero-nextchip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 12px;
+    background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
+    border: 1px solid #2A2A30;
+    border-radius: 7px;
+    flex-shrink: 0;
+    max-width: 320px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  .mt-hero-nextchip-label {
+    font-family: 'SF Mono', monospace; font-size: 9px; font-weight: 700;
+    color: #6A6A75; letter-spacing: 1.2px;
+    flex-shrink: 0;
+  }
+  .mt-hero-nextchip-name {
+    font-size: 13px; font-weight: 500; color: #E8E8EC;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 240px;
+  }
   /* 再生中の chip 色変化も廃止 */
   /* input as title (rename here) — 本番で遠目に見えるよう大きめ */
   .mt-hero-title {
@@ -1977,11 +1998,11 @@
   .mt-songinfo-row:hover { background: rgba(255,255,255,0.05); }
   .mt-songinfo-row.pool:hover { background: rgba(240,199,94,0.12); }
   .mt-songinfo-row.dragging { opacity: 0.4; }
-  /* グループセレクタ（色付き badge） */
+  /* グループセレクタ（枠はグループ色、文字は白で視認性最優先） */
   .mt-songinfo-groupsel {
     width: 100%; min-width: 0;
-    background: #06060A; color: #6A6A70;
-    border: 0.5px solid #1F1F22; border-radius: 3px;
+    background: #06060A; color: #FFFFFF;
+    border: 1px solid #2A2A30; border-radius: 4px;
     padding: 2px 0 2px 4px;
     font-family: 'SF Mono', monospace; font-size: 10px; font-weight: 700;
     letter-spacing: 0.5px;
@@ -2629,10 +2650,14 @@
       <div class="mt-hero-inner">
         <div class="mt-hero-top">
           <div class="mt-hero-meta">
-            <span class="mt-hero-trackchip" id="mtHeroTrackChip">— / —</span>
+            <span class="mt-hero-trackchip" id="mtHeroTrackChip">NOW</span>
             <input class="mt-hero-title" id="mtNowName" type="text"
                    placeholder="— 待機中 —"
                    title="クリックして曲名を変更（選択中の曲）" />
+          </div>
+          <div class="mt-hero-nextchip" id="mtHeroNextChipWrap">
+            <span class="mt-hero-nextchip-label">NEXT</span>
+            <span class="mt-hero-nextchip-name" id="mtHeroNextChipName">— なし —</span>
           </div>
         </div>
         <div class="mt-hero-bottom">
@@ -2723,49 +2748,49 @@
           <div class="mt-ch-pill" style="--c:#8DB7F5">
             <span class="mt-ch-glabel">CL</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChClickL" min="1" max="32" value="11" onchange="mtSetCh('click','L',this.value)" title="CLICK L">
+              <input type="number" class="mt-ch-input" id="mtChClickL" min="1" max="32" value="1" onchange="mtSetCh('click','L',this.value)" title="CLICK L">
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChClickR" min="1" max="32" value="12" onchange="mtSetCh('click','R',this.value)" title="CLICK R">
+              <input type="number" class="mt-ch-input" id="mtChClickR" min="1" max="32" value="2" onchange="mtSetCh('click','R',this.value)" title="CLICK R">
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#F0C75E">
             <span class="mt-ch-glabel">VO</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="9" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L">
+              <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="3" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L">
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
+              <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="4" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#97C459">
             <span class="mt-ch-glabel">CH</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="7" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L">
+              <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="5" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L">
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="8" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R">
+              <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="6" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R">
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#EF9F27">
             <span class="mt-ch-glabel">OT</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)" title="OTHER L">
+              <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="7" onchange="mtSetCh('other','L',this.value)" title="OTHER L">
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)" title="OTHER R">
+              <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="8" onchange="mtSetCh('other','R',this.value)" title="OTHER R">
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#85B7EB">
             <span class="mt-ch-glabel">BA</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChBassL" min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)" title="BASS L">
+              <input type="number" class="mt-ch-input" id="mtChBassL" min="1" max="32" value="9" onchange="mtSetCh('bass','L',this.value)" title="BASS L">
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChBassR" min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)" title="BASS R">
+              <input type="number" class="mt-ch-input" id="mtChBassR" min="1" max="32" value="10" onchange="mtSetCh('bass','R',this.value)" title="BASS R">
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#ED93B1">
             <span class="mt-ch-glabel">DR</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L">
+              <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="11" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L">
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R">
+              <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="12" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R">
             </div>
           </div>
         </div>
@@ -2807,7 +2832,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.25.5';
+const APP_VERSION = 'v7.26.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3045,13 +3070,13 @@ const state = {
     outputChannelCount: 2,        // detected channel count of selected device
     gapSec: 0,                    // 曲間の自動隙間（デフォルト 0 秒、各曲で個別設定可）
     autoAdvance: true,
-    channelMap: {                 // 各グループの出力ch（1始まり）
-      click:  { L: 11, R: 12 },
-      vocal:  { L: 9, R: 10 },
-      chorus: { L: 7, R: 8 },
-      other:  { L: 5, R: 6 },
-      bass:   { L: 3, R: 4 },
-      drums:  { L: 1, R: 2 },
+    channelMap: {                 // 各グループの出力ch（1始まり、左から順）
+      click:  { L: 1, R: 2 },
+      vocal:  { L: 3, R: 4 },
+      chorus: { L: 5, R: 6 },
+      other:  { L: 7, R: 8 },
+      bass:   { L: 9, R: 10 },
+      drums:  { L: 11, R: 12 },
     },
     groupGains: {
       click: 1.0, vocal: 1.0, chorus: 1.0, other: 1.0, bass: 1.0, drums: 1.0,
@@ -10571,11 +10596,19 @@ function mtRenderNow() {
       });
     }
   }
-  // トラックチップ
+  // NOW チップ（左、固定文言）
   if (trackChip) {
-    const total = m.songs.length;
-    const cur1 = (m.currentSongIdx >= 0) ? (m.currentSongIdx + 1) : 0;
-    trackChip.textContent = total > 0 ? `TRACK ${String(cur1).padStart(2,'0')} / ${String(total).padStart(2,'0')}` : 'NO SETLIST';
+    trackChip.textContent = 'NOW';
+  }
+  // NEXT チップ（右）— 単純に「並び順の次の曲」を表示
+  const nextChipName = document.getElementById('mtHeroNextChipName');
+  if (nextChipName) {
+    const baseIdx = (m.selectedIdx >= 0) ? m.selectedIdx : m.currentSongIdx;
+    if (baseIdx >= 0 && baseIdx + 1 < m.songs.length) {
+      nextChipName.textContent = m.songs[baseIdx + 1].name || '無題';
+    } else {
+      nextChipName.textContent = '— なし —';
+    }
   }
   // ステータス
   if (status) {
@@ -10656,11 +10689,10 @@ function mtRenderSongInfo() {
     });
     row.addEventListener('dragend', () => row.classList.remove('dragging'));
 
-    // グループ select (色付き)
+    // グループ select (枠だけグループ色、文字は白で視認性確保)
     const sel = document.createElement('select');
     sel.className = 'mt-songinfo-groupsel';
     if (f.currentGroup) {
-      sel.style.color = MT_GROUP_COLORS[f.currentGroup];
       sel.style.borderColor = MT_GROUP_COLORS[f.currentGroup];
     }
     const optNull = document.createElement('option');
