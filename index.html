@@ -1511,7 +1511,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.3.2';
+const APP_VERSION = 'v6.3.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5191,6 +5191,12 @@ function doOutInitBC() {
       showToast('⚠️ ブラウザがこのコーデックを再生できません。H.264 MP4 に変換してください');
       console.warn('[output] codec unsupported:', m.message);
     }
+    else if (m.event === 'pending-unlock') {
+      showToast('⚠️ OUTPUT ウィンドウをクリックして autoplay を有効にしてください（' + (m.name || '映像') + ' 待機中）');
+    }
+    else if (m.event === 'unlocked') {
+      showToast('✅ OUTPUT autoplay 有効化');
+    }
   };
   return bc;
 }
@@ -6481,11 +6487,24 @@ function initOutputMode() {
 
   // BroadcastChannel で main と通信
   const bc = new BroadcastChannel('sampler-studio-output');
+  let _pendingPlay = null;
   bc.onmessage = e => {
     const m = e.data || {};
-    if (m.cmd === 'play' && m.blobUrl) playFromUrl(m.blobUrl, m.name);
-    else if (m.cmd === 'stop') stopVideo();
-    else if (m.cmd === 'ping') bc.postMessage({ event: 'pong' });
+    if (m.cmd === 'play' && m.blobUrl) {
+      // autoplay 未解除なら保留（クリック後に実行）
+      if (!autoplayUnlocked) {
+        _pendingPlay = m;
+        if (enableOverlay) {
+          const labelEl = enableOverlay.querySelector('div');
+          if (labelEl) labelEl.style.color = '#EF9F27';
+        }
+        bc.postMessage({ event: 'pending-unlock', name: m.name });
+        return;
+      }
+      playFromUrl(m.blobUrl, m.name);
+    }
+    else if (m.cmd === 'stop') { _pendingPlay = null; stopVideo(); }
+    else if (m.cmd === 'ping') bc.postMessage({ event: 'pong', unlocked: autoplayUnlocked });
   };
 
   // === Autoplay 有効化 ===
@@ -6494,6 +6513,7 @@ function initOutputMode() {
   const enableOverlay = document.getElementById('outputEnableOverlay');
   let autoplayUnlocked = false;
   const unlockAutoplay = async () => {
+    if (autoplayUnlocked) return;
     try {
       // ダミーで一度だけ play→pause（ユーザージェスチャー内）で autoplay 解除
       video.muted = true;
@@ -6507,6 +6527,11 @@ function initOutputMode() {
     autoplayUnlocked = true;
     if (enableOverlay) enableOverlay.style.display = 'none';
     bc.postMessage({ event: 'unlocked' });
+    // 保留中の play があれば実行
+    if (_pendingPlay) {
+      const p = _pendingPlay; _pendingPlay = null;
+      setTimeout(() => playFromUrl(p.blobUrl, p.name), 50);
+    }
   };
   if (enableOverlay) {
     enableOverlay.addEventListener('click', unlockAutoplay);
