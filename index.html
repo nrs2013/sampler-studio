@@ -1502,7 +1502,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.2.2';
+const APP_VERSION = 'v6.2.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -5190,20 +5190,23 @@ function doOutOnVideoEnded() {
   if (_outCurrentBlobUrl) { try { URL.revokeObjectURL(_outCurrentBlobUrl); } catch(_) {} _outCurrentBlobUrl = null; }
   _outActiveVideoSlot = -1;
   doRenderVideoLibrary();
-  // チェーン文脈で再生していたなら次へ
+
+  // 映像終了 → BGM をフェードインで戻す
+  _vidFadeBgm(false);
+  const fadeMs = Math.max(0, (state.door.duck.videoFadeSec ?? 2.0) * 1000);
+
   if (_outChainContext) {
     const { rowId } = _outChainContext;
     _outChainContext = null;
-    // BGM はチェーン終了まで戻さない（次のナレでまた DUCK されるため）
-    // ここでは映像分の fade だけ解除しない（チェーン完了時に doEndRow で戻る）
-    if (state.door.activeRowId === rowId) {
-      // 次のチェーンへ
-      doPlayNextInChain();
-    }
-  } else {
-    // 単発プレビューだった → BGM 復元
-    _vidFadeBgm(false);
+    const savedChainIdx = state.door.activeChainIdx;
+    // BGM がフェードインしてから次のチェーンステップへ
+    setTimeout(() => {
+      if (state.door.activeRowId === rowId && state.door.activeChainIdx === savedChainIdx) {
+        doPlayNextInChain();
+      }
+    }, fadeMs);
   }
+  // 単発プレビュー: _vidFadeBgm(false) で十分（追加処理なし）
 }
 function doOutUpdateStatus() {
   const pill = document.getElementById('doOutStatusPill');
