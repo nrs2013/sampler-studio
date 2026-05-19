@@ -2919,7 +2919,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.32.0';
+const APP_VERSION = 'v7.32.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8741,6 +8741,7 @@ let mtMasterGain = null;
 let mtMerger = null;            // ChannelMerger node (size = outputChannelCount)
 let mtDecodedCache = {};        // { sampleId: AudioBuffer }  in-memory cache
 let mtMeterRaf = null;
+let mtRestoreInProgress = false; // 起動時バッファ復元が走ってる間だけ true → ロード中表示
 let mtGroupGainNodes = {};      // { drums: GainNode, bass: GainNode, ... }
 let mtGroupAnalysers = {};      // { drums: AnalyserNode, ... }
 let mtGroupAnalyserData = {};   // { drums: Float32Array, ... }  reusable buffers
@@ -9612,6 +9613,8 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
 // 2. handle がない（旧形式）：IDB blob から復元
 async function mtRestoreBuffers() {
   if (!state.multitrack.songs.length) return;
+  mtRestoreInProgress = true;
+  try { mtRenderNow(); } catch(_) {}  // ロード中表示を即反映
   await mtInitCtx();
   let needsReconnect = false;
   let reconnectCount = 0;
@@ -9637,8 +9640,6 @@ async function mtRestoreBuffers() {
             const arr = await f.arrayBuffer();
             const buf = await mtRobustDecode(arr, {name: "restored"});
             mtDecodedCache[t.sampleId] = buf;
-            // 1 ファイル読み終わったら UI 更新 → ロード進捗が見える
-            try { mtRenderNow(); } catch(_) {}
             continue;
           } catch(e) {
             console.warn('mt handle read failed', t.sampleId, e);
@@ -9657,11 +9658,11 @@ async function mtRestoreBuffers() {
       if (rec && rec.data) {
         const buf = await mtRobustDecode(rec.data, {name: rec.name||"blob"});
         mtDecodedCache[t.sampleId] = buf;
-        // 1 ファイル読み終わったら UI 更新
-        try { mtRenderNow(); } catch(_) {}
       }
     } catch(e) { console.warn('mt blob restore failed', t.sampleId, e); }
   }
+  // 復元終了 → ロード中フラグを下ろす
+  mtRestoreInProgress = false;
   if (needsReconnect) {
     state.multitrack.needsReconnect = true;
     state.multitrack.reconnectCount = reconnectCount;
@@ -10800,21 +10801,11 @@ function mtRenderNow() {
       nextChipName.textContent = '— なし —';
     }
   }
-  // 読込状況を集計（選択中の曲のファイルが何個 / 全部かをチェック）
-  // ※ 読込が終わっていないと再生してもファイル無し扱いになるので、状態を明示する
-  const selSongForLoad = (m.selectedIdx >= 0) ? m.songs[m.selectedIdx] : null;
-  let loaded = 0, total = 0;
-  if (selSongForLoad) {
-    for (const g of MT_GROUPS) {
-      mtGetLayers(selSongForLoad, g).forEach(l => {
-        if (l && l.sampleId) { total++; if (mtDecodedCache[l.sampleId]) loaded++; }
-      });
-    }
-    (selSongForLoad.unassigned || []).forEach(u => {
-      if (u && u.sampleId) { total++; if (mtDecodedCache[u.sampleId]) loaded++; }
-    });
-  }
-  const isLoading = total > 0 && loaded < total;
+  // ロード中表示: 起動時の mtRestoreBuffers が走っている間だけ true。
+  // 終了後は「未ロード」状態になっても壊れた参照とみなしロード表示しない
+  // （ファイル毎にカウントすると毎フレーム O(N) で重い + orphan で永遠に
+  //  ロード中になる問題を回避）
+  const isLoading = mtRestoreInProgress;
 
   // ヘッダーチップに loading クラスを付け外し → CSS でオレンジパルスに切替
   const nowChip = document.getElementById('mtHeroTrackChip');
@@ -10824,7 +10815,7 @@ function mtRenderNow() {
   // ステータス
   if (status) {
     if (isLoading) {
-      status.textContent = `📂 LOADING ${loaded}/${total} ファイル...`;
+      status.textContent = '📂 ファイル読込中...';
     } else if (m.isPlaying) status.textContent = 'PLAYING · ESC で停止';
     else if (cur) status.textContent = 'READY · SPACE 再生 / ESC 停止';
     else status.textContent = 'EMPTY · 曲を追加';
