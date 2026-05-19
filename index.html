@@ -2548,7 +2548,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.12.1';
+const APP_VERSION = 'v7.13';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8768,6 +8768,74 @@ async function mtExtractFilesWithHandles(dataTransfer) {
   return out;
 }
 
+// WAV ヘッダから fmt 情報を抜き出して診断（PCM / float / sample rate / bit depth / channels）
+function mtDiagnoseWav(arrayBuffer) {
+  try {
+    const view = new DataView(arrayBuffer);
+    if (arrayBuffer.byteLength < 44) return null;
+    const riff = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
+    const wave = String.fromCharCode(view.getUint8(8), view.getUint8(9), view.getUint8(10), view.getUint8(11));
+    if (riff !== 'RIFF' && riff !== 'RF64') return null;
+    if (wave !== 'WAVE') return null;
+    // チャンクを走査して fmt を探す
+    let offset = 12;
+    while (offset < arrayBuffer.byteLength - 8) {
+      const id = String.fromCharCode(view.getUint8(offset), view.getUint8(offset+1), view.getUint8(offset+2), view.getUint8(offset+3));
+      const size = view.getUint32(offset + 4, true);
+      if (id === 'fmt ') {
+        const fmt = view.getUint16(offset + 8, true);
+        const ch  = view.getUint16(offset + 10, true);
+        const sr  = view.getUint32(offset + 12, true);
+        const bps = view.getUint16(offset + 22, true);
+        // fmt: 1=PCM, 3=IEEE float, 0xFFFE=WAVE_FORMAT_EXTENSIBLE
+        const fmtName = fmt === 1 ? 'PCM' : fmt === 3 ? 'Float' : fmt === 0xFFFE ? 'Extensible' : `fmt=0x${fmt.toString(16)}`;
+        return { container: riff, codec: fmtName, channels: ch, sampleRate: sr, bitDepth: bps, isBwf: false };
+      }
+      offset += 8 + size + (size & 1);
+    }
+  } catch(e) {}
+  return null;
+}
+
+// 多段フォールバック decode:
+//   1) live ctx で decode
+//   2) 失敗したら OfflineAudioContext を 48k / 44.1k / live sr で順に試す
+// 互換性のないファイルでも復旧可能性を上げる
+async function mtRobustDecode(arrayBuffer, file) {
+  // まず live ctx (mtCtx) で
+  try {
+    return await mtCtx.decodeAudioData(arrayBuffer.slice(0));
+  } catch (e1) {
+    console.warn('[mt] live decode failed, trying fallbacks', e1);
+    const tryRates = [...new Set([mtCtx.sampleRate, 48000, 44100])];
+    let lastErr = e1;
+    for (const rate of tryRates) {
+      try {
+        const offline = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, 1, rate);
+        const buf = await offline.decodeAudioData(arrayBuffer.slice(0));
+        console.log(`[mt] fallback decode succeeded at ${rate}Hz`);
+        return buf;
+      } catch (e2) {
+        lastErr = e2;
+      }
+    }
+    // 全部失敗 → 詳細エラーをエスカレート
+    const diag = mtDiagnoseWav(arrayBuffer);
+    const sizeMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(1);
+    const diagStr = diag
+      ? `${diag.container}/${diag.codec} ${diag.channels}ch ${diag.sampleRate}Hz ${diag.bitDepth}bit`
+      : '不明な形式';
+    const err = new Error(
+      `[${file.name}] デコード失敗\n` +
+      `→ ${diagStr}, ${sizeMB}MB, ctx ${mtCtx.sampleRate}Hz\n` +
+      `→ ${lastErr.message || lastErr}\n` +
+      `対策: DAW で 16bit/44.1kHz の WAV か MP3 にエクスポートし直してみてください`
+    );
+    err.diagnostic = { ...diag, ctxSampleRate: mtCtx.sampleRate, sizeMB, original: String(lastErr) };
+    throw err;
+  }
+}
+
 async function mtLoadTrackFile(songIdx, group, file, handle) {
   if (!file) return;
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
@@ -8800,8 +8868,8 @@ async function mtLoadTrackFile(songIdx, group, file, handle) {
         showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
       }
     }
-    // decode してメモリにキャッシュ
-    const buffer = await mtCtx.decodeAudioData(arrBuf.slice(0));
+    // decode してメモリにキャッシュ（多段フォールバック付き）
+    const buffer = await mtRobustDecode(arrBuf, file);
     mtDecodedCache[sampleId] = buffer;
     state.multitrack.songs[songIdx].tracks[group] = {
       sampleId, name: file.name, byHandle: usingHandle,
@@ -8814,9 +8882,20 @@ async function mtLoadTrackFile(songIdx, group, file, handle) {
     showToast(`${MT_GROUP_LABELS[group]} 読込: ${file.name} (${buffer.duration.toFixed(1)}秒・${where})`);
   } catch(e) {
     console.error('mtLoadTrackFile failed', e);
-    showToast('読込失敗: ' + (e.message || e));
+    // 詳細メッセージ（改行込み）を toast に
+    const msg = e.message || String(e);
+    showToast('⚠️ 読込失敗 ' + msg.split('\n')[0]);
+    // 詳細はコンソールにフル表示 + アラート（コピペできるように）
+    setTimeout(() => {
+      if (msg.includes('\n')) alert('STEM 読込失敗:\n\n' + msg);
+    }, 100);
     mtRenderSetlist();
   }
+}
+
+// 同様の robust decode を mtRestoreBuffers / mtReconnectFiles でも使う
+async function _mtDecodeOrThrow(arrayBuffer, label) {
+  return mtRobustDecode(arrayBuffer, { name: label || 'restore' });
 }
 
 async function mtRemoveTrack(songIdx, group) {
@@ -8860,7 +8939,7 @@ async function mtRestoreBuffers() {
             try {
               const f = await rec.handle.getFile();
               const arr = await f.arrayBuffer();
-              const buf = await mtCtx.decodeAudioData(arr);
+              const buf = await mtRobustDecode(arr, {name: "restored"});
               mtDecodedCache[t.sampleId] = buf;
               continue;
             } catch(e) {
@@ -8879,7 +8958,7 @@ async function mtRestoreBuffers() {
       try {
         const rec = await getSampleFromDB(t.sampleId);
         if (rec && rec.data) {
-          const buf = await mtCtx.decodeAudioData(rec.data.slice(0));
+          const buf = await mtRobustDecode(rec.data, {name: rec.name||"blob"});
           mtDecodedCache[t.sampleId] = buf;
         }
       } catch(e) { console.warn('mt blob restore failed', t.sampleId, e); }
@@ -8911,7 +8990,7 @@ async function mtReconnectFiles() {
           try {
             const r = await getSampleFromDB(t.sampleId);
             if (r && r.data) {
-              const buf = await mtCtx.decodeAudioData(r.data.slice(0));
+              const buf = await mtRobustDecode(r.data, {name: r.name||"blob"});
               mtDecodedCache[t.sampleId] = buf;
               granted++;
             }
@@ -8926,7 +9005,7 @@ async function mtReconnectFiles() {
         if (perm === 'granted') {
           const f = await rec.handle.getFile();
           const arr = await f.arrayBuffer();
-          const buf = await mtCtx.decodeAudioData(arr);
+          const buf = await mtRobustDecode(arr, {name: "restored"});
           mtDecodedCache[t.sampleId] = buf;
           granted++;
         } else {
@@ -9045,18 +9124,26 @@ async function mtPlaySong(idx, offset) {
   state.multitrack.selectedIdx = idx;
   state.multitrack.isPlaying = true;
   // 終了時 auto-advance（残り時間と曲ごとの挙動で計算）
+  // モード判定:
+  //   'auto'     - グローバル ON + song.autoNext='auto' → 次曲を自動再生 (nextDelay 適用、負値で前倒し)
+  //   'standby'  - song.autoNext='stop' → 次曲の頭でスタンバイ、SPACE で再生
+  //   'pause'    - グローバル OFF + song.autoNext='auto' → 単に停止 (selectedIdx は動かさない)
   if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
   const remainSec = maxDur - offset;
-  // 曲ごとの設定（無い場合のフォールバックは 'auto' / グローバル gapSec）
-  const songAutoNext = (song.autoNext || 'auto') === 'auto';
+  const songWantsAuto = (song.autoNext || 'auto') === 'auto';
   const songDelay = (typeof song.nextDelay === 'number') ? song.nextDelay : (state.multitrack.gapSec || 0);
-  // グローバル AUTO ADV がキルスイッチ。OFF なら一切自動進行しない。
-  // ON のとき、曲ごとの autoNext が 'stop' なら停止、'auto' なら nextDelay 後に次曲。
-  if (state.multitrack.autoAdvance && songAutoNext) {
-    // 負の delay は「終わる N 秒前に次曲を発火」= 前倒し
-    const triggerSec = remainSec + songDelay;
-    const totalMs = Math.max(0, triggerSec * 1000) + 50;
-    state.multitrack.advanceTimer = setTimeout(() => {
+  let mode;
+  if (state.multitrack.autoAdvance && songWantsAuto) mode = 'auto';
+  else if (!songWantsAuto) mode = 'standby';   // song の設定が優先（グローバル OFF でも standby）
+  else mode = 'pause';
+
+  // 発火タイミング: auto は delay 適用、その他は曲の自然な終端
+  const triggerSec = (mode === 'auto') ? remainSec + songDelay : remainSec;
+  const totalMs = Math.max(0, triggerSec * 1000) + 50;
+  console.log(`[mt] auto-advance scheduled: mode=${mode}, in ${totalMs}ms, song="${song.name}"`);
+  state.multitrack.advanceTimer = setTimeout(() => {
+    if (mode === 'auto') {
+      // 次曲を自動再生
       const next = state.multitrack.currentSongIdx + 1;
       if (next < state.multitrack.songs.length) {
         mtPlaySong(next, 0);
@@ -9064,25 +9151,28 @@ async function mtPlaySong(idx, offset) {
         mtStop();
         showToast('セットリスト終了');
       }
-    }, totalMs);
-  } else {
-    // 停止指定 or グローバル OFF — 曲が終わったら停止
-    state.multitrack.advanceTimer = setTimeout(() => {
-      mtStopSources();                        // 念のため source を切断
-      state.multitrack.isPlaying = false;
-      // STOP モード: 次曲の頭でスタンバイ → SPACE で再生開始
+      return;
+    }
+    // standby / pause: いずれも source を止める
+    mtStopSources();
+    state.multitrack.isPlaying = false;
+    mtStopMeter();
+    if (mode === 'standby') {
+      // STANDBY: 次曲の頭でスタンバイ、SPACE 待ち
       const curIdx = state.multitrack.currentSongIdx;
-      if (song.autoNext === 'stop' && curIdx + 1 < state.multitrack.songs.length) {
+      if (curIdx + 1 < state.multitrack.songs.length) {
         state.multitrack.selectedIdx = curIdx + 1;
         state.multitrack.seekOffset = 0;
         mtRecomputeSongDuration();
         mtScrollSelectedIntoView();
+        showToast(`▶ 次曲スタンバイ: ${state.multitrack.songs[curIdx + 1].name}`);
+      } else {
+        showToast('セットリスト終了');
       }
-      mtStopMeter();
-      mtRenderNow();
-      mtRenderSetlist();
-    }, remainSec * 1000 + 50);
-  }
+    }
+    mtRenderNow();
+    mtRenderSetlist();
+  }, totalMs);
   mtRenderSetlist();
   mtRenderNow();
   mtStartMeter();
