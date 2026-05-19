@@ -1605,10 +1605,10 @@
   }
   .mt-song-autotoggle.is-last { opacity: 0.55; }
 
-  /* 次曲までの delay 秒数 — 本番視認サイズ */
+  /* 次曲スタートまでの delay 秒数 — 白文字、本番視認サイズ */
   .mt-song-delay {
     width: 100%; min-width: 0; height: 28px;
-    background: #06060A; border: 0.5px solid #1F1F22; color: #92C9B0;
+    background: #06060A; border: 0.5px solid #1F1F22; color: #FFFFFF;
     padding: 2px 4px; border-radius: 4px;
     font-family: 'SF Mono', monospace; font-size: 12px;
     text-align: center; font-weight: 600;
@@ -2812,7 +2812,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.25.3';
+const APP_VERSION = 'v7.25.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10907,6 +10907,13 @@ if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
 // MULTI-TRACK 初期化（init から呼ぶ）
 async function mtInit() {
   mtLoad();
+  // mtLoad で state.multitrack.songs が初めて populate される。
+  // この時点で MULTI-TRACK タブが既に active だと、setAppMode は songs が空の状態で
+  // 一度 mtRenderAll を呼んでしまっているので、ここで明示的に再描画してミキサーの
+  // ファイル数バッジ等を最新化する。
+  if (state.appMode === 'multi' && typeof mtRenderAll === 'function') {
+    mtRenderAll();
+  }
   // バッファ復元は async でバックグラウンド
   mtRestoreBuffers().catch(e => console.warn('mtRestoreBuffers failed', e));
 }
