@@ -2869,7 +2869,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.29.5';
+const APP_VERSION = 'v7.30.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3280,6 +3280,21 @@ function meterLoop() {
   for (let i = 0; i < bufL.length; i++) {
     pkL = Math.max(pkL, Math.abs(bufL[i] - 128));
     pkR = Math.max(pkR, Math.abs(bufR[i] - 128));
+  }
+  // MULTI-TRACK (mtCtx) は別文脈なので、その master analyser からもピークを取り
+  // 大きい方を採用 → 左パネル MASTER メーターはどのタブも共通で動く
+  if (mtMasterAnalyserL && mtMasterAnalyserR && mtMasterAnalyserBufL && mtMasterAnalyserBufR) {
+    try {
+      mtMasterAnalyserL.getByteTimeDomainData(mtMasterAnalyserBufL);
+      mtMasterAnalyserR.getByteTimeDomainData(mtMasterAnalyserBufR);
+      let mtPkL = 0, mtPkR = 0;
+      for (let i = 0; i < mtMasterAnalyserBufL.length; i++) {
+        mtPkL = Math.max(mtPkL, Math.abs(mtMasterAnalyserBufL[i] - 128));
+        mtPkR = Math.max(mtPkR, Math.abs(mtMasterAnalyserBufR[i] - 128));
+      }
+      pkL = Math.max(pkL, mtPkL);
+      pkR = Math.max(pkR, mtPkR);
+    } catch(e) { /* mt context not ready */ }
   }
   const pctL = Math.min(100, (pkL / 128) * 120);
   const pctR = Math.min(100, (pkR / 128) * 120);
@@ -8679,6 +8694,12 @@ let mtMeterRaf = null;
 let mtGroupGainNodes = {};      // { drums: GainNode, bass: GainNode, ... }
 let mtGroupAnalysers = {};      // { drums: AnalyserNode, ... }
 let mtGroupAnalyserData = {};   // { drums: Float32Array, ... }  reusable buffers
+// 左パネル MASTER メーター連動用 — mtMasterGain に tap した stereo analyser
+let mtMasterSplitter = null;
+let mtMasterAnalyserL = null;
+let mtMasterAnalyserR = null;
+let mtMasterAnalyserBufL = null;
+let mtMasterAnalyserBufR = null;
 
 // state を localStorage 用に整形
 function mtSerialize() {
@@ -8815,6 +8836,18 @@ async function mtInitCtx() {
   mtMasterGain = mtCtx.createGain();
   // グランドマスター連動 — 左パネルの MASTER フェーダー値で初期化
   mtMasterGain.gain.value = (typeof state !== 'undefined' && state.masterVol != null) ? state.masterVol : 1.0;
+  // 左パネルのマスターメーター連動: mtMasterGain にもステレオ analyser を tap
+  // （ctx と mtCtx は別文脈なので analyser も別途必要）
+  mtMasterSplitter = mtCtx.createChannelSplitter(2);
+  mtMasterAnalyserL = mtCtx.createAnalyser();
+  mtMasterAnalyserR = mtCtx.createAnalyser();
+  mtMasterAnalyserL.fftSize = 256;
+  mtMasterAnalyserR.fftSize = 256;
+  mtMasterGain.connect(mtMasterSplitter);
+  mtMasterSplitter.connect(mtMasterAnalyserL, 0);
+  mtMasterSplitter.connect(mtMasterAnalyserR, 1);
+  mtMasterAnalyserBufL = new Uint8Array(mtMasterAnalyserL.fftSize);
+  mtMasterAnalyserBufR = new Uint8Array(mtMasterAnalyserR.fftSize);
   // 各グループ用 GainNode + ステレオ AnalyserNode (L/R) を構築
   for (const g of MT_GROUPS) {
     const gain = mtCtx.createGain();
