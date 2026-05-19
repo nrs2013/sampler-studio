@@ -634,30 +634,49 @@
 
   /* DOOR OPEN PAGE */
   #doorPage { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
-  .do-top { display: grid; grid-template-columns: minmax(220px, 1.3fr) minmax(190px, 1fr) minmax(190px, 1fr) minmax(180px, 0.9fr); gap: 8px; }
-  /* LOGO カード（amber #C9A96A テーマ）— カード自体は固定高さ */
-  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
-  .do-logo-head-row { display: flex; align-items: center; gap: 6px; }
+  /* 上段は 3 カラム（NOW / DOOR BGM / WORKOUT BGM）に戻す */
+  .do-top { display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(220px, 1fr) minmax(220px, 1fr); gap: 8px; }
+  /* LOGO カード（amber #C9A96A テーマ）— 左下に大きく配置 */
+  .do-logo-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+  .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .do-logo-head-left { display: flex; align-items: center; gap: 8px; }
   .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
     background: rgba(201,169,106,0.18); color: #C9A96A;
   }
   .do-logo-sub { font-size: 9px; color: #6A6A70; }
-  .do-logo-name { font-size: 11px; color: #C8C8CE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* サムネは固定高さ 50px。カードがファイルアスペクト比で伸び縮みしないように */
-  .do-logo-thumb {
-    width: 100%; height: 50px; flex: none;
-    background: linear-gradient(135deg, #1A1208, #3A2818);
-    border-radius: 4px; border: 0.5px solid rgba(201,169,106,0.3);
-    display: flex; align-items: center; justify-content: center;
-    color: #C9A96A; font-size: 18px; overflow: hidden;
+  .do-logo-name { font-size: 11px; color: #C8C8CE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  /* 16:9 プレビュー — サブモニターの実際の見た目を反映 */
+  .do-logo-preview {
+    width: 100%; aspect-ratio: 16/9;
+    background: #000;
+    border: 0.5px solid rgba(201,169,106,0.3); border-radius: 4px;
+    position: relative; overflow: hidden;
+    cursor: move; /* ドラッグで位置調節 */
   }
-  .do-logo-thumb img, .do-logo-thumb video { width: 100%; height: 100%; object-fit: contain; }
-  .do-logo-thumb.empty {
+  .do-logo-preview.empty {
     background: transparent; border-style: dashed;
-    cursor: pointer; color: #6A6A70; font-size: 10px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: #6A6A70; font-size: 11px; letter-spacing: 1px;
   }
-  .do-logo-thumb.empty:hover { border-color: #C9A96A; color: #C9A96A; }
-  .do-logo-actions { display: flex; gap: 6px; align-items: center; }
+  .do-logo-preview.empty:hover { border-color: #C9A96A; color: #C9A96A; }
+  .do-logo-preview-content {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    transform-origin: center center;
+    transition: transform 0.08s ease;
+    pointer-events: none;
+  }
+  .do-logo-preview-content img,
+  .do-logo-preview-content video {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+  }
+  .do-logo-preview-hint {
+    position: absolute; left: 8px; bottom: 6px;
+    font-size: 9px; color: rgba(201,169,106,0.5); letter-spacing: 1px;
+    pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  }
+  .do-logo-preview:hover .do-logo-preview-hint { opacity: 1; }
+  .do-logo-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .do-logo-btn {
     background: transparent; border: 0.5px solid rgba(201,169,106,0.35); color: #C9A96A;
     padding: 4px 10px; border-radius: 3px; font-size: 9px; letter-spacing: 1px; font-weight: 600;
@@ -1477,29 +1496,6 @@
         </div>
       </div>
 
-      <!-- LOGO カード -->
-      <div class="do-card do-logo-card" id="doLogoCard">
-        <div class="do-logo-head-row">
-          <span class="do-logo-tag">LOGO</span>
-          <span class="do-logo-sub">客入れ常時表示</span>
-        </div>
-        <div class="do-logo-name" id="doLogoName" style="color:#6A6A70;">— 未読込</div>
-        <div class="do-logo-thumb empty" id="doLogoThumb">+ 画像 / 動画をドロップ</div>
-        <div class="do-logo-size-row" id="doLogoSizeRow" style="display:none;">
-          <span class="do-logo-size-label">SIZE</span>
-          <div class="do-logo-size-slider" id="doLogoSizeSlider">
-            <div class="do-logo-size-fill" id="doLogoSizeFill" style="width:50%;"></div>
-            <div class="do-logo-size-thumb" id="doLogoSizeThumb" style="left:50%;"></div>
-          </div>
-          <span class="do-logo-size-val" id="doLogoSizeVal">100%</span>
-        </div>
-        <div class="do-logo-actions">
-          <button class="do-logo-btn" onclick="doLogoLoad()">LOAD</button>
-          <button class="do-logo-btn" onclick="doLogoShow()" id="doLogoShowBtn" style="display:none; background:rgba(201,169,106,0.18); color:#C9A96A;">▶ SHOW</button>
-          <button class="do-logo-btn del" onclick="doLogoClear()" id="doLogoClearBtn" style="display:none;">CLEAR</button>
-        </div>
-        <input type="file" id="doLogoFileInput" accept="image/*,video/*" style="display:none;">
-      </div>
     </div>
 
     <!-- DUCK 設定（横長帯） -->
@@ -1541,6 +1537,37 @@
           </div>
           <div class="do-vid-grid" id="doVidGrid"></div>
           <input type="file" id="doVidFileInput" accept="video/*" style="display:none;">
+        </div>
+
+        <!-- LOGO カード（左下に大きく配置） -->
+        <div class="do-card do-logo-card" id="doLogoCard">
+          <div class="do-logo-head-row">
+            <div class="do-logo-head-left">
+              <span class="do-logo-tag">LOGO</span>
+              <span class="do-logo-sub">客入れ常時表示・ドラッグで位置調節</span>
+            </div>
+            <span class="do-logo-name" id="doLogoName" style="color:#6A6A70; text-align:right; flex:none;">— 未読込</span>
+          </div>
+          <div class="do-logo-preview empty" id="doLogoPreview">
+            <span id="doLogoPreviewEmptyText">+ 画像 / 動画 を ドロップ</span>
+            <div class="do-logo-preview-content" id="doLogoPreviewContent"></div>
+            <div class="do-logo-preview-hint">DRAG TO REPOSITION</div>
+          </div>
+          <div class="do-logo-size-row" id="doLogoSizeRow" style="display:none;">
+            <span class="do-logo-size-label">SIZE</span>
+            <div class="do-logo-size-slider" id="doLogoSizeSlider">
+              <div class="do-logo-size-fill" id="doLogoSizeFill" style="width:50%;"></div>
+              <div class="do-logo-size-thumb" id="doLogoSizeThumb" style="left:50%;"></div>
+            </div>
+            <span class="do-logo-size-val" id="doLogoSizeVal">100%</span>
+          </div>
+          <div class="do-logo-actions">
+            <button class="do-logo-btn" onclick="doLogoLoad()">LOAD</button>
+            <button class="do-logo-btn" onclick="doLogoShow()" id="doLogoShowBtn" style="display:none; background:rgba(201,169,106,0.18); color:#C9A96A;">▶ SHOW</button>
+            <button class="do-logo-btn" onclick="doLogoResetPosition()" id="doLogoResetBtn" style="display:none;">RESET POS</button>
+            <button class="do-logo-btn del" onclick="doLogoClear()" id="doLogoClearBtn" style="display:none;">CLEAR</button>
+          </div>
+          <input type="file" id="doLogoFileInput" accept="image/*,video/*" style="display:none;">
         </div>
       </div>
 
@@ -1585,7 +1612,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v6.5.8';
+const APP_VERSION = 'v6.6';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -1834,7 +1861,8 @@ const state = {
     },
     library: [null, null, null, null], // each: {sampleId, sampleName, audioBuffer, level}
     videoLibrary: [null, null, null], // each: {sampleId, sampleName, duration, thumbDataUrl}
-    logo: null, // { sampleName, type, thumbDataUrl, size, file?, scale } scale 0.3〜2.0、default 1.0
+    logo: null, // { sampleName, type, thumbDataUrl, size, file?, scale, posX, posY }
+                // scale 0.3〜2.0、default 1.0 / posX,posY: -1〜+1（viewport の ±50% 範囲）
     schedule: [], // [{id, time:'HH:MM:SS', chain:[{type:'a'|'v', idx} or legacy number],played:bool}]
     duck: { depthDb: -6.0, fadeSec: 0.8, videoFadeSec: 2.0 },
     // runtime (not persisted)
@@ -5219,7 +5247,7 @@ async function doLogoLoadFile(f) {
       }
     } catch (e) { console.warn('logo thumb fail', e); }
     URL.revokeObjectURL(url);
-    const prevScale = state.door.logo ? state.door.logo.scale : 1.0;
+    const prev = state.door.logo || {};
     // IndexedDB に永続化（LOGO は通常小さいので OK。失敗してもメモリ参照は維持）
     let sampleId = null;
     try {
@@ -5236,7 +5264,9 @@ async function doLogoLoadFile(f) {
       thumbDataUrl: thumb,
       size: f.size,
       file: f,
-      scale: prevScale || 1.0,
+      scale: prev.scale ?? 1.0,
+      posX: prev.posX ?? 0,
+      posY: prev.posY ?? 0,
     };
     doRenderLogo();
     doSave();
@@ -5284,34 +5314,122 @@ function doLogoClear() {
 function doRenderLogo() {
   const it = state.door.logo;
   const nameEl = document.getElementById('doLogoName');
-  const thumbEl = document.getElementById('doLogoThumb');
+  const previewEl = document.getElementById('doLogoPreview');
+  const previewContent = document.getElementById('doLogoPreviewContent');
+  const previewEmptyText = document.getElementById('doLogoPreviewEmptyText');
   const clearBtn = document.getElementById('doLogoClearBtn');
+  const showBtn = document.getElementById('doLogoShowBtn');
+  const resetBtn = document.getElementById('doLogoResetBtn');
   const sizeRow = document.getElementById('doLogoSizeRow');
-  if (!nameEl || !thumbEl) return;
+  if (!previewEl) return;
   if (!it) {
-    nameEl.textContent = '— 未読込';
-    nameEl.style.color = '#6A6A70';
-    thumbEl.className = 'do-logo-thumb empty';
-    thumbEl.innerHTML = '+ 画像 / 動画をドロップ';
-    thumbEl.onclick = () => doLogoLoad();
+    if (nameEl) { nameEl.textContent = '— 未読込'; nameEl.style.color = '#6A6A70'; }
+    previewEl.className = 'do-logo-preview empty';
+    if (previewEmptyText) previewEmptyText.style.display = '';
+    if (previewContent) previewContent.innerHTML = '';
+    previewEl.onclick = () => doLogoLoad();
     if (clearBtn) clearBtn.style.display = 'none';
+    if (showBtn) showBtn.style.display = 'none';
+    if (resetBtn) resetBtn.style.display = 'none';
     if (sizeRow) sizeRow.style.display = 'none';
   } else {
     const reLink = !it.file;
-    nameEl.innerHTML = escapeHtml(it.sampleName) + (reLink ? ' <span style="color:#EF9F27;font-size:9px;">⚠ 再リンク</span>' : '');
-    nameEl.style.color = '#C8C8CE';
-    thumbEl.className = 'do-logo-thumb';
-    if (it.thumbDataUrl) thumbEl.innerHTML = `<img src="${it.thumbDataUrl}" alt="">`;
-    else thumbEl.innerHTML = (it.type === 'video' ? '▶' : '▣');
-    thumbEl.onclick = reLink ? () => doLogoLoad() : null;
+    if (nameEl) {
+      nameEl.innerHTML = escapeHtml(it.sampleName) + (reLink ? ' <span style="color:#EF9F27;font-size:9px;">⚠ 再リンク</span>' : '');
+      nameEl.style.color = '#C8C8CE';
+    }
+    previewEl.className = 'do-logo-preview';
+    if (previewEmptyText) previewEmptyText.style.display = 'none';
+    if (previewContent) {
+      // 画像 or 動画のサムネを表示（プレビューは静止画でOK）
+      if (it.thumbDataUrl) {
+        previewContent.innerHTML = `<img src="${it.thumbDataUrl}" alt="">`;
+      } else {
+        previewContent.innerHTML = `<div style="color:#C9A96A; font-size:24px;">${it.type === 'video' ? '▶' : '▣'}</div>`;
+      }
+    }
+    previewEl.onclick = reLink ? () => doLogoLoad() : null;
     if (clearBtn) clearBtn.style.display = '';
-    const showBtn = document.getElementById('doLogoShowBtn');
     if (showBtn) showBtn.style.display = reLink ? 'none' : '';
+    if (resetBtn) resetBtn.style.display = reLink ? 'none' : '';
     if (sizeRow) {
       sizeRow.style.display = '';
       doRenderLogoSize();
     }
+    // プレビューの transform を反映
+    doRenderLogoPreviewTransform();
   }
+}
+function doRenderLogoPreviewTransform() {
+  const it = state.door.logo;
+  const previewContent = document.getElementById('doLogoPreviewContent');
+  if (!previewContent || !it) return;
+  const scale = it.scale ?? 1.0;
+  const posX = it.posX ?? 0;
+  const posY = it.posY ?? 0;
+  // posX/posY -1..+1 → プレビュー幅/高さの ±50% に対応
+  previewContent.style.transform = `translate(${posX * 50}%, ${posY * 50}%) scale(${scale})`;
+}
+function doLogoResetPosition() {
+  if (!state.door.logo) return;
+  state.door.logo.posX = 0;
+  state.door.logo.posY = 0;
+  doRenderLogoPreviewTransform();
+  doSave();
+  if (_outBC && _outWindow && !_outWindow.closed) {
+    _outBC.postMessage({ cmd: 'logo-transform', posX: 0, posY: 0, scale: state.door.logo.scale ?? 1.0 });
+  }
+  showToast('LOGO 位置をセンターに戻しました');
+}
+// プレビュー上のドラッグで位置調節
+let _logoPosDragActive = false;
+let _logoPosDragStart = null;
+function bindDoLogoPreviewDrag() {
+  const preview = document.getElementById('doLogoPreview');
+  if (!preview) return;
+  preview.addEventListener('pointerdown', e => {
+    if (!state.door.logo || !state.door.logo.file) return;
+    if (preview.classList.contains('empty')) return;
+    e.preventDefault();
+    _logoPosDragActive = true;
+    const r = preview.getBoundingClientRect();
+    _logoPosDragStart = {
+      startX: e.clientX, startY: e.clientY,
+      origX: state.door.logo.posX || 0,
+      origY: state.door.logo.posY || 0,
+      width: r.width, height: r.height,
+    };
+    try { preview.setPointerCapture(e.pointerId); } catch(_) {}
+  });
+  window.addEventListener('pointermove', e => {
+    if (!_logoPosDragActive || !_logoPosDragStart) return;
+    e.preventDefault();
+    const dx = (e.clientX - _logoPosDragStart.startX) / _logoPosDragStart.width;
+    const dy = (e.clientY - _logoPosDragStart.startY) / _logoPosDragStart.height;
+    // プレビュー上の動きを viewport の動きにマップ
+    // posX,Y は -1..+1（viewport ±50% に相当）
+    // プレビュー幅で 1.0 移動 = viewport で 0.5 → posX += 2*dx ではなく posX += dx*2
+    // 実際: posX 1.0 = 視覚的に preview の 50% 移動なので、ドラッグ分（プレビュー比）= posX 変化分の 50%
+    // つまり posX_new = posX_orig + dx * 2
+    let nx = _logoPosDragStart.origX + dx * 2;
+    let ny = _logoPosDragStart.origY + dy * 2;
+    nx = Math.max(-1, Math.min(1, nx));
+    ny = Math.max(-1, Math.min(1, ny));
+    state.door.logo.posX = nx;
+    state.door.logo.posY = ny;
+    doRenderLogoPreviewTransform();
+    if (_outBC && _outWindow && !_outWindow.closed) {
+      _outBC.postMessage({ cmd: 'logo-transform', posX: nx, posY: ny, scale: state.door.logo.scale ?? 1.0 });
+    }
+  });
+  const endDrag = () => {
+    if (!_logoPosDragActive) return;
+    _logoPosDragActive = false;
+    _logoPosDragStart = null;
+    doSave();
+  };
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
 }
 
 // LOGO を OUTPUT に強制再送 + 再描画。OUTPUT が表示されない時の救済ボタン用
@@ -5370,9 +5488,15 @@ function bindDoLogoSizeSlider() {
     const p = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
     state.door.logo.scale = _logoSliderToScale(p);
     doRenderLogoSize();
-    // OUTPUT へ即時反映
+    doRenderLogoPreviewTransform();
+    // OUTPUT へ即時反映（logo-transform で scale + 現在位置をまとめて送る）
     if (_outBC && _outWindow && !_outWindow.closed) {
-      _outBC.postMessage({ cmd: 'logo-scale', value: state.door.logo.scale });
+      _outBC.postMessage({
+        cmd: 'logo-transform',
+        scale: state.door.logo.scale,
+        posX: state.door.logo.posX ?? 0,
+        posY: state.door.logo.posY ?? 0,
+      });
     }
   };
   window.addEventListener('pointermove', e => { if (_logoSizeDragActive) { e.preventDefault(); update(e.clientX); } });
@@ -5401,7 +5525,10 @@ function doLogoSendToOutput() {
   const url = URL.createObjectURL(it.file);
   if (_outCurrentLogoUrl) { try { URL.revokeObjectURL(_outCurrentLogoUrl); } catch(_) {} }
   _outCurrentLogoUrl = url;
-  _outBC.postMessage({ cmd: 'logo', kind: it.type, url, name: it.sampleName, scale: it.scale || 1.0 });
+  _outBC.postMessage({
+    cmd: 'logo', kind: it.type, url, name: it.sampleName,
+    scale: it.scale || 1.0, posX: it.posX || 0, posY: it.posY || 0,
+  });
 }
 let _outCurrentLogoUrl = null;
 // LOGO を IDB から復元（doRestoreAudioBuffers から呼ばれる）
@@ -6555,6 +6682,8 @@ function doSave() {
         sampleName: state.door.logo.sampleName, type: state.door.logo.type,
         thumbDataUrl: state.door.logo.thumbDataUrl, size: state.door.logo.size,
         scale: state.door.logo.scale ?? 1.0,
+        posX: state.door.logo.posX ?? 0,
+        posY: state.door.logo.posY ?? 0,
       }) : null,
       schedule: state.door.schedule.map(r => ({
         id: r.id, time: r.time, chain: [...r.chain], played: false,
@@ -6614,6 +6743,8 @@ function doLoad() {
         sampleName: s.logo.sampleName, type: s.logo.type,
         thumbDataUrl: s.logo.thumbDataUrl, size: s.logo.size,
         scale: s.logo.scale ?? 1.0,
+        posX: s.logo.posX ?? 0,
+        posY: s.logo.posY ?? 0,
         file: null, // 直後は null。doRestoreLogoFromDB で IDB から復元
       };
     }
@@ -6726,6 +6857,7 @@ function doInit() {
   bindDoBgmDrop();
   bindDoLogoDrop();
   bindDoLogoSizeSlider();
+  bindDoLogoPreviewDrag();
   bindDoLibDrop();
   bindDoDuck();
   // ドラッグ系の残留ハイライトをグローバルに掃除
@@ -6820,18 +6952,23 @@ function initOutputMode() {
   // === LOGO 管理（main から logo コマンドで設定） ===
   let currentLogoUrl = null;
   let currentLogoScale = 1.0;
-  const applyLogoScale = () => {
-    const t = `scale(${currentLogoScale})`;
+  let currentLogoPosX = 0;
+  let currentLogoPosY = 0;
+  const applyLogoTransform = () => {
+    // posX/posY -1..+1 → viewport の ±50% に対応
+    const t = `translate(${currentLogoPosX * 50}vw, ${currentLogoPosY * 50}vh) scale(${currentLogoScale})`;
     logoImg.style.transform = t;
     logoVideo.style.transform = t;
     logoImg.style.transformOrigin = 'center center';
     logoVideo.style.transformOrigin = 'center center';
   };
-  const setLogo = (kind, url, name, scale) => {
+  const setLogo = (kind, url, name, scale, posX, posY) => {
     if (currentLogoUrl && currentLogoUrl !== url) { try { URL.revokeObjectURL(currentLogoUrl); } catch(_) {} }
     currentLogoUrl = url;
     if (typeof scale === 'number' && isFinite(scale)) currentLogoScale = scale;
-    applyLogoScale();
+    if (typeof posX === 'number' && isFinite(posX)) currentLogoPosX = posX;
+    if (typeof posY === 'number' && isFinite(posY)) currentLogoPosY = posY;
+    applyLogoTransform();
     if (kind === 'video') {
       logoImg.style.display = 'none';
       logoVideo.src = url;
@@ -6848,11 +6985,14 @@ function initOutputMode() {
     }
     idle.style.display = 'none';
   };
-  const setLogoScale = (s) => {
-    if (typeof s !== 'number' || !isFinite(s)) return;
-    currentLogoScale = s;
-    applyLogoScale();
+  const setLogoTransform = (scale, posX, posY) => {
+    if (typeof scale === 'number' && isFinite(scale)) currentLogoScale = scale;
+    if (typeof posX === 'number' && isFinite(posX)) currentLogoPosX = posX;
+    if (typeof posY === 'number' && isFinite(posY)) currentLogoPosY = posY;
+    applyLogoTransform();
   };
+  // 後方互換用
+  const setLogoScale = (s) => setLogoTransform(s, currentLogoPosX, currentLogoPosY);
   const clearLogo = () => {
     if (currentLogoUrl) { try { URL.revokeObjectURL(currentLogoUrl); } catch(_) {} currentLogoUrl = null; }
     logoImg.style.display = 'none';
@@ -6938,9 +7078,10 @@ function initOutputMode() {
     }
     else if (m.cmd === 'stop') { _pendingPlay = null; stopVideo(); }
     else if (m.cmd === 'ping') bc.postMessage({ event: 'pong', unlocked: autoplayUnlocked });
-    else if (m.cmd === 'logo' && m.url) setLogo(m.kind, m.url, m.name, m.scale);
+    else if (m.cmd === 'logo' && m.url) setLogo(m.kind, m.url, m.name, m.scale, m.posX, m.posY);
     else if (m.cmd === 'logo-clear') clearLogo();
     else if (m.cmd === 'logo-scale') setLogoScale(m.value);
+    else if (m.cmd === 'logo-transform') setLogoTransform(m.scale, m.posX, m.posY);
   };
 
   // === Fullscreen 切替 ===
