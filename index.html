@@ -2034,41 +2034,62 @@
     background: rgba(125,184,158,0.08) !important;
   }
 
-  /* CHANNEL ROUTING - 横並びピル形式（AUDIO IFACE 内にインライン配置） */
+  /* CHANNEL ROUTING - フェーダーストリップと同じカードデザイン（縦積み） */
   .mt-ch-strip {
-    display: flex; gap: 5px; flex-wrap: wrap; align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    align-items: stretch;
   }
   .mt-ch-pill {
-    display: flex; align-items: center; gap: 3px;
-    padding: 4px 6px;
-    background: #0B0B0E;
-    border: 0.5px solid #1A1A1E;
-    border-left: 2px solid var(--c, #5A5A60);
-    border-radius: 3px;
-    flex: 1; min-width: 0;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 3px;
+    padding: 9px 3px 6px 3px;
+    background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
+    border: 1px solid #2A2A30;
+    border-radius: 7px;
+    min-width: 0;
+    box-shadow:
+      0 2px 6px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      inset 0 -1px 0 rgba(0,0,0,0.4);
+    color: var(--c, #C8C8CE);
+  }
+  /* カード上端のカラーバンド（フェーダーストリップと同じ） */
+  .mt-ch-pill::before {
+    content: ''; position: absolute; left: 4px; right: 4px; top: 3px;
+    height: 3px;
+    background: currentColor;
+    border-radius: 2px;
+    opacity: 0.85;
+    box-shadow: 0 0 6px currentColor;
   }
   .mt-ch-glabel {
-    font-size: 9px; letter-spacing: 1px; font-weight: 700;
-    color: var(--c, #C8C8CE);
-    margin-right: 2px;
+    font-size: 10px; letter-spacing: 1.2px; font-weight: 700;
+    color: currentColor;
+    margin: 0;
     flex-shrink: 0;
   }
+  .mt-ch-row {
+    display: flex; align-items: center; justify-content: center; gap: 2px;
+    width: 100%;
+  }
   .mt-ch-sep {
-    color: #4A4A50; font-family: 'SF Mono', monospace; font-size: 9px;
+    color: #6A6A70; font-family: 'SF Mono', monospace; font-size: 10px;
     flex-shrink: 0;
   }
   .mt-ch-input {
-    width: 22px; min-width: 0;
-    background: transparent; border: none; color: #92C9B0;
-    padding: 1px 0; border-radius: 0;
+    width: 26px; min-width: 0;
+    background: #06060A; border: 0.5px solid #1A1A1E; color: #FFFFFF;
+    padding: 2px 0; border-radius: 3px;
     font-family: 'SF Mono', monospace; font-size: 11px;
-    text-align: center; font-weight: 600;
-    text-shadow: 0 0 4px rgba(146,201,176,0.4);
+    text-align: center; font-weight: 700;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
   }
   .mt-ch-input:focus {
     outline: none; color: #FFFFFF;
-    background: rgba(125,184,158,0.1); border-radius: 2px;
+    background: rgba(125,184,158,0.12); border-color: #7DB89E;
   }
   .mt-ch-input::-webkit-inner-spin-button { display: none; }
   .mt-ch-input { -moz-appearance: textfield; }
@@ -2681,39 +2702,51 @@
         <div class="mt-ch-strip" id="mtChMatrix">
           <div class="mt-ch-pill" style="--c:#8DB7F5">
             <span class="mt-ch-glabel">CL</span>
-            <input type="number" class="mt-ch-input" id="mtChClickL" min="1" max="32" value="11" onchange="mtSetCh('click','L',this.value)" title="CLICK L">
-            <span class="mt-ch-sep">·</span>
-            <input type="number" class="mt-ch-input" id="mtChClickR" min="1" max="32" value="12" onchange="mtSetCh('click','R',this.value)" title="CLICK R">
+            <div class="mt-ch-row">
+              <input type="number" class="mt-ch-input" id="mtChClickL" min="1" max="32" value="11" onchange="mtSetCh('click','L',this.value)" title="CLICK L">
+              <span class="mt-ch-sep">·</span>
+              <input type="number" class="mt-ch-input" id="mtChClickR" min="1" max="32" value="12" onchange="mtSetCh('click','R',this.value)" title="CLICK R">
+            </div>
           </div>
           <div class="mt-ch-pill" style="--c:#F0C75E">
             <span class="mt-ch-glabel">VO</span>
-            <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="9" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L">
-            <span class="mt-ch-sep">·</span>
-            <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
+            <div class="mt-ch-row">
+              <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="9" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L">
+              <span class="mt-ch-sep">·</span>
+              <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="10" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
+            </div>
           </div>
           <div class="mt-ch-pill" style="--c:#97C459">
             <span class="mt-ch-glabel">CH</span>
-            <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="7" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L">
-            <span class="mt-ch-sep">·</span>
-            <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="8" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R">
+            <div class="mt-ch-row">
+              <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="7" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L">
+              <span class="mt-ch-sep">·</span>
+              <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="8" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R">
+            </div>
           </div>
           <div class="mt-ch-pill" style="--c:#EF9F27">
             <span class="mt-ch-glabel">OT</span>
-            <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)" title="OTHER L">
-            <span class="mt-ch-sep">·</span>
-            <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)" title="OTHER R">
+            <div class="mt-ch-row">
+              <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="5" onchange="mtSetCh('other','L',this.value)" title="OTHER L">
+              <span class="mt-ch-sep">·</span>
+              <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="6" onchange="mtSetCh('other','R',this.value)" title="OTHER R">
+            </div>
           </div>
           <div class="mt-ch-pill" style="--c:#85B7EB">
             <span class="mt-ch-glabel">BA</span>
-            <input type="number" class="mt-ch-input" id="mtChBassL" min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)" title="BASS L">
-            <span class="mt-ch-sep">·</span>
-            <input type="number" class="mt-ch-input" id="mtChBassR" min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)" title="BASS R">
+            <div class="mt-ch-row">
+              <input type="number" class="mt-ch-input" id="mtChBassL" min="1" max="32" value="3" onchange="mtSetCh('bass','L',this.value)" title="BASS L">
+              <span class="mt-ch-sep">·</span>
+              <input type="number" class="mt-ch-input" id="mtChBassR" min="1" max="32" value="4" onchange="mtSetCh('bass','R',this.value)" title="BASS R">
+            </div>
           </div>
           <div class="mt-ch-pill" style="--c:#ED93B1">
             <span class="mt-ch-glabel">DR</span>
-            <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L">
-            <span class="mt-ch-sep">·</span>
-            <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R">
+            <div class="mt-ch-row">
+              <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="1" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L">
+              <span class="mt-ch-sep">·</span>
+              <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="2" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R">
+            </div>
           </div>
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
@@ -2754,7 +2787,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.25.0';
+const APP_VERSION = 'v7.25.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
