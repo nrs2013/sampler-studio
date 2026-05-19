@@ -1738,24 +1738,25 @@
   /* フェーダー横の dB ラベル (0 / +3 / -3 / -6 / -12) */
   .mt-strip-fader-lab {
     position: absolute;
-    left: -17px;
+    left: -22px;
     bottom: 0;
     transform: translateY(50%);
     font-family: 'SF Mono', monospace;
-    font-size: 7.5px;
-    font-weight: 600;
-    color: #5A5A60;
+    font-size: 9px;
+    font-weight: 700;
+    color: #A0A0A8;
     pointer-events: none;
     letter-spacing: -0.4px;
     white-space: nowrap;
     text-align: right;
-    width: 14px;
+    width: 18px;
+    z-index: 2;
   }
   .mt-strip-fader-lab.zero {
     color: #7DB89E;
     font-weight: 800;
-    font-size: 8.5px;
-    text-shadow: 0 0 4px rgba(125,184,158,0.5);
+    font-size: 10px;
+    text-shadow: 0 0 6px rgba(125,184,158,0.6);
   }
   .mt-strip-fader-lab.plus { color: #F0C75E; font-weight: 700; }
 
@@ -2734,7 +2735,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.24.2';
+const APP_VERSION = 'v7.24.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -2970,7 +2971,7 @@ const state = {
     outputDeviceId: '',           // selected audio output device (sinkId)
     outputDeviceLabel: '',
     outputChannelCount: 2,        // detected channel count of selected device
-    gapSec: 3.0,                  // 曲間の自動隙間
+    gapSec: 0,                    // 曲間の自動隙間（デフォルト 0 秒、各曲で個別設定可）
     autoAdvance: true,
     channelMap: {                 // 各グループの出力ch（1始まり）
       click:  { L: 11, R: 12 },
@@ -8549,7 +8550,7 @@ function mtSerialize() {
     songs: m.songs.map(s => ({
       id: s.id, name: s.name,
       autoNext: s.autoNext || 'auto',
-      nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : (m.gapSec || 3.0),
+      nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : 0,
       locates: Array.isArray(s.locates) ? s.locates.map(l => ({ time: l.time })) : [],
       tracks: Object.fromEntries(
         Object.entries(s.tracks || {}).map(([g, t]) => {
@@ -8569,7 +8570,9 @@ function mtRestore(saved) {
   const m = state.multitrack;
   if (saved.outputDeviceId) m.outputDeviceId = saved.outputDeviceId;
   if (saved.outputDeviceLabel) m.outputDeviceLabel = saved.outputDeviceLabel;
-  if (typeof saved.gapSec === 'number') m.gapSec = saved.gapSec;
+  // gapSec は UI 廃止＋デフォルト 0 に統一。古いセーブで 3 等が保存されていても
+  // 各曲の nextDelay は個別保存されているのでこれは新規曲のデフォルトだけに影響
+  m.gapSec = 0;
   // autoAdvance: UI 廃止後は常に true（各曲ごとの autoNext / nextDelay が支配的）
   m.autoAdvance = true;
   if (saved.channelMap) m.channelMap = saved.channelMap;
@@ -8582,7 +8585,7 @@ function mtRestore(saved) {
     tracks: s.tracks || {},
     unassigned: Array.isArray(s.unassigned) ? s.unassigned : [],
     autoNext: s.autoNext === 'stop' ? 'stop' : 'auto',
-    nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : (m.gapSec || 3.0),
+    nextDelay: (typeof s.nextDelay === 'number') ? s.nextDelay : 0,
     locates: Array.isArray(s.locates) ? s.locates : [],
   }));
   if (typeof saved.currentSongIdx === 'number') m.currentSongIdx = saved.currentSongIdx;
