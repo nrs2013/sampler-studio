@@ -97,6 +97,18 @@
   .section-head .badge-mini { display: flex; gap: 3px; }
   .divider { height: 0.5px; background: #1F1F22; margin: 2px 0; }
 
+  /* PLAY MODE (SAMPLER モード時のみ) */
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+  .mode-btn {
+    background: #14141A; padding: 6px 0; text-align: center; border-radius: 4px;
+    font-size: 9px; color: #6A6A70; cursor: pointer; border: none; font-family: inherit;
+  }
+  .mode-btn:hover { background: #25252A; color: #E6E6EA; }
+  .mode-btn.active { background: #7DB89E; color: #0E1A14; font-weight: 500; }
+  /* モード別表示制御: SAMPLER モード以外では sampler-only クラスを隠す */
+  body.mode-door .sampler-only,
+  body.mode-multi .sampler-only { display: none !important; }
+
   /* MASTER FADER */
   .master-area { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; min-height: 0; }
   .master-head { display: flex; align-items: center; justify-content: space-between; width: 100%; }
@@ -461,8 +473,16 @@
 
   /* TRIM EDITOR */
   .trim-modal { width: 760px; max-width: 92vw; }
-  .trim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .trim-title { font-size: 14px; font-weight: 500; }
+  .trim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; }
+  .trim-title { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .pad-rename-input {
+    background: transparent; border: 0.5px solid #25252A; color: #E6E6EA;
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    padding: 4px 8px; border-radius: 4px;
+    flex: 1; min-width: 0; max-width: 480px;
+  }
+  .pad-rename-input:hover { border-color: #3A3A42; background: rgba(0,0,0,0.3); }
+  .pad-rename-input:focus { outline: none; border-color: #7DB89E; background: rgba(0,0,0,0.4); color: #FFFFFF; }
   .trim-subtitle { font-size: 11px; color: #6A6A70; margin-top: 2px; }
   .zoom-bar {
     display: flex; gap: 10px; margin-bottom: 8px; align-items: center;
@@ -1706,7 +1726,7 @@
     opacity: 0;
   }
 
-  /* dB readout LCD-style */
+  /* dB readout LCD-style (入力可能) */
   .mt-strip-db {
     font-family: 'SF Mono', monospace; font-size: 9px; color: #92C9B0;
     background: #06060A; padding: 2px 4px; border-radius: 3px;
@@ -1714,7 +1734,13 @@
     border: 0.5px solid #1A1A1E;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
     text-shadow: 0 0 4px rgba(146,201,176,0.5);
+    width: 100%; min-width: 0;
+    -webkit-appearance: none; appearance: none;
+    outline: none;
+    cursor: text;
   }
+  .mt-strip-db:focus { border-color: #7DB89E; color: #FFFFFF; }
+  .mt-strip-db[readonly] { cursor: default; }
   .mt-strip.muted .mt-strip-db { color: #E24B4A; text-shadow: 0 0 4px rgba(226,75,74,0.5); }
 
   /* MUTE / SOLO buttons (横並びで2分割) */
@@ -2011,6 +2037,20 @@
 
   <div class="main">
     <div class="left-panel">
+      <!-- PLAY MODE (SAMPLER モード時のみ表示) -->
+      <div class="panel-section sampler-only">
+        <div class="section-head">
+          <span>PLAY MODE</span>
+        </div>
+        <div class="mode-grid" id="modeGrid">
+          <button class="mode-btn" data-mode="mono" onclick="setPlayMode('mono')">MONO</button>
+          <button class="mode-btn active" data-mode="poly" onclick="setPlayMode('poly')">POLY</button>
+          <button class="mode-btn" data-mode="xfade" onclick="setPlayMode('xfade')">X-FADE</button>
+          <button class="mode-btn" data-mode="trig" onclick="setPlayMode('trig')">TRIG</button>
+        </div>
+      </div>
+      <div class="divider sampler-only"></div>
+
       <!-- STOP / PAUSE -->
       <div class="panel-section">
         <div class="btn-row">
@@ -2508,7 +2548,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.11';
+const APP_VERSION = 'v7.12';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4443,9 +4483,14 @@ function openTrimEditor(bankIdx, padIdx) {
   content.innerHTML = `
     <div class="trim-modal">
       <div class="trim-header">
-        <div>
-          <div class="trim-title">PAD ${padIdx+1} ・ ${escapeHtml(pad.sampleName || '')}</div>
-          <div class="trim-subtitle">音の頭・お尻をハンドル(緑＝開始/橙＝終了)でドラッグ調整・ホイールでズーム</div>
+        <div style="flex:1; min-width:0;">
+          <div class="trim-title">
+            <span style="color:#6A6A70;">PAD ${padIdx+1} ・</span>
+            <input type="text" id="padRenameInp" class="pad-rename-input"
+                   value="${escapeHtml(pad.sampleName || '')}"
+                   title="クリックして名前を変更" />
+          </div>
+          <div class="trim-subtitle">名前は上で編集 ・ 音の頭/お尻をハンドル(緑/橙)でドラッグ・ホイールでズーム</div>
         </div>
         <button class="btn-small" onclick="closeTrimEditor()">✕</button>
       </div>
@@ -4499,6 +4544,22 @@ function openTrimEditor(bankIdx, padIdx) {
     updateTrimUI();
     bindTrimHandles();
     bindTrimZoomWheel();
+    // パッド名リネーム入力をバインド
+    const renameInp = document.getElementById('padRenameInp');
+    if (renameInp) {
+      renameInp.addEventListener('change', () => {
+        const newName = (renameInp.value || '').trim() || pad.sampleName || 'untitled';
+        pad.sampleName = newName;
+        renameInp.value = newName;
+        saveStateLocal();
+        render();
+        showToast(`PAD ${padIdx+1} の名前を「${newName}」に変更`);
+      });
+      renameInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); renameInp.blur(); }
+        else if (e.key === 'Escape') { e.preventDefault(); renameInp.value = pad.sampleName || ''; renameInp.blur(); }
+      });
+    }
     document.getElementById('trimStartInp').addEventListener('change', e => {
       const v = Math.max(0, Math.min(parseFloat(e.target.value) || 0, pad.trimEnd - 0.01));
       pad.trimStart = v;
@@ -9251,8 +9312,19 @@ function mtRenderMixer() {
     wrap.appendChild(meter);
     strip.appendChild(wrap);
 
-    // dB readout
-    const db = document.createElement('div'); db.className = 'mt-strip-db'; db.dataset.mtDb = g;
+    // dB readout — 入力可能（"−2" や "-2.0" で 2dB 下げる、空欄リセット）
+    const db = document.createElement('input');
+    db.type = 'text';
+    db.className = 'mt-strip-db';
+    db.dataset.mtDb = g;
+    db.maxLength = 7;
+    db.title = '値を直接入力（例: -2 / +1.5 / -∞ で最小）';
+    db.onclick = (e) => { e.stopPropagation(); db.select(); };
+    db.onkeydown = (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); db.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); mtRenderFaderPos(g); db.blur(); }
+    };
+    db.onchange = () => mtApplyDbInput(g, db.value);
     strip.appendChild(db);
 
     // MUTE / SOLO ボタン
@@ -9311,18 +9383,47 @@ function mtRenderFaderPos(group) {
   const thumb = fader.querySelector('.mt-strip-fader-thumb');
   if (fill) fill.style.height = (pos * 100) + '%';
   if (thumb) thumb.style.bottom = (pos * 100) + '%';
-  // dB readout
+  // dB readout (input)
   const db = document.querySelector(`[data-mt-db="${group}"]`);
   if (db) {
+    // 入力中は触らない
+    if (document.activeElement === db) return;
     if (state.multitrack.groupMute[group]) {
-      db.textContent = 'MUTE';
+      db.value = 'MUTE';
       db.style.color = '#E24B4A';
+      db.readOnly = true;
     } else {
       const dbv = mtLinToDb(v);
-      db.textContent = isFinite(dbv) ? (dbv >= 0 ? '+' : '') + dbv.toFixed(1) : '-∞';
-      db.style.color = '#C8C8CE';
+      db.value = isFinite(dbv) ? (dbv >= 0 ? '+' : '') + dbv.toFixed(1) : '-∞';
+      db.style.color = '';
+      db.readOnly = false;
     }
   }
+}
+
+// dB 入力文字列をパースして gain に反映
+// 受け付ける表現: "-2", "+1.5", "0", "-∞", "-inf", " -2dB ", "−2" (全角マイナス)
+function mtApplyDbInput(group, raw) {
+  if (state.multitrack.groupMute[group]) { mtRenderFaderPos(group); return; }
+  let s = (raw || '').trim();
+  // 全角マイナス・ハイフン類を半角に
+  s = s.replace(/[−–—ー]/g, '-');
+  // -∞ / -inf → 0 linear
+  if (/^-\s*(∞|inf(inity)?)$/i.test(s)) {
+    mtSetGroupGain(group, 0);
+    return;
+  }
+  // 数値以外を除去（先頭の +/- は残す）
+  const m = s.match(/^([+-]?)\s*([\d.]+)/);
+  if (!m) { mtRenderFaderPos(group); return; }
+  let v = parseFloat((m[1] || '') + m[2]);
+  if (!isFinite(v)) { mtRenderFaderPos(group); return; }
+  // dB 範囲を制限（フェーダーは +3dB が上限、下は実質 -∞）
+  if (v > 3) v = 3;
+  if (v < -60) v = -60;
+  const lin = mtDbToLin(v);
+  // mtSetGroupGain は内部で +3dB (linear 1.4) にクランプ
+  mtSetGroupGain(group, lin);
 }
 
 function mtBindFader(fader, group) {
