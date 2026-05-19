@@ -2548,7 +2548,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.12';
+const APP_VERSION = 'v7.12.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4527,7 +4527,7 @@ function openTrimEditor(bankIdx, padIdx) {
         </div>
         <div class="trim-field">
           <span class="trim-field-label">DURATION</span>
-          <span class="trim-field-value" id="trimDurDisp">${(pad.trimEnd - pad.trimStart).toFixed(3)} s</span>
+          <span class="trim-field-value" id="trimDurDisp">${fmtMinSec(pad.trimEnd - pad.trimStart)}</span>
         </div>
       </div>
       <div class="modal-buttons">
@@ -4856,7 +4856,7 @@ function updateTrimUI() {
 
   document.getElementById('trimStartInp').value = pad.trimStart.toFixed(3);
   document.getElementById('trimEndInp').value = pad.trimEnd.toFixed(3);
-  document.getElementById('trimDurDisp').textContent = (pad.trimEnd - pad.trimStart).toFixed(3) + ' s';
+  document.getElementById('trimDurDisp').textContent = fmtMinSec(pad.trimEnd - pad.trimStart);
 
   const rStart = document.getElementById('rulerStart');
   const rMid = document.getElementById('rulerMid');
@@ -7111,6 +7111,21 @@ function doRenderLibrary() {
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 秒数を「分:秒.ミリ秒」表記に。1時間越えは "h:mm:ss.mmm"。負値は 0 扱い。
+function fmtMinSec(sec) {
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  const totalMs = Math.round(sec * 1000);
+  const ms = totalMs % 1000;
+  const totalSec = Math.floor(totalMs / 1000);
+  const s = totalSec % 60;
+  const totalMin = Math.floor(totalSec / 60);
+  const m = totalMin % 60;
+  const h = Math.floor(totalMin / 60);
+  const pad = (n, w = 2) => String(n).padStart(w, '0');
+  if (h > 0) return `${h}:${pad(m)}:${pad(s)}.${pad(ms,3)}`;
+  return `${m}:${pad(s)}.${pad(ms,3)}`;
 }
 
 // ---- SCHEDULE ----
