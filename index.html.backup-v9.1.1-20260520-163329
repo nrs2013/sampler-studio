@@ -4,14 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAMPLER STUDIO</title>
-<!-- v11.0.0: PWA 化 + .sampler 拡張子ダブルクリック起動 -->
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
-<meta name="theme-color" content="#3DB5A6">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SAMPLER STUDIO">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -665,36 +657,11 @@
      Previously we hid PLAY MODE/FADE系 in DOOR mode, but the user wants them visible too. */
 
   /* DOOR OPEN PAGE */
-  /* v11.2.0/2/3: doorPage 全体を 2 カラム grid に統一
-     左カラム: BGMペア (row1) / DUCK (row2) / 下段プール (row3, 1fr)
-     右カラム: NOW (row1) / SCHEDULE (row2-3, 上に伸びる)
-     v11.2.3: minmax(0, ...) で縮小時もレイアウト破綻しないように */
-  #doorPage {
-    display: grid;
-    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
-    gap: 8px;
-    flex: 1; min-height: 0; min-width: 0;
-    overflow: hidden;
-  }
-  .do-top-bgm-pair { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-height: 0; min-width: 0; }
-  /* DUCK 帯を左カラム row2 に */
-  .do-duck-strip.do-grid { grid-column: 1; grid-row: 2; min-width: 0; }
-  /* 下段プール: 左カラム row3 */
-  .do-left-bottom-col { grid-column: 1; grid-row: 3; min-height: 0; min-width: 0; overflow: hidden;
-                        display: flex; flex-direction: column; gap: 8px; }
-  /* v11.2.7: 3 段 (ANNOUNCE / VIDEO / LOGO) を均等に flex:1 で固定分割 */
-  .do-left-bottom-col > .do-card { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-  /* グリッドエリアもカード内で伸びる */
-  .do-left-bottom-col .do-lib-grid,
-  .do-left-bottom-col .do-vid-grid { flex: 1; min-height: 0; }
-  /* v11.2.2: NOW は BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる */
-  #doNowCard.do-grid { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; overflow: hidden; }
-  .do-sched-card.do-grid { grid-column: 2; grid-row: 2 / span 2; min-height: 0; min-width: 0;
-                           display: flex; flex-direction: column; overflow: hidden; }
+  #doorPage { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
+  /* 上段は 3 カラム（NOW / DOOR BGM / WORKOUT BGM）に戻す */
+  .do-top { display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(220px, 1fr) minmax(220px, 1fr); gap: 8px; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
-  /* v11.2.7: LOGO カードは .do-left-bottom-col > .do-card で均等分割される */
-  .do-logo-card { gap: 6px; padding: 10px; }
+  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .do-logo-head-left { display: flex; align-items: center; gap: 8px; }
   .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
@@ -782,7 +749,7 @@
   .do-bgm-tag.tag-door { background: rgba(93,202,165,0.2); color: #3DB5A6; }
   .do-bgm-tag.tag-workout { background: rgba(46,122,255,0.2); color: #2E7AFF; }
   .do-bgm-sub { font-size: 10px; color: #6A6A70; }
-  .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* WORKOUT 用色違いボタン／フィル */
   .do-bgm-btn.primary.door { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-btn.primary.door:hover { background: #5BC4B0; }
@@ -796,8 +763,8 @@
   .do-bgm-vol-fill.workout { background: #2E7AFF; }
   .do-bgm-vol-thumb.door { background: #3DB5A6; }
   .do-bgm-vol-thumb.workout { background: #2E7AFF; }
-  /* BGMカード共通 (v11.2.5: 内部スペース拡張で文字とボタンの息継ぎ確保) */
-  .do-bgm-card { padding: 14px 14px 16px; }
+  /* BGMカード共通 */
+  .do-bgm-card { padding: 10px; }
   .do-card {
     background: #131316; border: 0.5px solid #1F1F22; border-radius: 8px; padding: 10px;
     transition: border-color 0.15s, background 0.15s;
@@ -837,11 +804,11 @@
   .do-status-badge.playing { background: rgba(226,75,74,0.15); color: #E24B4A; }
 
   /* BGM */
-  .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
   .do-bgm-name { font-size: 11px; color: #C8C8CE; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .do-bgm-load { font-size: 9px; color: #6A6A70; cursor: pointer; padding: 4px 10px; background: #14141A; border-radius: 3px; border: none; font-family: inherit; letter-spacing: 1px; }
   .do-bgm-load:hover { background: #25252A; color: #E6E6EA; }
-  .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; }
+  .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
   .do-bgm-btn {
     width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #25252A;
     background: #14141A; color: #E6E6EA; cursor: pointer; display: flex;
@@ -855,8 +822,8 @@
   .do-bgm-btn.primary:hover { background: #5BC4B0; }
   .do-bgm-btn.active { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
-  .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; margin-bottom: 8px; }
-  .do-bgm-bar { height: 4px; background: #14141A; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+  .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; }
+  .do-bgm-bar { height: 4px; background: #14141A; border-radius: 2px; overflow: hidden; }
   .do-bgm-bar-fill { height: 100%; background: #3DB5A6; width: 0%; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
   .do-bgm-vol-label { font-size: 9px; color: #6A6A70; letter-spacing: 1.5px; width: 30px; }
@@ -3037,9 +3004,20 @@
 
   <!-- DOOR OPEN PAGE -->
   <div id="doorPage" style="display:none;">
-      <!-- v11.2.0: doorPage 全体が grid。直接 grid item を配置 -->
-      <!-- 左カラム row1: BGM 2つを内側で 2 分割 -->
-      <div class="do-top-bgm-pair">
+    <div class="do-top">
+      <!-- NOW / NEXT — 横並び -->
+      <div class="do-card" id="doNowCard">
+        <div class="now-block">
+          <div class="do-card-head">NOW</div>
+          <div class="do-clock-now" id="doClockNow">--:--</div>
+          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
+        </div>
+        <div class="now-block next-block">
+          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
+          <div class="do-clock-next-name" id="doNextName">予定なし</div>
+          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
+        </div>
+      </div>
       <!-- DOOR OPEN BGM -->
       <div class="do-card do-bgm-card" id="doBgmCardDoor" data-slot="door">
         <div class="do-bgm-row">
@@ -3112,10 +3090,11 @@
           <span class="do-bgm-vol-db" id="doBgmVolDbWorkout">0.0</span>
         </div>
       </div>
-      </div><!-- /.do-top-bgm-pair -->
 
-    <!-- DUCK 設定（横長帯 — 左カラム row2） -->
-    <div class="do-card do-duck-strip do-grid">
+    </div>
+
+    <!-- DUCK 設定（横長帯） -->
+    <div class="do-card do-duck-strip">
       <span class="do-card-head" style="margin:0;">DUCK 設定</span>
       <span class="do-duck-label">下げ幅</span>
       <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div><div class="do-duck-bar-thumb" id="doDuckDepthThumb" style="left:75%;"></div></div>
@@ -3131,11 +3110,11 @@
       <span style="font-size:9px; color:#6A6A70; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
     </div>
 
-    <!-- v11.2.0: 下段は doorPage grid の row3 に展開
-         左カラム = 素材プール、右カラム = SCHEDULE (rowspan で右カラム上部に NOW を別配置) -->
+    <!-- 2カラム: 左=素材プール / 右=スケジュール -->
+    <div class="do-bottom" style="flex:1; min-height:0; display:grid; grid-template-columns: minmax(360px, 0.85fr) 1fr; gap:8px;">
 
-      <!-- 左カラム row3: 素材プール（ANNOUNCE + VIDEO LIBRARY + LOGO） -->
-      <div class="do-left-bottom-col">
+      <!-- 左カラム: 素材プール（ANNOUNCE + VIDEO LIBRARY） -->
+      <div style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto;">
         <div class="do-card" id="doLibCard">
           <div class="do-sched-head">
             <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材</span>
@@ -3207,8 +3186,8 @@
         </div>
       </div>
 
-      <!-- v11.2.0: 右カラム row3 — SCHEDULE（フル高、上に伸びる） -->
-      <div class="do-card do-grid do-sched-card">
+      <!-- 右カラム: SCHEDULE（フル高） -->
+      <div class="do-card" style="display:flex; flex-direction:column; min-height:0;">
         <div class="do-sched-head">
           <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -3220,19 +3199,7 @@
         <button class="do-sched-add" onclick="doSchedAdd()">＋ 時刻を追加</button>
       </div>
 
-      <!-- v11.2.0: 右カラム row1-2 — NOW / NEXT 時計 (SCHEDULE の上、BGM ペア+DUCK と同じ高さ) -->
-      <div class="do-card do-grid" id="doNowCard">
-        <div class="now-block">
-          <div class="do-card-head">NOW</div>
-          <div class="do-clock-now" id="doClockNow">--:--</div>
-          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
-        </div>
-        <div class="now-block next-block">
-          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
-          <div class="do-clock-next-name" id="doNextName">予定なし</div>
-          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
-        </div>
-      </div>
+    </div>
   </div>
 
   <!-- ====================== MULTI-TRACK PAGE ====================== -->
@@ -3446,23 +3413,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.8';
-// v11.2.8: 本番耐性パッチ — SW キャッシュ名追従 / project.json 保存失敗を toast 通知 / .sampler 二重起動ガード
-// v11.2.7: ANNOUNCE / VIDEO / LOGO の 3 段を flex:1 で固定均等分割 (動的サイズ変動なし)
-// v11.2.6: LOGO カードの枠だけ下まで伸ばす (下の余白を消す)
-// v11.2.5: BGM カード内部スペース拡張 + LOGO カード縮小 (見た目の息継ぎ確保)
-// v11.2.4: LOGO カードを下まで伸ばして余白を埋める
-// v11.2.3: 縮小時のレイアウト崩れ修正 (grid track を minmax(0, ...) に、grid item に min-width:0)
-// v11.2.2: NOW カードを BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる
-// v11.2.1: doorPage display を flex → grid に修正 (setAppMode で grid を上書きしないように)
-// v11.2.0: DOOR OPEN 全体 grid 化 — DUCK を左に、NOW + SCHEDULE 右カラム連続
-// v11.1.1: DOOR OPEN 上下の列幅を揃える (BGM 2 つを左カラム内で 2 分割、NOW を右カラム)
-// v11.1.0: DOOR OPEN レイアウト変更 — 左から DOOR/WORKOUT BGM、右に時計 (NOW)
-// v11.0.1: MPC 風サンプラーアイコン追加 (4x4 パッド + 緑LED)
-// v11.0.0: PWA + File Handling API — .sampler ダブルクリック起動 (DP方式の完成形)
-// v10.2.0: project.json 自動保存 + フォルダから開く + 専用ダイアログ UI (DP 方式)
-// v10.1.0: プロジェクトフォルダ方式 — Finder で見える保存先 (OPFS から切替)
-// v10.0.0 Phase 1: OPFS 自動コピー保存 — 取り込み時にアプリ内コピーで原本依存撤廃
+const APP_VERSION = 'v9.1.1';
 // v9.1.1: ESC 効かない問題修正 — playbackMode を 'mediaelement' 強制固定 + デバッグログ追加
 // v9.1.0: 大整理 — MediaElement 専用化 + 不要 UI / dead code 全削除
 // v9.0.7: フェードアウト終了後のプチッ完全撲滅 — master 復帰を撤廃 (0 のまま固定)
@@ -3545,166 +3496,12 @@ function projGoTop() {
   projSetActiveId(null);
   location.reload();
 }
-// v10.2.0: 既存のプロジェクトフォルダから project.json を読み込んで開く
-async function projOpenFromFolder() {
-  if (!('showDirectoryPicker' in window)) {
-    alert('お使いのブラウザはフォルダ選択に対応していません。Chrome で開いてください。');
-    return;
-  }
-  let dirHandle;
-  try {
-    dirHandle = await window.showDirectoryPicker({
-      id: 'sampler-studio-open-project',
-      mode: 'readwrite',
-      startIn: 'documents',
-    });
-  } catch(e) {
-    if (e && e.name === 'AbortError') return;
-    console.warn('[projOpen] picker failed', e);
-    alert('フォルダ選択に失敗しました: ' + (e.message || e));
-    return;
-  }
-  // project.json を読む
-  const data = await loadProjectJSONFromFolder(dirHandle);
-  if (!data) {
-    alert(
-      'このフォルダには project.json がありません。\n\n' +
-      'SAMPLER STUDIO のプロジェクトフォルダ (project.json を含む) を選んでください。'
-    );
-    return;
-  }
-  if (data._format !== 'sampler-studio-project') {
-    alert('project.json の形式が認識できません。');
-    return;
-  }
-  // 既存リストに登録 (上書き or 新規)
-  const list = projGetList();
-  const id = data.projectId || ('p_' + Date.now());
-  let existing = list.find(p => p.id === id);
-  if (!existing) {
-    list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
-    projSetList(list);
-  } else {
-    existing.folderPath = dirHandle.name;
-    existing.updatedAt = Date.now();
-    projSetList(list);
-  }
-  // フォルダ handle を保存
-  try { await saveProjectFolderHandle(id, dirHandle, dirHandle.name); } catch(e) { console.warn(e); }
-  // state を localStorage に書き込む (このプロジェクトキーで)
-  try {
-    if (data.state && data.state.multitrack) {
-      localStorage.setItem(id + ':samplerMultitrack', JSON.stringify(data.state.multitrack));
-    }
-    if (data.state && data.state.sampler) {
-      const samplerState = {
-        banks: data.state.sampler.banks,
-        currentBank: data.state.sampler.currentBank,
-        masterVol: data.state.sampler.masterVol,
-        fadeTime: data.state.sampler.fadeTime,
-        fadeCurve: data.state.sampler.fadeCurve,
-        appMode: data.state.appMode || 'sampler',
-      };
-      localStorage.setItem(id + ':samplerStudioState', JSON.stringify(samplerState));
-    }
-    if (data.state && data.state.door) {
-      localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
-    }
-  } catch(e) { console.warn('[projOpen] state restore failed', e); }
-  // プロジェクトを開く
-  projSwitchTo(id);
-}
-
-// v10.2.0: 専用 HTML ダイアログ — confirm より丁寧に説明 + 警告強調
-function _projShowFolderDialog(projectName) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = [
-      'position:fixed','inset:0','background:rgba(0,0,0,0.7)','z-index:99999',
-      'display:flex','align-items:center','justify-content:center',
-      'backdrop-filter:blur(4px)','-webkit-backdrop-filter:blur(4px)',
-    ].join(';');
-    const dialog = document.createElement('div');
-    dialog.style.cssText = [
-      'background:linear-gradient(180deg, #15181F, #0E1115)',
-      'border:0.5px solid rgba(61,181,166,0.5)','border-radius:10px',
-      'color:#C8D8D0',"font-family:'SF Mono', 'Menlo', monospace",
-      'padding:24px 28px','max-width:520px','line-height:1.6',
-      'box-shadow:0 8px 40px rgba(0,0,0,0.8)',
-    ].join(';');
-    dialog.innerHTML = `
-      <div style="font-size:13px;letter-spacing:2px;color:#88D6C2;margin-bottom:14px;font-weight:700;">📁 プロジェクトフォルダを選んでください</div>
-      <div style="font-size:13px;color:#C8D8D0;margin-bottom:14px;">
-        プロジェクト「<b style="color:#FFFFFF;">${projectName.replace(/</g,'&lt;')}</b>」用に、アプリが新しいフォルダを作って音源と設定を保存します。
-      </div>
-      <div style="font-size:12px;color:rgba(200,216,208,0.7);margin-bottom:18px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;">
-        <div style="font-weight:700;color:#88D6C2;margin-bottom:6px;">推奨の場所</div>
-        Mac の「書類」(Documents) 直下。<br/>
-        例: <code style="color:#FFCB5A;">~/Documents/${projectName.replace(/</g,'&lt;')}/</code>
-      </div>
-      <div style="font-size:12px;color:#FFCB5A;margin-bottom:18px;background:rgba(255,184,28,0.05);border:0.5px solid rgba(255,184,28,0.3);border-radius:6px;padding:10px 14px;">
-        <div style="font-weight:700;margin-bottom:6px;">⚠️ 重要な注意</div>
-        ・このフォルダの中身を Finder で <b>動かさない / 削除しない</b>でください<br/>
-        ・別の Mac に持っていく時は<b>フォルダごとコピー</b>してください<br/>
-        ・誤って動かすとアプリで再生できなくなります
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
-        <button id="projCancelBtn" style="padding:8px 18px;background:transparent;border:0.5px solid rgba(200,216,208,0.3);color:#C8D8D0;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">キャンセル</button>
-        <button id="projOkBtn" style="padding:8px 18px;background:linear-gradient(180deg, rgba(61,181,166,0.25), rgba(61,181,166,0.10));border:0.5px solid rgba(61,181,166,0.5);color:#88D6C2;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:700;">フォルダを選ぶ →</button>
-      </div>
-    `;
-    overlay.appendChild(dialog);
-    document.body.appendChild(overlay);
-    const close = (result) => { try { document.body.removeChild(overlay); } catch(_) {} resolve(result); };
-    dialog.querySelector('#projCancelBtn').onclick = () => close(false);
-    dialog.querySelector('#projOkBtn').onclick = () => close(true);
-    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
-  });
-}
-
-// v10.1.0/v10.2.0: プロジェクト作成時に保存先フォルダを選ばせる (専用 UI)
-async function projCreateNew() {
+function projCreateNew() {
   const name = prompt('新しいプロジェクト名:', 'New Project');
   if (!name || !name.trim()) return;
-  const safeName = name.trim();
   const id = 'p_' + Date.now() + '_' + Math.floor(Math.random()*1000);
-  // 親フォルダ選択 (showDirectoryPicker)
-  let dirHandle = null;
-  let displayPath = '';
-  if ('showDirectoryPicker' in window) {
-    const proceed = await _projShowFolderDialog(safeName);
-    if (!proceed) {
-      return; // キャンセル
-    } else {
-      try {
-        const parent = await window.showDirectoryPicker({
-          id: 'sampler-studio-projects',
-          mode: 'readwrite',
-          startIn: 'documents',
-        });
-        // [プロジェクト名]/ サブフォルダを作成
-        dirHandle = await parent.getDirectoryHandle(safeName, { create: true });
-        displayPath = (parent.name || '') + '/' + safeName;
-      } catch(e) {
-        if (e && e.name === 'AbortError') {
-          // ユーザーがキャンセル → 作成中止
-          return;
-        }
-        console.warn('[proj] showDirectoryPicker failed', e);
-        alert('フォルダ選択に失敗しました: ' + (e.message || e));
-        return;
-      }
-    }
-  } else {
-    alert('お使いのブラウザはフォルダ選択に対応していません。Chrome で開いてください。');
-    return;
-  }
-  // handle を IndexedDB に保存
-  if (dirHandle) {
-    try { await saveProjectFolderHandle(id, dirHandle, displayPath); } catch(e) { console.warn(e); }
-  }
   const list = projGetList();
-  list.push({ id, name: safeName, folderPath: displayPath, createdAt: Date.now(), updatedAt: Date.now() });
+  list.push({ id, name: name.trim(), createdAt: Date.now(), updatedAt: Date.now() });
   projSetList(list);
   projSwitchTo(id);
 }
@@ -3813,12 +3610,6 @@ function renderTopPage() {
   nc.innerHTML = `<div class="tp-new-icon">+</div><div class="tp-new-label">NEW PROJECT</div>`;
   nc.addEventListener('click', projCreateNew);
   grid.appendChild(nc);
-  // v10.2.0: + OPEN FROM FOLDER card
-  const oc = document.createElement('div');
-  oc.className = 'tp-new';
-  oc.innerHTML = `<div class="tp-new-icon">📁</div><div class="tp-new-label">OPEN FROM FOLDER</div>`;
-  oc.addEventListener('click', projOpenFromFolder);
-  grid.appendChild(oc);
 }
 function showTopPage() {
   document.getElementById('topPage').classList.add('active');
@@ -4546,203 +4337,6 @@ async function mtDeleteHandleFromDB(id) {
     tx.oncomplete = () => resolve();
     tx.onerror = e => reject(e);
   });
-}
-
-// v10.1.0: プロジェクトフォルダの DirectoryHandle 保存/取得 (mtHandles 流用、キーに _projDir プレフィックス)
-async function saveProjectFolderHandle(projectId, dirHandle, displayPath) {
-  if (!db) await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('mtHandles', 'readwrite');
-    tx.objectStore('mtHandles').put({ id: '_projDir:' + projectId, handle: dirHandle, name: displayPath });
-    tx.oncomplete = () => resolve();
-    tx.onerror = e => reject(e);
-  });
-}
-async function getProjectFolderHandle(projectId) {
-  if (!db) await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('mtHandles', 'readonly');
-    const req = tx.objectStore('mtHandles').get('_projDir:' + projectId);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = e => reject(e);
-  });
-}
-async function deleteProjectFolderHandle(projectId) {
-  if (!db) await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('mtHandles', 'readwrite');
-    tx.objectStore('mtHandles').delete('_projDir:' + projectId);
-    tx.oncomplete = () => resolve();
-    tx.onerror = e => reject(e);
-  });
-}
-
-// プロジェクトフォルダの permission 確認 (granted で取得 + 必要なら request)
-async function ensureProjectFolderPermission(projectId) {
-  const rec = await getProjectFolderHandle(projectId);
-  if (!rec || !rec.handle) return null;
-  let perm = 'denied';
-  try { perm = await rec.handle.queryPermission({ mode: 'readwrite' }); } catch(_) {}
-  if (perm !== 'granted') {
-    try { perm = await rec.handle.requestPermission({ mode: 'readwrite' }); } catch(_) {}
-  }
-  return perm === 'granted' ? rec.handle : null;
-}
-
-// プロジェクトフォルダにファイルを書き込み (ファイル名で識別)
-async function saveSampleToProjectFolder(projectId, fileName, data) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return false;
-  try {
-    const fh = await dirHandle.getFileHandle(fileName, { create: true });
-    const w = await fh.createWritable();
-    await w.write(data);
-    await w.close();
-    return true;
-  } catch(e) {
-    console.warn('[projFolder] saveSample failed', fileName, e);
-    return false;
-  }
-}
-
-// プロジェクトフォルダからファイルを読み込み
-async function loadSampleFromProjectFolder(projectId, fileName) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return null;
-  try {
-    const fh = await dirHandle.getFileHandle(fileName, { create: false });
-    return await fh.getFile();
-  } catch(e) {
-    if (e && e.name === 'NotFoundError') return null;
-    console.warn('[projFolder] loadSample failed', fileName, e);
-    return null;
-  }
-}
-
-// プロジェクトフォルダ内のファイル一覧
-async function listProjectFolderFiles(projectId) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return [];
-  const out = [];
-  try {
-    for await (const [name, h] of dirHandle.entries()) {
-      if (h.kind === 'file') out.push(name);
-    }
-  } catch(_) {}
-  return out;
-}
-
-// v10.2.0: project.json をプロジェクトフォルダに書き出し
-// (DP 等のプロジェクトバンドル方式と同じ思想)
-async function saveProjectJSONToFolder(projectId) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return false;
-  try {
-    const list = projGetList();
-    const projMeta = list.find(p => p.id === projectId) || {};
-    // 現在の state を JSON 化
-    const data = {
-      _format: 'sampler-studio-project',
-      _formatVersion: 1,
-      _appVersion: APP_VERSION,
-      projectId,
-      projectName: projMeta.name || '無題',
-      savedAt: Date.now(),
-      state: {
-        multitrack: (typeof mtSerialize === 'function') ? mtSerialize() : null,
-        sampler: {
-          banks: state.banks,
-          currentBank: state.currentBank,
-          masterVol: state.masterVol,
-          fadeTime: state.fadeTime,
-          fadeCurve: state.fadeCurve,
-        },
-        door: state.door ? {
-          bgm: {
-            door: state.door.bgm && state.door.bgm.door ? {
-              sampleId: state.door.bgm.door.sampleId,
-              sampleName: state.door.bgm.door.sampleName,
-              vol: state.door.bgm.door.vol,
-              loop: state.door.bgm.door.loop,
-            } : null,
-            workout: state.door.bgm && state.door.bgm.workout ? {
-              sampleId: state.door.bgm.workout.sampleId,
-              sampleName: state.door.bgm.workout.sampleName,
-              vol: state.door.bgm.workout.vol,
-              loop: state.door.bgm.workout.loop,
-            } : null,
-          },
-          duck: state.door.duck,
-          library: (state.door.library || []).map(l => l ? { sampleId: l.sampleId, sampleName: l.sampleName, level: l.level } : null),
-          schedule: state.door.schedule || [],
-        } : null,
-        appMode: state.appMode,
-      },
-    };
-    const jsonStr = JSON.stringify(data, null, 2);
-    // v10.2.0: project.json
-    const fh = await dirHandle.getFileHandle('project.json', { create: true });
-    const w = await fh.createWritable();
-    await w.write(jsonStr);
-    await w.close();
-    // v11.0.0: project.sampler も並行保存 (ダブルクリック起動用、中身は同じ)
-    try {
-      const projMeta2 = (projGetList().find(p => p.id === projectId)) || { name: '無題' };
-      const samplerName = (projMeta2.name || '無題').replace(/[\/\\:*?"<>|]/g, '_') + '.sampler';
-      const fh2 = await dirHandle.getFileHandle(samplerName, { create: true });
-      const w2 = await fh2.createWritable();
-      await w2.write(jsonStr);
-      await w2.close();
-    } catch(e) { console.warn('[projSampler] save failed', e); }
-    return true;
-  } catch(e) {
-    console.warn('[projJSON] save failed', e);
-    return false;
-  }
-}
-
-// v10.2.0: プロジェクトフォルダから project.json を読み込み
-async function loadProjectJSONFromFolder(dirHandle) {
-  try {
-    const fh = await dirHandle.getFileHandle('project.json', { create: false });
-    const file = await fh.getFile();
-    return JSON.parse(await file.text());
-  } catch(e) {
-    if (e && e.name === 'NotFoundError') return null;
-    console.warn('[projJSON] load failed', e);
-    return null;
-  }
-}
-
-// v10.2.0: 自動保存 (デバウンス) — state 変更時に project.json も更新
-// v11.2.8: silent fail させない — 失敗時 toast で通知 (本番中の保存ロスト早期検知)
-let _saveProjectJSONTimer = null;
-let _saveJsonFailCount = 0;
-function scheduleSaveProjectJSON() {
-  if (_saveProjectJSONTimer) clearTimeout(_saveProjectJSONTimer);
-  _saveProjectJSONTimer = setTimeout(async () => {
-    _saveProjectJSONTimer = null;
-    const pid = (typeof projGetActiveId === 'function') ? projGetActiveId() : null;
-    if (!pid) return;
-    try {
-      const ok = await saveProjectJSONToFolder(pid);
-      if (ok) {
-        _saveJsonFailCount = 0;
-      } else {
-        _saveJsonFailCount++;
-        // 1 回目と 5 回ごとに通知 (連続失敗時のノイズ防止)
-        if (_saveJsonFailCount === 1 || _saveJsonFailCount % 5 === 0) {
-          try { showToast('⚠️ プロジェクト自動保存に失敗 — フォルダ権限を確認してください'); } catch(_) {}
-        }
-      }
-    } catch(e) {
-      console.warn('[projJSON] schedule save failed', e);
-      _saveJsonFailCount++;
-      if (_saveJsonFailCount === 1) {
-        try { showToast('⚠️ プロジェクト自動保存でエラー発生'); } catch(_) {}
-      }
-    }
-  }, 2000); // 2秒デバウンス
 }
 
 async function saveSampleToDB(id, arrayBuffer, name) {
@@ -6844,7 +6438,7 @@ function setAppMode(m) {
   document.getElementById('banksRow').style.display = (m === 'sampler') ? 'flex' : 'none';
   document.getElementById('rightContent').style.display = (m === 'sampler') ? 'flex' : 'none';
   // DOOR OPEN ページ
-  document.getElementById('doorPage').style.display = (m === 'door') ? 'grid' : 'none';
+  document.getElementById('doorPage').style.display = (m === 'door') ? 'flex' : 'none';
   // MULTI-TRACK ページ
   const mtPage = document.getElementById('multiPage');
   if (mtPage) mtPage.style.display = (m === 'multi') ? 'flex' : 'none';
@@ -9846,8 +9440,6 @@ function mtSave() {
     const key = projKey('samplerMultitrack');
     localStorage.setItem(key, JSON.stringify(mtSerialize()));
   } catch(e) { console.warn('mtSave failed', e); }
-  // v10.2.0: プロジェクトフォルダにも project.json を自動保存 (デバウンス)
-  try { if (typeof scheduleSaveProjectJSON === 'function') scheduleSaveProjectJSON(); } catch(_) {}
 }
 function mtLoad() {
   try {
@@ -10485,7 +10077,6 @@ async function mtRobustDecode(arrayBuffer, file) {
 }
 
 // ファイルを読み込んで対象グループに割当（targetGroup=null なら unassigned プールに）
-// v10.0.0: 取り込み時に OPFS にコピー保存 (アプリ内に閉じる、原本を動かしても安全)
 async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
   if (!file) return;
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
@@ -10495,45 +10086,24 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     if (mtCtx.state === 'suspended') await mtCtx.resume();
     const arrBuf = await file.arrayBuffer();
     const sampleId = `mt-${state.multitrack.songs[songIdx].id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
-    const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(file.name, file.type) : (file.type || 'audio/wav');
-    // === v10.1.0: プロジェクトフォルダにコピー保存 (これがメイン、Finder で見える) ===
-    let savedToProjectFolder = false;
-    const activeProjectId = projGetActiveId();
-    if (activeProjectId) {
-      try {
-        savedToProjectFolder = await saveSampleToProjectFolder(activeProjectId, file.name, arrBuf);
-      } catch(e) { console.warn('[projFolder] save failed', e); }
-    }
-    // フォールバック1: OPFS (Phase 1 から残置、プロジェクトフォルダ未設定 or 書込み失敗時)
-    let savedToOPFS = false;
-    if (!savedToProjectFolder) {
-      try {
-        savedToOPFS = await saveSampleToOPFS(sampleId, arrBuf, file.name, mime);
-      } catch(e) { console.warn('[OPFS] save failed', e); }
-    }
-    // フォールバック2: handle 参照
     let usingHandle = false;
     if (handle) {
       try {
         await mtSaveHandleToDB(sampleId, handle, file.name);
         usingHandle = true;
-      } catch(e) { console.warn('mt saveHandleToDB failed', e); }
+      } catch(e) {
+        console.warn('mt saveHandleToDB failed (falling back to blob)', e);
+      }
     }
-    // フォールバック3: IndexedDB blob (最終手段)
-    if (!savedToProjectFolder && !savedToOPFS && !usingHandle) {
+    if (!usingHandle) {
       try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
         console.warn('mt saveSampleToDB failed', e);
         showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
       }
     }
-    // entry にどこに保存されているかを記録
-    const entry = {
-      sampleId, name: file.name,
-      byHandle: usingHandle,
-      inOPFS: savedToOPFS,
-      inProjectFolder: savedToProjectFolder, // v10.1.0: プロジェクトフォルダに保存済み
-      fileName: file.name, // フォルダ内のファイル名 (識別用)
-    };
+    const buffer = await mtRobustDecode(arrBuf, file);
+    mtDecodedCache[sampleId] = buffer;
+    const entry = { sampleId, name: file.name, byHandle: usingHandle };
     const song = state.multitrack.songs[songIdx];
     if (!song.unassigned) song.unassigned = [];
     if (targetGroup && MT_GROUPS.includes(targetGroup)) {
@@ -10547,11 +10117,8 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     mtRecomputeSongDuration();
     mtRenderSetlist();
     mtRenderNow();
-    const where = savedToProjectFolder ? 'プロジェクトフォルダ'
-                : (savedToOPFS ? 'アプリ内保存'
-                : (usingHandle ? 'ローカル参照' : 'ブラウザ保存'));
-    const sizeMB = (arrBuf.byteLength / 1024 / 1024).toFixed(1);
-    showToast(`📂 読込: ${file.name} (${sizeMB} MB・${where})`);
+    const where = usingHandle ? 'ローカル参照' : 'ブラウザ保存';
+    showToast(`📂 読込: ${file.name} (${buffer.duration.toFixed(1)}秒・${where})`);
   } catch(e) {
     console.error('mtLoadTrackFile failed', e);
     // 詳細メッセージ（改行込み）を toast に
@@ -10729,8 +10296,6 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
   for (const t of targets) {
     try { await deleteSampleFromDB(t.sampleId); } catch(_) {}
     try { await mtDeleteHandleFromDB(t.sampleId); } catch(_) {}
-    // v10.0.0: OPFS からも削除
-    try { await deleteSampleFromOPFS(t.sampleId); } catch(_) {}
   }
   const remaining = sampleId ? layers.filter(l => l.sampleId !== sampleId) : [];
   if (remaining.length === 0) delete s.tracks[group];
@@ -10764,147 +10329,6 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
 //   mtFsNotifyPlaybackStart/Stop  再生中フラグ
 //   mtFsCleanup()           整理: orphan/旧 blob 削除
 //   mtFsRender()            バナー UI 更新
-// ============================================================================
-// v10.0.0: OPFS (Origin Private File System) ヘルパー
-// ============================================================================
-// アプリ専用の隠れストレージに音源ファイルをコピー保存する。
-// Finder からは見えない = ユーザーが誤って動かす事故が発生しない。
-// バックアップ/共有は ZIP エクスポート機能経由 (Phase 2 で実装)。
-//
-// 構造:
-//   root/
-//     samples/
-//       [sampleId].bin       ← 音源ファイル本体 (拡張子は付けない、メタは別管理)
-//     samples-meta.json      ← { sampleId: { name, mime, savedAt } }
-// ============================================================================
-
-let _opfsRootCache = null;
-async function _opfsGetRoot() {
-  if (_opfsRootCache) return _opfsRootCache;
-  if (!navigator.storage || !navigator.storage.getDirectory) {
-    throw new Error('OPFS 非対応ブラウザ');
-  }
-  _opfsRootCache = await navigator.storage.getDirectory();
-  return _opfsRootCache;
-}
-
-async function _opfsGetSamplesDir(create = true) {
-  const root = await _opfsGetRoot();
-  return await root.getDirectoryHandle('samples', { create });
-}
-
-// 音源を OPFS に保存
-// 引数: sampleId (string), data (ArrayBuffer | Blob), name (string), mime (string)
-async function saveSampleToOPFS(sampleId, data, name, mime) {
-  try {
-    const dir = await _opfsGetSamplesDir(true);
-    const fh = await dir.getFileHandle(sampleId + '.bin', { create: true });
-    const w = await fh.createWritable();
-    await w.write(data);
-    await w.close();
-    // メタ情報も保存
-    try {
-      const root = await _opfsGetRoot();
-      let meta = {};
-      try {
-        const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
-        const metaFile = await metaFh.getFile();
-        meta = JSON.parse(await metaFile.text());
-      } catch(_) { /* 初回は無い */ }
-      meta[sampleId] = { name, mime, savedAt: Date.now() };
-      const metaFh = await root.getFileHandle('samples-meta.json', { create: true });
-      const mw = await metaFh.createWritable();
-      await mw.write(JSON.stringify(meta));
-      await mw.close();
-    } catch(e) { console.warn('[OPFS] meta save failed', e); }
-    return true;
-  } catch(e) {
-    console.error('[OPFS] saveSample failed', sampleId, e);
-    return false;
-  }
-}
-
-// 音源を OPFS から読み出し
-// returns: { blob: Blob, name: string, mime: string } | null
-async function loadSampleFromOPFS(sampleId) {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    const fh = await dir.getFileHandle(sampleId + '.bin', { create: false });
-    const file = await fh.getFile();
-    // メタ情報も取得
-    let meta = { name: sampleId, mime: 'audio/wav' };
-    try {
-      const root = await _opfsGetRoot();
-      const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
-      const metaFile = await metaFh.getFile();
-      const allMeta = JSON.parse(await metaFile.text());
-      if (allMeta[sampleId]) meta = allMeta[sampleId];
-    } catch(_) {}
-    const blob = new Blob([await file.arrayBuffer()], { type: meta.mime || 'audio/wav' });
-    return { blob, name: meta.name, mime: meta.mime };
-  } catch(e) {
-    // NotFoundError は正常 (まだ OPFS に無い)
-    if (e && e.name === 'NotFoundError') return null;
-    console.warn('[OPFS] loadSample failed', sampleId, e);
-    return null;
-  }
-}
-
-// 音源が OPFS に存在するかチェック (軽量)
-async function hasSampleInOPFS(sampleId) {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    await dir.getFileHandle(sampleId + '.bin', { create: false });
-    return true;
-  } catch(_) { return false; }
-}
-
-// 音源を OPFS から削除
-async function deleteSampleFromOPFS(sampleId) {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    await dir.removeEntry(sampleId + '.bin');
-    // メタからも削除
-    try {
-      const root = await _opfsGetRoot();
-      const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
-      const metaFile = await metaFh.getFile();
-      const meta = JSON.parse(await metaFile.text());
-      delete meta[sampleId];
-      const mw = await metaFh.createWritable();
-      await mw.write(JSON.stringify(meta));
-      await mw.close();
-    } catch(_) {}
-    return true;
-  } catch(e) {
-    if (e && e.name === 'NotFoundError') return true; // 既に無い
-    console.warn('[OPFS] deleteSample failed', sampleId, e);
-    return false;
-  }
-}
-
-// OPFS の全 sample id を列挙 (デバッグ用)
-async function listSamplesInOPFS() {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    const out = [];
-    for await (const [name, h] of dir.entries()) {
-      if (name.endsWith('.bin')) out.push(name.slice(0, -4));
-    }
-    return out;
-  } catch(_) { return []; }
-}
-
-// OPFS 使用量を計算 (MB)
-async function getOPFSUsageMB() {
-  try {
-    const est = await navigator.storage.estimate();
-    return (est.usage || 0) / 1024 / 1024;
-  } catch(_) { return 0; }
-}
-
-// ============================================================================
-
 const mtFs = {
   state: 'idle',
   total: 0,
@@ -11479,79 +10903,29 @@ async function mtMediaLoadOne(sampleId) {
   }
   const p = (async () => {
     await mtInitCtx();
+    // 1) handle 優先で File を取得
     let blob = null;
     let name = sampleId;
-    // v10.1.0: 優先順位
-    //   0) プロジェクトフォルダ (新方式、Finder で見える)
-    //   1) OPFS (v10.0.0 の旧方式)
-    //   2) handle (v8.x 以前の旧方式)
-    //   3) IndexedDB blob (最古)
-    // 0) プロジェクトフォルダ — 現在のプロジェクトで取り込んだファイル
-    //    entry.fileName が分かれば、そのファイル名で読みに行く
     try {
-      const activeProjectId = projGetActiveId();
-      // entry を songs から逆引き
-      let entryName = null;
-      for (const s of state.multitrack.songs) {
-        for (const g of MT_GROUPS) {
-          for (const l of mtGetLayers(s, g)) {
-            if (l && l.sampleId === sampleId) { entryName = l.fileName || l.name; break; }
+      const rec = await mtGetHandleFromDB(sampleId);
+      if (rec && rec.handle) {
+        let perm = 'denied';
+        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+        if (perm !== 'granted') {
+          try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
+        }
+        if (perm === 'granted') {
+          try {
+            const f = await rec.handle.getFile();
+            blob = f;
+            name = f.name;
+          } catch(e) {
+            console.warn('[mtMedia] handle getFile failed', e);
           }
-          if (entryName) break;
-        }
-        if (entryName) break;
-        for (const u of (s.unassigned || [])) {
-          if (u && u.sampleId === sampleId) { entryName = u.fileName || u.name; break; }
-        }
-        if (entryName) break;
-      }
-      if (activeProjectId && entryName) {
-        const f = await loadSampleFromProjectFolder(activeProjectId, entryName);
-        if (f) {
-          blob = f;
-          name = entryName;
         }
       }
     } catch(_) {}
-    // 1) OPFS (v10.0.0 のデータ)
-    if (!blob) {
-      try {
-        const opfs = await loadSampleFromOPFS(sampleId);
-        if (opfs && opfs.blob) {
-          blob = opfs.blob;
-          name = opfs.name || sampleId;
-        }
-      } catch(_) {}
-    }
-    // 1) handle (後方互換)
-    if (!blob) {
-      try {
-        const rec = await mtGetHandleFromDB(sampleId);
-        if (rec && rec.handle) {
-          let perm = 'denied';
-          try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-          if (perm !== 'granted') {
-            try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
-          }
-          if (perm === 'granted') {
-            try {
-              const f = await rec.handle.getFile();
-              blob = f;
-              name = f.name;
-              // v10.0.0: handle 経由で読めた = まだ OPFS に無い → 自動移行
-              try {
-                const arr = await f.arrayBuffer();
-                const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(f.name, f.type) : 'audio/wav';
-                saveSampleToOPFS(sampleId, arr, f.name, mime).catch(_ => {});
-              } catch(_) {}
-            } catch(e) {
-              console.warn('[mtMedia] handle getFile failed', e);
-            }
-          }
-        }
-      } catch(_) {}
-    }
-    // 2) IndexedDB blob (後方互換)
+    // 2) blob fallback
     if (!blob) {
       try {
         const r = await getSampleFromDB(sampleId);
@@ -11559,8 +10933,6 @@ async function mtMediaLoadOne(sampleId) {
           const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav';
           blob = new Blob([r.data], { type: mime });
           name = r.name || sampleId;
-          // v10.0.0: IDB blob 経由で読めた → 自動的に OPFS にも移行
-          saveSampleToOPFS(sampleId, r.data, name, mime).catch(_ => {});
         }
       } catch(_) {}
     }
@@ -12270,28 +11642,12 @@ function mtDiagPanelToggleDetail() {
   _mtDiagDetailRender();
 }
 
-async function _mtDiagDetailRender() {
+function _mtDiagDetailRender() {
   const detail = document.getElementById('mtDiagDetail');
   if (!detail) return;
   const failedCount = mtFs._failed.size;
   const totalIds = _mtFsCollectAllIds().length;
   const mediaLoaded = Object.keys(mtMediaCache).length;
-  // v10.0.0: OPFS 使用量
-  let opfsMB = 0;
-  try { opfsMB = await getOPFSUsageMB(); } catch(_) {}
-  let opfsCount = 0;
-  try { opfsCount = (await listSamplesInOPFS()).length; } catch(_) {}
-  // v10.1.0: プロジェクトフォルダ情報
-  let folderInfo = '未設定';
-  try {
-    const pid = projGetActiveId();
-    if (pid) {
-      const rec = await getProjectFolderHandle(pid);
-      if (rec && rec.name) folderInfo = rec.name;
-      const dirHandle = await ensureProjectFolderPermission(pid);
-      if (!dirHandle && rec) folderInfo += ' (許可待ち)';
-    }
-  } catch(_) {}
   const errors = mtFs.errorLog.slice(0, 20);
   const errHTML = errors.length === 0
     ? '<div class="mt-diag-err-item" style="text-align:center;opacity:0.5;">エラー履歴なし</div>'
@@ -12311,8 +11667,6 @@ async function _mtDiagDetailRender() {
     <div class="mt-diag-detail-row"><span class="mt-diag-label">登録 STEM 総数</span><span class="mt-diag-value">${totalIds}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込済 STEM</span><span class="mt-diag-value">${mediaLoaded}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">プロジェクトフォルダ</span><span class="mt-diag-value" style="font-size:10px;">${folderInfo}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">アプリ内保存 (OPFS)</span><span class="mt-diag-value">${opfsCount} 件 ${opfsMB.toFixed(0)} MB</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
 
     <h4>操作</h4>
@@ -14198,154 +13552,6 @@ async function init() {
 
   // MULTI-TRACK MODE init
   mtInit();
-
-  // v11.0.0: PWA + File Handling
-  try { _initPWA(); } catch(e) { console.warn('[PWA] init failed', e); }
-}
-
-// ============================================================================
-// v11.0.0: PWA + File Handling API (.sampler ダブルクリック起動)
-// ============================================================================
-function _initPWA() {
-  // Service Worker 登録 (PWA 必須)
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(reg => console.log('[PWA] Service Worker registered:', reg.scope))
-      .catch(err => console.warn('[PWA] SW registration failed:', err));
-  }
-  // ファイルダブルクリック起動 (.sampler を OS から受け取る)
-  // v11.2.8: 二重進入ガード (連続ダブルクリック / 連打で同時 2 起動を防ぐ)
-  if ('launchQueue' in window) {
-    window.launchQueue.setConsumer(async (launchParams) => {
-      if (!launchParams || !launchParams.files || !launchParams.files.length) return;
-      if (window._launchInFlight) {
-        console.warn('[PWA] launch already in flight, ignoring duplicate');
-        return;
-      }
-      window._launchInFlight = true;
-      try {
-        const fileHandle = launchParams.files[0];
-        const file = await fileHandle.getFile();
-        const text = await file.text();
-        const data = JSON.parse(text);
-        if (data._format !== 'sampler-studio-project') {
-          alert('このファイルは SAMPLER STUDIO のプロジェクトではありません。');
-          return;
-        }
-        // ファイルから親フォルダの handle を作ろうとするが、現状は API 制約で
-        // fileHandle から親 directoryHandle を取得できない。
-        // → ユーザーに「フォルダを指定してください」と促す or 自動で
-        //   showDirectoryPicker を呼ぶ
-        await _projOpenFromSamplerFile(data, file.name);
-      } catch(e) {
-        console.warn('[PWA] launch file open failed', e);
-        alert('プロジェクトファイルを開けませんでした: ' + (e.message || e));
-      } finally {
-        window._launchInFlight = false;
-      }
-    });
-  }
-  // PWA インストール促進バナー (beforeinstallprompt)
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    window._pwaPrompt = e;
-    _showInstallBanner();
-  });
-  window.addEventListener('appinstalled', () => {
-    _hideInstallBanner();
-    showToast('✓ SAMPLER STUDIO がアプリとしてインストールされました');
-  });
-  // インストール済みかチェック (display-mode: standalone)
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    console.log('[PWA] running as installed app');
-  }
-}
-
-// .sampler ファイルからプロジェクトを開く
-// (ダブルクリック起動で呼ばれる)
-async function _projOpenFromSamplerFile(data, fileName) {
-  // .sampler ファイル単体だけでは音源フォルダが分からないので、
-  // ユーザーに親フォルダを指定してもらう
-  const proceed = await _projShowFolderDialog(
-    (data.projectName || fileName.replace(/\.sampler$/, '')) + ' (フォルダ確認)'
-  );
-  if (!proceed) return;
-  try {
-    const dirHandle = await window.showDirectoryPicker({
-      id: 'sampler-studio-open-project',
-      mode: 'readwrite',
-      startIn: 'documents',
-    });
-    // 同名の .sampler が存在するか確認
-    try {
-      await dirHandle.getFileHandle(fileName, { create: false });
-    } catch(_) {
-      alert('指定したフォルダには ' + fileName + ' がありません。\n.sampler ファイルが入っているフォルダを選んでください。');
-      return;
-    }
-    // 既存リストに登録
-    const list = projGetList();
-    const id = data.projectId || ('p_' + Date.now());
-    let existing = list.find(p => p.id === id);
-    if (!existing) {
-      list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
-      projSetList(list);
-    }
-    await saveProjectFolderHandle(id, dirHandle, dirHandle.name);
-    // state を localStorage に書き込んで起動
-    if (data.state && data.state.multitrack) localStorage.setItem(id + ':samplerMultitrack', JSON.stringify(data.state.multitrack));
-    if (data.state && data.state.sampler) {
-      localStorage.setItem(id + ':samplerStudioState', JSON.stringify({
-        banks: data.state.sampler.banks,
-        currentBank: data.state.sampler.currentBank,
-        masterVol: data.state.sampler.masterVol,
-        fadeTime: data.state.sampler.fadeTime,
-        fadeCurve: data.state.sampler.fadeCurve,
-        appMode: data.state.appMode || 'sampler',
-      }));
-    }
-    if (data.state && data.state.door) localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
-    projSwitchTo(id);
-  } catch(e) {
-    if (e && e.name === 'AbortError') return;
-    console.warn('[PWA] open from sampler failed', e);
-  }
-}
-
-// PWA インストールバナー
-function _showInstallBanner() {
-  if (document.getElementById('pwaInstallBanner')) return;
-  const bar = document.createElement('div');
-  bar.id = 'pwaInstallBanner';
-  bar.style.cssText = [
-    'position:fixed','bottom:80px','left:50%','transform:translateX(-50%)',
-    'background:linear-gradient(180deg, #15181F, #0E1115)',
-    'border:0.5px solid rgba(61,181,166,0.5)','border-radius:8px',
-    'padding:10px 16px','z-index:9000',
-    "font-family:'SF Mono', 'Menlo', monospace",'font-size:11px',
-    'color:#C8D8D0','box-shadow:0 4px 16px rgba(0,0,0,0.6)',
-    'display:flex','align-items:center','gap:12px',
-  ].join(';');
-  bar.innerHTML = `
-    <span style="color:#88D6C2;">📦 アプリとしてインストールできます</span>
-    <button id="pwaInstallBtn" style="padding:5px 12px;background:linear-gradient(180deg, rgba(61,181,166,0.25), rgba(61,181,166,0.10));border:0.5px solid rgba(61,181,166,0.5);color:#88D6C2;border-radius:4px;font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;font-weight:700;">インストール</button>
-    <button id="pwaInstallClose" style="background:none;border:none;color:rgba(200,216,208,0.5);font-size:14px;cursor:pointer;padding:0 4px;">×</button>
-  `;
-  document.body.appendChild(bar);
-  bar.querySelector('#pwaInstallBtn').onclick = async () => {
-    if (window._pwaPrompt) {
-      window._pwaPrompt.prompt();
-      const choice = await window._pwaPrompt.userChoice;
-      console.log('[PWA] install choice:', choice.outcome);
-      window._pwaPrompt = null;
-      _hideInstallBanner();
-    }
-  };
-  bar.querySelector('#pwaInstallClose').onclick = _hideInstallBanner;
-}
-function _hideInstallBanner() {
-  const bar = document.getElementById('pwaInstallBanner');
-  if (bar) try { document.body.removeChild(bar); } catch(_) {}
 }
 
 init();

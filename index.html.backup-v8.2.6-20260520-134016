@@ -4,14 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAMPLER STUDIO</title>
-<!-- v11.0.0: PWA 化 + .sampler 拡張子ダブルクリック起動 -->
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
-<meta name="theme-color" content="#3DB5A6">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SAMPLER STUDIO">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -665,36 +657,11 @@
      Previously we hid PLAY MODE/FADE系 in DOOR mode, but the user wants them visible too. */
 
   /* DOOR OPEN PAGE */
-  /* v11.2.0/2/3: doorPage 全体を 2 カラム grid に統一
-     左カラム: BGMペア (row1) / DUCK (row2) / 下段プール (row3, 1fr)
-     右カラム: NOW (row1) / SCHEDULE (row2-3, 上に伸びる)
-     v11.2.3: minmax(0, ...) で縮小時もレイアウト破綻しないように */
-  #doorPage {
-    display: grid;
-    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr);
-    gap: 8px;
-    flex: 1; min-height: 0; min-width: 0;
-    overflow: hidden;
-  }
-  .do-top-bgm-pair { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-height: 0; min-width: 0; }
-  /* DUCK 帯を左カラム row2 に */
-  .do-duck-strip.do-grid { grid-column: 1; grid-row: 2; min-width: 0; }
-  /* 下段プール: 左カラム row3 */
-  .do-left-bottom-col { grid-column: 1; grid-row: 3; min-height: 0; min-width: 0; overflow: hidden;
-                        display: flex; flex-direction: column; gap: 8px; }
-  /* v11.2.7: 3 段 (ANNOUNCE / VIDEO / LOGO) を均等に flex:1 で固定分割 */
-  .do-left-bottom-col > .do-card { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-  /* グリッドエリアもカード内で伸びる */
-  .do-left-bottom-col .do-lib-grid,
-  .do-left-bottom-col .do-vid-grid { flex: 1; min-height: 0; }
-  /* v11.2.2: NOW は BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる */
-  #doNowCard.do-grid { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; overflow: hidden; }
-  .do-sched-card.do-grid { grid-column: 2; grid-row: 2 / span 2; min-height: 0; min-width: 0;
-                           display: flex; flex-direction: column; overflow: hidden; }
+  #doorPage { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
+  /* 上段は 3 カラム（NOW / DOOR BGM / WORKOUT BGM）に戻す */
+  .do-top { display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(220px, 1fr) minmax(220px, 1fr); gap: 8px; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
-  /* v11.2.7: LOGO カードは .do-left-bottom-col > .do-card で均等分割される */
-  .do-logo-card { gap: 6px; padding: 10px; }
+  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .do-logo-head-left { display: flex; align-items: center; gap: 8px; }
   .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
@@ -782,7 +749,7 @@
   .do-bgm-tag.tag-door { background: rgba(93,202,165,0.2); color: #3DB5A6; }
   .do-bgm-tag.tag-workout { background: rgba(46,122,255,0.2); color: #2E7AFF; }
   .do-bgm-sub { font-size: 10px; color: #6A6A70; }
-  .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* WORKOUT 用色違いボタン／フィル */
   .do-bgm-btn.primary.door { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-btn.primary.door:hover { background: #5BC4B0; }
@@ -796,8 +763,8 @@
   .do-bgm-vol-fill.workout { background: #2E7AFF; }
   .do-bgm-vol-thumb.door { background: #3DB5A6; }
   .do-bgm-vol-thumb.workout { background: #2E7AFF; }
-  /* BGMカード共通 (v11.2.5: 内部スペース拡張で文字とボタンの息継ぎ確保) */
-  .do-bgm-card { padding: 14px 14px 16px; }
+  /* BGMカード共通 */
+  .do-bgm-card { padding: 10px; }
   .do-card {
     background: #131316; border: 0.5px solid #1F1F22; border-radius: 8px; padding: 10px;
     transition: border-color 0.15s, background 0.15s;
@@ -837,11 +804,11 @@
   .do-status-badge.playing { background: rgba(226,75,74,0.15); color: #E24B4A; }
 
   /* BGM */
-  .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
   .do-bgm-name { font-size: 11px; color: #C8C8CE; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .do-bgm-load { font-size: 9px; color: #6A6A70; cursor: pointer; padding: 4px 10px; background: #14141A; border-radius: 3px; border: none; font-family: inherit; letter-spacing: 1px; }
   .do-bgm-load:hover { background: #25252A; color: #E6E6EA; }
-  .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; }
+  .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
   .do-bgm-btn {
     width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #25252A;
     background: #14141A; color: #E6E6EA; cursor: pointer; display: flex;
@@ -855,8 +822,8 @@
   .do-bgm-btn.primary:hover { background: #5BC4B0; }
   .do-bgm-btn.active { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
-  .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; margin-bottom: 8px; }
-  .do-bgm-bar { height: 4px; background: #14141A; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+  .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; }
+  .do-bgm-bar { height: 4px; background: #14141A; border-radius: 2px; overflow: hidden; }
   .do-bgm-bar-fill { height: 100%; background: #3DB5A6; width: 0%; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
   .do-bgm-vol-label { font-size: 9px; color: #6A6A70; letter-spacing: 1.5px; width: 30px; }
@@ -2138,148 +2105,6 @@
   }
   .mt-preload-banner.mt-preload-error .mt-preload-label { color: #F5B8B8; }
 
-  /* ============================================================ */
-  /* v8.4.0: 診断パネル (右下常駐)                                 */
-  /* ============================================================ */
-  .mt-diag-panel {
-    position: fixed; right: 12px; bottom: 12px; z-index: 9000;
-    background: linear-gradient(180deg, rgba(15,18,22,0.92), rgba(10,12,15,0.92));
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    border: 0.5px solid rgba(61,181,166,0.3); border-radius: 8px;
-    color: #C8D8D0; font-family: 'SF Mono', 'Menlo', monospace;
-    font-size: 10px; line-height: 1.5; letter-spacing: 0.3px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(61,181,166,0.1);
-    padding: 8px 10px; min-width: 200px; max-width: 280px;
-    cursor: pointer; user-select: none;
-    transition: all 0.2s;
-  }
-  .mt-diag-panel:hover {
-    border-color: rgba(61,181,166,0.6);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(61,181,166,0.2);
-  }
-  .mt-diag-panel.show-mode {
-    border-color: rgba(255,184,28,0.6);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(255,184,28,0.3);
-    font-size: 11px; min-width: 260px;
-  }
-  .mt-diag-row { display: flex; justify-content: space-between; gap: 12px; }
-  .mt-diag-label { color: rgba(200,216,208,0.6); font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; }
-  .mt-diag-value { color: #3DB5A6; font-weight: 600; }
-  .mt-diag-value.warn { color: #FFB81C; }
-  .mt-diag-value.error { color: #E24B4A; }
-  .mt-diag-panel.show-mode .mt-diag-value { color: #FFB81C; }
-  .mt-diag-bar {
-    height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px;
-    margin: 4px 0 2px; overflow: hidden;
-  }
-  .mt-diag-bar-fill {
-    height: 100%; background: linear-gradient(90deg, #3DB5A6, #88D6C2);
-    transition: width 0.3s;
-  }
-  .mt-diag-bar-fill.warn { background: linear-gradient(90deg, #FFB81C, #FFCB5A); }
-  .mt-diag-bar-fill.error { background: linear-gradient(90deg, #E24B4A, #FF8A8A); }
-  .mt-diag-header {
-    display: flex; align-items: center; gap: 6px;
-    margin-bottom: 6px;
-  }
-  .mt-diag-title {
-    font-size: 9px; letter-spacing: 1.5px; color: #88D6C2;
-    text-transform: uppercase; font-weight: 700;
-  }
-  .mt-diag-panel.show-mode .mt-diag-title { color: #FFCB5A; }
-  .mt-diag-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #3DB5A6; box-shadow: 0 0 6px #3DB5A6;
-  }
-  .mt-diag-dot.warn { background: #FFB81C; box-shadow: 0 0 6px #FFB81C; }
-  .mt-diag-dot.error { background: #E24B4A; box-shadow: 0 0 6px #E24B4A; }
-  /* 詳細パネル (クリックで展開) */
-  .mt-diag-detail {
-    position: fixed; right: 12px; bottom: 12px; z-index: 9001;
-    background: linear-gradient(180deg, #15181F, #0E1115);
-    border: 0.5px solid rgba(61,181,166,0.5); border-radius: 8px;
-    color: #C8D8D0; font-family: 'SF Mono', 'Menlo', monospace;
-    font-size: 10px; line-height: 1.5; letter-spacing: 0.3px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(61,181,166,0.15);
-    padding: 16px 18px; width: 420px; max-height: 540px; overflow: auto;
-  }
-  .mt-diag-detail h3 {
-    font-size: 11px; letter-spacing: 2px; color: #88D6C2; margin: 0 0 12px;
-    text-transform: uppercase; font-weight: 700;
-  }
-  .mt-diag-detail h4 {
-    font-size: 10px; letter-spacing: 1.5px; color: rgba(136,214,194,0.7);
-    margin: 14px 0 6px; text-transform: uppercase; font-weight: 600;
-    border-top: 0.5px solid rgba(61,181,166,0.15); padding-top: 10px;
-  }
-  .mt-diag-detail-row {
-    display: flex; justify-content: space-between; gap: 12px;
-    padding: 2px 0;
-  }
-  .mt-diag-detail-row .mt-diag-label { font-size: 10px; }
-  .mt-diag-detail-row .mt-diag-value { font-size: 11px; }
-  .mt-diag-mem-select {
-    width: 100%; padding: 4px 6px; background: #0A0B0E;
-    border: 0.5px solid rgba(61,181,166,0.4); border-radius: 4px;
-    color: #C8D8D0; font-family: inherit; font-size: 10px; margin-top: 4px;
-  }
-  .mt-diag-btn {
-    flex: 1; padding: 6px 10px;
-    background: linear-gradient(180deg, rgba(61,181,166,0.12), rgba(61,181,166,0.04));
-    border: 0.5px solid rgba(61,181,166,0.4); color: #88D6C2;
-    border-radius: 4px; font-family: inherit; font-size: 10px;
-    letter-spacing: 1.2px; font-weight: 700; cursor: pointer;
-    transition: all 0.15s; text-transform: uppercase;
-  }
-  .mt-diag-btn:hover {
-    background: linear-gradient(180deg, rgba(61,181,166,0.22), rgba(61,181,166,0.1));
-    border-color: #3DB5A6;
-  }
-  .mt-diag-btn.warn {
-    border-color: rgba(255,184,28,0.4); color: #FFCB5A;
-    background: linear-gradient(180deg, rgba(255,184,28,0.10), rgba(255,184,28,0.04));
-  }
-  .mt-diag-btn.warn:hover {
-    background: linear-gradient(180deg, rgba(255,184,28,0.22), rgba(255,184,28,0.10));
-    border-color: #FFB81C;
-  }
-  .mt-diag-btn.show-mode-active {
-    background: linear-gradient(180deg, #FFB81C, #FFA000);
-    color: #1A1300; border-color: #FFD580;
-    box-shadow: 0 0 12px rgba(255,184,28,0.4);
-  }
-  .mt-diag-btn-row { display: flex; gap: 6px; margin-top: 8px; }
-  .mt-diag-close {
-    position: absolute; top: 8px; right: 10px;
-    background: none; border: none; color: rgba(200,216,208,0.5);
-    font-size: 14px; cursor: pointer; padding: 0; line-height: 1;
-  }
-  .mt-diag-close:hover { color: #E24B4A; }
-  .mt-diag-err-list {
-    max-height: 200px; overflow-y: auto; padding-right: 4px;
-    border: 0.5px solid rgba(61,181,166,0.15); border-radius: 4px;
-    background: #08090C; padding: 6px 8px;
-  }
-  .mt-diag-err-item {
-    padding: 3px 0; border-bottom: 0.5px solid rgba(255,255,255,0.04);
-    font-size: 9px; line-height: 1.5;
-  }
-  .mt-diag-err-item:last-child { border-bottom: none; }
-  .mt-diag-err-time { color: rgba(200,216,208,0.4); font-size: 8px; }
-  .mt-diag-err-kind { color: #FFB81C; font-weight: 600; }
-  .mt-diag-err-kind.warn { color: #FFB81C; }
-  .mt-diag-err-kind.decode { color: #E24B4A; }
-  .mt-diag-err-kind.error { color: #E24B4A; }
-  .mt-diag-err-msg { color: #C8D8D0; }
-  .mt-diag-progress-bar {
-    height: 4px; background: rgba(255,255,255,0.08);
-    border-radius: 2px; overflow: hidden; margin-top: 4px;
-  }
-  .mt-diag-progress-fill {
-    height: 100%; background: linear-gradient(90deg, #3DB5A6, #88D6C2);
-    transition: width 0.2s;
-  }
-
   /* MIXER FADE OUT ボタン (パニックストップ) */
   .mt-fadeout-btn {
     background: linear-gradient(180deg, rgba(226,75,74,0.10), rgba(226,75,74,0.04));
@@ -3037,9 +2862,20 @@
 
   <!-- DOOR OPEN PAGE -->
   <div id="doorPage" style="display:none;">
-      <!-- v11.2.0: doorPage 全体が grid。直接 grid item を配置 -->
-      <!-- 左カラム row1: BGM 2つを内側で 2 分割 -->
-      <div class="do-top-bgm-pair">
+    <div class="do-top">
+      <!-- NOW / NEXT — 横並び -->
+      <div class="do-card" id="doNowCard">
+        <div class="now-block">
+          <div class="do-card-head">NOW</div>
+          <div class="do-clock-now" id="doClockNow">--:--</div>
+          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
+        </div>
+        <div class="now-block next-block">
+          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
+          <div class="do-clock-next-name" id="doNextName">予定なし</div>
+          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
+        </div>
+      </div>
       <!-- DOOR OPEN BGM -->
       <div class="do-card do-bgm-card" id="doBgmCardDoor" data-slot="door">
         <div class="do-bgm-row">
@@ -3112,10 +2948,11 @@
           <span class="do-bgm-vol-db" id="doBgmVolDbWorkout">0.0</span>
         </div>
       </div>
-      </div><!-- /.do-top-bgm-pair -->
 
-    <!-- DUCK 設定（横長帯 — 左カラム row2） -->
-    <div class="do-card do-duck-strip do-grid">
+    </div>
+
+    <!-- DUCK 設定（横長帯） -->
+    <div class="do-card do-duck-strip">
       <span class="do-card-head" style="margin:0;">DUCK 設定</span>
       <span class="do-duck-label">下げ幅</span>
       <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div><div class="do-duck-bar-thumb" id="doDuckDepthThumb" style="left:75%;"></div></div>
@@ -3131,11 +2968,11 @@
       <span style="font-size:9px; color:#6A6A70; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
     </div>
 
-    <!-- v11.2.0: 下段は doorPage grid の row3 に展開
-         左カラム = 素材プール、右カラム = SCHEDULE (rowspan で右カラム上部に NOW を別配置) -->
+    <!-- 2カラム: 左=素材プール / 右=スケジュール -->
+    <div class="do-bottom" style="flex:1; min-height:0; display:grid; grid-template-columns: minmax(360px, 0.85fr) 1fr; gap:8px;">
 
-      <!-- 左カラム row3: 素材プール（ANNOUNCE + VIDEO LIBRARY + LOGO） -->
-      <div class="do-left-bottom-col">
+      <!-- 左カラム: 素材プール（ANNOUNCE + VIDEO LIBRARY） -->
+      <div style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto;">
         <div class="do-card" id="doLibCard">
           <div class="do-sched-head">
             <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材</span>
@@ -3207,8 +3044,8 @@
         </div>
       </div>
 
-      <!-- v11.2.0: 右カラム row3 — SCHEDULE（フル高、上に伸びる） -->
-      <div class="do-card do-grid do-sched-card">
+      <!-- 右カラム: SCHEDULE（フル高） -->
+      <div class="do-card" style="display:flex; flex-direction:column; min-height:0;">
         <div class="do-sched-head">
           <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -3220,19 +3057,7 @@
         <button class="do-sched-add" onclick="doSchedAdd()">＋ 時刻を追加</button>
       </div>
 
-      <!-- v11.2.0: 右カラム row1-2 — NOW / NEXT 時計 (SCHEDULE の上、BGM ペア+DUCK と同じ高さ) -->
-      <div class="do-card do-grid" id="doNowCard">
-        <div class="now-block">
-          <div class="do-card-head">NOW</div>
-          <div class="do-clock-now" id="doClockNow">--:--</div>
-          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
-        </div>
-        <div class="now-block next-block">
-          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
-          <div class="do-clock-next-name" id="doNextName">予定なし</div>
-          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
-        </div>
-      </div>
+    </div>
   </div>
 
   <!-- ====================== MULTI-TRACK PAGE ====================== -->
@@ -3248,15 +3073,6 @@
         <div class="mt-preload-bar-fill" id="mtPreloadBarFill" style="width:0%"></div>
       </div>
       <div class="mt-preload-hint">本番前にロード完了するまでお待ちください</div>
-    </div>
-    <!-- 診断パネル (右下常駐) — JS で生成 -->
-    <div class="mt-diag-panel" id="mtDiagPanel" onclick="mtDiagPanelToggleDetail()" title="クリックで詳細・本番モード切替">
-      <div class="mt-diag-header">
-        <span class="mt-diag-dot" id="mtDiagDot"></span>
-        <span class="mt-diag-title" id="mtDiagTitle">MT-FS</span>
-      </div>
-      <div class="mt-diag-row"><span class="mt-diag-label">STEMS</span><span class="mt-diag-value" id="mtDiagStemsVal">—</span></div>
-      <div class="mt-diag-row"><span class="mt-diag-label">ERRORS</span><span class="mt-diag-value" id="mtDiagErrVal">0</span></div>
     </div>
     <!-- 1. NOW PLAYING — compact hero -->
     <div class="mt-hero compact" id="mtHero">
@@ -3446,38 +3262,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.8';
-// v11.2.8: 本番耐性パッチ — SW キャッシュ名追従 / project.json 保存失敗を toast 通知 / .sampler 二重起動ガード
-// v11.2.7: ANNOUNCE / VIDEO / LOGO の 3 段を flex:1 で固定均等分割 (動的サイズ変動なし)
-// v11.2.6: LOGO カードの枠だけ下まで伸ばす (下の余白を消す)
-// v11.2.5: BGM カード内部スペース拡張 + LOGO カード縮小 (見た目の息継ぎ確保)
-// v11.2.4: LOGO カードを下まで伸ばして余白を埋める
-// v11.2.3: 縮小時のレイアウト崩れ修正 (grid track を minmax(0, ...) に、grid item に min-width:0)
-// v11.2.2: NOW カードを BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる
-// v11.2.1: doorPage display を flex → grid に修正 (setAppMode で grid を上書きしないように)
-// v11.2.0: DOOR OPEN 全体 grid 化 — DUCK を左に、NOW + SCHEDULE 右カラム連続
-// v11.1.1: DOOR OPEN 上下の列幅を揃える (BGM 2 つを左カラム内で 2 分割、NOW を右カラム)
-// v11.1.0: DOOR OPEN レイアウト変更 — 左から DOOR/WORKOUT BGM、右に時計 (NOW)
-// v11.0.1: MPC 風サンプラーアイコン追加 (4x4 パッド + 緑LED)
-// v11.0.0: PWA + File Handling API — .sampler ダブルクリック起動 (DP方式の完成形)
-// v10.2.0: project.json 自動保存 + フォルダから開く + 専用ダイアログ UI (DP 方式)
-// v10.1.0: プロジェクトフォルダ方式 — Finder で見える保存先 (OPFS から切替)
-// v10.0.0 Phase 1: OPFS 自動コピー保存 — 取り込み時にアプリ内コピーで原本依存撤廃
-// v9.1.1: ESC 効かない問題修正 — playbackMode を 'mediaelement' 強制固定 + デバッグログ追加
-// v9.1.0: 大整理 — MediaElement 専用化 + 不要 UI / dead code 全削除
-// v9.0.7: フェードアウト終了後のプチッ完全撲滅 — master 復帰を撤廃 (0 のまま固定)
-// v9.0.6: playback lock を 10秒 → 5秒に短縮
-// v9.0.5 アンチクリック網羅:
-//   Fix A: mtMediaStopAll で signal disconnect → audio pause の順序 (master まで届かない)
-//   Fix B: mtMediaSeekTo で master 8ms フェード → currentTime → 復帰
-//   Fix C: mtMediaPlaySong で master を急変させない (既に 0 ならそのまま、ramp が必要なら 8ms)
-//   Fix D: _mtMediaCacheClear もアンチクリック (disconnect 先行、mute、pause、src 解放)
-//   Fix G: mtMediaFadeOut の段4 master 復帰を 20ms linearRamp に
-//   Fix H: 全 STEM ロード失敗時の master 復帰
-//   Fix I: 例外時の master 復帰
-//   Fix K: mtMediaPlaySong で前曲切替時に master 10ms フェード → 15ms 待機 → 切断
-//   Fix L: _mtMediaStopAllWithFade ヘルパー (master 8ms フェード → 12ms 後切断 → 20ms 復帰)
-//   Fix M: mtStop + auto-advance 終了で _mtMediaStopAllWithFade を使用
+const APP_VERSION = 'v8.2.6';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3545,166 +3330,12 @@ function projGoTop() {
   projSetActiveId(null);
   location.reload();
 }
-// v10.2.0: 既存のプロジェクトフォルダから project.json を読み込んで開く
-async function projOpenFromFolder() {
-  if (!('showDirectoryPicker' in window)) {
-    alert('お使いのブラウザはフォルダ選択に対応していません。Chrome で開いてください。');
-    return;
-  }
-  let dirHandle;
-  try {
-    dirHandle = await window.showDirectoryPicker({
-      id: 'sampler-studio-open-project',
-      mode: 'readwrite',
-      startIn: 'documents',
-    });
-  } catch(e) {
-    if (e && e.name === 'AbortError') return;
-    console.warn('[projOpen] picker failed', e);
-    alert('フォルダ選択に失敗しました: ' + (e.message || e));
-    return;
-  }
-  // project.json を読む
-  const data = await loadProjectJSONFromFolder(dirHandle);
-  if (!data) {
-    alert(
-      'このフォルダには project.json がありません。\n\n' +
-      'SAMPLER STUDIO のプロジェクトフォルダ (project.json を含む) を選んでください。'
-    );
-    return;
-  }
-  if (data._format !== 'sampler-studio-project') {
-    alert('project.json の形式が認識できません。');
-    return;
-  }
-  // 既存リストに登録 (上書き or 新規)
-  const list = projGetList();
-  const id = data.projectId || ('p_' + Date.now());
-  let existing = list.find(p => p.id === id);
-  if (!existing) {
-    list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
-    projSetList(list);
-  } else {
-    existing.folderPath = dirHandle.name;
-    existing.updatedAt = Date.now();
-    projSetList(list);
-  }
-  // フォルダ handle を保存
-  try { await saveProjectFolderHandle(id, dirHandle, dirHandle.name); } catch(e) { console.warn(e); }
-  // state を localStorage に書き込む (このプロジェクトキーで)
-  try {
-    if (data.state && data.state.multitrack) {
-      localStorage.setItem(id + ':samplerMultitrack', JSON.stringify(data.state.multitrack));
-    }
-    if (data.state && data.state.sampler) {
-      const samplerState = {
-        banks: data.state.sampler.banks,
-        currentBank: data.state.sampler.currentBank,
-        masterVol: data.state.sampler.masterVol,
-        fadeTime: data.state.sampler.fadeTime,
-        fadeCurve: data.state.sampler.fadeCurve,
-        appMode: data.state.appMode || 'sampler',
-      };
-      localStorage.setItem(id + ':samplerStudioState', JSON.stringify(samplerState));
-    }
-    if (data.state && data.state.door) {
-      localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
-    }
-  } catch(e) { console.warn('[projOpen] state restore failed', e); }
-  // プロジェクトを開く
-  projSwitchTo(id);
-}
-
-// v10.2.0: 専用 HTML ダイアログ — confirm より丁寧に説明 + 警告強調
-function _projShowFolderDialog(projectName) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = [
-      'position:fixed','inset:0','background:rgba(0,0,0,0.7)','z-index:99999',
-      'display:flex','align-items:center','justify-content:center',
-      'backdrop-filter:blur(4px)','-webkit-backdrop-filter:blur(4px)',
-    ].join(';');
-    const dialog = document.createElement('div');
-    dialog.style.cssText = [
-      'background:linear-gradient(180deg, #15181F, #0E1115)',
-      'border:0.5px solid rgba(61,181,166,0.5)','border-radius:10px',
-      'color:#C8D8D0',"font-family:'SF Mono', 'Menlo', monospace",
-      'padding:24px 28px','max-width:520px','line-height:1.6',
-      'box-shadow:0 8px 40px rgba(0,0,0,0.8)',
-    ].join(';');
-    dialog.innerHTML = `
-      <div style="font-size:13px;letter-spacing:2px;color:#88D6C2;margin-bottom:14px;font-weight:700;">📁 プロジェクトフォルダを選んでください</div>
-      <div style="font-size:13px;color:#C8D8D0;margin-bottom:14px;">
-        プロジェクト「<b style="color:#FFFFFF;">${projectName.replace(/</g,'&lt;')}</b>」用に、アプリが新しいフォルダを作って音源と設定を保存します。
-      </div>
-      <div style="font-size:12px;color:rgba(200,216,208,0.7);margin-bottom:18px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;">
-        <div style="font-weight:700;color:#88D6C2;margin-bottom:6px;">推奨の場所</div>
-        Mac の「書類」(Documents) 直下。<br/>
-        例: <code style="color:#FFCB5A;">~/Documents/${projectName.replace(/</g,'&lt;')}/</code>
-      </div>
-      <div style="font-size:12px;color:#FFCB5A;margin-bottom:18px;background:rgba(255,184,28,0.05);border:0.5px solid rgba(255,184,28,0.3);border-radius:6px;padding:10px 14px;">
-        <div style="font-weight:700;margin-bottom:6px;">⚠️ 重要な注意</div>
-        ・このフォルダの中身を Finder で <b>動かさない / 削除しない</b>でください<br/>
-        ・別の Mac に持っていく時は<b>フォルダごとコピー</b>してください<br/>
-        ・誤って動かすとアプリで再生できなくなります
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
-        <button id="projCancelBtn" style="padding:8px 18px;background:transparent;border:0.5px solid rgba(200,216,208,0.3);color:#C8D8D0;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">キャンセル</button>
-        <button id="projOkBtn" style="padding:8px 18px;background:linear-gradient(180deg, rgba(61,181,166,0.25), rgba(61,181,166,0.10));border:0.5px solid rgba(61,181,166,0.5);color:#88D6C2;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:700;">フォルダを選ぶ →</button>
-      </div>
-    `;
-    overlay.appendChild(dialog);
-    document.body.appendChild(overlay);
-    const close = (result) => { try { document.body.removeChild(overlay); } catch(_) {} resolve(result); };
-    dialog.querySelector('#projCancelBtn').onclick = () => close(false);
-    dialog.querySelector('#projOkBtn').onclick = () => close(true);
-    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
-  });
-}
-
-// v10.1.0/v10.2.0: プロジェクト作成時に保存先フォルダを選ばせる (専用 UI)
-async function projCreateNew() {
+function projCreateNew() {
   const name = prompt('新しいプロジェクト名:', 'New Project');
   if (!name || !name.trim()) return;
-  const safeName = name.trim();
   const id = 'p_' + Date.now() + '_' + Math.floor(Math.random()*1000);
-  // 親フォルダ選択 (showDirectoryPicker)
-  let dirHandle = null;
-  let displayPath = '';
-  if ('showDirectoryPicker' in window) {
-    const proceed = await _projShowFolderDialog(safeName);
-    if (!proceed) {
-      return; // キャンセル
-    } else {
-      try {
-        const parent = await window.showDirectoryPicker({
-          id: 'sampler-studio-projects',
-          mode: 'readwrite',
-          startIn: 'documents',
-        });
-        // [プロジェクト名]/ サブフォルダを作成
-        dirHandle = await parent.getDirectoryHandle(safeName, { create: true });
-        displayPath = (parent.name || '') + '/' + safeName;
-      } catch(e) {
-        if (e && e.name === 'AbortError') {
-          // ユーザーがキャンセル → 作成中止
-          return;
-        }
-        console.warn('[proj] showDirectoryPicker failed', e);
-        alert('フォルダ選択に失敗しました: ' + (e.message || e));
-        return;
-      }
-    }
-  } else {
-    alert('お使いのブラウザはフォルダ選択に対応していません。Chrome で開いてください。');
-    return;
-  }
-  // handle を IndexedDB に保存
-  if (dirHandle) {
-    try { await saveProjectFolderHandle(id, dirHandle, displayPath); } catch(e) { console.warn(e); }
-  }
   const list = projGetList();
-  list.push({ id, name: safeName, folderPath: displayPath, createdAt: Date.now(), updatedAt: Date.now() });
+  list.push({ id, name: name.trim(), createdAt: Date.now(), updatedAt: Date.now() });
   projSetList(list);
   projSwitchTo(id);
 }
@@ -3813,12 +3444,6 @@ function renderTopPage() {
   nc.innerHTML = `<div class="tp-new-icon">+</div><div class="tp-new-label">NEW PROJECT</div>`;
   nc.addEventListener('click', projCreateNew);
   grid.appendChild(nc);
-  // v10.2.0: + OPEN FROM FOLDER card
-  const oc = document.createElement('div');
-  oc.className = 'tp-new';
-  oc.innerHTML = `<div class="tp-new-icon">📁</div><div class="tp-new-label">OPEN FROM FOLDER</div>`;
-  oc.addEventListener('click', projOpenFromFolder);
-  grid.appendChild(oc);
 }
 function showTopPage() {
   document.getElementById('topPage').classList.add('active');
@@ -3897,11 +3522,8 @@ const state = {
     selectedIdx: 0,                // 矢印キーで動かすハイライト
     seekOffset: 0,                 // シーク位置（停止中も保持、次の play で適用）
     isPlaying: false,
-    // v9.0.0: 再生方式 ('audiobuffer' = 全 RAM 展開 / 'mediaelement' = ストリーミング)
-    playbackMode: 'mediaelement',  // デフォルトを MediaElement に。リーンメモリ運用。
     // runtime (not persisted)
-    activeSources: [],            // [AudioBufferSourceNode] of current song (audiobuffer モード用)
-    activeMedia: [],              // [HTMLAudioElement] of current song (mediaelement モード用)
+    activeSources: [],            // [AudioBufferSourceNode] of current song
     startTime: 0,                 // ctx.currentTime when current song started
     songDuration: 0,
     advanceTimer: null,
@@ -4548,203 +4170,6 @@ async function mtDeleteHandleFromDB(id) {
   });
 }
 
-// v10.1.0: プロジェクトフォルダの DirectoryHandle 保存/取得 (mtHandles 流用、キーに _projDir プレフィックス)
-async function saveProjectFolderHandle(projectId, dirHandle, displayPath) {
-  if (!db) await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('mtHandles', 'readwrite');
-    tx.objectStore('mtHandles').put({ id: '_projDir:' + projectId, handle: dirHandle, name: displayPath });
-    tx.oncomplete = () => resolve();
-    tx.onerror = e => reject(e);
-  });
-}
-async function getProjectFolderHandle(projectId) {
-  if (!db) await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('mtHandles', 'readonly');
-    const req = tx.objectStore('mtHandles').get('_projDir:' + projectId);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = e => reject(e);
-  });
-}
-async function deleteProjectFolderHandle(projectId) {
-  if (!db) await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('mtHandles', 'readwrite');
-    tx.objectStore('mtHandles').delete('_projDir:' + projectId);
-    tx.oncomplete = () => resolve();
-    tx.onerror = e => reject(e);
-  });
-}
-
-// プロジェクトフォルダの permission 確認 (granted で取得 + 必要なら request)
-async function ensureProjectFolderPermission(projectId) {
-  const rec = await getProjectFolderHandle(projectId);
-  if (!rec || !rec.handle) return null;
-  let perm = 'denied';
-  try { perm = await rec.handle.queryPermission({ mode: 'readwrite' }); } catch(_) {}
-  if (perm !== 'granted') {
-    try { perm = await rec.handle.requestPermission({ mode: 'readwrite' }); } catch(_) {}
-  }
-  return perm === 'granted' ? rec.handle : null;
-}
-
-// プロジェクトフォルダにファイルを書き込み (ファイル名で識別)
-async function saveSampleToProjectFolder(projectId, fileName, data) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return false;
-  try {
-    const fh = await dirHandle.getFileHandle(fileName, { create: true });
-    const w = await fh.createWritable();
-    await w.write(data);
-    await w.close();
-    return true;
-  } catch(e) {
-    console.warn('[projFolder] saveSample failed', fileName, e);
-    return false;
-  }
-}
-
-// プロジェクトフォルダからファイルを読み込み
-async function loadSampleFromProjectFolder(projectId, fileName) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return null;
-  try {
-    const fh = await dirHandle.getFileHandle(fileName, { create: false });
-    return await fh.getFile();
-  } catch(e) {
-    if (e && e.name === 'NotFoundError') return null;
-    console.warn('[projFolder] loadSample failed', fileName, e);
-    return null;
-  }
-}
-
-// プロジェクトフォルダ内のファイル一覧
-async function listProjectFolderFiles(projectId) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return [];
-  const out = [];
-  try {
-    for await (const [name, h] of dirHandle.entries()) {
-      if (h.kind === 'file') out.push(name);
-    }
-  } catch(_) {}
-  return out;
-}
-
-// v10.2.0: project.json をプロジェクトフォルダに書き出し
-// (DP 等のプロジェクトバンドル方式と同じ思想)
-async function saveProjectJSONToFolder(projectId) {
-  const dirHandle = await ensureProjectFolderPermission(projectId);
-  if (!dirHandle) return false;
-  try {
-    const list = projGetList();
-    const projMeta = list.find(p => p.id === projectId) || {};
-    // 現在の state を JSON 化
-    const data = {
-      _format: 'sampler-studio-project',
-      _formatVersion: 1,
-      _appVersion: APP_VERSION,
-      projectId,
-      projectName: projMeta.name || '無題',
-      savedAt: Date.now(),
-      state: {
-        multitrack: (typeof mtSerialize === 'function') ? mtSerialize() : null,
-        sampler: {
-          banks: state.banks,
-          currentBank: state.currentBank,
-          masterVol: state.masterVol,
-          fadeTime: state.fadeTime,
-          fadeCurve: state.fadeCurve,
-        },
-        door: state.door ? {
-          bgm: {
-            door: state.door.bgm && state.door.bgm.door ? {
-              sampleId: state.door.bgm.door.sampleId,
-              sampleName: state.door.bgm.door.sampleName,
-              vol: state.door.bgm.door.vol,
-              loop: state.door.bgm.door.loop,
-            } : null,
-            workout: state.door.bgm && state.door.bgm.workout ? {
-              sampleId: state.door.bgm.workout.sampleId,
-              sampleName: state.door.bgm.workout.sampleName,
-              vol: state.door.bgm.workout.vol,
-              loop: state.door.bgm.workout.loop,
-            } : null,
-          },
-          duck: state.door.duck,
-          library: (state.door.library || []).map(l => l ? { sampleId: l.sampleId, sampleName: l.sampleName, level: l.level } : null),
-          schedule: state.door.schedule || [],
-        } : null,
-        appMode: state.appMode,
-      },
-    };
-    const jsonStr = JSON.stringify(data, null, 2);
-    // v10.2.0: project.json
-    const fh = await dirHandle.getFileHandle('project.json', { create: true });
-    const w = await fh.createWritable();
-    await w.write(jsonStr);
-    await w.close();
-    // v11.0.0: project.sampler も並行保存 (ダブルクリック起動用、中身は同じ)
-    try {
-      const projMeta2 = (projGetList().find(p => p.id === projectId)) || { name: '無題' };
-      const samplerName = (projMeta2.name || '無題').replace(/[\/\\:*?"<>|]/g, '_') + '.sampler';
-      const fh2 = await dirHandle.getFileHandle(samplerName, { create: true });
-      const w2 = await fh2.createWritable();
-      await w2.write(jsonStr);
-      await w2.close();
-    } catch(e) { console.warn('[projSampler] save failed', e); }
-    return true;
-  } catch(e) {
-    console.warn('[projJSON] save failed', e);
-    return false;
-  }
-}
-
-// v10.2.0: プロジェクトフォルダから project.json を読み込み
-async function loadProjectJSONFromFolder(dirHandle) {
-  try {
-    const fh = await dirHandle.getFileHandle('project.json', { create: false });
-    const file = await fh.getFile();
-    return JSON.parse(await file.text());
-  } catch(e) {
-    if (e && e.name === 'NotFoundError') return null;
-    console.warn('[projJSON] load failed', e);
-    return null;
-  }
-}
-
-// v10.2.0: 自動保存 (デバウンス) — state 変更時に project.json も更新
-// v11.2.8: silent fail させない — 失敗時 toast で通知 (本番中の保存ロスト早期検知)
-let _saveProjectJSONTimer = null;
-let _saveJsonFailCount = 0;
-function scheduleSaveProjectJSON() {
-  if (_saveProjectJSONTimer) clearTimeout(_saveProjectJSONTimer);
-  _saveProjectJSONTimer = setTimeout(async () => {
-    _saveProjectJSONTimer = null;
-    const pid = (typeof projGetActiveId === 'function') ? projGetActiveId() : null;
-    if (!pid) return;
-    try {
-      const ok = await saveProjectJSONToFolder(pid);
-      if (ok) {
-        _saveJsonFailCount = 0;
-      } else {
-        _saveJsonFailCount++;
-        // 1 回目と 5 回ごとに通知 (連続失敗時のノイズ防止)
-        if (_saveJsonFailCount === 1 || _saveJsonFailCount % 5 === 0) {
-          try { showToast('⚠️ プロジェクト自動保存に失敗 — フォルダ権限を確認してください'); } catch(_) {}
-        }
-      }
-    } catch(e) {
-      console.warn('[projJSON] schedule save failed', e);
-      _saveJsonFailCount++;
-      if (_saveJsonFailCount === 1) {
-        try { showToast('⚠️ プロジェクト自動保存でエラー発生'); } catch(_) {}
-      }
-    }
-  }, 2000); // 2秒デバウンス
-}
-
 async function saveSampleToDB(id, arrayBuffer, name) {
   if (!db) await openDB();
   return new Promise((resolve, reject) => {
@@ -5207,28 +4632,7 @@ document.addEventListener('keydown', e => {
   if (e.code === state.controlAssign.fadeout.key) { fadeOutAll(); e.preventDefault(); return; }
   // ESC = パニックストップ。即停止ではなく 2 秒 (= state.fadeTime) フェードアウト。
   // → ボタン連打のクリック音や手元の事故を防ぎながら確実に止める。
-  // v8.4.0: 本番モード ON 時は長押し 1 秒で発火 (誤押し防止)
-  if (e.code === state.controlAssign.stop.key) {
-    console.log('[ESC] pressed, repeat=' + e.repeat + ', showMode=' + (mtFs && mtFs.showMode) + ', mtPlaying=' + state.multitrack.isPlaying + ', playbackMode=' + state.multitrack.playbackMode);
-    if (typeof mtFs !== 'undefined' && mtFs.showMode) {
-      // 本番モード: 長押し必須。e.repeat が連続して 12 回 (= 約 1 秒) で発火
-      if (e.repeat) {
-        if (!window._mtEscRepeatCnt) window._mtEscRepeatCnt = 0;
-        window._mtEscRepeatCnt++;
-        if (window._mtEscRepeatCnt >= 12) {
-          window._mtEscRepeatCnt = 0;
-          console.log('[ESC] long press fired → fadeOutAll');
-          fadeOutAll(); e.preventDefault(); return;
-        }
-      } else {
-        window._mtEscRepeatCnt = 0;
-        try { showToast('本番モード中：ESC は長押しで停止'); } catch(_) {}
-      }
-      e.preventDefault(); return;
-    }
-    console.log('[ESC] normal mode → fadeOutAll');
-    fadeOutAll(); e.preventDefault(); return;
-  }
+  if (e.code === state.controlAssign.stop.key)    { fadeOutAll(); e.preventDefault(); return; }
   if (e.code === state.controlAssign.pause.key)   { pauseAll();   e.preventDefault(); return; }
   if (e.code === 'ArrowUp')    { setMasterVol(state.masterVol + 0.03); e.preventDefault(); return; }
   if (e.code === 'ArrowDown')  { setMasterVol(state.masterVol - 0.03); e.preventDefault(); return; }
@@ -6844,7 +6248,7 @@ function setAppMode(m) {
   document.getElementById('banksRow').style.display = (m === 'sampler') ? 'flex' : 'none';
   document.getElementById('rightContent').style.display = (m === 'sampler') ? 'flex' : 'none';
   // DOOR OPEN ページ
-  document.getElementById('doorPage').style.display = (m === 'door') ? 'grid' : 'none';
+  document.getElementById('doorPage').style.display = (m === 'door') ? 'flex' : 'none';
   // MULTI-TRACK ページ
   const mtPage = document.getElementById('multiPage');
   if (mtPage) mtPage.style.display = (m === 'multi') ? 'flex' : 'none';
@@ -6861,8 +6265,6 @@ function setAppMode(m) {
   doSave();
   if (m === 'door') doRenderAll();
   if (m === 'multi' && typeof mtRenderAll === 'function') mtRenderAll();
-  // v8.4.0: 診断パネルは multi 時のみ表示
-  try { if (typeof _mtDiagPanelUpdate === 'function') _mtDiagPanelUpdate(); } catch(_) {}
   // Pad grid の再計算
   if (typeof resizePads === 'function') setTimeout(resizePads, 30);
 }
@@ -9763,7 +9165,6 @@ function mtSerialize() {
     outputDeviceLabel: m.outputDeviceLabel,
     gapSec: m.gapSec,
     autoAdvance: m.autoAdvance,
-    playbackMode: m.playbackMode, // v9.0.0
     channelMap: m.channelMap,
     groupGains: m.groupGains,
     groupMute: m.groupMute,
@@ -9796,11 +9197,6 @@ function mtRestore(saved) {
   m.gapSec = 0;
   // autoAdvance: UI 廃止後は常に true（各曲ごとの autoNext / nextDelay が支配的）
   m.autoAdvance = true;
-  // v9.1.1: playbackMode は MediaElement に強制固定
-  // (旧 'audiobuffer' 設定が localStorage に残っていても無視。
-  //  AudioBuffer モードは v9.1.0 で UI も内部経路も廃止済みのため、
-  //  ここで復元すると ESC が効かない等の不具合が出る)
-  m.playbackMode = 'mediaelement';
   // channelMap はスプレッドマージ必須。古いセーブで 'click' が無いケースに
   // 'click' のデフォルト ({L:1,R:2}) を残してから saved 値で上書きしないと
   // mtRenderAll の cm.L 読み出しで TypeError になり、setlist 全体の render が
@@ -9846,8 +9242,6 @@ function mtSave() {
     const key = projKey('samplerMultitrack');
     localStorage.setItem(key, JSON.stringify(mtSerialize()));
   } catch(e) { console.warn('mtSave failed', e); }
-  // v10.2.0: プロジェクトフォルダにも project.json を自動保存 (デバウンス)
-  try { if (typeof scheduleSaveProjectJSON === 'function') scheduleSaveProjectJSON(); } catch(_) {}
 }
 function mtLoad() {
   try {
@@ -9916,59 +9310,10 @@ function mtUndo() {
 }
 
 // ---- AudioContext / Routing ----
-// v8.3.0: ctx 死亡時 (closed / interrupted) に検知して全リソースをリセットし、
-// 次回 mtInitCtx で再構築できるようにする。本番中のスリープ復帰や長時間稼働で
-// AudioContext が死んでも自動復旧。
-function _mtTeardownCtxResources(reason) {
-  console.warn('[mtFs] tearing down ctx resources, reason:', reason);
-  try { mtStopSources(); } catch(_) {}
-  // v9.0.3 Fix1: MediaElement モードの audio/source/blob URL も完全クリア
-  // (古い ctx に紐づく MediaElementSource は新 ctx で使えない)
-  try { _mtMediaCacheClear(); } catch(_) {}
-  state.multitrack.isPlaying = false;
-  try { mtFsNotifyPlaybackStop(); } catch(_) {}
-  if (state.multitrack.advanceTimer) {
-    try { clearTimeout(state.multitrack.advanceTimer); } catch(_) {}
-    state.multitrack.advanceTimer = null;
-  }
-  try { if (mtCtx) mtCtx.close(); } catch(_) {}
-  mtCtx = null;
-  mtMasterGain = null;
-  mtMerger = null;
-  mtMasterSplitter = null;
-  mtMasterAnalyserL = null;
-  mtMasterAnalyserR = null;
-  mtMasterAnalyserBufL = null;
-  mtMasterAnalyserBufR = null;
-  mtGroupGainNodes = {};
-  mtGroupAnalysers = {};
-  mtGroupAnalyserData = {};
-  // mtDecodedCache は ctx に紐づく AudioBuffer を保持しているので破棄
-  // (新しい ctx では再 decode が必要になる)
-  mtDecodedCache = {};
-  if (mtFs._failed) mtFs._failed.clear();
-  if (_mtLoadInFlight) _mtLoadInFlight.clear();
-  // v9.0.3 Fix11: routing 確立フラグもリセット
-  mtFs._mediaMasterRoutingDone = false;
-  try { showToast('⚠️ AudioContext がリセットされました。SPACE でもう一度再生してください。'); } catch(_) {}
-  try { mtRenderNow(); mtRenderSetlist(); } catch(_) {}
-}
-
 async function mtInitCtx() {
   if (mtCtx) return mtCtx;
   // 高サンプルレートかつ低遅延寄りで作成
   mtCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
-  // v8.3.0: ctx 死亡検知ハンドラ
-  try {
-    mtCtx.onstatechange = () => {
-      if (!mtCtx) return;
-      const st = mtCtx.state;
-      console.log('[mtFs] ctx state →', st);
-      if (st === 'closed' || st === 'interrupted') {
-        _mtTeardownCtxResources('state=' + st);
-      }
-    };
-  } catch(_) {}
   mtMasterGain = mtCtx.createGain();
   // グランドマスター連動 — 左パネルの MASTER フェーダー値で初期化
   mtMasterGain.gain.value = (typeof state !== 'undefined' && state.masterVol != null) ? state.masterVol : 1.0;
@@ -10101,10 +9446,6 @@ async function mtRebuildRouting() {
   if (mtMasterSplitter) {
     try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
   }
-  // v9.0.3 Fix11: master/merger の経路を mtMediaSetupGroupRouting で重複構築しないよう
-  // 「確立済み」マーク。逆に MediaElement モードで再生中に channelMap を変えた場合は
-  // group gain → merger の経路が古くなるので、group routing 部分は次回再生時に再構築される。
-  if (typeof mtFs !== 'undefined') mtFs._mediaMasterRoutingDone = true;
   mtUpdateChStatus();
 }
 
@@ -10485,7 +9826,6 @@ async function mtRobustDecode(arrayBuffer, file) {
 }
 
 // ファイルを読み込んで対象グループに割当（targetGroup=null なら unassigned プールに）
-// v10.0.0: 取り込み時に OPFS にコピー保存 (アプリ内に閉じる、原本を動かしても安全)
 async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
   if (!file) return;
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
@@ -10495,45 +9835,24 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     if (mtCtx.state === 'suspended') await mtCtx.resume();
     const arrBuf = await file.arrayBuffer();
     const sampleId = `mt-${state.multitrack.songs[songIdx].id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
-    const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(file.name, file.type) : (file.type || 'audio/wav');
-    // === v10.1.0: プロジェクトフォルダにコピー保存 (これがメイン、Finder で見える) ===
-    let savedToProjectFolder = false;
-    const activeProjectId = projGetActiveId();
-    if (activeProjectId) {
-      try {
-        savedToProjectFolder = await saveSampleToProjectFolder(activeProjectId, file.name, arrBuf);
-      } catch(e) { console.warn('[projFolder] save failed', e); }
-    }
-    // フォールバック1: OPFS (Phase 1 から残置、プロジェクトフォルダ未設定 or 書込み失敗時)
-    let savedToOPFS = false;
-    if (!savedToProjectFolder) {
-      try {
-        savedToOPFS = await saveSampleToOPFS(sampleId, arrBuf, file.name, mime);
-      } catch(e) { console.warn('[OPFS] save failed', e); }
-    }
-    // フォールバック2: handle 参照
     let usingHandle = false;
     if (handle) {
       try {
         await mtSaveHandleToDB(sampleId, handle, file.name);
         usingHandle = true;
-      } catch(e) { console.warn('mt saveHandleToDB failed', e); }
+      } catch(e) {
+        console.warn('mt saveHandleToDB failed (falling back to blob)', e);
+      }
     }
-    // フォールバック3: IndexedDB blob (最終手段)
-    if (!savedToProjectFolder && !savedToOPFS && !usingHandle) {
+    if (!usingHandle) {
       try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
         console.warn('mt saveSampleToDB failed', e);
         showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
       }
     }
-    // entry にどこに保存されているかを記録
-    const entry = {
-      sampleId, name: file.name,
-      byHandle: usingHandle,
-      inOPFS: savedToOPFS,
-      inProjectFolder: savedToProjectFolder, // v10.1.0: プロジェクトフォルダに保存済み
-      fileName: file.name, // フォルダ内のファイル名 (識別用)
-    };
+    const buffer = await mtRobustDecode(arrBuf, file);
+    mtDecodedCache[sampleId] = buffer;
+    const entry = { sampleId, name: file.name, byHandle: usingHandle };
     const song = state.multitrack.songs[songIdx];
     if (!song.unassigned) song.unassigned = [];
     if (targetGroup && MT_GROUPS.includes(targetGroup)) {
@@ -10547,11 +9866,8 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     mtRecomputeSongDuration();
     mtRenderSetlist();
     mtRenderNow();
-    const where = savedToProjectFolder ? 'プロジェクトフォルダ'
-                : (savedToOPFS ? 'アプリ内保存'
-                : (usingHandle ? 'ローカル参照' : 'ブラウザ保存'));
-    const sizeMB = (arrBuf.byteLength / 1024 / 1024).toFixed(1);
-    showToast(`📂 読込: ${file.name} (${sizeMB} MB・${where})`);
+    const where = usingHandle ? 'ローカル参照' : 'ブラウザ保存';
+    showToast(`📂 読込: ${file.name} (${buffer.duration.toFixed(1)}秒・${where})`);
   } catch(e) {
     console.error('mtLoadTrackFile failed', e);
     // 詳細メッセージ（改行込み）を toast に
@@ -10626,24 +9942,12 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
     return;
   }
   // 1.5) バッファ lazy-load（permission 要求あり）
-  // v9.0.3: playbackMode に応じて MediaElement or AudioBuffer をロード
-  if (state.multitrack.playbackMode === 'mediaelement') {
-    if (!mtMediaCache[sampleId] || !mtMediaCache[sampleId].audio) {
-      const e = await mtMediaLoadOne(sampleId);
-      if (!e) {
-        showToast('⚠️ ファイルが復元できません: ' + entry.name);
-        console.error('[mtAssign] media not loadable', { sampleId, entry });
-        return;
-      }
-    }
-  } else {
-    if (!mtDecodedCache[sampleId]) {
-      const buf = await mtEnsureBufferLoaded(sampleId, true);
-      if (!buf) {
-        showToast('⚠️ ファイルが復元できません: ' + entry.name);
-        console.error('[mtAssign] buffer not loadable', { sampleId, entry });
-        return;
-      }
+  if (!mtDecodedCache[sampleId]) {
+    const buf = await mtEnsureBufferLoaded(sampleId, true);
+    if (!buf) {
+      showToast('⚠️ ファイルが復元できません: ' + entry.name);
+      console.error('[mtAssign] buffer not loadable', { sampleId, entry });
+      return;
     }
   }
   // 2) src から外す (immutable な再代入で確実に: 同じ entry 参照を絶対に持たない)
@@ -10729,8 +10033,6 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
   for (const t of targets) {
     try { await deleteSampleFromDB(t.sampleId); } catch(_) {}
     try { await mtDeleteHandleFromDB(t.sampleId); } catch(_) {}
-    // v10.0.0: OPFS からも削除
-    try { await deleteSampleFromOPFS(t.sampleId); } catch(_) {}
   }
   const remaining = sampleId ? layers.filter(l => l.sampleId !== sampleId) : [];
   if (remaining.length === 0) delete s.tracks[group];
@@ -10764,147 +10066,6 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
 //   mtFsNotifyPlaybackStart/Stop  再生中フラグ
 //   mtFsCleanup()           整理: orphan/旧 blob 削除
 //   mtFsRender()            バナー UI 更新
-// ============================================================================
-// v10.0.0: OPFS (Origin Private File System) ヘルパー
-// ============================================================================
-// アプリ専用の隠れストレージに音源ファイルをコピー保存する。
-// Finder からは見えない = ユーザーが誤って動かす事故が発生しない。
-// バックアップ/共有は ZIP エクスポート機能経由 (Phase 2 で実装)。
-//
-// 構造:
-//   root/
-//     samples/
-//       [sampleId].bin       ← 音源ファイル本体 (拡張子は付けない、メタは別管理)
-//     samples-meta.json      ← { sampleId: { name, mime, savedAt } }
-// ============================================================================
-
-let _opfsRootCache = null;
-async function _opfsGetRoot() {
-  if (_opfsRootCache) return _opfsRootCache;
-  if (!navigator.storage || !navigator.storage.getDirectory) {
-    throw new Error('OPFS 非対応ブラウザ');
-  }
-  _opfsRootCache = await navigator.storage.getDirectory();
-  return _opfsRootCache;
-}
-
-async function _opfsGetSamplesDir(create = true) {
-  const root = await _opfsGetRoot();
-  return await root.getDirectoryHandle('samples', { create });
-}
-
-// 音源を OPFS に保存
-// 引数: sampleId (string), data (ArrayBuffer | Blob), name (string), mime (string)
-async function saveSampleToOPFS(sampleId, data, name, mime) {
-  try {
-    const dir = await _opfsGetSamplesDir(true);
-    const fh = await dir.getFileHandle(sampleId + '.bin', { create: true });
-    const w = await fh.createWritable();
-    await w.write(data);
-    await w.close();
-    // メタ情報も保存
-    try {
-      const root = await _opfsGetRoot();
-      let meta = {};
-      try {
-        const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
-        const metaFile = await metaFh.getFile();
-        meta = JSON.parse(await metaFile.text());
-      } catch(_) { /* 初回は無い */ }
-      meta[sampleId] = { name, mime, savedAt: Date.now() };
-      const metaFh = await root.getFileHandle('samples-meta.json', { create: true });
-      const mw = await metaFh.createWritable();
-      await mw.write(JSON.stringify(meta));
-      await mw.close();
-    } catch(e) { console.warn('[OPFS] meta save failed', e); }
-    return true;
-  } catch(e) {
-    console.error('[OPFS] saveSample failed', sampleId, e);
-    return false;
-  }
-}
-
-// 音源を OPFS から読み出し
-// returns: { blob: Blob, name: string, mime: string } | null
-async function loadSampleFromOPFS(sampleId) {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    const fh = await dir.getFileHandle(sampleId + '.bin', { create: false });
-    const file = await fh.getFile();
-    // メタ情報も取得
-    let meta = { name: sampleId, mime: 'audio/wav' };
-    try {
-      const root = await _opfsGetRoot();
-      const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
-      const metaFile = await metaFh.getFile();
-      const allMeta = JSON.parse(await metaFile.text());
-      if (allMeta[sampleId]) meta = allMeta[sampleId];
-    } catch(_) {}
-    const blob = new Blob([await file.arrayBuffer()], { type: meta.mime || 'audio/wav' });
-    return { blob, name: meta.name, mime: meta.mime };
-  } catch(e) {
-    // NotFoundError は正常 (まだ OPFS に無い)
-    if (e && e.name === 'NotFoundError') return null;
-    console.warn('[OPFS] loadSample failed', sampleId, e);
-    return null;
-  }
-}
-
-// 音源が OPFS に存在するかチェック (軽量)
-async function hasSampleInOPFS(sampleId) {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    await dir.getFileHandle(sampleId + '.bin', { create: false });
-    return true;
-  } catch(_) { return false; }
-}
-
-// 音源を OPFS から削除
-async function deleteSampleFromOPFS(sampleId) {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    await dir.removeEntry(sampleId + '.bin');
-    // メタからも削除
-    try {
-      const root = await _opfsGetRoot();
-      const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
-      const metaFile = await metaFh.getFile();
-      const meta = JSON.parse(await metaFile.text());
-      delete meta[sampleId];
-      const mw = await metaFh.createWritable();
-      await mw.write(JSON.stringify(meta));
-      await mw.close();
-    } catch(_) {}
-    return true;
-  } catch(e) {
-    if (e && e.name === 'NotFoundError') return true; // 既に無い
-    console.warn('[OPFS] deleteSample failed', sampleId, e);
-    return false;
-  }
-}
-
-// OPFS の全 sample id を列挙 (デバッグ用)
-async function listSamplesInOPFS() {
-  try {
-    const dir = await _opfsGetSamplesDir(false);
-    const out = [];
-    for await (const [name, h] of dir.entries()) {
-      if (name.endsWith('.bin')) out.push(name.slice(0, -4));
-    }
-    return out;
-  } catch(_) { return []; }
-}
-
-// OPFS 使用量を計算 (MB)
-async function getOPFSUsageMB() {
-  try {
-    const est = await navigator.storage.estimate();
-    return (est.usage || 0) / 1024 / 1024;
-  } catch(_) { return 0; }
-}
-
-// ============================================================================
-
 const mtFs = {
   state: 'idle',
   total: 0,
@@ -10917,57 +10078,7 @@ const mtFs = {
   _readyFlashTimer: null,
   _loadingInFlight: false,
   _abortPending: false,
-  // v8.3.0: 失敗した sampleId を記録 (リトライ抑制)
-  _failed: new Set(),
-  // v8.4.0: 本番モード (true で wakeLock + ESC 長押し化)
-  showMode: false,
-  _wakeLock: null,
-  // v8.4.0: エラー履歴 (最新 50 件、新しいものが先頭)
-  errorLog: [],
-  // v8.4.0: watchdog 用 interval id
-  _watchdogTimer: null,
-  // v8.5.0: 別タブで既にアプリが開かれているか (Web Locks)
-  _otherTabActive: false,
-  // v8.5.0: 直近の freeze/resume タイムスタンプ (診断用)
-  _lastFrozenAt: 0,
-  _lastResumedAt: 0,
 };
-
-// v8.4.0: エラー履歴に追加 (showToast から呼ぶ + watchdog からも)
-function mtFsLogError(kind, msg, extra) {
-  const entry = {
-    ts: Date.now(),
-    kind: kind || 'error',
-    msg: String(msg || ''),
-    extra: extra || null,
-  };
-  mtFs.errorLog.unshift(entry);
-  if (mtFs.errorLog.length > 50) mtFs.errorLog.length = 50;
-  try { _mtDiagPanelUpdate(); } catch(_) {}
-}
-
-// v9.1.0: LRU / メモリプロファイルは MediaElement 専用化により撤去
-
-// v8.3.0: sampleId 単位 in-flight キャッシュ
-// 同じ sampleId に対する並行 _mtFsLoadOne 呼び出しを 1 本にまとめる
-const _mtLoadInFlight = new Map(); // sampleId → Promise<{ok, buf, reason}>
-
-// v8.3.0: mtPlaySong 連打ガード
-let _mtPlaySongInFlight = false;
-
-// v9.1.0: LRU 関連は MediaElement 専用化により撤去
-// 必要最小限のヘルパー (sampleId 集計) だけ残す
-function _mtFsSongSampleIds(songIdx) {
-  const song = state.multitrack.songs[songIdx];
-  const ids = new Set();
-  if (!song) return ids;
-  for (const g of MT_GROUPS) {
-    mtGetLayers(song, g).forEach(l => { if (l && l.sampleId) ids.add(l.sampleId); });
-  }
-  return ids;
-}
-// 旧 AudioBuffer 経路の no-op (mtFsPrioritizeSong 呼び出しは MediaElement では mtMediaPrefetchAround を呼ぶ)
-function _mtTouchSampleId(_id) { /* no-op (LRU 撤去) */ }
 
 function _mtFsCollectAllIds() {
   const ids = [];
@@ -11002,75 +10113,48 @@ async function _mtFsProbe(sampleId) {
 
 // 1 サンプルを decode して cache に格納
 // returns: { ok: true, buf } or { ok: false, reason }
-// v8.3.0:
-//   - 同じ sampleId への並行呼び出しは 1 本に集約 (_mtLoadInFlight)
-//   - 失敗を _failed に記録 (askPermission=true 時は再試行可)
 async function _mtFsLoadOne(sampleId, askPermission) {
-  if (mtDecodedCache[sampleId]) { _mtTouchSampleId(sampleId); return { ok: true, buf: mtDecodedCache[sampleId] }; }
-  // 直近 failed と記録され、かつ permission 要求でない (＝同じ条件で再試行しても無駄) ならスキップ
-  if (mtFs._failed.has(sampleId) && !askPermission) {
-    return { ok: false, reason: 'cached-failure' };
-  }
-  // 既に同じ sampleId の load Promise が走っていれば、それに相乗りする
-  if (_mtLoadInFlight.has(sampleId)) {
-    return await _mtLoadInFlight.get(sampleId);
-  }
-  const p = (async () => {
-    await mtInitCtx();
-    // 1) handle 優先
-    try {
-      const rec = await mtGetHandleFromDB(sampleId);
-      if (rec && rec.handle) {
-        let perm = 'denied';
-        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-        if (perm !== 'granted' && askPermission) {
-          try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
-        }
-        if (perm === 'granted') {
-          try {
-            const f = await rec.handle.getFile();
-            const arr = await f.arrayBuffer();
-            const buf = await mtRobustDecode(arr, f);
-            mtDecodedCache[sampleId] = buf;
-            _mtTouchSampleId(sampleId);
-            mtFs._failed.delete(sampleId);
-            return { ok: true, buf };
-          } catch(e) {
-            console.warn('[mtFs] decode failed', sampleId, e);
-            mtFs._failed.add(sampleId);
-            try { mtFsLogError('decode', 'decode 失敗: ' + sampleId.slice(-12), { error: String(e) }); } catch(_) {}
-            return { ok: false, reason: 'decode-error' };
-          }
-        }
-        return { ok: false, reason: 'denied' };
+  if (mtDecodedCache[sampleId]) return { ok: true, buf: mtDecodedCache[sampleId] };
+  await mtInitCtx();
+  // 1) handle 優先
+  try {
+    const rec = await mtGetHandleFromDB(sampleId);
+    if (rec && rec.handle) {
+      let perm = 'denied';
+      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+      if (perm !== 'granted' && askPermission) {
+        try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
       }
-    } catch(_) {}
-    // 2) blob fallback
-    try {
-      const r = await getSampleFromDB(sampleId);
-      if (r && r.data) {
+      if (perm === 'granted') {
         try {
-          const buf = await mtRobustDecode(r.data, { name: r.name || sampleId });
+          const f = await rec.handle.getFile();
+          const arr = await f.arrayBuffer();
+          const buf = await mtRobustDecode(arr, f);
           mtDecodedCache[sampleId] = buf;
-          _mtTouchSampleId(sampleId);
-          mtFs._failed.delete(sampleId);
           return { ok: true, buf };
         } catch(e) {
-          console.warn('[mtFs] blob decode failed', sampleId, e);
-          mtFs._failed.add(sampleId);
-          try { mtFsLogError('decode', 'blob decode 失敗: ' + sampleId.slice(-12), { error: String(e) }); } catch(_) {}
+          console.warn('[mtFs] decode failed', sampleId, e);
           return { ok: false, reason: 'decode-error' };
         }
       }
-    } catch(_) {}
-    return { ok: false, reason: 'orphan' };
-  })();
-  _mtLoadInFlight.set(sampleId, p);
+      return { ok: false, reason: 'denied' };
+    }
+  } catch(_) {}
+  // 2) blob fallback
   try {
-    return await p;
-  } finally {
-    _mtLoadInFlight.delete(sampleId);
-  }
+    const r = await getSampleFromDB(sampleId);
+    if (r && r.data) {
+      try {
+        const buf = await mtRobustDecode(r.data, { name: r.name || sampleId });
+        mtDecodedCache[sampleId] = buf;
+        return { ok: true, buf };
+      } catch(e) {
+        console.warn('[mtFs] blob decode failed', sampleId, e);
+        return { ok: false, reason: 'decode-error' };
+      }
+    }
+  } catch(_) {}
+  return { ok: false, reason: 'orphan' };
 }
 
 // 4 並列ワーカーで一括 decode
@@ -11152,10 +10236,6 @@ async function _mtFsLoadMany(ids, askPermission) {
 }
 
 // === 公開 API ===
-// v8.3.0: 起動時に全曲 decode する旧設計を撤廃。
-// 本番想定 (20曲 × 12 STEM × 100MB) で全 decode するとメモリ 17GB に達し
-// タブクラッシュ。起動時は probe (permission チェック) のみ実行し、
-// decode は selectedIdx 周辺の曲だけバックグラウンドで先読みする。
 async function mtFsInit() {
   if (!state.multitrack.songs.length) {
     mtFs.state = 'idle';
@@ -11184,23 +10264,8 @@ async function mtFsInit() {
     console.log('[mtFs] needs reconnect', needGesture);
     return;
   }
-  // 全 OK → state を ready にして、選択中曲周辺だけ先読み開始
-  mtFs.state = 'ready';
-  mtFs.total = ids.length;
-  mtFs.loaded = 0;
-  // 先読みは ready 表示の後、idle時間で実行 (本番想定でも UI は即操作可能)
-  mtFsRender();
-  // selectedIdx 周辺だけ非同期で先読み (await しない)
-  const m = state.multitrack;
-  const center = (m.selectedIdx >= 0) ? m.selectedIdx
-               : (m.currentSongIdx >= 0) ? m.currentSongIdx : 0;
-  // v9.1.0: MediaElement 専用に統一 (AudioBuffer の prefetch は撤去)
-  setTimeout(() => {
-    try {
-      if (typeof mtMediaPrefetchAround === 'function') mtMediaPrefetchAround(center);
-    } catch(_) {}
-  }, 100);
-  console.log(`[mtFs] init complete (probe only) — ${ids.length} files registered, prefetching around song ${center}`);
+  // 全 OK → bg decode 開始（await しない）
+  _mtFsLoadMany(ids, false);
 }
 
 async function mtFsReconnect() {
@@ -11209,918 +10274,42 @@ async function mtFsReconnect() {
   await _mtFsLoadMany(ids, true);
 }
 
-// v9.1.0: mtFsLoadSongUrgent は MediaElement 専用化により撤去
-// dead code path (mtPlaySong の AudioBuffer 経路) の参照維持のため no-op スタブ
-async function mtFsLoadSongUrgent() { /* no-op */ }
-
-// 選択中の曲をバックグラウンドで先読み (MediaElement 専用にリダイレクト)
-// 旧コードから呼ばれる箇所が複数あるため、関数は残しつつ MediaElement の prefetch に委譲
-function mtFsPrioritizeSong(songIdx) {
-  if (typeof mtMediaPrefetchAround === 'function') {
-    try { mtMediaPrefetchAround(songIdx); } catch(_) {}
+async function mtFsLoadSongUrgent(songIdx) {
+  const song = state.multitrack.songs[songIdx];
+  if (!song) return;
+  const ids = [];
+  for (const g of MT_GROUPS) {
+    mtGetLayers(song, g).forEach(l => {
+      if (l && l.sampleId && !mtDecodedCache[l.sampleId]) ids.push(l.sampleId);
+    });
   }
+  if (ids.length === 0) return;
+  // 並列で一気に decode（直列だと 6 ファイルで 6 倍時間かかる）
+  await Promise.all(ids.map(id => _mtFsLoadOne(id, true)));
+  try { mtRecomputeSongDuration(); } catch(_) {}
+}
+
+// 選択中の曲をバックグラウンドで先読み（待たない、SPACE 押下時のラグを減らす）
+function mtFsPrioritizeSong(songIdx) {
+  const song = state.multitrack.songs[songIdx];
+  if (!song) return;
+  const ids = [];
+  for (const g of MT_GROUPS) {
+    mtGetLayers(song, g).forEach(l => {
+      if (l && l.sampleId && !mtDecodedCache[l.sampleId]) ids.push(l.sampleId);
+    });
+  }
+  if (ids.length === 0) return;
+  // 並列で先読み（await しない、結果も返さない）
+  Promise.all(ids.map(id => _mtFsLoadOne(id, false))).catch(_ => {});
 }
 
 function mtFsGetBuffer(sampleId) {
-  if (mtDecodedCache[sampleId]) _mtTouchSampleId(sampleId);
   return mtDecodedCache[sampleId] || null;
 }
 
 function mtFsNotifyPlaybackStart() { mtFs.isPlaybackActive = true; }
 function mtFsNotifyPlaybackStop()  { mtFs.isPlaybackActive = false; }
-
-// ============================================================================
-// v8.4.0: 本番安心パック
-// ============================================================================
-
-// v9.1.0: mtFsPreloadAll / mtFsPreloadAbort / mtFsSetMemProfile は撤去
-// (MediaElement モードでは事前読込もメモリ上限管理も不要)
-
-// --- 本番モード切替 ---
-async function mtFsSetShowMode(on) {
-  mtFs.showMode = !!on;
-  if (on) {
-    // 画面スリープ防止 (wakeLock)
-    if ('wakeLock' in navigator) {
-      try {
-        mtFs._wakeLock = await navigator.wakeLock.request('screen');
-        mtFs._wakeLock.addEventListener('release', () => {
-          // 自動解放されたら本番モード中だけ再取得を試みる
-          if (mtFs.showMode) {
-            navigator.wakeLock.request('screen').then(wl => { mtFs._wakeLock = wl; }).catch(_ => {});
-          }
-        });
-        showToast('🎭 本番モード ON — 画面スリープ防止');
-      } catch(e) {
-        showToast('⚠️ wakeLock 取得失敗 (画面スリープ手動 OFF にしてください)');
-        mtFsLogError('warn', 'wakeLock 取得失敗: ' + (e.message || e));
-      }
-    } else {
-      showToast('🎭 本番モード ON (wakeLock 非対応ブラウザ)');
-    }
-  } else {
-    if (mtFs._wakeLock) {
-      try { await mtFs._wakeLock.release(); } catch(_) {}
-      mtFs._wakeLock = null;
-    }
-    showToast('🎭 本番モード OFF');
-  }
-  try { _mtDiagPanelUpdate(); } catch(_) {}
-  try { _mtRenderShowModeBadge(); } catch(_) {}
-}
-
-// --- source 残留 watchdog ---
-function mtFsStartWatchdog() {
-  if (mtFs._watchdogTimer) return;
-  mtFs._watchdogTimer = setInterval(() => {
-    try {
-      // 再生中は触らない
-      if (state.multitrack.isPlaying) return;
-      // 「鳴り終わってるはずの source」を sweep
-      const sources = state.multitrack.activeSources || [];
-      if (sources.length === 0) return;
-      const before = sources.length;
-      const survive = [];
-      for (const src of sources) {
-        try {
-          // buffer 終わってる or stop 済みなら disconnect
-          src.stop(0);
-          src.disconnect();
-        } catch(_) {
-          // 既に止まってる
-        }
-      }
-      state.multitrack.activeSources = survive;
-      if (before > 0) {
-        console.log(`[mtFs] watchdog: cleaned ${before} stale sources`);
-      }
-    } catch(e) {
-      console.warn('[mtFs] watchdog error', e);
-    }
-  }, 30000); // 30 秒ごと
-}
-function mtFsStopWatchdog() {
-  if (mtFs._watchdogTimer) {
-    clearInterval(mtFs._watchdogTimer);
-    mtFs._watchdogTimer = null;
-  }
-}
-
-// ============================================================================
-// v8.5.0: 本番事故防止 (Chrome 133+ 凍結対策 + 二重起動防止)
-// ============================================================================
-
-// --- Page Lifecycle ---
-// Chrome 133 (2025/2) で省エネモード時に背景タブを freeze する仕様が追加された。
-// 本番中にうっかり別タブを触ったり、OS が省エネ判定をすると JS が停止 → メモリ
-// 回収 → 復帰時に音が出ない事故が起こり得る。freeze/resume を検知して安全対応する。
-let _mtPageLifecycleBound = false;
-function mtBindPageLifecycle() {
-  if (_mtPageLifecycleBound) return;
-  _mtPageLifecycleBound = true;
-  // 凍結直前 (Chrome が背景タブを止める瞬間)
-  document.addEventListener('freeze', (e) => {
-    mtFs._lastFrozenAt = Date.now();
-    console.warn('[mtFs] page freezing — Chrome 省エネモードに入る可能性');
-    try { mtFsLogError('warn', 'タブ凍結直前 (Chrome 省エネモード)'); } catch(_) {}
-    // 本番モード時は強警告 (ただしこの時点で UI 更新は限定的)
-    if (mtFs.showMode) {
-      try { showToast('⚠️ タブ凍結警告 — Chrome を前面に戻してください'); } catch(_) {}
-    }
-  });
-  // 復帰時 (タブが再びアクティブになった瞬間)
-  document.addEventListener('resume', async (e) => {
-    mtFs._lastResumedAt = Date.now();
-    const frozenMs = mtFs._lastFrozenAt ? (Date.now() - mtFs._lastFrozenAt) : 0;
-    console.log(`[mtFs] page resumed after ${frozenMs}ms`);
-    try { mtFsLogError('info', `タブ復帰 (凍結 ${(frozenMs/1000).toFixed(1)}秒)`); } catch(_) {}
-    // AudioContext が suspended になっていたら resume
-    if (mtCtx && mtCtx.state === 'suspended') {
-      try {
-        await mtCtx.resume();
-        console.log('[mtFs] AudioContext resumed after freeze');
-      } catch(err) {
-        console.warn('[mtFs] ctx resume failed', err);
-        mtFsLogError('error', 'AudioContext resume 失敗: ' + (err.message || err));
-      }
-    }
-    // 診断パネル更新
-    try { _mtDiagPanelUpdate(); } catch(_) {}
-    // 凍結時間が長かったら toast で知らせる
-    if (frozenMs > 1000) {
-      try { showToast(`▶ タブ復帰 (${(frozenMs/1000).toFixed(1)}秒 凍結) — 念のため診断パネル確認`); } catch(_) {}
-    }
-  });
-  // visibilitychange も併用 (freeze 来ないブラウザ用の保険)
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && mtCtx && mtCtx.state === 'suspended') {
-      mtCtx.resume().catch(_ => {});
-    }
-  });
-  console.log('[mtFs] Page Lifecycle (freeze/resume) bound');
-}
-
-// --- Web Locks (二重起動防止) ---
-// 同じアプリを 2 タブで開いた瞬間に検知 → 2 つ目のタブは「読み取り専用」モードに。
-// chrome.tabs みたいに「既に開いてるよ」と教えてくれる仕組み。
-let _mtMainLockHeld = false;
-let _mtMainLockReleaseFn = null;
-async function mtAcquireMainLock() {
-  if (!('locks' in navigator)) {
-    console.warn('[mtFs] Web Locks API 非対応');
-    return;
-  }
-  try {
-    // ifAvailable: true → 既に他タブが持っていれば lock = null で即帰る
-    navigator.locks.request(
-      'sampler-studio-main',
-      { mode: 'exclusive', ifAvailable: true },
-      async (lock) => {
-        if (lock === null) {
-          // 別タブが既に持っている
-          console.warn('[mtFs] 別タブが既に SAMPLER STUDIO を開いています');
-          mtFs._otherTabActive = true;
-          try { mtFsLogError('warn', '別タブで既に SAMPLER STUDIO が開かれています'); } catch(_) {}
-          try { _mtShowDuplicateTabWarning(); } catch(_) {}
-          return; // lock 取得しないまま終了
-        }
-        // ロック取得成功 — ずっと保持する (タブが閉じるまで)
-        _mtMainLockHeld = true;
-        mtFs._otherTabActive = false;
-        console.log('[mtFs] main lock acquired (このタブが主)');
-        // callback が return すると lock が release される。なので
-        // 永続化のため await Promise でずっと待つ。
-        await new Promise(resolve => { _mtMainLockReleaseFn = resolve; });
-      }
-    ).catch(err => console.warn('[mtFs] lock request error', err));
-  } catch(e) {
-    console.warn('[mtFs] lock request error', e);
-  }
-}
-
-// 2 タブ目検知時の警告 UI
-function _mtShowDuplicateTabWarning() {
-  let warn = document.getElementById('mtDuplicateTabWarn');
-  if (warn) return;
-  warn = document.createElement('div');
-  warn.id = 'mtDuplicateTabWarn';
-  warn.style.cssText = [
-    'position:fixed', 'top:0', 'left:0', 'right:0',
-    'background:linear-gradient(180deg, #E24B4A, #B83A39)',
-    'color:#FFF', 'padding:14px 20px', 'z-index:99999',
-    "font-family:'SF Mono', 'Menlo', monospace", 'font-size:13px',
-    'font-weight:700', 'text-align:center', 'letter-spacing:0.5px',
-    'box-shadow:0 4px 16px rgba(0,0,0,0.6)',
-    'border-bottom:1px solid rgba(255,255,255,0.3)'
-  ].join(';');
-  warn.innerHTML = '⚠️ 別タブで既に SAMPLER STUDIO が開かれています。本タブの再生操作は事故防止のため制限されます。&nbsp;&nbsp;<button onclick="document.getElementById(\'mtDuplicateTabWarn\').remove()" style="background:rgba(0,0,0,0.3);color:#fff;border:0.5px solid rgba(255,255,255,0.4);padding:3px 10px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:11px;margin-left:8px;">理解した</button>';
-  document.body.appendChild(warn);
-}
-
-// 別タブで既にアプリが開いてるか確認 (再生操作前のガード用)
-function mtIsOtherTabActive() { return mtFs._otherTabActive === true; }
-
-// ============================================================================
-// v9.0.0: MediaElement 方式 — ストリーミング再生エンジン
-// ============================================================================
-// 旧 AudioBuffer 方式 (全曲 RAM 展開) を捨て、HTMLMediaElement で
-// ディスクから直接ストリーミング。メモリは 1 曲あたり 数 MB に激減。
-// DOOR OPEN モードの BGM 再生と同じ仕組み。
-//
-// アーキ:
-//   <audio src="blob:...">  → MediaElementAudioSourceNode → groupGain → merger
-//
-// 同期: 12 個の audio を同時に play() しても、AudioContext の outputLatency と
-// HTMLMediaElement の内部スケジューラで自然に揃う (実測 5-15ms ジッター)。
-// ライブの可聴閾値 (~25ms) には収まる。
-// ============================================================================
-
-// sampleId → { audio: HTMLAudioElement, source: MediaElementAudioSourceNode,
-//              blobUrl: string, duration: number, name: string, connectedTo: GainNode|null }
-const mtMediaCache = {};
-
-// v9.0.3: sampleId 単位の in-flight キャッシュ — 同じ sampleId への並行
-// 呼び出しを 1 本にまとめる。これが無いと createMediaElementSource を
-// 同じ audio に 2 回呼んで InvalidStateError になる。
-const _mtMediaLoadInFlight = new Map(); // sampleId → Promise<entry|null>
-
-// MediaElement キャッシュを完全クリア (ctx 自動復活 / 全クリア時用)
-// v9.0.5: アンチクリック化 — source disconnect を pause より先に
-function _mtMediaCacheClear() {
-  for (const id in mtMediaCache) {
-    const e = mtMediaCache[id];
-    if (!e) { delete mtMediaCache[id]; continue; }
-    // 1) signal flow を先に切る (これでプチッ出ても master まで届かない)
-    try { if (e.source) { e.source.disconnect(); } } catch(_) {}
-    // 2) audio を確実にミュート (念のため二重防御)
-    try { if (e.audio) { e.audio.volume = 0; e.audio.muted = true; } } catch(_) {}
-    // 3) pause
-    try { if (e.audio) { e.audio.pause(); } } catch(_) {}
-    // 4) src を空にして blob URL を解放 (これで内部 buffer も完全に解放)
-    try { if (e.audio) { e.audio.src = ''; e.audio.removeAttribute('src'); e.audio.load(); } } catch(_) {}
-    try { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); } catch(_) {}
-    delete mtMediaCache[id];
-  }
-  if (_mtMediaLoadInFlight) _mtMediaLoadInFlight.clear();
-  state.multitrack.activeMedia = [];
-  console.log('[mtMedia] cache cleared');
-}
-
-// MediaElement で 1 STEM を読み込み + ctx に接続準備
-// 既にロード済みならキャッシュを返す
-// v9.0.3: in-flight キャッシュで並行呼び出しを集約
-async function mtMediaLoadOne(sampleId) {
-  if (mtMediaCache[sampleId] && mtMediaCache[sampleId].audio) {
-    return mtMediaCache[sampleId];
-  }
-  // 既に同じ sampleId へのロードが走っていればそれに相乗りする
-  if (_mtMediaLoadInFlight.has(sampleId)) {
-    return await _mtMediaLoadInFlight.get(sampleId);
-  }
-  const p = (async () => {
-    await mtInitCtx();
-    let blob = null;
-    let name = sampleId;
-    // v10.1.0: 優先順位
-    //   0) プロジェクトフォルダ (新方式、Finder で見える)
-    //   1) OPFS (v10.0.0 の旧方式)
-    //   2) handle (v8.x 以前の旧方式)
-    //   3) IndexedDB blob (最古)
-    // 0) プロジェクトフォルダ — 現在のプロジェクトで取り込んだファイル
-    //    entry.fileName が分かれば、そのファイル名で読みに行く
-    try {
-      const activeProjectId = projGetActiveId();
-      // entry を songs から逆引き
-      let entryName = null;
-      for (const s of state.multitrack.songs) {
-        for (const g of MT_GROUPS) {
-          for (const l of mtGetLayers(s, g)) {
-            if (l && l.sampleId === sampleId) { entryName = l.fileName || l.name; break; }
-          }
-          if (entryName) break;
-        }
-        if (entryName) break;
-        for (const u of (s.unassigned || [])) {
-          if (u && u.sampleId === sampleId) { entryName = u.fileName || u.name; break; }
-        }
-        if (entryName) break;
-      }
-      if (activeProjectId && entryName) {
-        const f = await loadSampleFromProjectFolder(activeProjectId, entryName);
-        if (f) {
-          blob = f;
-          name = entryName;
-        }
-      }
-    } catch(_) {}
-    // 1) OPFS (v10.0.0 のデータ)
-    if (!blob) {
-      try {
-        const opfs = await loadSampleFromOPFS(sampleId);
-        if (opfs && opfs.blob) {
-          blob = opfs.blob;
-          name = opfs.name || sampleId;
-        }
-      } catch(_) {}
-    }
-    // 1) handle (後方互換)
-    if (!blob) {
-      try {
-        const rec = await mtGetHandleFromDB(sampleId);
-        if (rec && rec.handle) {
-          let perm = 'denied';
-          try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-          if (perm !== 'granted') {
-            try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
-          }
-          if (perm === 'granted') {
-            try {
-              const f = await rec.handle.getFile();
-              blob = f;
-              name = f.name;
-              // v10.0.0: handle 経由で読めた = まだ OPFS に無い → 自動移行
-              try {
-                const arr = await f.arrayBuffer();
-                const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(f.name, f.type) : 'audio/wav';
-                saveSampleToOPFS(sampleId, arr, f.name, mime).catch(_ => {});
-              } catch(_) {}
-            } catch(e) {
-              console.warn('[mtMedia] handle getFile failed', e);
-            }
-          }
-        }
-      } catch(_) {}
-    }
-    // 2) IndexedDB blob (後方互換)
-    if (!blob) {
-      try {
-        const r = await getSampleFromDB(sampleId);
-        if (r && r.data) {
-          const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav';
-          blob = new Blob([r.data], { type: mime });
-          name = r.name || sampleId;
-          // v10.0.0: IDB blob 経由で読めた → 自動的に OPFS にも移行
-          saveSampleToOPFS(sampleId, r.data, name, mime).catch(_ => {});
-        }
-      } catch(_) {}
-    }
-    if (!blob) {
-      console.warn('[mtMedia] no source for', sampleId);
-      return null;
-    }
-    const blobUrl = URL.createObjectURL(blob);
-    const audio = new Audio();
-    audio.src = blobUrl;
-    audio.preload = 'auto';
-    // v9.0.3: crossOrigin は blob URL では不要 (同一 origin 扱い) — 削除
-    // loadedmetadata まで待つ (duration が分かるように)
-    try {
-      await new Promise((resolve, reject) => {
-        const cleanup = () => {
-          audio.removeEventListener('loadedmetadata', onLoaded);
-          audio.removeEventListener('error', onError);
-        };
-        const onLoaded = () => { cleanup(); resolve(); };
-        const onError = (e) => { cleanup(); reject(new Error('audio error')); };
-        audio.addEventListener('loadedmetadata', onLoaded, { once: true });
-        audio.addEventListener('error', onError, { once: true });
-        setTimeout(() => { cleanup(); reject(new Error('media load timeout')); }, 30000);
-      });
-    } catch(e) {
-      console.warn('[mtMedia] load failed for', sampleId, e);
-      try { URL.revokeObjectURL(blobUrl); } catch(_) {}
-      try { mtFsLogError('error', 'MediaElement 読込失敗: ' + name + ' / ' + (e.message || e)); } catch(_) {}
-      return null;
-    }
-    // 二重作成防止: ロード中に別の経路で cache に登録された場合は捨ててそちらを使う
-    if (mtMediaCache[sampleId] && mtMediaCache[sampleId].audio) {
-      try { URL.revokeObjectURL(blobUrl); } catch(_) {}
-      return mtMediaCache[sampleId];
-    }
-    // MediaElementAudioSourceNode — 一度作ったらこの audio とずっと紐付く
-    let source = null;
-    try {
-      source = mtCtx.createMediaElementSource(audio);
-    } catch(e) {
-      console.warn('[mtMedia] createMediaElementSource failed', e);
-      try { URL.revokeObjectURL(blobUrl); } catch(_) {}
-      try { mtFsLogError('error', 'MediaElementSource 作成失敗: ' + (e.message || e)); } catch(_) {}
-      return null;
-    }
-    const entry = {
-      audio, source, blobUrl,
-      duration: audio.duration || 0,
-      name,
-      connectedTo: null, // 現在繋がってる GainNode (mtMediaConnectToGroup で更新)
-    };
-    mtMediaCache[sampleId] = entry;
-    console.log(`[mtMedia] loaded ${name} (${(audio.duration||0).toFixed(1)}s)`);
-    return entry;
-  })();
-  _mtMediaLoadInFlight.set(sampleId, p);
-  try {
-    return await p;
-  } finally {
-    _mtMediaLoadInFlight.delete(sampleId);
-  }
-}
-
-// MediaElementSource を指定 group の gain に接続 (per-STEM gain は不要、group gain で十分)
-function mtMediaConnectToGroup(entry, group) {
-  if (!entry || !entry.source) return;
-  const targetGain = mtGroupGainNodes[group];
-  if (!targetGain) return;
-  // 既に同じ group に繋がっているなら何もしない
-  if (entry.connectedTo === targetGain) return;
-  // 旧接続を切る
-  if (entry.connectedTo) {
-    try { entry.source.disconnect(entry.connectedTo); } catch(_) {}
-  }
-  try {
-    entry.source.connect(targetGain);
-    entry.connectedTo = targetGain;
-  } catch(e) {
-    console.warn('[mtMedia] connect failed', e);
-  }
-}
-
-// v9.0.1/0.2/0.3: 全 audio routing を再構築
-// AudioBuffer モードでは mtPlaySong 内で都度作るが、MediaElement モードでは
-// 別途明示的に経路を確立する必要がある。これが無いと無音。
-// v9.0.3 Fix11: master/merger 経路は初回のみ。再生のたびに切ると一瞬無音になる。
-function mtMediaSetupGroupRouting() {
-  if (!mtCtx || !mtMasterGain) return;
-  // 1) master/merger 経路: 一度だけ確立し、ctx 寿命中は維持
-  if (!mtFs._mediaMasterRoutingDone) {
-    try {
-      mtMasterGain.disconnect();
-      mtMasterGain.connect(mtCtx.destination);
-      if (mtMasterSplitter) {
-        try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
-      }
-    } catch(e) { console.warn('[mtMedia] master routing fix failed', e); }
-    if (mtMerger) {
-      try { mtMerger.disconnect(); } catch(_) {}
-      try { mtMerger.connect(mtMasterGain); } catch(e) { console.warn('[mtMedia] merger→master failed', e); }
-    }
-    mtFs._mediaMasterRoutingDone = true;
-  }
-  // 3) 各 group gain → 出力経路
-  for (const g of MT_GROUPS) {
-    const gain = mtGroupGainNodes[g];
-    if (!gain) continue;
-    // 既存の下流を切る (analyser 含む)
-    try { gain.disconnect(); } catch(_) {}
-    // analyser 再接続 (メーター用、sink-only で出力には影響しない)
-    const a = mtGroupAnalysers[g];
-    if (a && a.splitter) {
-      try { gain.connect(a.splitter); } catch(_) {}
-    }
-    // 出力ルート: multi-channel (channelMap) or stereo fallback (masterGain)
-    const cm = state.multitrack.channelMap[g];
-    const chL = Math.max(1, cm.L|0) - 1;
-    const chR = Math.max(1, cm.R|0) - 1;
-    if (mtMerger && mtMerger.numberOfInputs > Math.max(chL, chR)) {
-      const splitter = mtCtx.createChannelSplitter(2);
-      gain.connect(splitter);
-      splitter.connect(mtMerger, 0, chL);
-      splitter.connect(mtMerger, 1, chR);
-    } else {
-      // stereo 出力 (一般的な Mac はここを通る)
-      gain.connect(mtMasterGain);
-    }
-  }
-  // 4) デバッグ用: 各ノードの接続状況を console に出す
-  console.log('[mtMedia] routing rebuilt:', {
-    ctxState: mtCtx.state,
-    destChannelCount: mtCtx.destination.channelCount,
-    destMaxChannelCount: mtCtx.destination.maxChannelCount,
-    mergerInputs: mtMerger ? mtMerger.numberOfInputs : null,
-    masterGainValue: mtMasterGain.gain.value,
-  });
-}
-
-// すべての MediaElement を停止 (v9.0.5: アンチクリック化)
-// 順序が重要:
-//   1) source を group gain から disconnect → signal flow を即時切断 (これでプチッ出ても master 届かない)
-//   2) audio.pause() を呼ぶ (audio 内部停止)
-//   3) connectedTo を null にして、次回再生時に mtMediaConnectToGroup で再接続される
-// この順序で「audio.pause() の過渡応答ノイズ」が master に届かなくなる
-function mtMediaStopAll() {
-  for (const id in mtMediaCache) {
-    const e = mtMediaCache[id];
-    if (!e) continue;
-    // 1) signal flow を先に切る
-    if (e.source && e.connectedTo) {
-      try { e.source.disconnect(e.connectedTo); } catch(_) {}
-      e.connectedTo = null;
-    }
-    // 2) audio 本体も pause (リソース節約 + 再生位置が進まないように)
-    if (e.audio) {
-      try { e.audio.pause(); } catch(_) {}
-    }
-  }
-  state.multitrack.activeMedia = [];
-}
-
-// v9.0.5: アンチクリック付き stop — master を 8ms で絞り 12ms 後に signal flow 切断
-//         再生中の停止 (auto-advance 終了、STOP ボタン、ESC 後の整理 等) で呼ぶ
-function _mtMediaStopAllWithFade(onDone) {
-  // 再生してないなら即時 stop
-  if (!mtCtx || !mtMasterGain || !state.multitrack.isPlaying) {
-    mtMediaStopAll();
-    if (onDone) try { onDone(); } catch(_) {}
-    return;
-  }
-  // 1) master を 8ms かけて 0 に
-  try {
-    const t = mtCtx.currentTime;
-    const cur = mtMasterGain.gain.value;
-    mtMasterGain.gain.cancelScheduledValues(t);
-    mtMasterGain.gain.setValueAtTime(cur, t);
-    mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.008);
-  } catch(_) {}
-  // 2) 12ms 待って signal flow 切断
-  // v9.0.7: master は 0 のまま固定 — 次回再生時の Fix C / 立ち上げフェードインで復帰
-  //          ここで戻すと出力経路に signal が流れて過渡応答ノイズ (プチッ)
-  setTimeout(() => {
-    mtMediaStopAll();
-    if (onDone) try { onDone(); } catch(_) {}
-  }, 12);
-}
-
-// 現在 song の全 STEM を MediaElement モードで読み込み (並列)
-// v9.0.3 Fix4: 同じ sampleId が複数 group に置かれた状態を検出 + 警告
-async function mtMediaLoadSongAll(songIdx) {
-  const song = state.multitrack.songs[songIdx];
-  if (!song) return [];
-  const tasks = [];
-  const seenIds = new Set();
-  for (const g of MT_GROUPS) {
-    for (const layer of mtGetLayers(song, g)) {
-      if (layer && layer.sampleId) {
-        if (seenIds.has(layer.sampleId)) {
-          console.warn('[mtMedia] 同じ sampleId が複数 group に存在:', layer.sampleId, '(' + g + ')');
-          try { mtFsLogError('warn', '同 sampleId 複数 group 検出: ' + (layer.name || layer.sampleId).slice(0,40)); } catch(_) {}
-        }
-        seenIds.add(layer.sampleId);
-        tasks.push(mtMediaLoadOne(layer.sampleId).then(e => ({ entry: e, group: g })));
-      }
-    }
-  }
-  return Promise.all(tasks);
-}
-
-// 再生エンジン (MediaElement 方式)
-// options.keepPrevious=true で前曲をフェードせずオーバーラップ
-async function mtMediaPlaySong(idx, offset, options) {
-  if (idx < 0 || idx >= state.multitrack.songs.length) return;
-  if (mtIsOtherTabActive()) {
-    try { showToast('⚠️ 別タブで開かれているため、このタブからは再生できません'); } catch(_) {}
-    return;
-  }
-  if (!isFinite(offset) || offset < 0) offset = 0;
-  const keepPrevious = options && options.keepPrevious === true;
-  // 同曲オーバーラップ二重再生防止
-  if (keepPrevious && state.multitrack.isPlaying &&
-      state.multitrack.currentSongIdx === idx &&
-      Math.abs((state.multitrack.seekOffset || 0) - offset) < 0.01) {
-    return;
-  }
-  if (_mtPlaySongInFlight) return;
-  _mtPlaySongInFlight = true;
-  try {
-    await mtInitCtx();
-    // v9.0.3 Fix12: 初期化失敗ガード
-    if (!mtCtx) {
-      console.warn('[mtMedia] AudioContext 初期化失敗');
-      showToast('⚠️ AudioContext 初期化失敗');
-      return;
-    }
-    if (mtCtx.state === 'suspended') await mtCtx.resume();
-    if (!keepPrevious) {
-      // v9.0.5 Fix K: 前曲が active なら master を 10ms フェードしてから切る
-      //               (signal flow の瞬時切断によるクリック音防止)
-      const hadActive = state.multitrack.isPlaying &&
-                        state.multitrack.activeMedia && state.multitrack.activeMedia.length > 0;
-      if (hadActive && mtMasterGain) {
-        try {
-          const t = mtCtx.currentTime;
-          const cur = mtMasterGain.gain.value;
-          mtMasterGain.gain.cancelScheduledValues(t);
-          mtMasterGain.gain.setValueAtTime(cur, t);
-          mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.010);
-        } catch(_) {}
-        // 15ms 待ってから切断 (耳には聞こえないが click は消える)
-        await new Promise(r => setTimeout(r, 15));
-      }
-      mtMediaStopAll();
-    } else {
-      if (state.multitrack.advanceTimer) {
-        clearTimeout(state.multitrack.advanceTimer);
-        state.multitrack.advanceTimer = null;
-      }
-    }
-    // v9.0.1: group gain → 出力経路を確立 (これが無いと無音)
-    // v9.0.3 Fix3: オーバーラップ時 (前曲が鳴ってる) は routing を組み直さない
-    //              (gain.disconnect で前曲が一瞬切れる事故防止)
-    if (!keepPrevious) {
-      mtMediaSetupGroupRouting();
-    }
-    // v9.0.5: アンチクリック — master を一瞬 0 にしてから再立ち上げ
-    //         (新曲のロード中・pause/play サイクル中のノイズを隠す)
-    //         既に Fix K で 0 になっていればそのまま、まだ高ければ短く ramp して 0 に
-    if (mtMasterGain && !keepPrevious) {
-      try {
-        const t = mtCtx.currentTime;
-        const cur = mtMasterGain.gain.value;
-        mtMasterGain.gain.cancelScheduledValues(t);
-        if (cur > 0.001) {
-          // まだ音が出てる状態から 0 に → 短くフェード (クリック防止)
-          mtMasterGain.gain.setValueAtTime(cur, t);
-          mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.008);
-        } else {
-          // 既に 0 (Fix K 後) → そのまま 0 を維持
-          mtMasterGain.gain.setValueAtTime(0, t);
-        }
-        // 後ほど play() 直前に linearRamp で復帰させる (下の方で実施)
-      } catch(_) {}
-    }
-    const song = state.multitrack.songs[idx];
-    // 全 STEM を並列読み込み + group 接続
-    const loaded = await mtMediaLoadSongAll(idx);
-    // v9.0.3 Fix9: オーバーラップ時、前曲の activeMedia と新曲の audio が同じ場合
-    // 「同じファイルを共有してる」状態。currentTime=0 にすると前曲が頭に戻る事故。
-    const prevActive = new Set(keepPrevious ? (state.multitrack.activeMedia || []) : []);
-    const playing = [];
-    let maxDur = 0;
-    let sharedCount = 0;
-    for (const item of loaded) {
-      if (!item || !item.entry || !item.entry.audio) continue;
-      const e = item.entry;
-      mtMediaConnectToGroup(e, item.group);
-      // オーバーラップ時の共有 audio は触らない (前曲が継続して鳴ってる)
-      if (prevActive.has(e.audio)) {
-        sharedCount++;
-        maxDur = Math.max(maxDur, e.duration || 0);
-        playing.push(e.audio); // 引き続き active として管理
-        continue;
-      }
-      try { e.audio.pause(); } catch(_) {}
-      try {
-        const seekTo = Math.min(offset, Math.max(0, (e.duration || 0) - 0.05));
-        e.audio.currentTime = isFinite(seekTo) ? seekTo : 0;
-      } catch(_) {}
-      maxDur = Math.max(maxDur, e.duration || 0);
-      playing.push(e.audio);
-    }
-    if (sharedCount > 0) {
-      console.warn(`[mtMedia] overlap warning: ${sharedCount} audio shared with previous song`);
-    }
-    if (playing.length === 0) {
-      // v9.0.5: master を 0 にしたまま return すると次回再生で音が出なくなる → 復帰させる
-      if (mtMasterGain && !keepPrevious) {
-        try {
-          const tNow = mtCtx.currentTime;
-          const targetVol = state.masterVol != null ? state.masterVol : 1.0;
-          mtMasterGain.gain.cancelScheduledValues(tNow);
-          mtMasterGain.gain.setValueAtTime(targetVol, tNow);
-        } catch(_) {}
-      }
-      const assignedTotal = MT_GROUPS.reduce((n, g) => n + mtGetLayers(song, g).length, 0);
-      if (assignedTotal === 0) {
-        showToast('フェーダーに何も割当てられていません');
-      } else {
-        showToast('⚠️ ファイルが読み込めません。RECONNECT をクリックしてください');
-      }
-      return;
-    }
-    if (offset >= maxDur - 0.05) offset = 0;
-    mtFsNotifyPlaybackStart();
-    // 再生開始前に volume と muted をリセット (前回の停止で 0 にしてある可能性)
-    for (const a of playing) {
-      try { a.volume = 1; a.muted = false; } catch(_) {}
-    }
-    // === 一斉 start (実測 5-15ms ジッター)
-    // v9.0.3 Fix10: keepPrevious 中の audio (= 前曲) は再度 play() しない
-    //               (二重呼び出しで状態が乱れるのを防ぐ)
-    const toPlay = playing.filter(a => prevActive.has(a) ? false : true);
-    const playPromises = toPlay.map(a => {
-      try { return a.play(); } catch(_) { return Promise.resolve(); }
-    });
-    // play() 失敗は無視 (個別 STEM が読めなくても他の STEM は再生継続)
-    Promise.allSettled(playPromises).then(results => {
-      const failed = results.filter(r => r.status === 'rejected').length;
-      if (failed > 0) {
-        console.warn(`[mtMedia] ${failed}/${toPlay.length} STEMs failed to play`);
-        mtFsLogError('warn', `${failed} STEM 再生開始失敗`);
-      }
-    });
-    // v9.0.5: master gain を 30ms フェードインで立ち上げ (新曲開始時のクリック防止)
-    if (mtMasterGain && !keepPrevious) {
-      try {
-        const tNow = mtCtx.currentTime;
-        const targetVol = state.masterVol != null ? state.masterVol : 1.0;
-        // 0 → targetVol を 30ms かけて (耳には瞬時、でも click は出ない)
-        mtMasterGain.gain.cancelScheduledValues(tNow);
-        mtMasterGain.gain.setValueAtTime(0, tNow);
-        mtMasterGain.gain.linearRampToValueAtTime(targetVol, tNow + 0.030);
-      } catch(_) {}
-    }
-    state.multitrack.activeMedia = playing;
-    state.multitrack.startTime = mtCtx.currentTime - offset; // progress 計算用
-    state.multitrack.songDuration = maxDur;
-    state.multitrack.seekOffset = offset;
-    state.multitrack.currentSongIdx = idx;
-    state.multitrack.selectedIdx = idx;
-    state.multitrack.isPlaying = true;
-    // 再生ロック (10秒)
-    const noLock = options && options.noLock === true;
-    if (!noLock) {
-      try { requestAnimationFrame(() => { try { mtStartPlaybackLock(song.name); } catch(_) {} }); } catch(_) {}
-    }
-    // auto-advance (既存ロジックと同じ)
-    if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
-    const remainSec = maxDur - offset;
-    const songWantsAuto = (song.autoNext || 'auto') === 'auto';
-    const songDelay = (typeof song.nextDelay === 'number') ? song.nextDelay : (state.multitrack.gapSec || 0);
-    let mode;
-    if (state.multitrack.autoAdvance && songWantsAuto) mode = 'auto';
-    else if (!songWantsAuto) mode = 'standby';
-    else mode = 'pause';
-    const triggerSec = (mode === 'auto') ? remainSec + songDelay : remainSec;
-    const totalMs = Math.max(0, triggerSec * 1000) + 50;
-    state.multitrack.advanceTimer = setTimeout(() => {
-      if (mode === 'auto') {
-        const next = state.multitrack.currentSongIdx + 1;
-        if (next < state.multitrack.songs.length) {
-          const overlap = songDelay < 0;
-          mtPlaySong(next, 0, { keepPrevious: overlap });
-        } else {
-          mtStop();
-          showToast('セットリスト終了');
-        }
-        return;
-      }
-      // v9.0.5: アンチクリック付き stop
-      _mtMediaStopAllWithFade(() => {
-        state.multitrack.isPlaying = false;
-        mtStopMeter();
-        if (mode === 'standby') {
-          const curIdx = state.multitrack.currentSongIdx;
-          if (curIdx + 1 < state.multitrack.songs.length) {
-            state.multitrack.selectedIdx = curIdx + 1;
-            state.multitrack.seekOffset = 0;
-            mtRecomputeSongDuration();
-            mtScrollSelectedIntoView();
-            showToast(`▶ 次曲スタンバイ: ${state.multitrack.songs[curIdx + 1].name}`);
-          } else {
-            showToast('セットリスト終了');
-          }
-        }
-        mtRenderNow();
-        mtRenderSetlist();
-      });
-    }, totalMs);
-    mtRenderSetlist();
-    mtRenderNow();
-    mtStartMeter();
-    // 隣接曲の MediaElement を裏で先読み (ロードだけ)
-    try { mtMediaPrefetchAround(idx); } catch(_) {}
-  } catch(e) {
-    // v9.0.5: 例外時も master を復帰 (master=0 のまま固まらないように)
-    console.error('[mtMedia] play failed', e);
-    if (mtMasterGain && mtCtx) {
-      try {
-        const tNow = mtCtx.currentTime;
-        const targetVol = state.masterVol != null ? state.masterVol : 1.0;
-        mtMasterGain.gain.cancelScheduledValues(tNow);
-        mtMasterGain.gain.setValueAtTime(targetVol, tNow);
-      } catch(_) {}
-    }
-    try { mtFsLogError('error', 'mtMediaPlaySong 例外: ' + (e.message || e)); } catch(_) {}
-  } finally {
-    _mtPlaySongInFlight = false;
-  }
-}
-
-// 隣接曲を先読み (audio + source は作るが play しない)
-function mtMediaPrefetchAround(centerIdx) {
-  const total = state.multitrack.songs.length;
-  const targets = [];
-  for (let d = 1; d <= 2; d++) {
-    if (centerIdx + d < total) targets.push(centerIdx + d);
-  }
-  if (centerIdx - 1 >= 0) targets.push(centerIdx - 1);
-  for (const i of targets) {
-    mtMediaLoadSongAll(i).catch(_ => {});
-  }
-}
-
-// シーク (MediaElement)
-// v9.0.5: アンチクリックガード — master を一瞬絞ってから currentTime セット
-//         audio 内部の buffer flush で出るプチッ音を隠す
-function mtMediaSeekTo(seekSec) {
-  if (state.multitrack.currentSongIdx < 0 && state.multitrack.selectedIdx < 0) return;
-  const idx = state.multitrack.currentSongIdx >= 0 ? state.multitrack.currentSongIdx : state.multitrack.selectedIdx;
-  const dur = state.multitrack.songDuration || 0;
-  if (!isFinite(seekSec) || seekSec < 0) seekSec = 0;
-  if (seekSec > dur - 0.05) seekSec = Math.max(0, dur - 0.05);
-  state.multitrack.seekOffset = seekSec;
-  if (state.multitrack.isPlaying) {
-    // 再生中: アンチクリック → currentTime → master 復帰
-    const media = state.multitrack.activeMedia || [];
-    const targetVol = state.masterVol != null ? state.masterVol : 1.0;
-    if (mtCtx && mtMasterGain) {
-      try {
-        const t = mtCtx.currentTime;
-        const cur = mtMasterGain.gain.value;
-        mtMasterGain.gain.cancelScheduledValues(t);
-        mtMasterGain.gain.setValueAtTime(cur, t);
-        // 8ms で 0 に絞る (耳に聞こえない速度のフェード)
-        mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.008);
-        // currentTime セット
-        for (const a of media) {
-          try { a.currentTime = seekSec; } catch(_) {}
-        }
-        // 30ms 後に master 復帰 (audio の buffer flush 完了を待つ)
-        mtMasterGain.gain.setValueAtTime(0, t + 0.030);
-        mtMasterGain.gain.linearRampToValueAtTime(targetVol, t + 0.045);
-      } catch(_) {
-        // ramp 失敗時は fallback で即セット
-        for (const a of media) {
-          try { a.currentTime = seekSec; } catch(_) {}
-        }
-      }
-    } else {
-      for (const a of media) {
-        try { a.currentTime = seekSec; } catch(_) {}
-      }
-    }
-    state.multitrack.startTime = mtCtx ? (mtCtx.currentTime - seekSec) : -seekSec;
-  } else {
-    state.multitrack.startTime = -seekSec;
-    mtRenderNow();
-  }
-}
-
-// FADE OUT (MediaElement)
-// v9.0.4: プチッ音防止のため 4段ガード方式
-//   段1: master gain を 0 までフェード
-//   段2: フェード完了後、master を 0 にホールド + 全 audio.volume=0 + muted=true
-//   段3: 50ms 待って audio.pause()
-//   段4: さらに 50ms 待って master を masterVol に復帰 + audio の volume/muted を元に戻す
-// → audio が完全停止する前に master が大きくなる事故を防ぐ
-function mtMediaFadeOut() {
-  console.log('[mtMediaFadeOut] called, isPlaying=' + state.multitrack.isPlaying + ', mtCtx=' + (mtCtx ? mtCtx.state : 'null') + ', masterGain=' + (mtMasterGain ? mtMasterGain.gain.value : 'null'));
-  if (!mtCtx || !mtMasterGain) { console.warn('[mtMediaFadeOut] no ctx/gain, calling mtStop'); mtStop(); return; }
-  if (!state.multitrack.isPlaying) { console.warn('[mtMediaFadeOut] not playing, calling mtStop'); mtStop(); return; }
-  const dur = Math.max(0.1, state.fadeTime || 2.0);
-  const t = mtCtx.currentTime;
-  const curVal = mtMasterGain.gain.value;
-  mtMasterGain.gain.cancelScheduledValues(t);
-  mtMasterGain.gain.setValueAtTime(curVal, t);
-  // 段1: 0 まで完全に下げる (linearRamp は 0 に到達可能)
-  mtMasterGain.gain.linearRampToValueAtTime(0, t + dur);
-  showToast(`MULTI-TRACK FADE OUT (${dur.toFixed(1)}s)`);
-  if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
-  // 段2: フェード完了直後に audio を完全ミュート (pause の前)
-  const activeList = (state.multitrack.activeMedia || []).slice();
-  setTimeout(() => {
-    // master を 0 にホールド (フェードの最後の微小値を確実に潰す)
-    if (mtCtx && mtMasterGain) {
-      try {
-        const tH = mtCtx.currentTime;
-        mtMasterGain.gain.cancelScheduledValues(tH);
-        mtMasterGain.gain.setValueAtTime(0, tH);
-      } catch(_) {}
-    }
-    // 全 audio を volume=0 + muted=true (audio 本体側でも遮断)
-    for (const a of activeList) {
-      try { a.volume = 0; } catch(_) {}
-      try { a.muted = true; } catch(_) {}
-    }
-    // 段3: 50ms 待って pause
-    setTimeout(() => {
-      mtMediaStopAll();
-      state.multitrack.isPlaying = false;
-      mtStopMeter();
-      // 段4: さらに 50ms 待って audio の volume/muted を元に戻す
-      // v9.0.7: master は 0 のまま固定 — 次回再生時 mtMediaPlaySong の
-      //          Fix C / 立ち上げフェードインで自然に復帰させる。
-      //          ここで master を瞬時に戻すと出力経路に signal が再度流れ、
-      //          ハードウェア側で過渡応答ノイズ (= プチッ) になっていた。
-      setTimeout(() => {
-        for (const a of activeList) {
-          try { a.volume = 1; a.muted = false; } catch(_) {}
-        }
-        // master は 0 のまま (= 出力経路は静音維持)。次回 SPACE で復帰。
-        mtRenderNow();
-        mtRenderSetlist();
-      }, 50);
-    }, 50);
-  }, dur * 1000 + 30);
-}
 
 // 整理: orphan サンプル削除 / 重複 blob 削除
 async function mtFsCleanup() {
@@ -12203,153 +10392,10 @@ async function mtRestoreBuffers() { return mtFsInit(); }
 async function mtReconnectFiles() { return mtFsReconnect(); }
 function mtRenderReconnectUI() { mtFsRender(); }
 
-// ============================================================================
-// v8.4.0: 診断パネル UI
-// ============================================================================
-function _mtDiagPanelUpdate() {
-  const panel = document.getElementById('mtDiagPanel');
-  if (!panel) return;
-  // multiPage 以外では非表示
-  if (state.appMode !== 'multi') { panel.style.display = 'none'; return; }
-  panel.style.display = 'block';
-  panel.classList.toggle('show-mode', mtFs.showMode);
-  const dot = document.getElementById('mtDiagDot');
-  const title = document.getElementById('mtDiagTitle');
-  const stemsVal = document.getElementById('mtDiagStemsVal');
-  const errVal = document.getElementById('mtDiagErrVal');
-  // 鳴ってる STEM 数 / 読込済 STEM 数
-  const playing = state.multitrack.isPlaying;
-  const activeCnt = (state.multitrack.activeMedia || []).length;
-  const loadedCnt = Object.keys(mtMediaCache).length;
-  if (stemsVal) {
-    if (playing) stemsVal.textContent = `${activeCnt} 再生中`;
-    else stemsVal.textContent = `${loadedCnt} 読込済`;
-  }
-  // エラー
-  if (errVal) {
-    errVal.textContent = String(mtFs.errorLog.length);
-    errVal.classList.remove('warn', 'error');
-    if (mtFs.errorLog.length > 5) errVal.classList.add('error');
-    else if (mtFs.errorLog.length > 0) errVal.classList.add('warn');
-  }
-  // 状態ドット
-  if (dot && title) {
-    dot.classList.remove('warn', 'error');
-    if (mtFs.state === 'error') {
-      dot.classList.add('error');
-      title.textContent = 'ERROR';
-    } else if (mtFs.state === 'needs_reconnect') {
-      dot.classList.add('warn');
-      title.textContent = 'RECONNECT';
-    } else if (mtFs.state === 'loading') {
-      dot.classList.add('warn');
-      title.textContent = 'LOADING';
-    } else if (mtFs.showMode) {
-      title.textContent = '本番モード';
-    } else {
-      title.textContent = 'MT-FS READY';
-    }
-  }
-}
-
-let _mtDiagPanelUpdateTimer = null;
-function _mtDiagPanelStartLoop() {
-  if (_mtDiagPanelUpdateTimer) return;
-  _mtDiagPanelUpdateTimer = setInterval(_mtDiagPanelUpdate, 1000);
-}
-
-// クリックで詳細展開
-function mtDiagPanelToggleDetail() {
-  let detail = document.getElementById('mtDiagDetail');
-  if (detail) { detail.remove(); return; }
-  detail = document.createElement('div');
-  detail.id = 'mtDiagDetail';
-  detail.className = 'mt-diag-detail';
-  detail.onclick = (e) => e.stopPropagation();
-  document.body.appendChild(detail);
-  _mtDiagDetailRender();
-}
-
-async function _mtDiagDetailRender() {
-  const detail = document.getElementById('mtDiagDetail');
-  if (!detail) return;
-  const failedCount = mtFs._failed.size;
-  const totalIds = _mtFsCollectAllIds().length;
-  const mediaLoaded = Object.keys(mtMediaCache).length;
-  // v10.0.0: OPFS 使用量
-  let opfsMB = 0;
-  try { opfsMB = await getOPFSUsageMB(); } catch(_) {}
-  let opfsCount = 0;
-  try { opfsCount = (await listSamplesInOPFS()).length; } catch(_) {}
-  // v10.1.0: プロジェクトフォルダ情報
-  let folderInfo = '未設定';
-  try {
-    const pid = projGetActiveId();
-    if (pid) {
-      const rec = await getProjectFolderHandle(pid);
-      if (rec && rec.name) folderInfo = rec.name;
-      const dirHandle = await ensureProjectFolderPermission(pid);
-      if (!dirHandle && rec) folderInfo += ' (許可待ち)';
-    }
-  } catch(_) {}
-  const errors = mtFs.errorLog.slice(0, 20);
-  const errHTML = errors.length === 0
-    ? '<div class="mt-diag-err-item" style="text-align:center;opacity:0.5;">エラー履歴なし</div>'
-    : errors.map(e => {
-        const t = new Date(e.ts);
-        const tStr = t.toLocaleTimeString();
-        return `<div class="mt-diag-err-item">
-          <span class="mt-diag-err-time">${tStr}</span>
-          <span class="mt-diag-err-kind ${e.kind}">[${e.kind}]</span>
-          <span class="mt-diag-err-msg">${e.msg.replace(/</g,'&lt;').slice(0,140)}</span>
-        </div>`;
-      }).join('');
-  detail.innerHTML = `
-    <button class="mt-diag-close" onclick="mtDiagPanelToggleDetail()" title="閉じる">×</button>
-    <h3>📊 MULTI-TRACK 診断</h3>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">状態</span><span class="mt-diag-value">${mtFs.state}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">登録 STEM 総数</span><span class="mt-diag-value">${totalIds}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">読込済 STEM</span><span class="mt-diag-value">${mediaLoaded}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">プロジェクトフォルダ</span><span class="mt-diag-value" style="font-size:10px;">${folderInfo}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">アプリ内保存 (OPFS)</span><span class="mt-diag-value">${opfsCount} 件 ${opfsMB.toFixed(0)} MB</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
-
-    <h4>操作</h4>
-    <div class="mt-diag-btn-row">
-      <button class="mt-diag-btn ${mtFs.showMode?'show-mode-active':''}" onclick="mtFsSetShowMode(!mtFs.showMode).then(_mtDiagDetailRender)">${mtFs.showMode?'🎭 本番モード OFF':'🎭 本番モード ON'}</button>
-    </div>
-    <div class="mt-diag-btn-row">
-      <button class="mt-diag-btn warn" onclick="mtFsClearErrors(); _mtDiagDetailRender();">エラー履歴クリア</button>
-    </div>
-
-    <h4>エラー履歴 (新しい順 / 最新 20 件)</h4>
-    <div class="mt-diag-err-list">${errHTML}</div>
-  `;
-}
-
-function mtFsClearErrors() { mtFs.errorLog = []; _mtDiagPanelUpdate(); }
-
-// v9.1.0: mtSetPlaybackMode / mtFsForceEvict は撤去
-// (再生方式は MediaElement 固定、キャッシュクリアは UI 廃止)
-
-// ヘッダー右側の本番モードバッジ更新 (将来 mark on header — placeholder)
-function _mtRenderShowModeBadge() { _mtDiagPanelUpdate(); }
-
 // ---- 再生エンジン ----
 // options.keepPrevious=true で前曲の source を止めない（オーバーラップ）
-// v8.3.0: 連打ガード + 部分再生フォールバック (1.5秒タイムアウト)
 async function mtPlaySong(idx, offset, options) {
   if (idx < 0 || idx >= state.multitrack.songs.length) return;
-  // v8.5.0: 別タブで既に SAMPLER STUDIO が開かれていたら、本タブは再生禁止
-  if (mtIsOtherTabActive()) {
-    try { showToast('⚠️ 別タブで開かれているため、このタブからは再生できません'); } catch(_) {}
-    return;
-  }
-  // v9.0.0: 再生方式の分岐 (デフォルト = mediaelement)
-  if (state.multitrack.playbackMode === 'mediaelement') {
-    return mtMediaPlaySong(idx, offset, options);
-  }
   if (!isFinite(offset) || offset < 0) offset = 0;
   const keepPrevious = options && options.keepPrevious === true;
   // 同曲を再生中に keepPrevious=true で再呼出 → 50ms ずれて二重再生 →
@@ -12360,13 +10406,6 @@ async function mtPlaySong(idx, offset, options) {
     console.log('[mtPlaySong] same song already playing, ignoring re-trigger');
     return;
   }
-  // v8.3.0: 連打ガード — 同時に 2 つの mtPlaySong が走らないようにする
-  if (_mtPlaySongInFlight) {
-    console.log('[mtPlaySong] another play already in flight, ignoring');
-    return;
-  }
-  _mtPlaySongInFlight = true;
-  try {
   await mtInitCtx();
   if (mtCtx.state === 'suspended') await mtCtx.resume();
   if (!keepPrevious) {
@@ -12389,40 +10428,16 @@ async function mtPlaySong(idx, offset, options) {
   // groupBuffers: { drums: [AudioBuffer, ...], bass: [...] }
   // 未ロードの layer があれば lazy-load してから集計
   let needsLoad = false;
-  let totalLayers = 0;
-  let loadedLayers = 0;
   for (const g of MT_GROUPS) {
     for (const layer of mtGetLayers(song, g)) {
-      totalLayers++;
-      if (mtDecodedCache[layer.sampleId]) loadedLayers++;
-      else needsLoad = true;
+      if (!mtDecodedCache[layer.sampleId]) { needsLoad = true; break; }
     }
+    if (needsLoad) break;
   }
   if (needsLoad) {
-    // v8.3.0: 部分再生フォールバック
-    // 「全 STEM のロード待ち」と「1.5秒タイムアウト」で race。
-    // タイムアウトしたら、その時点でロード済みの STEM だけで再生開始 (本番で
-    // 「SPACE 押したのに鳴らない」を防ぐ)。残りはバックグラウンドで継続。
-    const loadPromise = mtFsLoadSongUrgent(idx);
-    const timeoutMs = 1500;
-    const timeoutPromise = new Promise(r => setTimeout(() => r('__timeout__'), timeoutMs));
-    const result = await Promise.race([loadPromise, timeoutPromise]);
-    if (result === '__timeout__') {
-      // ロードが間に合わなかった — ロード済み STEM 数を再カウント
-      let nowLoaded = 0;
-      for (const g of MT_GROUPS) {
-        for (const layer of mtGetLayers(song, g)) {
-          if (mtDecodedCache[layer.sampleId]) nowLoaded++;
-        }
-      }
-      console.warn(`[mtPlaySong] urgent load timeout (${timeoutMs}ms): ${nowLoaded}/${totalLayers} loaded, starting partial`);
-      if (nowLoaded > 0) {
-        showToast(`⚠️ 部分再生中 (${nowLoaded}/${totalLayers} STEM)`);
-        // 残り STEM はバックグラウンドで継続デコード (await しない)
-        // 完了しても今再生中の source には反映されないが、次回再生に役立つ
-      }
-      // ロード 0 件なら、この後の hasAny チェックで弾かれる (既存処理に任せる)
-    }
+    // この曲のレイヤーを優先 lazy load（preload より優先）
+    // mtFsLoadSongUrgent が permission 要求 + 直列 decode を行う
+    await mtFsLoadSongUrgent(idx);
   }
   // 再生開始 → preload 用のワーカーに「メインスレッド負荷を抑えて」と通知
   mtFsNotifyPlaybackStart();
@@ -12576,22 +10591,11 @@ async function mtPlaySong(idx, offset, options) {
   mtRenderSetlist();
   mtRenderNow();
   mtStartMeter();
-  // v8.3.0: 再生開始後に「次の次の曲」を先読み + LRU eviction
-  // (auto-advance で次曲が来た時にすぐ鳴るように)
-  try { mtFsPrioritizeSong(idx); } catch(_) {}
-  } finally {
-    // v8.3.0: 連打ガード解除 (例外時も必ず下ろす)
-    _mtPlaySongInFlight = false;
-  }
 }
 
 // ---- SEEK ----
 function mtSeekTo(seekSec) {
   if (state.multitrack.currentSongIdx < 0 && state.multitrack.selectedIdx < 0) return;
-  // v9.0.0: MediaElement モードは currentTime セットだけで済む
-  if (state.multitrack.playbackMode === 'mediaelement') {
-    return mtMediaSeekTo(seekSec);
-  }
   const idx = state.multitrack.currentSongIdx >= 0 ? state.multitrack.currentSongIdx : state.multitrack.selectedIdx;
   const dur = state.multitrack.songDuration || 0;
   if (!isFinite(seekSec) || seekSec < 0) seekSec = 0;
@@ -12609,10 +10613,6 @@ function mtSeekTo(seekSec) {
 
 // ---- FADE OUT (パニックストップ) ----
 function mtFadeOut() {
-  // v9.0.0: MediaElement モードの分岐
-  if (state.multitrack.playbackMode === 'mediaelement') {
-    return mtMediaFadeOut();
-  }
   if (!mtCtx || !mtMasterGain) { mtStop(); return; }
   if (!state.multitrack.isPlaying) {
     // 再生してない時は即停止
@@ -12691,20 +10691,6 @@ function mtStopSources() {
 }
 
 function mtStop() {
-  // v9.0.0/v9.0.5: MediaElement モードはアンチクリック付き stop
-  if (state.multitrack.playbackMode === 'mediaelement') {
-    try {
-      _mtMediaStopAllWithFade(() => {
-        state.multitrack.isPlaying = false;
-        mtFsNotifyPlaybackStop();
-        mtStopMeter();
-        try { mtClearPlaybackLock(); } catch(_) {}
-        mtRenderSetlist();
-        mtRenderNow();
-      });
-    } catch(_) {}
-    return;
-  }
   mtStopSources();
   state.multitrack.isPlaying = false;
   mtFsNotifyPlaybackStop();
@@ -12767,7 +10753,7 @@ function mtEnterKey() {
 // 連打すると、二重再生でカオスになる事故が多発。10 秒間は新規 PLAY/SPACE
 // を完全ブロックし、画面いっぱいの「▶ PLAYBACK」表示で「ちゃんと再生
 // されたよ」を視覚的に通知する。STOP/ESC/FADE OUT はロック中も有効。
-const MT_PLAYBACK_LOCK_MS = 5000;
+const MT_PLAYBACK_LOCK_MS = 10000;
 let mtPlaybackLockUntil = 0;
 function mtIsPlaybackLocked() {
   return Date.now() < mtPlaybackLockUntil;
@@ -12789,8 +10775,8 @@ function mtStartPlaybackLock(songName) {
       <div class="mt-pb-icon">▶</div>
       <div class="mt-pb-label">PLAYBACK STARTED</div>
       <div class="mt-pb-song" id="mtPlaybackOverlaySong"></div>
-      <div class="mt-pb-hint">${Math.ceil(MT_PLAYBACK_LOCK_MS/1000)} 秒間、追加再生はロック中 — ESC で停止可</div>
-      <div class="mt-pb-counter" id="mtPlaybackOverlayCounter">${Math.ceil(MT_PLAYBACK_LOCK_MS/1000)}</div>
+      <div class="mt-pb-hint">10 秒間、追加再生はロック中 — ESC で停止可</div>
+      <div class="mt-pb-counter" id="mtPlaybackOverlayCounter">10</div>
     `;
     document.body.appendChild(overlay);
   }
@@ -12814,7 +10800,6 @@ function mtStartPlaybackLock(songName) {
 }
 
 // 選択中の曲の最大長を求める（停止中もスクラバーに total を出すため）
-// v9.0.0: MediaElement モードでは mtMediaCache の duration を見る
 function mtRecomputeSongDuration() {
   if (state.multitrack.isPlaying) return;
   const idx = state.multitrack.selectedIdx;
@@ -12823,18 +10808,12 @@ function mtRecomputeSongDuration() {
     return;
   }
   const song = state.multitrack.songs[idx];
-  const useMedia = state.multitrack.playbackMode === 'mediaelement';
   let max = 0;
   for (const g of MT_GROUPS) {
     const layers = mtGetLayers(song, g);
     for (const layer of layers) {
-      if (useMedia) {
-        const e = mtMediaCache[layer.sampleId];
-        if (e && e.duration) max = Math.max(max, e.duration);
-      } else {
-        const buf = mtDecodedCache[layer.sampleId];
-        if (buf) max = Math.max(max, buf.duration);
-      }
+      const buf = mtDecodedCache[layer.sampleId];
+      if (buf) max = Math.max(max, buf.duration);
     }
   }
   state.multitrack.songDuration = max;
@@ -12889,12 +10868,7 @@ function mtRenderMixer() {
     //   pending = layer 1+ だが一部 buffer 未ロード
     const layers = selSong ? mtGetLayers(selSong, g) : [];
     const hasLayers = layers.length > 0;
-    // v9.0.0: MediaElement モードでは mtMediaCache を見る
-    const useMedia = state.multitrack.playbackMode === 'mediaelement';
-    const allLoaded = hasLayers && layers.every(l =>
-      useMedia ? (mtMediaCache[l.sampleId] && mtMediaCache[l.sampleId].audio)
-               : !!mtDecodedCache[l.sampleId]
-    );
+    const allLoaded = hasLayers && layers.every(l => mtDecodedCache[l.sampleId]);
     if (selSong && !hasLayers) strip.classList.add('ready-for-file');
     if (hasLayers) strip.classList.add('has-layers');
     if (hasLayers && !allLoaded) strip.classList.add('layer-pending');
@@ -13726,19 +11700,8 @@ function mtUpdateProgress() {
   if (!fill || !cur || !tot) return;
   let t = 0;
   const d = m.songDuration || 0;
-  if (m.isPlaying) {
-    // v9.0.3: MediaElement モードは audio.currentTime を直接見る (より正確)
-    if (m.playbackMode === 'mediaelement' && m.activeMedia && m.activeMedia.length > 0) {
-      // active な audio の中で再生中のものを優先 (paused でないもの)
-      for (const a of m.activeMedia) {
-        if (a && !a.paused && isFinite(a.currentTime)) { t = a.currentTime; break; }
-      }
-      if (t === 0 && m.activeMedia[0] && isFinite(m.activeMedia[0].currentTime)) {
-        t = m.activeMedia[0].currentTime;
-      }
-    } else if (mtCtx) {
-      t = Math.max(0, mtCtx.currentTime - m.startTime);
-    }
+  if (m.isPlaying && mtCtx) {
+    t = Math.max(0, mtCtx.currentTime - m.startTime);
   } else {
     // 停止中もシーク位置を表示
     t = m.seekOffset || 0;
@@ -14081,26 +12044,6 @@ async function mtInit() {
 
   // ファイル状態マシン (v8.0) を起動 — permission check → bg load
   mtFsInit().catch(e => console.warn('[mtFs] init failed', e));
-  // v8.4.0/9.1.0: watchdog と診断パネルだけ起動 (メモリプロファイルは撤去)
-  try { mtFsStartWatchdog(); } catch(_) {}
-  try { _mtDiagPanelStartLoop(); _mtDiagPanelUpdate(); } catch(_) {}
-  // v8.5.0: 本番事故防止
-  try { mtBindPageLifecycle(); } catch(_) {}
-  try { mtAcquireMainLock(); } catch(_) {}
-  // v9.0.3 Fix6: タブ閉じ時に MediaElement の blob URL を全部解放 (メモリリーク防止)
-  if (!window._mtBeforeUnloadBound) {
-    window._mtBeforeUnloadBound = true;
-    window.addEventListener('beforeunload', () => {
-      try {
-        for (const id in mtMediaCache) {
-          const e = mtMediaCache[id];
-          if (e && e.blobUrl) {
-            try { URL.revokeObjectURL(e.blobUrl); } catch(_) {}
-          }
-        }
-      } catch(_) {}
-    });
-  }
 }
 
 async function init() {
@@ -14198,154 +12141,6 @@ async function init() {
 
   // MULTI-TRACK MODE init
   mtInit();
-
-  // v11.0.0: PWA + File Handling
-  try { _initPWA(); } catch(e) { console.warn('[PWA] init failed', e); }
-}
-
-// ============================================================================
-// v11.0.0: PWA + File Handling API (.sampler ダブルクリック起動)
-// ============================================================================
-function _initPWA() {
-  // Service Worker 登録 (PWA 必須)
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(reg => console.log('[PWA] Service Worker registered:', reg.scope))
-      .catch(err => console.warn('[PWA] SW registration failed:', err));
-  }
-  // ファイルダブルクリック起動 (.sampler を OS から受け取る)
-  // v11.2.8: 二重進入ガード (連続ダブルクリック / 連打で同時 2 起動を防ぐ)
-  if ('launchQueue' in window) {
-    window.launchQueue.setConsumer(async (launchParams) => {
-      if (!launchParams || !launchParams.files || !launchParams.files.length) return;
-      if (window._launchInFlight) {
-        console.warn('[PWA] launch already in flight, ignoring duplicate');
-        return;
-      }
-      window._launchInFlight = true;
-      try {
-        const fileHandle = launchParams.files[0];
-        const file = await fileHandle.getFile();
-        const text = await file.text();
-        const data = JSON.parse(text);
-        if (data._format !== 'sampler-studio-project') {
-          alert('このファイルは SAMPLER STUDIO のプロジェクトではありません。');
-          return;
-        }
-        // ファイルから親フォルダの handle を作ろうとするが、現状は API 制約で
-        // fileHandle から親 directoryHandle を取得できない。
-        // → ユーザーに「フォルダを指定してください」と促す or 自動で
-        //   showDirectoryPicker を呼ぶ
-        await _projOpenFromSamplerFile(data, file.name);
-      } catch(e) {
-        console.warn('[PWA] launch file open failed', e);
-        alert('プロジェクトファイルを開けませんでした: ' + (e.message || e));
-      } finally {
-        window._launchInFlight = false;
-      }
-    });
-  }
-  // PWA インストール促進バナー (beforeinstallprompt)
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    window._pwaPrompt = e;
-    _showInstallBanner();
-  });
-  window.addEventListener('appinstalled', () => {
-    _hideInstallBanner();
-    showToast('✓ SAMPLER STUDIO がアプリとしてインストールされました');
-  });
-  // インストール済みかチェック (display-mode: standalone)
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    console.log('[PWA] running as installed app');
-  }
-}
-
-// .sampler ファイルからプロジェクトを開く
-// (ダブルクリック起動で呼ばれる)
-async function _projOpenFromSamplerFile(data, fileName) {
-  // .sampler ファイル単体だけでは音源フォルダが分からないので、
-  // ユーザーに親フォルダを指定してもらう
-  const proceed = await _projShowFolderDialog(
-    (data.projectName || fileName.replace(/\.sampler$/, '')) + ' (フォルダ確認)'
-  );
-  if (!proceed) return;
-  try {
-    const dirHandle = await window.showDirectoryPicker({
-      id: 'sampler-studio-open-project',
-      mode: 'readwrite',
-      startIn: 'documents',
-    });
-    // 同名の .sampler が存在するか確認
-    try {
-      await dirHandle.getFileHandle(fileName, { create: false });
-    } catch(_) {
-      alert('指定したフォルダには ' + fileName + ' がありません。\n.sampler ファイルが入っているフォルダを選んでください。');
-      return;
-    }
-    // 既存リストに登録
-    const list = projGetList();
-    const id = data.projectId || ('p_' + Date.now());
-    let existing = list.find(p => p.id === id);
-    if (!existing) {
-      list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
-      projSetList(list);
-    }
-    await saveProjectFolderHandle(id, dirHandle, dirHandle.name);
-    // state を localStorage に書き込んで起動
-    if (data.state && data.state.multitrack) localStorage.setItem(id + ':samplerMultitrack', JSON.stringify(data.state.multitrack));
-    if (data.state && data.state.sampler) {
-      localStorage.setItem(id + ':samplerStudioState', JSON.stringify({
-        banks: data.state.sampler.banks,
-        currentBank: data.state.sampler.currentBank,
-        masterVol: data.state.sampler.masterVol,
-        fadeTime: data.state.sampler.fadeTime,
-        fadeCurve: data.state.sampler.fadeCurve,
-        appMode: data.state.appMode || 'sampler',
-      }));
-    }
-    if (data.state && data.state.door) localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
-    projSwitchTo(id);
-  } catch(e) {
-    if (e && e.name === 'AbortError') return;
-    console.warn('[PWA] open from sampler failed', e);
-  }
-}
-
-// PWA インストールバナー
-function _showInstallBanner() {
-  if (document.getElementById('pwaInstallBanner')) return;
-  const bar = document.createElement('div');
-  bar.id = 'pwaInstallBanner';
-  bar.style.cssText = [
-    'position:fixed','bottom:80px','left:50%','transform:translateX(-50%)',
-    'background:linear-gradient(180deg, #15181F, #0E1115)',
-    'border:0.5px solid rgba(61,181,166,0.5)','border-radius:8px',
-    'padding:10px 16px','z-index:9000',
-    "font-family:'SF Mono', 'Menlo', monospace",'font-size:11px',
-    'color:#C8D8D0','box-shadow:0 4px 16px rgba(0,0,0,0.6)',
-    'display:flex','align-items:center','gap:12px',
-  ].join(';');
-  bar.innerHTML = `
-    <span style="color:#88D6C2;">📦 アプリとしてインストールできます</span>
-    <button id="pwaInstallBtn" style="padding:5px 12px;background:linear-gradient(180deg, rgba(61,181,166,0.25), rgba(61,181,166,0.10));border:0.5px solid rgba(61,181,166,0.5);color:#88D6C2;border-radius:4px;font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;font-weight:700;">インストール</button>
-    <button id="pwaInstallClose" style="background:none;border:none;color:rgba(200,216,208,0.5);font-size:14px;cursor:pointer;padding:0 4px;">×</button>
-  `;
-  document.body.appendChild(bar);
-  bar.querySelector('#pwaInstallBtn').onclick = async () => {
-    if (window._pwaPrompt) {
-      window._pwaPrompt.prompt();
-      const choice = await window._pwaPrompt.userChoice;
-      console.log('[PWA] install choice:', choice.outcome);
-      window._pwaPrompt = null;
-      _hideInstallBanner();
-    }
-  };
-  bar.querySelector('#pwaInstallClose').onclick = _hideInstallBanner;
-}
-function _hideInstallBanner() {
-  const bar = document.getElementById('pwaInstallBanner');
-  if (bar) try { document.body.removeChild(bar); } catch(_) {}
 }
 
 init();

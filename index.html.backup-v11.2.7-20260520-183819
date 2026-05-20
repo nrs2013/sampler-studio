@@ -3446,8 +3446,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.8';
-// v11.2.8: 本番耐性パッチ — SW キャッシュ名追従 / project.json 保存失敗を toast 通知 / .sampler 二重起動ガード
+const APP_VERSION = 'v11.2.7';
 // v11.2.7: ANNOUNCE / VIDEO / LOGO の 3 段を flex:1 で固定均等分割 (動的サイズ変動なし)
 // v11.2.6: LOGO カードの枠だけ下まで伸ばす (下の余白を消す)
 // v11.2.5: BGM カード内部スペース拡張 + LOGO カード縮小 (見た目の息継ぎ確保)
@@ -4715,33 +4714,14 @@ async function loadProjectJSONFromFolder(dirHandle) {
 }
 
 // v10.2.0: 自動保存 (デバウンス) — state 変更時に project.json も更新
-// v11.2.8: silent fail させない — 失敗時 toast で通知 (本番中の保存ロスト早期検知)
 let _saveProjectJSONTimer = null;
-let _saveJsonFailCount = 0;
 function scheduleSaveProjectJSON() {
   if (_saveProjectJSONTimer) clearTimeout(_saveProjectJSONTimer);
   _saveProjectJSONTimer = setTimeout(async () => {
     _saveProjectJSONTimer = null;
     const pid = (typeof projGetActiveId === 'function') ? projGetActiveId() : null;
     if (!pid) return;
-    try {
-      const ok = await saveProjectJSONToFolder(pid);
-      if (ok) {
-        _saveJsonFailCount = 0;
-      } else {
-        _saveJsonFailCount++;
-        // 1 回目と 5 回ごとに通知 (連続失敗時のノイズ防止)
-        if (_saveJsonFailCount === 1 || _saveJsonFailCount % 5 === 0) {
-          try { showToast('⚠️ プロジェクト自動保存に失敗 — フォルダ権限を確認してください'); } catch(_) {}
-        }
-      }
-    } catch(e) {
-      console.warn('[projJSON] schedule save failed', e);
-      _saveJsonFailCount++;
-      if (_saveJsonFailCount === 1) {
-        try { showToast('⚠️ プロジェクト自動保存でエラー発生'); } catch(_) {}
-      }
-    }
+    try { await saveProjectJSONToFolder(pid); } catch(_) {}
   }, 2000); // 2秒デバウンス
 }
 
@@ -14214,15 +14194,9 @@ function _initPWA() {
       .catch(err => console.warn('[PWA] SW registration failed:', err));
   }
   // ファイルダブルクリック起動 (.sampler を OS から受け取る)
-  // v11.2.8: 二重進入ガード (連続ダブルクリック / 連打で同時 2 起動を防ぐ)
   if ('launchQueue' in window) {
     window.launchQueue.setConsumer(async (launchParams) => {
       if (!launchParams || !launchParams.files || !launchParams.files.length) return;
-      if (window._launchInFlight) {
-        console.warn('[PWA] launch already in flight, ignoring duplicate');
-        return;
-      }
-      window._launchInFlight = true;
       try {
         const fileHandle = launchParams.files[0];
         const file = await fileHandle.getFile();
@@ -14240,8 +14214,6 @@ function _initPWA() {
       } catch(e) {
         console.warn('[PWA] launch file open failed', e);
         alert('プロジェクトファイルを開けませんでした: ' + (e.message || e));
-      } finally {
-        window._launchInFlight = false;
       }
     });
   }
