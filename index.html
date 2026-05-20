@@ -6811,7 +6811,7 @@ function setAppMode(m) {
   document.getElementById('banksRow').style.display = (m === 'sampler') ? 'flex' : 'none';
   document.getElementById('rightContent').style.display = (m === 'sampler') ? 'flex' : 'none';
   // DOOR OPEN ページ
-  document.getElementById('doorPage').style.display = (m === 'door') ? 'flex' : 'none';
+  document.getElementById('doorPage').style.display = (m === 'door') ? 'grid' : 'none';
   // MULTI-TRACK ページ
   const mtPage = document.getElementById('multiPage');
   if (mtPage) mtPage.style.display = (m === 'multi') ? 'flex' : 'none';
