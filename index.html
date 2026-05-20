@@ -3415,7 +3415,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.6';
+const APP_VERSION = 'v9.0.7';
+// v9.0.7: フェードアウト終了後のプチッ完全撲滅 — master 復帰を撤廃 (0 のまま固定)
 // v9.0.6: playback lock を 10秒 → 5秒に短縮
 // v9.0.5 アンチクリック網羅:
 //   Fix A: mtMediaStopAll で signal disconnect → audio pause の順序 (master まで届かない)
@@ -11347,19 +11348,11 @@ function _mtMediaStopAllWithFade(onDone) {
     mtMasterGain.gain.setValueAtTime(cur, t);
     mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.008);
   } catch(_) {}
-  // 2) 12ms 待って signal flow 切断 + master 復帰 (audio は pause 済みなので音は出ない)
+  // 2) 12ms 待って signal flow 切断
+  // v9.0.7: master は 0 のまま固定 — 次回再生時の Fix C / 立ち上げフェードインで復帰
+  //          ここで戻すと出力経路に signal が流れて過渡応答ノイズ (プチッ)
   setTimeout(() => {
     mtMediaStopAll();
-    if (mtCtx && mtMasterGain) {
-      try {
-        const t = mtCtx.currentTime;
-        const targetVol = state.masterVol != null ? state.masterVol : 1.0;
-        mtMasterGain.gain.cancelScheduledValues(t);
-        mtMasterGain.gain.setValueAtTime(0, t);
-        // 20ms の滑らかな復帰 (audio は止まってるので耳には影響ないが念のため滑らかに)
-        mtMasterGain.gain.linearRampToValueAtTime(targetVol, t + 0.020);
-      } catch(_) {}
-    }
     if (onDone) try { onDone(); } catch(_) {}
   }, 12);
 }
@@ -11719,22 +11712,16 @@ function mtMediaFadeOut() {
       mtMediaStopAll();
       state.multitrack.isPlaying = false;
       mtStopMeter();
-      // 段4: さらに 50ms 待って master を復帰 + audio の volume/muted を元に戻す
+      // 段4: さらに 50ms 待って audio の volume/muted を元に戻す
+      // v9.0.7: master は 0 のまま固定 — 次回再生時 mtMediaPlaySong の
+      //          Fix C / 立ち上げフェードインで自然に復帰させる。
+      //          ここで master を瞬時に戻すと出力経路に signal が再度流れ、
+      //          ハードウェア側で過渡応答ノイズ (= プチッ) になっていた。
       setTimeout(() => {
         for (const a of activeList) {
           try { a.volume = 1; a.muted = false; } catch(_) {}
         }
-        if (mtCtx && mtMasterGain) {
-          try {
-            const t2 = mtCtx.currentTime;
-            const targetVol = state.masterVol != null ? state.masterVol : 1.0;
-            mtMasterGain.gain.cancelScheduledValues(t2);
-            // v9.0.5: 瞬間的な setValueAtTime ではなく、20ms の linearRamp で復帰
-            //         (audio は pause 済みだが、念のため master も滑らかに)
-            mtMasterGain.gain.setValueAtTime(0, t2);
-            mtMasterGain.gain.linearRampToValueAtTime(targetVol, t2 + 0.020);
-          } catch(_) {}
-        }
+        // master は 0 のまま (= 出力経路は静音維持)。次回 SPACE で復帰。
         mtRenderNow();
         mtRenderSetlist();
       }, 50);
