@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SAMPLER STUDIO</title>
+<!-- v11.0.0: PWA 化 + .sampler 拡張子ダブルクリック起動 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3DB5A6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SAMPLER STUDIO">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -3413,7 +3419,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v10.2.0';
+const APP_VERSION = 'v11.0.0';
+// v11.0.0: PWA + File Handling API — .sampler ダブルクリック起動 (DP方式の完成形)
 // v10.2.0: project.json 自動保存 + フォルダから開く + 専用ダイアログ UI (DP 方式)
 // v10.1.0: プロジェクトフォルダ方式 — Finder で見える保存先 (OPFS から切替)
 // v10.0.0 Phase 1: OPFS 自動コピー保存 — 取り込み時にアプリ内コピーで原本依存撤廃
@@ -4633,10 +4640,21 @@ async function saveProjectJSONToFolder(projectId) {
         appMode: state.appMode,
       },
     };
+    const jsonStr = JSON.stringify(data, null, 2);
+    // v10.2.0: project.json
     const fh = await dirHandle.getFileHandle('project.json', { create: true });
     const w = await fh.createWritable();
-    await w.write(JSON.stringify(data, null, 2));
+    await w.write(jsonStr);
     await w.close();
+    // v11.0.0: project.sampler も並行保存 (ダブルクリック起動用、中身は同じ)
+    try {
+      const projMeta2 = (projGetList().find(p => p.id === projectId)) || { name: '無題' };
+      const samplerName = (projMeta2.name || '無題').replace(/[\/\\:*?"<>|]/g, '_') + '.sampler';
+      const fh2 = await dirHandle.getFileHandle(samplerName, { create: true });
+      const w2 = await fh2.createWritable();
+      await w2.write(jsonStr);
+      await w2.close();
+    } catch(e) { console.warn('[projSampler] save failed', e); }
     return true;
   } catch(e) {
     console.warn('[projJSON] save failed', e);
@@ -14122,6 +14140,146 @@ async function init() {
 
   // MULTI-TRACK MODE init
   mtInit();
+
+  // v11.0.0: PWA + File Handling
+  try { _initPWA(); } catch(e) { console.warn('[PWA] init failed', e); }
+}
+
+// ============================================================================
+// v11.0.0: PWA + File Handling API (.sampler ダブルクリック起動)
+// ============================================================================
+function _initPWA() {
+  // Service Worker 登録 (PWA 必須)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('[PWA] Service Worker registered:', reg.scope))
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
+  }
+  // ファイルダブルクリック起動 (.sampler を OS から受け取る)
+  if ('launchQueue' in window) {
+    window.launchQueue.setConsumer(async (launchParams) => {
+      if (!launchParams || !launchParams.files || !launchParams.files.length) return;
+      try {
+        const fileHandle = launchParams.files[0];
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (data._format !== 'sampler-studio-project') {
+          alert('このファイルは SAMPLER STUDIO のプロジェクトではありません。');
+          return;
+        }
+        // ファイルから親フォルダの handle を作ろうとするが、現状は API 制約で
+        // fileHandle から親 directoryHandle を取得できない。
+        // → ユーザーに「フォルダを指定してください」と促す or 自動で
+        //   showDirectoryPicker を呼ぶ
+        await _projOpenFromSamplerFile(data, file.name);
+      } catch(e) {
+        console.warn('[PWA] launch file open failed', e);
+        alert('プロジェクトファイルを開けませんでした: ' + (e.message || e));
+      }
+    });
+  }
+  // PWA インストール促進バナー (beforeinstallprompt)
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window._pwaPrompt = e;
+    _showInstallBanner();
+  });
+  window.addEventListener('appinstalled', () => {
+    _hideInstallBanner();
+    showToast('✓ SAMPLER STUDIO がアプリとしてインストールされました');
+  });
+  // インストール済みかチェック (display-mode: standalone)
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    console.log('[PWA] running as installed app');
+  }
+}
+
+// .sampler ファイルからプロジェクトを開く
+// (ダブルクリック起動で呼ばれる)
+async function _projOpenFromSamplerFile(data, fileName) {
+  // .sampler ファイル単体だけでは音源フォルダが分からないので、
+  // ユーザーに親フォルダを指定してもらう
+  const proceed = await _projShowFolderDialog(
+    (data.projectName || fileName.replace(/\.sampler$/, '')) + ' (フォルダ確認)'
+  );
+  if (!proceed) return;
+  try {
+    const dirHandle = await window.showDirectoryPicker({
+      id: 'sampler-studio-open-project',
+      mode: 'readwrite',
+      startIn: 'documents',
+    });
+    // 同名の .sampler が存在するか確認
+    try {
+      await dirHandle.getFileHandle(fileName, { create: false });
+    } catch(_) {
+      alert('指定したフォルダには ' + fileName + ' がありません。\n.sampler ファイルが入っているフォルダを選んでください。');
+      return;
+    }
+    // 既存リストに登録
+    const list = projGetList();
+    const id = data.projectId || ('p_' + Date.now());
+    let existing = list.find(p => p.id === id);
+    if (!existing) {
+      list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
+      projSetList(list);
+    }
+    await saveProjectFolderHandle(id, dirHandle, dirHandle.name);
+    // state を localStorage に書き込んで起動
+    if (data.state && data.state.multitrack) localStorage.setItem(id + ':samplerMultitrack', JSON.stringify(data.state.multitrack));
+    if (data.state && data.state.sampler) {
+      localStorage.setItem(id + ':samplerStudioState', JSON.stringify({
+        banks: data.state.sampler.banks,
+        currentBank: data.state.sampler.currentBank,
+        masterVol: data.state.sampler.masterVol,
+        fadeTime: data.state.sampler.fadeTime,
+        fadeCurve: data.state.sampler.fadeCurve,
+        appMode: data.state.appMode || 'sampler',
+      }));
+    }
+    if (data.state && data.state.door) localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
+    projSwitchTo(id);
+  } catch(e) {
+    if (e && e.name === 'AbortError') return;
+    console.warn('[PWA] open from sampler failed', e);
+  }
+}
+
+// PWA インストールバナー
+function _showInstallBanner() {
+  if (document.getElementById('pwaInstallBanner')) return;
+  const bar = document.createElement('div');
+  bar.id = 'pwaInstallBanner';
+  bar.style.cssText = [
+    'position:fixed','bottom:80px','left:50%','transform:translateX(-50%)',
+    'background:linear-gradient(180deg, #15181F, #0E1115)',
+    'border:0.5px solid rgba(61,181,166,0.5)','border-radius:8px',
+    'padding:10px 16px','z-index:9000',
+    "font-family:'SF Mono', 'Menlo', monospace",'font-size:11px',
+    'color:#C8D8D0','box-shadow:0 4px 16px rgba(0,0,0,0.6)',
+    'display:flex','align-items:center','gap:12px',
+  ].join(';');
+  bar.innerHTML = `
+    <span style="color:#88D6C2;">📦 アプリとしてインストールできます</span>
+    <button id="pwaInstallBtn" style="padding:5px 12px;background:linear-gradient(180deg, rgba(61,181,166,0.25), rgba(61,181,166,0.10));border:0.5px solid rgba(61,181,166,0.5);color:#88D6C2;border-radius:4px;font-family:inherit;font-size:10px;letter-spacing:1px;cursor:pointer;font-weight:700;">インストール</button>
+    <button id="pwaInstallClose" style="background:none;border:none;color:rgba(200,216,208,0.5);font-size:14px;cursor:pointer;padding:0 4px;">×</button>
+  `;
+  document.body.appendChild(bar);
+  bar.querySelector('#pwaInstallBtn').onclick = async () => {
+    if (window._pwaPrompt) {
+      window._pwaPrompt.prompt();
+      const choice = await window._pwaPrompt.userChoice;
+      console.log('[PWA] install choice:', choice.outcome);
+      window._pwaPrompt = null;
+      _hideInstallBanner();
+    }
+  };
+  bar.querySelector('#pwaInstallClose').onclick = _hideInstallBanner;
+}
+function _hideInstallBanner() {
+  const bar = document.getElementById('pwaInstallBanner');
+  if (bar) try { document.body.removeChild(bar); } catch(_) {}
 }
 
 init();
