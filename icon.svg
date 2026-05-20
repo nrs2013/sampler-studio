@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- 背景: 暗色 + わずかなグラデーション -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1A1D24"/>
+      <stop offset="100%" stop-color="#0A0C10"/>
+    </linearGradient>
+    <!-- アクティブパッド (光る緑) -->
+    <linearGradient id="pad-on" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6FDEB8"/>
+      <stop offset="50%" stop-color="#3DB5A6"/>
+      <stop offset="100%" stop-color="#1E8579"/>
+    </linearGradient>
+    <!-- 非アクティブパッド (暗いグレー、ハイライト付き) -->
+    <linearGradient id="pad-off" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3A3A42"/>
+      <stop offset="50%" stop-color="#2A2A30"/>
+      <stop offset="100%" stop-color="#1A1A1F"/>
+    </linearGradient>
+    <!-- 緑パッドのグロー -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 背景 (角丸正方形、iOS / Android の maskable safe area 考慮) -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- 内側のうっすらフレーム -->
+  <rect x="4" y="4" width="504" height="504" rx="93" fill="none"
+        stroke="rgba(61,181,166,0.15)" stroke-width="1"/>
+
+  <!-- 4x4 パッドグリッド -->
+  <!-- パッドサイズ: 84, 隙間: 14, 開始: (54, 84) -->
+  <!-- 4x84 + 3x14 = 378, 中央配置で開始 x = (512-378)/2 = 67 -->
+  <!-- 縦は少し上寄せにして下に SAMPLER テキストの余白 -->
+  <g transform="translate(67, 80)">
+    <!-- Row 0 -->
+    <rect x="0"   y="0"   width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="98"  y="0"   width="84" height="84" rx="14" fill="url(#pad-on)" filter="url(#glow)"/>
+    <rect x="196" y="0"   width="84" height="84" rx="14" fill="url(#pad-on)" filter="url(#glow)"/>
+    <rect x="294" y="0"   width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <!-- Row 1 -->
+    <rect x="0"   y="98"  width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="98"  y="98"  width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="196" y="98"  width="84" height="84" rx="14" fill="url(#pad-on)" filter="url(#glow)"/>
+    <rect x="294" y="98"  width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <!-- Row 2 -->
+    <rect x="0"   y="196" width="84" height="84" rx="14" fill="url(#pad-on)" filter="url(#glow)"/>
+    <rect x="98"  y="196" width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="196" y="196" width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="294" y="196" width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <!-- Row 3 -->
+    <rect x="0"   y="294" width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="98"  y="294" width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="196" y="294" width="84" height="84" rx="14" fill="url(#pad-off)"/>
+    <rect x="294" y="294" width="84" height="84" rx="14" fill="url(#pad-on)" filter="url(#glow)"/>
+
+    <!-- パッド表面のハイライト (微妙なテカリ) — 全パッド共通 -->
+    <g opacity="0.18" pointer-events="none">
+      <rect x="6"   y="6"   width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="104" y="6"   width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="202" y="6"   width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="300" y="6"   width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="6"   y="104" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="104" y="104" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="202" y="104" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="300" y="104" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="6"   y="202" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="104" y="202" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="202" y="202" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="300" y="202" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="6"   y="300" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="104" y="300" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="202" y="300" width="72" height="20" rx="8" fill="#FFFFFF"/>
+      <rect x="300" y="300" width="72" height="20" rx="8" fill="#FFFFFF"/>
+    </g>
+  </g>
+
+  <!-- 下部の「SAMPLER」テキスト -->
+  <text x="256" y="478" text-anchor="middle"
+        font-family="'SF Mono', 'Menlo', monospace"
+        font-size="32" font-weight="700"
+        fill="#3DB5A6"
+        letter-spacing="6">SAMPLER</text>
+</svg>
