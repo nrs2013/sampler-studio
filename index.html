@@ -2730,6 +2730,25 @@
   .mt-ch-input::-webkit-inner-spin-button { display: none; }
   .mt-ch-input { -moz-appearance: textfield; }
 
+  /* v11.3.3: チャンネルアサインを <select> 化 (デバイス ch 数に動的追従、typo 防止) */
+  .mt-ch-select {
+    width: 38px; min-width: 0;
+    background: #06060A; border: 0.5px solid #1A1A1E; color: #FFFFFF;
+    padding: 2px 0; border-radius: 3px;
+    font-family: 'SF Mono', monospace; font-size: 11px;
+    text-align: center; font-weight: 700;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    cursor: pointer;
+    text-align-last: center;
+  }
+  .mt-ch-select:focus {
+    outline: none; color: #FFFFFF;
+    background: rgba(61,181,166,0.12); border-color: #3DB5A6;
+  }
+  .mt-ch-select option { background: #06060A; color: #FFFFFF; padding: 2px; }
+  .mt-ch-select option:disabled { color: #FF6464; }
+
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .do-sched-list { display: flex; flex-direction: column; }
@@ -3368,49 +3387,49 @@
           <div class="mt-ch-pill" style="--c:#4FA3FF">
             <span class="mt-ch-glabel">CL</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChClickL" min="1" max="32" value="1" onchange="mtSetCh('click','L',this.value)" title="CLICK L">
+              <select class="mt-ch-select" id="mtChClickL" onchange="mtSetCh('click','L',this.value)" title="CLICK L"><option value="1">1</option></select>
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChClickR" min="1" max="32" value="2" onchange="mtSetCh('click','R',this.value)" title="CLICK R">
+              <select class="mt-ch-select" id="mtChClickR" onchange="mtSetCh('click','R',this.value)" title="CLICK R"><option value="2">2</option></select>
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#FFB81C">
             <span class="mt-ch-glabel">VO</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="3" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L">
+              <select class="mt-ch-select" id="mtChVocalL" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L"><option value="3">3</option></select>
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="4" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
+              <select class="mt-ch-select" id="mtChVocalR" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R"><option value="4">4</option></select>
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#6BC724">
             <span class="mt-ch-glabel">CH</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="5" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L">
+              <select class="mt-ch-select" id="mtChChorusL" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L"><option value="5">5</option></select>
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="6" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R">
+              <select class="mt-ch-select" id="mtChChorusR" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R"><option value="6">6</option></select>
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#FF8A0F">
             <span class="mt-ch-glabel">OT</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="7" onchange="mtSetCh('other','L',this.value)" title="OTHER L">
+              <select class="mt-ch-select" id="mtChOtherL" onchange="mtSetCh('other','L',this.value)" title="OTHER L"><option value="7">7</option></select>
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="8" onchange="mtSetCh('other','R',this.value)" title="OTHER R">
+              <select class="mt-ch-select" id="mtChOtherR" onchange="mtSetCh('other','R',this.value)" title="OTHER R"><option value="8">8</option></select>
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#2E7AFF">
             <span class="mt-ch-glabel">BA</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChBassL" min="1" max="32" value="9" onchange="mtSetCh('bass','L',this.value)" title="BASS L">
+              <select class="mt-ch-select" id="mtChBassL" onchange="mtSetCh('bass','L',this.value)" title="BASS L"><option value="9">9</option></select>
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChBassR" min="1" max="32" value="10" onchange="mtSetCh('bass','R',this.value)" title="BASS R">
+              <select class="mt-ch-select" id="mtChBassR" onchange="mtSetCh('bass','R',this.value)" title="BASS R"><option value="10">10</option></select>
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#FF4A8F">
             <span class="mt-ch-glabel">DR</span>
             <div class="mt-ch-row">
-              <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="11" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L">
+              <select class="mt-ch-select" id="mtChDrumsL" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L"><option value="11">11</option></select>
               <span class="mt-ch-sep">·</span>
-              <input type="number" class="mt-ch-input" id="mtChDrumsR" min="1" max="32" value="12" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R">
+              <select class="mt-ch-select" id="mtChDrumsR" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R"><option value="12">12</option></select>
             </div>
           </div>
         </div>
@@ -3452,7 +3471,10 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.3.2';
+const APP_VERSION = 'v11.3.3';
+// v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
+//          デバイスの maxChannelCount に応じて選択肢が動的に変わる → typo 防止、範囲外を物理的に選べない
+//          保存済みアサインが現デバイス範囲外なら "N (範囲外)" として disabled option で表示 (履歴可視化)
 // v11.3.2: MULTI-TRACK 自己レビュー後の堅牢化パッチ (各オーディオ I/F 流れの再確認) —
 //          (A) mtSetDevice の ctx.close 前に onstatechange=null (誤リセット toast 抑制)
 //          (B) createChannelMerger を try ガード (上限 ch 超え時の例外で全停止しない)
@@ -10060,6 +10082,8 @@ async function mtInitCtx(options) {
   await mtRebuildRouting();
   // v11.3.2: 起動時に channelMap の範囲チェック (異デバイスで開いた時の保存設定が範囲外なケースを検知)
   try { _mtCheckChannelMapBounds(); } catch(_) {}
+  // v11.3.3: ch select の option を現デバイスの max に追従して再生成
+  try { _mtUpdateChSelects(); } catch(_) {}
   return mtCtx;
 }
 
@@ -10381,6 +10405,8 @@ async function mtSetDevice(deviceId) {
     try { mtFsLogError('info', `デバイス切替: ${state.multitrack.outputDeviceLabel || 'default'} (max ${maxCh}ch, ${sr}Hz)`); } catch(_) {}
     // v11.3.2: 新デバイスの max ch に対して channelMap が範囲外なら一括警告
     try { _mtCheckChannelMapBounds(); } catch(_) {}
+    // v11.3.3: ch select の option を新デバイスの max に追従して再生成
+    try { _mtUpdateChSelects(); } catch(_) {}
   } catch(e) {
     console.error('[mtSetDevice] failed', e);
     try { showToast(`⚠️ デバイス切替失敗: ${e.message || e} — 元のデバイスに戻します`); } catch(_) {}
@@ -10465,6 +10491,39 @@ function _mtFindChannelConflicts(currentGroup, currentSide, currentVal) {
     if (cm.R === currentVal) conflicts.push(`${g}.R`);
   }
   return conflicts;
+}
+
+// v11.3.3: チャンネルアサイン <select> の option を動的生成
+//          (デバイスの maxChannelCount に応じて選択肢が変わる、業界 DAW 標準パターン)
+//          範囲外の保存値があれば "N (範囲外)" として disabled option で表示 (履歴可視化)
+const _MT_CH_SELECTS = [
+  ['mtChClickL',  'click',  'L'], ['mtChClickR',  'click',  'R'],
+  ['mtChVocalL',  'vocal',  'L'], ['mtChVocalR',  'vocal',  'R'],
+  ['mtChChorusL', 'chorus', 'L'], ['mtChChorusR', 'chorus', 'R'],
+  ['mtChOtherL',  'other',  'L'], ['mtChOtherR',  'other',  'R'],
+  ['mtChBassL',   'bass',   'L'], ['mtChBassR',   'bass',   'R'],
+  ['mtChDrumsL',  'drums',  'L'], ['mtChDrumsR',  'drums',  'R'],
+];
+function _mtUpdateChSelects() {
+  // ctx 未初期化なら state の outputChannelCount を fallback として使う (デフォルト 2)
+  const maxCh = (mtCtx && mtCtx.destination ? (mtCtx.destination.maxChannelCount || 2)
+                                              : (state.multitrack.outputChannelCount || 2));
+  for (const [id, group, side] of _MT_CH_SELECTS) {
+    const sel = document.getElementById(id);
+    if (!sel) continue;
+    const cm = state.multitrack.channelMap[group];
+    if (!cm) continue;
+    const current = Math.max(1, (cm[side] | 0) || 1);
+    let html = '';
+    for (let i = 1; i <= maxCh; i++) {
+      html += `<option value="${i}"${i === current ? ' selected' : ''}>${i}</option>`;
+    }
+    // 範囲外の保存値: disabled で表示 (赤色) → ユーザーが「保存値はあるが今のデバイスでは使えない」と気付ける
+    if (current > maxCh) {
+      html += `<option value="${current}" selected disabled>${current} (範囲外)</option>`;
+    }
+    sel.innerHTML = html;
+  }
 }
 
 // v11.3.2: 起動時 / デバイス切替後の channelMap 範囲チェック
