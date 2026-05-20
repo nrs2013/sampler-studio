@@ -118,17 +118,26 @@
     font-size: 8px; color: #5A5A60; text-align: right;
   }
   .fader-track {
-    position: relative; width: 14px; background: #14141A; border-radius: 7px; cursor: pointer;
+    position: relative; width: 22px; background: #14141A; border-radius: 6px;
+    cursor: ns-resize;
+    border: 1px solid #25252A;
   }
   .fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
     background: linear-gradient(to top, #3DB5A6, #FF8A0F 80%, #E24B4A 95%);
-    border-radius: 7px;
+    border-radius: 5px;
   }
+  /* つまみ — 大きく持ちやすく、エッジに溝模様で物理感 */
   .fader-thumb {
-    position: absolute; left: -5px; right: -5px; height: 12px;
-    background: #E6E6EA; border-radius: 2px; transform: translateY(50%);
+    position: absolute; left: -10px; right: -10px; height: 20px;
+    background: linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%);
+    border-radius: 3px;
+    transform: translateY(50%);
     pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
+    background-image:
+      linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%),
+      repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
   }
   /* マスター L/R メーター — はっきり見える本番視認サイズ */
   .meters { display: flex; gap: 2px; align-items: stretch; flex-shrink: 0; }
@@ -3119,7 +3128,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.11';
+const APP_VERSION = 'v8.1.12';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
