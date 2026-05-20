@@ -3129,7 +3129,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.4';
+const APP_VERSION = 'v8.1.5';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3530,16 +3530,21 @@ function initAudio() {
   meterLoop();
 }
 
+// マスターメーターも PPM 化 (ピーク + attack/release smoothing + dB スケール)
+const _masterMeterState = { L: 0, R: 0 };
 function meterLoop() {
   if (!ctx) return;
   const bufL = new Uint8Array(analyserL.fftSize);
   const bufR = new Uint8Array(analyserR.fftSize);
   analyserL.getByteTimeDomainData(bufL);
   analyserR.getByteTimeDomainData(bufR);
+  // 0-255 を中央 128 を 0 として、|sample-128|/128 で 0..1 のピーク振幅
   let pkL = 0, pkR = 0;
   for (let i = 0; i < bufL.length; i++) {
-    pkL = Math.max(pkL, Math.abs(bufL[i] - 128));
-    pkR = Math.max(pkR, Math.abs(bufR[i] - 128));
+    const vL = bufL[i] - 128; const aL = vL < 0 ? -vL : vL;
+    const vR = bufR[i] - 128; const aR = vR < 0 ? -vR : vR;
+    if (aL > pkL) pkL = aL;
+    if (aR > pkR) pkR = aR;
   }
   // MULTI-TRACK (mtCtx) は別文脈なので、その master analyser からもピークを取り
   // 大きい方を採用 → 左パネル MASTER メーターはどのタブも共通で動く
@@ -3549,17 +3554,31 @@ function meterLoop() {
       mtMasterAnalyserR.getByteTimeDomainData(mtMasterAnalyserBufR);
       let mtPkL = 0, mtPkR = 0;
       for (let i = 0; i < mtMasterAnalyserBufL.length; i++) {
-        mtPkL = Math.max(mtPkL, Math.abs(mtMasterAnalyserBufL[i] - 128));
-        mtPkR = Math.max(mtPkR, Math.abs(mtMasterAnalyserBufR[i] - 128));
+        const vL = mtMasterAnalyserBufL[i] - 128; const aL = vL < 0 ? -vL : vL;
+        const vR = mtMasterAnalyserBufR[i] - 128; const aR = vR < 0 ? -vR : vR;
+        if (aL > mtPkL) mtPkL = aL;
+        if (aR > mtPkR) mtPkR = aR;
       }
-      pkL = Math.max(pkL, mtPkL);
-      pkR = Math.max(pkR, mtPkR);
+      if (mtPkL > pkL) pkL = mtPkL;
+      if (mtPkR > pkR) pkR = mtPkR;
     } catch(e) { /* mt context not ready */ }
   }
-  const pctL = Math.min(100, (pkL / 128) * 120);
-  const pctR = Math.min(100, (pkR / 128) * 120);
-  document.getElementById('meterL').style.height = pctL + '%';
-  document.getElementById('meterR').style.height = pctR + '%';
+  // 0..128 を 0..1 振幅に → dB 変換 → -48..+3 dB を 0..100%
+  const amp2pct = (amp) => {
+    const lin = amp / 128;
+    if (lin <= 0.0001) return 0;
+    const db = 20 * Math.log10(lin);
+    if (db <= -48) return 0;
+    if (db >= 3) return 100;
+    return ((db + 48) / 51) * 100;
+  };
+  const pctL = amp2pct(pkL);
+  const pctR = amp2pct(pkR);
+  // attack 即時 / release ゆっくり
+  _masterMeterState.L = (pctL > _masterMeterState.L) ? pctL : _masterMeterState.L * 0.85 + pctL * 0.15;
+  _masterMeterState.R = (pctR > _masterMeterState.R) ? pctR : _masterMeterState.R * 0.85 + pctR * 0.15;
+  document.getElementById('meterL').style.height = _masterMeterState.L.toFixed(1) + '%';
+  document.getElementById('meterR').style.height = _masterMeterState.R.toFixed(1) + '%';
   requestAnimationFrame(meterLoop);
 }
 
@@ -11565,11 +11584,15 @@ function mtFmtTime(s) {
 }
 
 // AnalyserNode から RMS を読み取り、L/R メーター高さを更新（dB scale）
+// PPM (Peak Programme Meter) スタイル: ピーク検出 + 高速 attack / ゆっくり release
+// → 実際の音量変化に追従する、本番卓っぽいメーター
+const mtMeterPeaks = {}; // { groupId: { L: pct, R: pct } }
 function mtUpdateMeters() {
   for (const g of MT_GROUPS) {
     const a = mtGroupAnalysers[g];
     const d = mtGroupAnalyserData[g];
     if (!a || !d) continue;
+    if (!mtMeterPeaks[g]) mtMeterPeaks[g] = { L: 0, R: 0 };
     for (const ch of ['L', 'R']) {
       const an = a[ch];
       const data = d[ch];
@@ -11577,16 +11600,27 @@ function mtUpdateMeters() {
       if (!an || !data || !fill) continue;
       if (typeof an.getFloatTimeDomainData !== 'function') continue;
       an.getFloatTimeDomainData(data);
-      let sumSq = 0;
-      for (let i = 0; i < data.length; i++) sumSq += data[i] * data[i];
-      const rms = Math.sqrt(sumSq / data.length);
-      const db = rms > 0.00001 ? 20 * Math.log10(rms) : -Infinity;
+      // ピーク検出 (max |sample|) — RMS より遥かに反応が良い
+      let peak = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = data[i] < 0 ? -data[i] : data[i];
+        if (v > peak) peak = v;
+      }
+      const db = peak > 0.00001 ? 20 * Math.log10(peak) : -100;
+      // -48dB → 0%, 0dB → 94%, +3dB → 100% (51dB レンジで dramatic に)
       let pct;
-      if (!isFinite(db)) pct = 0;
-      else if (db <= -60) pct = 0;
+      if (db <= -48) pct = 0;
       else if (db >= 3) pct = 100;
-      else pct = ((db + 60) / 63) * 100;
-      fill.style.height = pct + '%';
+      else pct = ((db + 48) / 51) * 100;
+      // attack 即時 / release ゆっくり (本物の PPM 挙動)
+      const prev = mtMeterPeaks[g][ch];
+      if (pct > prev) {
+        mtMeterPeaks[g][ch] = pct;
+      } else {
+        // 0.85 で残す = 約 60ms で半減 (release 〜120ms)
+        mtMeterPeaks[g][ch] = prev * 0.85 + pct * 0.15;
+      }
+      fill.style.height = mtMeterPeaks[g][ch].toFixed(1) + '%';
     }
   }
 }
