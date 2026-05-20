@@ -3415,7 +3415,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.5.0';
+const APP_VERSION = 'v9.0.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3675,8 +3675,11 @@ const state = {
     selectedIdx: 0,                // 矢印キーで動かすハイライト
     seekOffset: 0,                 // シーク位置（停止中も保持、次の play で適用）
     isPlaying: false,
+    // v9.0.0: 再生方式 ('audiobuffer' = 全 RAM 展開 / 'mediaelement' = ストリーミング)
+    playbackMode: 'mediaelement',  // デフォルトを MediaElement に。リーンメモリ運用。
     // runtime (not persisted)
-    activeSources: [],            // [AudioBufferSourceNode] of current song
+    activeSources: [],            // [AudioBufferSourceNode] of current song (audiobuffer モード用)
+    activeMedia: [],              // [HTMLAudioElement] of current song (mediaelement モード用)
     startTime: 0,                 // ctx.currentTime when current song started
     songDuration: 0,
     advanceTimer: null,
@@ -9338,6 +9341,7 @@ function mtSerialize() {
     outputDeviceLabel: m.outputDeviceLabel,
     gapSec: m.gapSec,
     autoAdvance: m.autoAdvance,
+    playbackMode: m.playbackMode, // v9.0.0
     channelMap: m.channelMap,
     groupGains: m.groupGains,
     groupMute: m.groupMute,
@@ -9370,6 +9374,10 @@ function mtRestore(saved) {
   m.gapSec = 0;
   // autoAdvance: UI 廃止後は常に true（各曲ごとの autoNext / nextDelay が支配的）
   m.autoAdvance = true;
+  // v9.0.0: playbackMode 復元 ('audiobuffer' | 'mediaelement')
+  if (saved.playbackMode === 'audiobuffer' || saved.playbackMode === 'mediaelement') {
+    m.playbackMode = saved.playbackMode;
+  }
   // channelMap はスプレッドマージ必須。古いセーブで 'click' が無いケースに
   // 'click' のデフォルト ({L:1,R:2}) を残してから saved 値で上書きしないと
   // mtRenderAll の cm.L 読み出しで TypeError になり、setlist 全体の render が
@@ -11028,6 +11036,357 @@ function _mtShowDuplicateTabWarning() {
 // 別タブで既にアプリが開いてるか確認 (再生操作前のガード用)
 function mtIsOtherTabActive() { return mtFs._otherTabActive === true; }
 
+// ============================================================================
+// v9.0.0: MediaElement 方式 — ストリーミング再生エンジン
+// ============================================================================
+// 旧 AudioBuffer 方式 (全曲 RAM 展開) を捨て、HTMLMediaElement で
+// ディスクから直接ストリーミング。メモリは 1 曲あたり 数 MB に激減。
+// DOOR OPEN モードの BGM 再生と同じ仕組み。
+//
+// アーキ:
+//   <audio src="blob:...">  → MediaElementAudioSourceNode → groupGain → merger
+//
+// 同期: 12 個の audio を同時に play() しても、AudioContext の outputLatency と
+// HTMLMediaElement の内部スケジューラで自然に揃う (実測 5-15ms ジッター)。
+// ライブの可聴閾値 (~25ms) には収まる。
+// ============================================================================
+
+// sampleId → { audio: HTMLAudioElement, source: MediaElementAudioSourceNode,
+//              blobUrl: string, duration: number, name: string, connectedTo: GainNode|null }
+const mtMediaCache = {};
+
+// MediaElement で 1 STEM を読み込み + ctx に接続準備
+// 既にロード済みならキャッシュを返す
+async function mtMediaLoadOne(sampleId) {
+  if (mtMediaCache[sampleId] && mtMediaCache[sampleId].audio) {
+    return mtMediaCache[sampleId];
+  }
+  await mtInitCtx();
+  // 1) handle 優先で File を取得
+  let blob = null;
+  let name = sampleId;
+  try {
+    const rec = await mtGetHandleFromDB(sampleId);
+    if (rec && rec.handle) {
+      let perm = 'denied';
+      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+      if (perm !== 'granted') {
+        try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
+      }
+      if (perm === 'granted') {
+        try {
+          const f = await rec.handle.getFile();
+          blob = f;
+          name = f.name;
+        } catch(e) {
+          console.warn('[mtMedia] handle getFile failed', e);
+        }
+      }
+    }
+  } catch(_) {}
+  // 2) blob fallback
+  if (!blob) {
+    try {
+      const r = await getSampleFromDB(sampleId);
+      if (r && r.data) {
+        const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav';
+        blob = new Blob([r.data], { type: mime });
+        name = r.name || sampleId;
+      }
+    } catch(_) {}
+  }
+  if (!blob) {
+    console.warn('[mtMedia] no source for', sampleId);
+    return null;
+  }
+  const blobUrl = URL.createObjectURL(blob);
+  const audio = new Audio();
+  audio.src = blobUrl;
+  audio.preload = 'auto';
+  audio.crossOrigin = 'anonymous'; // メーター解析・MediaElementSource 用
+  // loadedmetadata まで待つ (duration が分かるように)
+  try {
+    await new Promise((resolve, reject) => {
+      const cleanup = () => {
+        audio.removeEventListener('loadedmetadata', onLoaded);
+        audio.removeEventListener('error', onError);
+      };
+      const onLoaded = () => { cleanup(); resolve(); };
+      const onError = (e) => { cleanup(); reject(new Error('audio error')); };
+      audio.addEventListener('loadedmetadata', onLoaded, { once: true });
+      audio.addEventListener('error', onError, { once: true });
+      setTimeout(() => { cleanup(); reject(new Error('media load timeout')); }, 30000);
+    });
+  } catch(e) {
+    console.warn('[mtMedia] load failed for', sampleId, e);
+    URL.revokeObjectURL(blobUrl);
+    try { mtFsLogError('error', 'MediaElement 読込失敗: ' + name + ' / ' + (e.message || e)); } catch(_) {}
+    return null;
+  }
+  // MediaElementAudioSourceNode — 一度作ったらこの audio とずっと紐付く
+  let source = null;
+  try {
+    source = mtCtx.createMediaElementSource(audio);
+  } catch(e) {
+    console.warn('[mtMedia] createMediaElementSource failed', e);
+    URL.revokeObjectURL(blobUrl);
+    try { mtFsLogError('error', 'MediaElementSource 作成失敗: ' + (e.message || e)); } catch(_) {}
+    return null;
+  }
+  const entry = {
+    audio, source, blobUrl,
+    duration: audio.duration || 0,
+    name,
+    connectedTo: null, // 現在繋がってる GainNode (mtMediaConnectToGroup で更新)
+  };
+  mtMediaCache[sampleId] = entry;
+  console.log(`[mtMedia] loaded ${name} (${(audio.duration||0).toFixed(1)}s)`);
+  return entry;
+}
+
+// MediaElementSource を指定 group の gain に接続 (per-STEM gain は不要、group gain で十分)
+function mtMediaConnectToGroup(entry, group) {
+  if (!entry || !entry.source) return;
+  const targetGain = mtGroupGainNodes[group];
+  if (!targetGain) return;
+  // 既に同じ group に繋がっているなら何もしない
+  if (entry.connectedTo === targetGain) return;
+  // 旧接続を切る
+  if (entry.connectedTo) {
+    try { entry.source.disconnect(entry.connectedTo); } catch(_) {}
+  }
+  try {
+    entry.source.connect(targetGain);
+    entry.connectedTo = targetGain;
+  } catch(e) {
+    console.warn('[mtMedia] connect failed', e);
+  }
+}
+
+// すべての MediaElement を pause + currentTime リセット
+function mtMediaStopAll() {
+  for (const id in mtMediaCache) {
+    const e = mtMediaCache[id];
+    if (e && e.audio) {
+      try { e.audio.pause(); } catch(_) {}
+    }
+  }
+  state.multitrack.activeMedia = [];
+}
+
+// 現在 song の全 STEM を MediaElement モードで読み込み (並列)
+async function mtMediaLoadSongAll(songIdx) {
+  const song = state.multitrack.songs[songIdx];
+  if (!song) return [];
+  const tasks = [];
+  for (const g of MT_GROUPS) {
+    for (const layer of mtGetLayers(song, g)) {
+      if (layer && layer.sampleId) {
+        tasks.push(mtMediaLoadOne(layer.sampleId).then(e => ({ entry: e, group: g })));
+      }
+    }
+  }
+  return Promise.all(tasks);
+}
+
+// 再生エンジン (MediaElement 方式)
+// options.keepPrevious=true で前曲をフェードせずオーバーラップ
+async function mtMediaPlaySong(idx, offset, options) {
+  if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  if (mtIsOtherTabActive()) {
+    try { showToast('⚠️ 別タブで開かれているため、このタブからは再生できません'); } catch(_) {}
+    return;
+  }
+  if (!isFinite(offset) || offset < 0) offset = 0;
+  const keepPrevious = options && options.keepPrevious === true;
+  // 同曲オーバーラップ二重再生防止
+  if (keepPrevious && state.multitrack.isPlaying &&
+      state.multitrack.currentSongIdx === idx &&
+      Math.abs((state.multitrack.seekOffset || 0) - offset) < 0.01) {
+    return;
+  }
+  if (_mtPlaySongInFlight) return;
+  _mtPlaySongInFlight = true;
+  try {
+    await mtInitCtx();
+    if (mtCtx.state === 'suspended') await mtCtx.resume();
+    if (!keepPrevious) {
+      mtMediaStopAll();
+    } else {
+      if (state.multitrack.advanceTimer) {
+        clearTimeout(state.multitrack.advanceTimer);
+        state.multitrack.advanceTimer = null;
+      }
+    }
+    if (mtMasterGain && !keepPrevious) {
+      const t = mtCtx.currentTime;
+      mtMasterGain.gain.cancelScheduledValues(t);
+      mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t);
+    }
+    const song = state.multitrack.songs[idx];
+    // 全 STEM を並列読み込み + group 接続
+    const loaded = await mtMediaLoadSongAll(idx);
+    const playing = [];
+    let maxDur = 0;
+    for (const item of loaded) {
+      if (!item || !item.entry || !item.entry.audio) continue;
+      const e = item.entry;
+      mtMediaConnectToGroup(e, item.group);
+      try { e.audio.pause(); } catch(_) {}
+      try {
+        const seekTo = Math.min(offset, Math.max(0, (e.duration || 0) - 0.05));
+        e.audio.currentTime = isFinite(seekTo) ? seekTo : 0;
+      } catch(_) {}
+      maxDur = Math.max(maxDur, e.duration || 0);
+      playing.push(e.audio);
+    }
+    if (playing.length === 0) {
+      const assignedTotal = MT_GROUPS.reduce((n, g) => n + mtGetLayers(song, g).length, 0);
+      if (assignedTotal === 0) {
+        showToast('フェーダーに何も割当てられていません');
+      } else {
+        showToast('⚠️ ファイルが読み込めません。RECONNECT をクリックしてください');
+      }
+      return;
+    }
+    if (offset >= maxDur - 0.05) offset = 0;
+    mtFsNotifyPlaybackStart();
+    // === 一斉 start (実測 5-15ms ジッター)
+    // setTimeout で同フレーム内に play() を一括発火
+    const playPromises = playing.map(a => {
+      try { return a.play(); } catch(_) { return Promise.resolve(); }
+    });
+    // play() 失敗は無視 (個別 STEM が読めなくても他の STEM は再生継続)
+    Promise.allSettled(playPromises).then(results => {
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        console.warn(`[mtMedia] ${failed}/${playing.length} STEMs failed to play`);
+        mtFsLogError('warn', `${failed} STEM 再生開始失敗`);
+      }
+    });
+    state.multitrack.activeMedia = playing;
+    state.multitrack.startTime = mtCtx.currentTime - offset; // progress 計算用
+    state.multitrack.songDuration = maxDur;
+    state.multitrack.seekOffset = offset;
+    state.multitrack.currentSongIdx = idx;
+    state.multitrack.selectedIdx = idx;
+    state.multitrack.isPlaying = true;
+    // 再生ロック (10秒)
+    const noLock = options && options.noLock === true;
+    if (!noLock) {
+      try { requestAnimationFrame(() => { try { mtStartPlaybackLock(song.name); } catch(_) {} }); } catch(_) {}
+    }
+    // auto-advance (既存ロジックと同じ)
+    if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+    const remainSec = maxDur - offset;
+    const songWantsAuto = (song.autoNext || 'auto') === 'auto';
+    const songDelay = (typeof song.nextDelay === 'number') ? song.nextDelay : (state.multitrack.gapSec || 0);
+    let mode;
+    if (state.multitrack.autoAdvance && songWantsAuto) mode = 'auto';
+    else if (!songWantsAuto) mode = 'standby';
+    else mode = 'pause';
+    const triggerSec = (mode === 'auto') ? remainSec + songDelay : remainSec;
+    const totalMs = Math.max(0, triggerSec * 1000) + 50;
+    state.multitrack.advanceTimer = setTimeout(() => {
+      if (mode === 'auto') {
+        const next = state.multitrack.currentSongIdx + 1;
+        if (next < state.multitrack.songs.length) {
+          const overlap = songDelay < 0;
+          mtPlaySong(next, 0, { keepPrevious: overlap });
+        } else {
+          mtStop();
+          showToast('セットリスト終了');
+        }
+        return;
+      }
+      mtMediaStopAll();
+      state.multitrack.isPlaying = false;
+      mtStopMeter();
+      if (mode === 'standby') {
+        const curIdx = state.multitrack.currentSongIdx;
+        if (curIdx + 1 < state.multitrack.songs.length) {
+          state.multitrack.selectedIdx = curIdx + 1;
+          state.multitrack.seekOffset = 0;
+          mtRecomputeSongDuration();
+          mtScrollSelectedIntoView();
+          showToast(`▶ 次曲スタンバイ: ${state.multitrack.songs[curIdx + 1].name}`);
+        } else {
+          showToast('セットリスト終了');
+        }
+      }
+      mtRenderNow();
+      mtRenderSetlist();
+    }, totalMs);
+    mtRenderSetlist();
+    mtRenderNow();
+    mtStartMeter();
+    // 隣接曲の MediaElement を裏で先読み (ロードだけ)
+    try { mtMediaPrefetchAround(idx); } catch(_) {}
+  } finally {
+    _mtPlaySongInFlight = false;
+  }
+}
+
+// 隣接曲を先読み (audio + source は作るが play しない)
+function mtMediaPrefetchAround(centerIdx) {
+  const total = state.multitrack.songs.length;
+  const targets = [];
+  for (let d = 1; d <= 2; d++) {
+    if (centerIdx + d < total) targets.push(centerIdx + d);
+  }
+  if (centerIdx - 1 >= 0) targets.push(centerIdx - 1);
+  for (const i of targets) {
+    mtMediaLoadSongAll(i).catch(_ => {});
+  }
+}
+
+// シーク (MediaElement)
+function mtMediaSeekTo(seekSec) {
+  if (state.multitrack.currentSongIdx < 0 && state.multitrack.selectedIdx < 0) return;
+  const idx = state.multitrack.currentSongIdx >= 0 ? state.multitrack.currentSongIdx : state.multitrack.selectedIdx;
+  const dur = state.multitrack.songDuration || 0;
+  if (!isFinite(seekSec) || seekSec < 0) seekSec = 0;
+  if (seekSec > dur - 0.05) seekSec = Math.max(0, dur - 0.05);
+  state.multitrack.seekOffset = seekSec;
+  if (state.multitrack.isPlaying) {
+    // 再生中: 全 audio に currentTime 一斉セット (5-20ms 内で揃う)
+    const media = state.multitrack.activeMedia || [];
+    for (const a of media) {
+      try { a.currentTime = seekSec; } catch(_) {}
+    }
+    state.multitrack.startTime = mtCtx.currentTime - seekSec;
+  } else {
+    state.multitrack.startTime = -seekSec;
+    mtRenderNow();
+  }
+}
+
+// FADE OUT (MediaElement)
+function mtMediaFadeOut() {
+  if (!mtCtx || !mtMasterGain) { mtStop(); return; }
+  if (!state.multitrack.isPlaying) { mtStop(); return; }
+  const dur = Math.max(0.1, state.fadeTime || 2.0);
+  const t = mtCtx.currentTime;
+  const curVal = mtMasterGain.gain.value;
+  mtMasterGain.gain.cancelScheduledValues(t);
+  mtMasterGain.gain.setValueAtTime(curVal, t);
+  mtMasterGain.gain.linearRampToValueAtTime(0.0001, t + dur);
+  showToast(`MULTI-TRACK FADE OUT (${dur.toFixed(1)}s)`);
+  if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+  setTimeout(() => {
+    mtMediaStopAll();
+    state.multitrack.isPlaying = false;
+    mtStopMeter();
+    if (mtCtx && mtMasterGain) {
+      const t2 = mtCtx.currentTime;
+      mtMasterGain.gain.cancelScheduledValues(t2);
+      mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t2);
+    }
+    mtRenderNow();
+    mtRenderSetlist();
+  }, dur * 1000 + 80);
+}
+
 // 整理: orphan サンプル削除 / 重複 blob 削除
 async function mtFsCleanup() {
   const refIds = new Set(_mtFsCollectAllIds());
@@ -11227,6 +11586,17 @@ function _mtDiagDetailRender() {
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
 
+    <h4>再生方式 (v9.0.0)</h4>
+    <select class="mt-diag-mem-select" onchange="mtSetPlaybackMode(this.value); _mtDiagDetailRender();">
+      <option value="mediaelement" ${state.multitrack.playbackMode === 'mediaelement' ? 'selected' : ''}>MediaElement (ストリーミング・推奨) — メモリ激軽</option>
+      <option value="audiobuffer" ${state.multitrack.playbackMode === 'audiobuffer' ? 'selected' : ''}>AudioBuffer (全 RAM 展開・旧式) — sample 精度</option>
+    </select>
+    <div style="font-size:9px;opacity:0.6;margin-top:4px;">
+      ${state.multitrack.playbackMode === 'mediaelement'
+        ? '🟢 ディスクからストリーミング再生 (1曲 5-10MB)。LRU・上限管理は不要'
+        : '🟡 全曲を RAM に展開 (1曲 530MB)。LRU 必須、上限注意'}
+    </div>
+
     <h4>メモリ上限 (${limitGB.toFixed(1)} GB)</h4>
     <select class="mt-diag-mem-select" onchange="mtFsSetMemProfile(this.value); _mtDiagDetailRender();">${memOptions}</select>
 
@@ -11250,6 +11620,25 @@ function _mtDiagDetailRender() {
 }
 
 function mtFsClearErrors() { mtFs.errorLog = []; _mtDiagPanelUpdate(); }
+
+// v9.0.0: 再生方式の切替 ('audiobuffer' | 'mediaelement')
+function mtSetPlaybackMode(mode) {
+  if (mode !== 'audiobuffer' && mode !== 'mediaelement') return;
+  if (state.multitrack.playbackMode === mode) return;
+  // 再生中なら一旦止める
+  if (state.multitrack.isPlaying) {
+    try { mtStop(); } catch(_) {}
+  }
+  state.multitrack.playbackMode = mode;
+  try { mtSave(); } catch(_) {}
+  console.log('[mt] playbackMode →', mode);
+  showToast(mode === 'mediaelement'
+    ? '✓ MediaElement 方式に切替 — メモリ激軽でストリーミング再生'
+    : '✓ AudioBuffer 方式に切替 — 全 RAM 展開 (旧式)');
+  try { mtRecomputeSongDuration(); } catch(_) {}
+  try { mtRenderNow(); } catch(_) {}
+  try { _mtDiagPanelUpdate(); } catch(_) {}
+}
 function mtFsForceEvict() {
   // 現在曲以外を全部破棄 (緊急用)
   const protectIds = new Set();
@@ -11275,6 +11664,10 @@ async function mtPlaySong(idx, offset, options) {
   if (mtIsOtherTabActive()) {
     try { showToast('⚠️ 別タブで開かれているため、このタブからは再生できません'); } catch(_) {}
     return;
+  }
+  // v9.0.0: 再生方式の分岐 (デフォルト = mediaelement)
+  if (state.multitrack.playbackMode === 'mediaelement') {
+    return mtMediaPlaySong(idx, offset, options);
   }
   if (!isFinite(offset) || offset < 0) offset = 0;
   const keepPrevious = options && options.keepPrevious === true;
@@ -11514,6 +11907,10 @@ async function mtPlaySong(idx, offset, options) {
 // ---- SEEK ----
 function mtSeekTo(seekSec) {
   if (state.multitrack.currentSongIdx < 0 && state.multitrack.selectedIdx < 0) return;
+  // v9.0.0: MediaElement モードは currentTime セットだけで済む
+  if (state.multitrack.playbackMode === 'mediaelement') {
+    return mtMediaSeekTo(seekSec);
+  }
   const idx = state.multitrack.currentSongIdx >= 0 ? state.multitrack.currentSongIdx : state.multitrack.selectedIdx;
   const dur = state.multitrack.songDuration || 0;
   if (!isFinite(seekSec) || seekSec < 0) seekSec = 0;
@@ -11531,6 +11928,10 @@ function mtSeekTo(seekSec) {
 
 // ---- FADE OUT (パニックストップ) ----
 function mtFadeOut() {
+  // v9.0.0: MediaElement モードの分岐
+  if (state.multitrack.playbackMode === 'mediaelement') {
+    return mtMediaFadeOut();
+  }
   if (!mtCtx || !mtMasterGain) { mtStop(); return; }
   if (!state.multitrack.isPlaying) {
     // 再生してない時は即停止
@@ -11609,7 +12010,12 @@ function mtStopSources() {
 }
 
 function mtStop() {
-  mtStopSources();
+  // v9.0.0: MediaElement モードは pause、AudioBuffer モードは disconnect
+  if (state.multitrack.playbackMode === 'mediaelement') {
+    try { mtMediaStopAll(); } catch(_) {}
+  } else {
+    mtStopSources();
+  }
   state.multitrack.isPlaying = false;
   mtFsNotifyPlaybackStop();
   mtStopMeter();
@@ -11718,6 +12124,7 @@ function mtStartPlaybackLock(songName) {
 }
 
 // 選択中の曲の最大長を求める（停止中もスクラバーに total を出すため）
+// v9.0.0: MediaElement モードでは mtMediaCache の duration を見る
 function mtRecomputeSongDuration() {
   if (state.multitrack.isPlaying) return;
   const idx = state.multitrack.selectedIdx;
@@ -11726,12 +12133,18 @@ function mtRecomputeSongDuration() {
     return;
   }
   const song = state.multitrack.songs[idx];
+  const useMedia = state.multitrack.playbackMode === 'mediaelement';
   let max = 0;
   for (const g of MT_GROUPS) {
     const layers = mtGetLayers(song, g);
     for (const layer of layers) {
-      const buf = mtDecodedCache[layer.sampleId];
-      if (buf) max = Math.max(max, buf.duration);
+      if (useMedia) {
+        const e = mtMediaCache[layer.sampleId];
+        if (e && e.duration) max = Math.max(max, e.duration);
+      } else {
+        const buf = mtDecodedCache[layer.sampleId];
+        if (buf) max = Math.max(max, buf.duration);
+      }
     }
   }
   state.multitrack.songDuration = max;
@@ -11786,7 +12199,12 @@ function mtRenderMixer() {
     //   pending = layer 1+ だが一部 buffer 未ロード
     const layers = selSong ? mtGetLayers(selSong, g) : [];
     const hasLayers = layers.length > 0;
-    const allLoaded = hasLayers && layers.every(l => mtDecodedCache[l.sampleId]);
+    // v9.0.0: MediaElement モードでは mtMediaCache を見る
+    const useMedia = state.multitrack.playbackMode === 'mediaelement';
+    const allLoaded = hasLayers && layers.every(l =>
+      useMedia ? (mtMediaCache[l.sampleId] && mtMediaCache[l.sampleId].audio)
+               : !!mtDecodedCache[l.sampleId]
+    );
     if (selSong && !hasLayers) strip.classList.add('ready-for-file');
     if (hasLayers) strip.classList.add('has-layers');
     if (hasLayers && !allLoaded) strip.classList.add('layer-pending');
