@@ -665,11 +665,28 @@
      Previously we hid PLAY MODE/FADE系 in DOOR mode, but the user wants them visible too. */
 
   /* DOOR OPEN PAGE */
-  #doorPage { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
-  /* v11.1.1: 上段を下段の 2 カラム grid と同じ列幅に揃える
-     左カラム = BGM 2つ並べ / 右カラム = NOW 時計 */
-  .do-top { display: grid; grid-template-columns: minmax(360px, 0.85fr) 1fr; gap: 8px; }
-  .do-top-bgm-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-height: 0; }
+  /* v11.2.0: doorPage 全体を 2 カラム grid に統一
+     左カラム: BGMペア (row1) / DUCK (row2) / 下段プール (row3, 1fr)
+     右カラム: NOW (row1-2) / SCHEDULE (row3, 1fr) */
+  #doorPage {
+    display: grid;
+    grid-template-columns: minmax(360px, 0.85fr) 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 8px;
+    flex: 1; min-height: 0;
+    overflow: hidden;
+  }
+  .do-top-bgm-pair { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-height: 0; }
+  /* DUCK 帯を左カラム row2 に */
+  .do-duck-strip.do-grid { grid-column: 1; grid-row: 2; }
+  /* 下段プール: 左カラム row3 */
+  .do-left-bottom-col { grid-column: 1; grid-row: 3; min-height: 0; overflow-y: auto;
+                        display: flex; flex-direction: column; gap: 8px; }
+  /* NOW カード: 右カラム row1-2 (BGMペア + DUCK の高さ分) */
+  #doNowCard.do-grid { grid-column: 2; grid-row: 1 / span 2; }
+  /* SCHEDULE カード: 右カラム row3 (下段、フル高) */
+  .do-sched-card.do-grid { grid-column: 2; grid-row: 3; min-height: 0;
+                           display: flex; flex-direction: column; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
   .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -3014,8 +3031,8 @@
 
   <!-- DOOR OPEN PAGE -->
   <div id="doorPage" style="display:none;">
-    <div class="do-top">
-      <!-- v11.1.1: 左カラム (BGM 2つを内側で 2 分割) -->
+      <!-- v11.2.0: doorPage 全体が grid。直接 grid item を配置 -->
+      <!-- 左カラム row1: BGM 2つを内側で 2 分割 -->
       <div class="do-top-bgm-pair">
       <!-- DOOR OPEN BGM -->
       <div class="do-card do-bgm-card" id="doBgmCardDoor" data-slot="door">
@@ -3090,24 +3107,9 @@
         </div>
       </div>
       </div><!-- /.do-top-bgm-pair -->
-      <!-- v11.1.0/1: NOW / NEXT (右カラム、SCHEDULE と列幅が揃う) -->
-      <div class="do-card" id="doNowCard">
-        <div class="now-block">
-          <div class="do-card-head">NOW</div>
-          <div class="do-clock-now" id="doClockNow">--:--</div>
-          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
-        </div>
-        <div class="now-block next-block">
-          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
-          <div class="do-clock-next-name" id="doNextName">予定なし</div>
-          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
-        </div>
-      </div>
 
-    </div>
-
-    <!-- DUCK 設定（横長帯） -->
-    <div class="do-card do-duck-strip">
+    <!-- DUCK 設定（横長帯 — 左カラム row2） -->
+    <div class="do-card do-duck-strip do-grid">
       <span class="do-card-head" style="margin:0;">DUCK 設定</span>
       <span class="do-duck-label">下げ幅</span>
       <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div><div class="do-duck-bar-thumb" id="doDuckDepthThumb" style="left:75%;"></div></div>
@@ -3123,11 +3125,11 @@
       <span style="font-size:9px; color:#6A6A70; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
     </div>
 
-    <!-- 2カラム: 左=素材プール / 右=スケジュール -->
-    <div class="do-bottom" style="flex:1; min-height:0; display:grid; grid-template-columns: minmax(360px, 0.85fr) 1fr; gap:8px;">
+    <!-- v11.2.0: 下段は doorPage grid の row3 に展開
+         左カラム = 素材プール、右カラム = SCHEDULE (rowspan で右カラム上部に NOW を別配置) -->
 
-      <!-- 左カラム: 素材プール（ANNOUNCE + VIDEO LIBRARY） -->
-      <div style="display:flex; flex-direction:column; gap:8px; min-height:0; overflow-y:auto;">
+      <!-- 左カラム row3: 素材プール（ANNOUNCE + VIDEO LIBRARY + LOGO） -->
+      <div class="do-left-bottom-col">
         <div class="do-card" id="doLibCard">
           <div class="do-sched-head">
             <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材</span>
@@ -3199,8 +3201,8 @@
         </div>
       </div>
 
-      <!-- 右カラム: SCHEDULE（フル高） -->
-      <div class="do-card" style="display:flex; flex-direction:column; min-height:0;">
+      <!-- v11.2.0: 右カラム row3 — SCHEDULE（フル高、上に伸びる） -->
+      <div class="do-card do-grid do-sched-card">
         <div class="do-sched-head">
           <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -3212,7 +3214,19 @@
         <button class="do-sched-add" onclick="doSchedAdd()">＋ 時刻を追加</button>
       </div>
 
-    </div>
+      <!-- v11.2.0: 右カラム row1-2 — NOW / NEXT 時計 (SCHEDULE の上、BGM ペア+DUCK と同じ高さ) -->
+      <div class="do-card do-grid" id="doNowCard">
+        <div class="now-block">
+          <div class="do-card-head">NOW</div>
+          <div class="do-clock-now" id="doClockNow">--:--</div>
+          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
+        </div>
+        <div class="now-block next-block">
+          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
+          <div class="do-clock-next-name" id="doNextName">予定なし</div>
+          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
+        </div>
+      </div>
   </div>
 
   <!-- ====================== MULTI-TRACK PAGE ====================== -->
@@ -3426,7 +3440,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.1.1';
+const APP_VERSION = 'v11.2.0';
+// v11.2.0: DOOR OPEN 全体 grid 化 — DUCK を左に、NOW + SCHEDULE 右カラム連続
 // v11.1.1: DOOR OPEN 上下の列幅を揃える (BGM 2 つを左カラム内で 2 分割、NOW を右カラム)
 // v11.1.0: DOOR OPEN レイアウト変更 — 左から DOOR/WORKOUT BGM、右に時計 (NOW)
 // v11.0.1: MPC 風サンプラーアイコン追加 (4x4 パッド + 緑LED)
