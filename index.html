@@ -3128,7 +3128,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.12';
+const APP_VERSION = 'v8.1.13';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9743,14 +9743,18 @@ async function mtEnsureBufferLoaded(sampleId, askPermission = false) {
 // targetGroup = null/'' なら unassigned プールに戻す
 async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
   const toUnassigned = !targetGroup;
-  if (!toUnassigned && !MT_GROUPS.includes(targetGroup)) return;
+  if (!toUnassigned && !MT_GROUPS.includes(targetGroup)) {
+    console.warn('[mtAssign] invalid targetGroup', targetGroup);
+    return;
+  }
   const song = state.multitrack.songs[songIdx];
-  if (!song) return;
-  mtPushUndo();
+  if (!song) { console.warn('[mtAssign] song not found', songIdx); return; }
+  if (!song.tracks) song.tracks = {};
   if (!song.unassigned) song.unassigned = [];
-  // 1) ファイルを探す: unassigned / 別グループの layers / 同グループ
+  mtPushUndo();
+  // 1) ファイルを探す: unassigned / 別グループ
   let entry = null;
-  let srcKind = null;        // 'unassigned' | 'group'
+  let srcKind = null;
   let srcGroup = null;
   let srcLayerIdx = -1;
   const ui = song.unassigned.findIndex(u => u.sampleId === sampleId);
@@ -9768,46 +9772,70 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
       }
     }
   }
-  if (!entry) return;
+  if (!entry) { console.warn('[mtAssign] sampleId not found', sampleId); return; }
+  console.log('[mtAssign] before',
+    { sampleId, name: entry.name, from: (srcKind === 'group' ? srcGroup : 'unassigned'), to: targetGroup || 'unassigned' });
   // 同じ場所への移動は無視
-  if (srcKind === 'group' && srcGroup === targetGroup) return;
-  if (srcKind === 'unassigned' && toUnassigned) return;
+  if (srcKind === 'group' && srcGroup === targetGroup) {
+    console.log('[mtAssign] same group, skip');
+    return;
+  }
+  if (srcKind === 'unassigned' && toUnassigned) {
+    console.log('[mtAssign] already unassigned, skip');
+    return;
+  }
   // 1.5) バッファ lazy-load（permission 要求あり）
   if (!mtDecodedCache[sampleId]) {
     const buf = await mtEnsureBufferLoaded(sampleId, true);
     if (!buf) {
-      showToast('⚠️ ファイルが復元できません。再ドロップしてください: ' + entry.name);
-      console.error('[mt] assign failed: buffer not loadable', { sampleId, entry });
+      showToast('⚠️ ファイルが復元できません: ' + entry.name);
+      console.error('[mtAssign] buffer not loadable', { sampleId, entry });
       return;
     }
   }
-  // 2) src から外す
+  // 2) src から外す (immutable な再代入で確実に: 同じ entry 参照を絶対に持たない)
   if (srcKind === 'unassigned') {
-    song.unassigned.splice(ui, 1);
+    song.unassigned = song.unassigned.filter(u => u.sampleId !== sampleId);
   } else if (srcKind === 'group') {
-    const layers = mtGetLayers(song, srcGroup).slice();
-    layers.splice(srcLayerIdx, 1);
-    if (layers.length === 0) delete song.tracks[srcGroup];
-    else song.tracks[srcGroup] = layers;
+    const remaining = mtGetLayers(song, srcGroup).filter(l => l.sampleId !== sampleId);
+    if (remaining.length === 0) {
+      delete song.tracks[srcGroup];
+    } else {
+      song.tracks[srcGroup] = remaining;
+    }
   }
   // 3) 行き先へ
   if (toUnassigned) {
-    if (!song.unassigned) song.unassigned = [];
-    song.unassigned.push(entry);
+    song.unassigned = [...song.unassigned, entry];
   } else {
     const targetLayers = mtGetLayers(song, targetGroup);
     song.tracks[targetGroup] = [...targetLayers, entry];
   }
+  // 4) 検証: 同じ sampleId が複数箇所にいないか
+  let count = 0;
+  for (const g of MT_GROUPS) {
+    count += mtGetLayers(song, g).filter(l => l.sampleId === sampleId).length;
+  }
+  count += song.unassigned.filter(u => u.sampleId === sampleId).length;
+  if (count !== 1) {
+    console.error('[mtAssign] integrity check failed: sampleId appears', count, 'times', { sampleId });
+  }
+  // 5) 保存 + 全 UI 強制再描画
   mtSave();
   mtRecomputeSongDuration();
-  mtRenderSetlist();
-  mtRenderNow();
+  mtRenderSetlist();   // 内部で mtRenderMixer 呼ぶ (v7.25.3)
+  mtRenderMixer();     // 念のため明示的にもう一度
+  mtRenderNow();       // SELECTED SONG カードも更新
+  console.log('[mtAssign] after', {
+    tracks: Object.fromEntries(MT_GROUPS.map(g => [g, mtGetLayers(song, g).map(l => l.name)])),
+    unassigned: song.unassigned.map(u => u.name)
+  });
   if (toUnassigned) {
     showToast(`未割当に戻し: ${entry.name}`);
   } else {
-    const count = song.tracks[targetGroup].length;
-    showToast(count > 1
-      ? `${MT_GROUP_LABELS[targetGroup]} に追加 (layer ${count}): ${entry.name}`
+    const cnt = song.tracks[targetGroup].length;
+    showToast(cnt > 1
+      ? `${MT_GROUP_LABELS[targetGroup]} に追加 (layer ${cnt}): ${entry.name}`
       : `${MT_GROUP_LABELS[targetGroup]} ← ${entry.name}`);
   }
 }
