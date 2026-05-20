@@ -1350,30 +1350,61 @@
     padding: 8px 0; position: relative;
     user-select: none; -webkit-user-select: none;
   }
-  /* ロケート ドロップ ハンドル — 掴んでタイムラインに離す */
+  /* ロケート ドロップ ハンドル — マーカーと同じ黄色三角デザイン */
   .mt-locate-drop {
     width: 26px; height: 22px; padding: 0; flex-shrink: 0;
-    background: linear-gradient(180deg, rgba(255,184,28,0.22), rgba(255,184,28,0.04));
+    background: linear-gradient(180deg, rgba(255,184,28,0.18), rgba(255,184,28,0.04));
     border: 0.5px solid rgba(255,184,28,0.4); border-radius: 4px;
-    color: #FFB81C; cursor: grab;
+    cursor: grab;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; line-height: 1; font-family: inherit;
     transition: all 0.12s;
+    position: relative;
   }
-  .mt-locate-drop:hover { filter: brightness(1.2); border-color: #FFB81C; }
+  /* ボタン中央に黄色三角 + 縦線 (= マーカーと同じ見た目) */
+  .mt-locate-glyph {
+    position: relative; width: 8px; height: 14px;
+    pointer-events: none;
+    display: block;
+  }
+  .mt-locate-glyph::before {
+    content: ''; position: absolute; left: 50%; top: 0;
+    width: 0; height: 0; transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #FFB81C;
+    filter: drop-shadow(0 0 4px rgba(255,184,28,0.6));
+  }
+  .mt-locate-glyph::after {
+    content: ''; position: absolute; left: 50%; top: 6px; bottom: 0;
+    width: 2px; transform: translateX(-50%);
+    background: #FFB81C;
+    box-shadow: 0 0 4px rgba(255,184,28,0.5);
+  }
+  .mt-locate-drop:hover { filter: brightness(1.25); border-color: #FFB81C; }
   .mt-locate-drop:active, .mt-locate-drop.dragging { cursor: grabbing; box-shadow: 0 0 10px rgba(255,184,28,0.4); }
-  .mt-locate-glyph { pointer-events: none; }
-  /* ドラッグ中のゴースト（カーソルに追従） */
+  /* ドラッグ中のゴースト (カーソル追従) — マーカーと同じ黄色三角 */
   .mt-locate-ghost {
     position: fixed; z-index: 99999; pointer-events: none;
-    width: 16px; height: 16px; margin: -8px 0 0 -8px;
-    color: #FFB81C; font-size: 14px; line-height: 1;
-    text-shadow: 0 0 8px rgba(255,184,28,0.8);
+    width: 14px; height: 18px; margin: -9px 0 0 -7px;
   }
-  /* ロケート マーカー — 旗アイコン+縦線。掴んで移動、× で削除 */
+  .mt-locate-ghost::before {
+    content: ''; position: absolute; left: 50%; top: 0;
+    width: 0; height: 0; transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #FFB81C;
+    filter: drop-shadow(0 0 6px rgba(255,184,28,0.9));
+  }
+  .mt-locate-ghost::after {
+    content: ''; position: absolute; left: 50%; top: 6px; bottom: 0;
+    width: 2px; transform: translateX(-50%);
+    background: #FFB81C;
+    box-shadow: 0 0 6px rgba(255,184,28,0.7);
+  }
+  /* ロケート マーカー — 黄色三角+縦線。掴んで移動、× で削除 */
   .mt-locate-marker {
-    position: absolute; top: -12px; bottom: -3px;
-    width: 16px;            /* 縦線+周りのヒットエリア */
+    position: absolute; top: -6px; bottom: -3px;
+    width: 14px;
     transform: translateX(-50%);
     z-index: 3;
     pointer-events: auto;
@@ -1381,28 +1412,38 @@
   }
   .mt-locate-marker:active { cursor: grabbing; }
   .mt-locate-marker.dragging { z-index: 5; }
-  /* 縦線 (タイムラインの位置を示す本体) */
+  /* 縦線 (タイムライン位置を示す本体) */
   .mt-locate-marker::after {
     content: '';
-    position: absolute; left: 50%; top: 10px; bottom: 0;
+    position: absolute; left: 50%; top: 6px; bottom: 0;
     width: 2px; transform: translateX(-50%);
     background: #FFB81C;
     box-shadow: 0 0 6px rgba(255,184,28,0.6);
     pointer-events: none;
   }
-  /* 旗アイコン (drag/seek 対象) */
+  /* 旗 = 黄色三角 (drag/seek 対象) */
   .mt-locate-flag {
     position: absolute; left: 50%; top: 0;
+    width: 0; height: 0;
     transform: translateX(-50%);
-    font-size: 13px; line-height: 1;
-    filter: drop-shadow(0 0 4px rgba(255,184,28,0.7));
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #FFB81C;
+    filter: drop-shadow(0 0 4px rgba(255,184,28,0.6));
     pointer-events: auto;
+    cursor: grab;
+    transition: transform 0.12s, filter 0.12s;
   }
-  /* × 削除ボタン (旗の右側、hover で出現) */
+  /* hover でちょっと拡大 */
+  .mt-locate-marker:hover .mt-locate-flag {
+    transform: translateX(-50%) scale(1.4);
+    filter: drop-shadow(0 0 6px rgba(255,184,28,0.9));
+  }
+  /* × 削除ボタン (旗の右上、hover で出現) */
   .mt-locate-del {
-    position: absolute; left: 100%; top: -1px;
+    position: absolute; left: 100%; top: -2px;
     width: 14px; height: 14px;
-    font-size: 12px; line-height: 14px;
+    font-size: 11px; line-height: 14px;
     color: #FFFFFF;
     background: #E24B4A;
     border-radius: 50%;
@@ -1416,8 +1457,6 @@
   }
   .mt-locate-marker:hover .mt-locate-del { opacity: 1; transform: scale(1.1); }
   .mt-locate-del:hover { background: #FF6B6A; }
-  .mt-locate-marker:hover .mt-locate-flag { transform: translateX(-50%) scale(1.2); }
-  .mt-locate-flag { transition: transform 0.12s; }
   .mt-hero-timeline-track {
     height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px;
     position: relative;
@@ -3066,8 +3105,8 @@
               </div>
             </div>
             <button class="mt-locate-drop" id="mtLocateDrop"
-                    title="🚩 をドラッグしてタイムラインに離すとロケート (再生位置メモリ) を配置&#10;置いた旗は: 掴んで移動 / 旗をクリック=ジャンプ / × ボタン=削除">
-              <span class="mt-locate-glyph">🚩</span>
+                    title="ドラッグしてタイムラインに離すとロケート (再生位置メモリ) を配置&#10;置いたマーカーは: 掴んで移動 / クリック=ジャンプ / × ボタン=削除">
+              <span class="mt-locate-glyph"></span>
             </button>
           </div>
           <div class="mt-hero-meta-bottom">
@@ -3224,7 +3263,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.2.3';
+const APP_VERSION = 'v8.2.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11742,7 +11781,7 @@ function mtBindLocateDrop() {
     drop.setPointerCapture(e.pointerId);
     ghost = document.createElement('div');
     ghost.className = 'mt-locate-ghost';
-    ghost.textContent = '🚩';
+    // CSS の ::before/::after で黄色三角を描画 (textContent 不要)
     document.body.appendChild(ghost);
     moveGhost(e.clientX, e.clientY);
     e.preventDefault();
@@ -11792,7 +11831,7 @@ function mtAddLocate(timeSec) {
   song.locates.sort((a, b) => a.time - b.time);
   mtSave();
   mtRenderLocates();
-  showToast(`🚩 ロケート ${mtFmtTime(timeSec)} 追加 (× ボタンで削除、掴んで移動)`);
+  showToast(`ロケート ${mtFmtTime(timeSec)} 追加 (× で削除、掴んで移動)`);
 }
 
 function mtRemoveLocate(locateIdx) {
@@ -11823,10 +11862,9 @@ function mtRenderLocates() {
     m.className = 'mt-locate-marker';
     m.style.left = pct + '%';
     m.title = `ロケート ${mtFmtTime(loc.time)}\n旗をクリック: ジャンプ\n旗を掴んでドラッグ: 移動\n× ボタン: 削除`;
-    // 旗 (drag / seek)
+    // 旗 (drag / seek) — CSS で三角形を描画
     const flag = document.createElement('span');
     flag.className = 'mt-locate-flag';
-    flag.textContent = '🚩';
     m.appendChild(flag);
     // × 削除ボタン
     const del = document.createElement('span');
