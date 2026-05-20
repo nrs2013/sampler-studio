@@ -2022,25 +2022,7 @@
   .mt-strip[data-mt-strip="other"]  { color: #FF8A0F; }
   .mt-strip[data-mt-strip="bass"]   { color: #2E7AFF; }
   .mt-strip[data-mt-strip="drums"]  { color: #FF4A8F; }
-  /* ビビッドなグループカラーの薄い背景オーバーレイ */
-  .mt-strip[data-mt-strip="click"]  {
-    background: linear-gradient(180deg, rgba(79,163,255,0.22) 0%, rgba(79,163,255,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
-  }
-  .mt-strip[data-mt-strip="vocal"]  {
-    background: linear-gradient(180deg, rgba(255,184,28,0.22) 0%, rgba(255,184,28,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
-  }
-  .mt-strip[data-mt-strip="chorus"] {
-    background: linear-gradient(180deg, rgba(107,199,36,0.22) 0%, rgba(107,199,36,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
-  }
-  .mt-strip[data-mt-strip="other"]  {
-    background: linear-gradient(180deg, rgba(255,138,15,0.22) 0%, rgba(255,138,15,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
-  }
-  .mt-strip[data-mt-strip="bass"]   {
-    background: linear-gradient(180deg, rgba(46,122,255,0.22) 0%, rgba(46,122,255,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
-  }
-  .mt-strip[data-mt-strip="drums"]  {
-    background: linear-gradient(180deg, rgba(255,74,143,0.22) 0%, rgba(255,74,143,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
-  }
+  /* グラデは外して dark のシンプル背景に。色は上端バンドと枠線だけで表現。 */
   /* カード上端のカラーバンド — 厚めにしてビビッドに */
   .mt-strip::before {
     content: ''; position: absolute; left: 4px; right: 4px; top: 3px;
@@ -3161,7 +3143,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.7';
+const APP_VERSION = 'v8.1.8';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
