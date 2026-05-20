@@ -3045,7 +3045,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.0.3';
+const APP_VERSION = 'v8.0.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8918,7 +8918,11 @@ function mtRestore(saved) {
   m.gapSec = 0;
   // autoAdvance: UI 廃止後は常に true（各曲ごとの autoNext / nextDelay が支配的）
   m.autoAdvance = true;
-  if (saved.channelMap) m.channelMap = saved.channelMap;
+  // channelMap はスプレッドマージ必須。古いセーブで 'click' が無いケースに
+  // 'click' のデフォルト ({L:1,R:2}) を残してから saved 値で上書きしないと
+  // mtRenderAll の cm.L 読み出しで TypeError になり、setlist 全体の render が
+  // 失敗していた致命バグ（v8.0.3 で発見）。
+  if (saved.channelMap) m.channelMap = { ...m.channelMap, ...saved.channelMap };
   if (saved.groupGains) m.groupGains = { ...m.groupGains, ...saved.groupGains };
   if (saved.groupMute) m.groupMute = { ...m.groupMute, ...saved.groupMute };
   if (saved.groupSolo) m.groupSolo = { ...m.groupSolo, ...saved.groupSolo };
@@ -10424,9 +10428,10 @@ function mtRenderAll() {
     state.multitrack.selectedIdx = 0;
   }
   mtRecomputeSongDuration();
-  // input 復元
+  // input 復元（古いセーブ互換: channelMap に group が無くてもクラッシュさせない）
   for (const g of MT_GROUPS) {
     const cm = state.multitrack.channelMap[g];
+    if (!cm) continue;  // 防御: 古いセーブで group 欠落 → skip
     const inL = document.getElementById('mtCh' + g[0].toUpperCase() + g.slice(1) + 'L');
     const inR = document.getElementById('mtCh' + g[0].toUpperCase() + g.slice(1) + 'R');
     if (inL) inL.value = cm.L;
