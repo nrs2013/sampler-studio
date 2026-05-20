@@ -665,27 +665,28 @@
      Previously we hid PLAY MODE/FADE系 in DOOR mode, but the user wants them visible too. */
 
   /* DOOR OPEN PAGE */
-  /* v11.2.0: doorPage 全体を 2 カラム grid に統一
+  /* v11.2.0/2/3: doorPage 全体を 2 カラム grid に統一
      左カラム: BGMペア (row1) / DUCK (row2) / 下段プール (row3, 1fr)
-     右カラム: NOW (row1-2) / SCHEDULE (row3, 1fr) */
+     右カラム: NOW (row1) / SCHEDULE (row2-3, 上に伸びる)
+     v11.2.3: minmax(0, ...) で縮小時もレイアウト破綻しないように */
   #doorPage {
     display: grid;
-    grid-template-columns: minmax(360px, 0.85fr) 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: 8px;
-    flex: 1; min-height: 0;
+    flex: 1; min-height: 0; min-width: 0;
     overflow: hidden;
   }
-  .do-top-bgm-pair { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-height: 0; }
+  .do-top-bgm-pair { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; min-height: 0; min-width: 0; }
   /* DUCK 帯を左カラム row2 に */
-  .do-duck-strip.do-grid { grid-column: 1; grid-row: 2; }
+  .do-duck-strip.do-grid { grid-column: 1; grid-row: 2; min-width: 0; }
   /* 下段プール: 左カラム row3 */
-  .do-left-bottom-col { grid-column: 1; grid-row: 3; min-height: 0; overflow-y: auto;
+  .do-left-bottom-col { grid-column: 1; grid-row: 3; min-height: 0; min-width: 0; overflow-y: auto;
                         display: flex; flex-direction: column; gap: 8px; }
   /* v11.2.2: NOW は BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる */
-  #doNowCard.do-grid { grid-column: 2; grid-row: 1; }
-  .do-sched-card.do-grid { grid-column: 2; grid-row: 2 / span 2; min-height: 0;
-                           display: flex; flex-direction: column; }
+  #doNowCard.do-grid { grid-column: 2; grid-row: 1; min-height: 0; min-width: 0; overflow: hidden; }
+  .do-sched-card.do-grid { grid-column: 2; grid-row: 2 / span 2; min-height: 0; min-width: 0;
+                           display: flex; flex-direction: column; overflow: hidden; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
   .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -3439,7 +3440,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.2';
+const APP_VERSION = 'v11.2.3';
+// v11.2.3: 縮小時のレイアウト崩れ修正 (grid track を minmax(0, ...) に、grid item に min-width:0)
 // v11.2.2: NOW カードを BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる
 // v11.2.1: doorPage display を flex → grid に修正 (setAppMode で grid を上書きしないように)
 // v11.2.0: DOOR OPEN 全体 grid 化 — DUCK を左に、NOW + SCHEDULE 右カラム連続
