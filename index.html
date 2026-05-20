@@ -3415,7 +3415,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.0';
+const APP_VERSION = 'v9.0.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11163,6 +11163,39 @@ function mtMediaConnectToGroup(entry, group) {
   }
 }
 
+// v9.0.1: 重要修正 — group gain → 出力経路 (ChannelMerger or masterGain) の構築
+// AudioBuffer モードでは mtPlaySong 内で都度作るが、MediaElement モードでは
+// 別途明示的に経路を確立する必要がある。これが無いと group gain → 出力先に
+// 何も繋がらず無音になる。
+function mtMediaSetupGroupRouting() {
+  if (!mtCtx || !mtMasterGain) return;
+  for (const g of MT_GROUPS) {
+    const gain = mtGroupGainNodes[g];
+    if (!gain) continue;
+    // 既存の下流を切る (analyser 含む)
+    try { gain.disconnect(); } catch(_) {}
+    // analyser 再接続 (メーター用、sink-only で出力には影響しない)
+    const a = mtGroupAnalysers[g];
+    if (a && a.splitter) {
+      try { gain.connect(a.splitter); } catch(_) {}
+    }
+    // 出力ルート: multi-channel (channelMap) or stereo fallback (masterGain)
+    const cm = state.multitrack.channelMap[g];
+    const chL = Math.max(1, cm.L|0) - 1;
+    const chR = Math.max(1, cm.R|0) - 1;
+    if (mtMerger && mtMerger.numberOfInputs > Math.max(chL, chR)) {
+      const splitter = mtCtx.createChannelSplitter(2);
+      gain.connect(splitter);
+      splitter.connect(mtMerger, 0, chL);
+      splitter.connect(mtMerger, 1, chR);
+    } else {
+      // stereo 出力 (一般的な Mac はここを通る)
+      gain.connect(mtMasterGain);
+    }
+  }
+  console.log('[mtMedia] group routing rebuilt');
+}
+
 // すべての MediaElement を pause + currentTime リセット
 function mtMediaStopAll() {
   for (const id in mtMediaCache) {
@@ -11218,6 +11251,8 @@ async function mtMediaPlaySong(idx, offset, options) {
         state.multitrack.advanceTimer = null;
       }
     }
+    // v9.0.1: group gain → 出力経路を確立 (これが無いと無音)
+    mtMediaSetupGroupRouting();
     if (mtMasterGain && !keepPrevious) {
       const t = mtCtx.currentTime;
       mtMasterGain.gain.cancelScheduledValues(t);
