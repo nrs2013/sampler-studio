@@ -1370,24 +1370,54 @@
     color: #FFB81C; font-size: 14px; line-height: 1;
     text-shadow: 0 0 8px rgba(255,184,28,0.8);
   }
-  /* ロケート マーカー（タイムライン上の旗） */
+  /* ロケート マーカー — 旗アイコン+縦線。掴んで移動、× で削除 */
   .mt-locate-marker {
-    position: absolute; top: -3px; bottom: -3px;
-    width: 2px; background: #FFB81C;
+    position: absolute; top: -12px; bottom: -3px;
+    width: 16px;            /* 縦線+周りのヒットエリア */
+    transform: translateX(-50%);
+    z-index: 3;
+    pointer-events: auto;
+    cursor: grab;
+  }
+  .mt-locate-marker:active { cursor: grabbing; }
+  .mt-locate-marker.dragging { z-index: 5; }
+  /* 縦線 (タイムラインの位置を示す本体) */
+  .mt-locate-marker::after {
+    content: '';
+    position: absolute; left: 50%; top: 10px; bottom: 0;
+    width: 2px; transform: translateX(-50%);
+    background: #FFB81C;
     box-shadow: 0 0 6px rgba(255,184,28,0.6);
-    cursor: pointer; z-index: 3;
+    pointer-events: none;
+  }
+  /* 旗アイコン (drag/seek 対象) */
+  .mt-locate-flag {
+    position: absolute; left: 50%; top: 0;
+    transform: translateX(-50%);
+    font-size: 13px; line-height: 1;
+    filter: drop-shadow(0 0 4px rgba(255,184,28,0.7));
     pointer-events: auto;
   }
-  .mt-locate-marker::before {
-    content: ''; position: absolute; top: -3px; left: -3px;
-    width: 0; height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid #FFB81C;
-    filter: drop-shadow(0 0 4px rgba(255,184,28,0.6));
+  /* × 削除ボタン (旗の右側、hover で出現) */
+  .mt-locate-del {
+    position: absolute; left: 100%; top: -1px;
+    width: 14px; height: 14px;
+    font-size: 12px; line-height: 14px;
+    color: #FFFFFF;
+    background: #E24B4A;
+    border-radius: 50%;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s, transform 0.12s;
+    pointer-events: auto;
+    font-weight: 700;
+    box-shadow: 0 0 6px rgba(226,75,74,0.6);
   }
-  .mt-locate-marker:hover { width: 3px; background: #FFE89A; }
-  .mt-locate-marker:hover::before { border-top-color: #FFE89A; }
+  .mt-locate-marker:hover .mt-locate-del { opacity: 1; transform: scale(1.1); }
+  .mt-locate-del:hover { background: #FF6B6A; }
+  .mt-locate-marker:hover .mt-locate-flag { transform: translateX(-50%) scale(1.2); }
+  .mt-locate-flag { transition: transform 0.12s; }
   .mt-hero-timeline-track {
     height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px;
     position: relative;
@@ -3036,7 +3066,7 @@
               </div>
             </div>
             <button class="mt-locate-drop" id="mtLocateDrop"
-                    title="ドラッグでタイムラインにロケート（再生位置メモリ）を配置">
+                    title="🚩 をドラッグしてタイムラインに離すとロケート (再生位置メモリ) を配置&#10;置いた旗は: 掴んで移動 / 旗をクリック=ジャンプ / × ボタン=削除">
               <span class="mt-locate-glyph">🚩</span>
             </button>
           </div>
@@ -3194,7 +3224,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.2.1';
+const APP_VERSION = 'v8.2.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11760,7 +11790,7 @@ function mtAddLocate(timeSec) {
   song.locates.sort((a, b) => a.time - b.time);
   mtSave();
   mtRenderLocates();
-  showToast(`ロケート ${mtFmtTime(timeSec)} 追加 (Shift+クリックで削除)`);
+  showToast(`🚩 ロケート ${mtFmtTime(timeSec)} 追加 (× ボタンで削除、掴んで移動)`);
 }
 
 function mtRemoveLocate(locateIdx) {
@@ -11790,19 +11820,69 @@ function mtRenderLocates() {
     const m = document.createElement('span');
     m.className = 'mt-locate-marker';
     m.style.left = pct + '%';
-    m.title = `${mtFmtTime(loc.time)}\nクリック: ジャンプ\n右クリック / Shift+クリック: 削除`;
-    m.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
-    m.addEventListener('click', (e) => {
+    m.title = `ロケート ${mtFmtTime(loc.time)}\n旗をクリック: ジャンプ\n旗を掴んでドラッグ: 移動\n× ボタン: 削除`;
+    // 旗 (drag / seek)
+    const flag = document.createElement('span');
+    flag.className = 'mt-locate-flag';
+    flag.textContent = '🚩';
+    m.appendChild(flag);
+    // × 削除ボタン
+    const del = document.createElement('span');
+    del.className = 'mt-locate-del';
+    del.textContent = '×';
+    del.title = '削除';
+    del.addEventListener('pointerdown', (e) => e.stopPropagation());
+    del.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (e.shiftKey) mtRemoveLocate(li);
-      else mtSeekTo(loc.time);
-    });
-    // 右クリックで削除（context menu を抑止して直接削除）
-    m.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      e.stopPropagation();
-      if (confirm(`ロケート ${mtFmtTime(loc.time)} を削除しますか？`)) mtRemoveLocate(li);
+      mtRemoveLocate(li);
     });
+    m.appendChild(del);
+    // === ドラッグで移動 / クリックでジャンプ ===
+    let dragStartX = 0;
+    let dragStartTime = 0;
+    let moved = false;
+    let dragging = false;
+    flag.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      dragging = true; moved = false;
+      dragStartX = e.clientX;
+      dragStartTime = loc.time;
+      flag.setPointerCapture(e.pointerId);
+      m.classList.add('dragging');
+    });
+    flag.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - dragStartX;
+      if (Math.abs(dx) > 3) moved = true;
+      if (!moved) return;
+      const trackRect = track.getBoundingClientRect();
+      let newTime = dragStartTime + (dx / trackRect.width) * dur;
+      newTime = Math.max(0, Math.min(dur, newTime));
+      loc.time = newTime;
+      m.style.left = ((newTime / dur) * 100) + '%';
+      m.title = `ロケート ${mtFmtTime(newTime)}\n離して確定`;
+    });
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      try { flag.releasePointerCapture(e.pointerId); } catch(_) {}
+      m.classList.remove('dragging');
+      if (moved) {
+        // 移動完了: 並べ替え + 保存
+        mtPushUndo();
+        song.locates.sort((a, b) => a.time - b.time);
+        mtSave();
+        mtRenderLocates();
+        showToast(`ロケート → ${mtFmtTime(loc.time)}`);
+      } else {
+        // 動かしていない = クリック扱い: ジャンプ
+        mtSeekTo(loc.time);
+      }
+    };
+    flag.addEventListener('pointerup', endDrag);
+    flag.addEventListener('pointercancel', endDrag);
     track.appendChild(m);
   });
 }
