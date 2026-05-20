@@ -3413,7 +3413,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.1.1';
+const APP_VERSION = 'v10.0.0';
+// v10.0.0 Phase 1: OPFS 自動コピー保存 — 取り込み時にアプリ内コピーで原本依存撤廃
 // v9.1.1: ESC 効かない問題修正 — playbackMode を 'mediaelement' 強制固定 + デバッグログ追加
 // v9.1.0: 大整理 — MediaElement 専用化 + 不要 UI / dead code 全削除
 // v9.0.7: フェードアウト終了後のプチッ完全撲滅 — master 復帰を撤廃 (0 のまま固定)
@@ -10077,6 +10078,7 @@ async function mtRobustDecode(arrayBuffer, file) {
 }
 
 // ファイルを読み込んで対象グループに割当（targetGroup=null なら unassigned プールに）
+// v10.0.0: 取り込み時に OPFS にコピー保存 (アプリ内に閉じる、原本を動かしても安全)
 async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
   if (!file) return;
   if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
@@ -10086,24 +10088,28 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     if (mtCtx.state === 'suspended') await mtCtx.resume();
     const arrBuf = await file.arrayBuffer();
     const sampleId = `mt-${state.multitrack.songs[songIdx].id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
+    const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(file.name, file.type) : (file.type || 'audio/wav');
+    // === v10.0.0: OPFS にコピー保存 (これがメイン) ===
+    let savedToOPFS = false;
+    try {
+      savedToOPFS = await saveSampleToOPFS(sampleId, arrBuf, file.name, mime);
+    } catch(e) { console.warn('[OPFS] save failed', e); }
+    // 後方互換: handle も保存 (元ファイル参照のため、OPFS から削除された時の fallback)
     let usingHandle = false;
     if (handle) {
       try {
         await mtSaveHandleToDB(sampleId, handle, file.name);
         usingHandle = true;
-      } catch(e) {
-        console.warn('mt saveHandleToDB failed (falling back to blob)', e);
-      }
+      } catch(e) { console.warn('mt saveHandleToDB failed', e); }
     }
-    if (!usingHandle) {
+    // 後方互換: OPFS 失敗時は IndexedDB blob にフォールバック
+    if (!savedToOPFS && !usingHandle) {
       try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
         console.warn('mt saveSampleToDB failed', e);
         showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
       }
     }
-    const buffer = await mtRobustDecode(arrBuf, file);
-    mtDecodedCache[sampleId] = buffer;
-    const entry = { sampleId, name: file.name, byHandle: usingHandle };
+    const entry = { sampleId, name: file.name, byHandle: usingHandle, inOPFS: savedToOPFS };
     const song = state.multitrack.songs[songIdx];
     if (!song.unassigned) song.unassigned = [];
     if (targetGroup && MT_GROUPS.includes(targetGroup)) {
@@ -10117,8 +10123,9 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     mtRecomputeSongDuration();
     mtRenderSetlist();
     mtRenderNow();
-    const where = usingHandle ? 'ローカル参照' : 'ブラウザ保存';
-    showToast(`📂 読込: ${file.name} (${buffer.duration.toFixed(1)}秒・${where})`);
+    const where = savedToOPFS ? 'アプリ内保存' : (usingHandle ? 'ローカル参照' : 'ブラウザ保存');
+    const sizeMB = (arrBuf.byteLength / 1024 / 1024).toFixed(1);
+    showToast(`📂 読込: ${file.name} (${sizeMB} MB・${where})`);
   } catch(e) {
     console.error('mtLoadTrackFile failed', e);
     // 詳細メッセージ（改行込み）を toast に
@@ -10296,6 +10303,8 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
   for (const t of targets) {
     try { await deleteSampleFromDB(t.sampleId); } catch(_) {}
     try { await mtDeleteHandleFromDB(t.sampleId); } catch(_) {}
+    // v10.0.0: OPFS からも削除
+    try { await deleteSampleFromOPFS(t.sampleId); } catch(_) {}
   }
   const remaining = sampleId ? layers.filter(l => l.sampleId !== sampleId) : [];
   if (remaining.length === 0) delete s.tracks[group];
@@ -10329,6 +10338,147 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
 //   mtFsNotifyPlaybackStart/Stop  再生中フラグ
 //   mtFsCleanup()           整理: orphan/旧 blob 削除
 //   mtFsRender()            バナー UI 更新
+// ============================================================================
+// v10.0.0: OPFS (Origin Private File System) ヘルパー
+// ============================================================================
+// アプリ専用の隠れストレージに音源ファイルをコピー保存する。
+// Finder からは見えない = ユーザーが誤って動かす事故が発生しない。
+// バックアップ/共有は ZIP エクスポート機能経由 (Phase 2 で実装)。
+//
+// 構造:
+//   root/
+//     samples/
+//       [sampleId].bin       ← 音源ファイル本体 (拡張子は付けない、メタは別管理)
+//     samples-meta.json      ← { sampleId: { name, mime, savedAt } }
+// ============================================================================
+
+let _opfsRootCache = null;
+async function _opfsGetRoot() {
+  if (_opfsRootCache) return _opfsRootCache;
+  if (!navigator.storage || !navigator.storage.getDirectory) {
+    throw new Error('OPFS 非対応ブラウザ');
+  }
+  _opfsRootCache = await navigator.storage.getDirectory();
+  return _opfsRootCache;
+}
+
+async function _opfsGetSamplesDir(create = true) {
+  const root = await _opfsGetRoot();
+  return await root.getDirectoryHandle('samples', { create });
+}
+
+// 音源を OPFS に保存
+// 引数: sampleId (string), data (ArrayBuffer | Blob), name (string), mime (string)
+async function saveSampleToOPFS(sampleId, data, name, mime) {
+  try {
+    const dir = await _opfsGetSamplesDir(true);
+    const fh = await dir.getFileHandle(sampleId + '.bin', { create: true });
+    const w = await fh.createWritable();
+    await w.write(data);
+    await w.close();
+    // メタ情報も保存
+    try {
+      const root = await _opfsGetRoot();
+      let meta = {};
+      try {
+        const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
+        const metaFile = await metaFh.getFile();
+        meta = JSON.parse(await metaFile.text());
+      } catch(_) { /* 初回は無い */ }
+      meta[sampleId] = { name, mime, savedAt: Date.now() };
+      const metaFh = await root.getFileHandle('samples-meta.json', { create: true });
+      const mw = await metaFh.createWritable();
+      await mw.write(JSON.stringify(meta));
+      await mw.close();
+    } catch(e) { console.warn('[OPFS] meta save failed', e); }
+    return true;
+  } catch(e) {
+    console.error('[OPFS] saveSample failed', sampleId, e);
+    return false;
+  }
+}
+
+// 音源を OPFS から読み出し
+// returns: { blob: Blob, name: string, mime: string } | null
+async function loadSampleFromOPFS(sampleId) {
+  try {
+    const dir = await _opfsGetSamplesDir(false);
+    const fh = await dir.getFileHandle(sampleId + '.bin', { create: false });
+    const file = await fh.getFile();
+    // メタ情報も取得
+    let meta = { name: sampleId, mime: 'audio/wav' };
+    try {
+      const root = await _opfsGetRoot();
+      const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
+      const metaFile = await metaFh.getFile();
+      const allMeta = JSON.parse(await metaFile.text());
+      if (allMeta[sampleId]) meta = allMeta[sampleId];
+    } catch(_) {}
+    const blob = new Blob([await file.arrayBuffer()], { type: meta.mime || 'audio/wav' });
+    return { blob, name: meta.name, mime: meta.mime };
+  } catch(e) {
+    // NotFoundError は正常 (まだ OPFS に無い)
+    if (e && e.name === 'NotFoundError') return null;
+    console.warn('[OPFS] loadSample failed', sampleId, e);
+    return null;
+  }
+}
+
+// 音源が OPFS に存在するかチェック (軽量)
+async function hasSampleInOPFS(sampleId) {
+  try {
+    const dir = await _opfsGetSamplesDir(false);
+    await dir.getFileHandle(sampleId + '.bin', { create: false });
+    return true;
+  } catch(_) { return false; }
+}
+
+// 音源を OPFS から削除
+async function deleteSampleFromOPFS(sampleId) {
+  try {
+    const dir = await _opfsGetSamplesDir(false);
+    await dir.removeEntry(sampleId + '.bin');
+    // メタからも削除
+    try {
+      const root = await _opfsGetRoot();
+      const metaFh = await root.getFileHandle('samples-meta.json', { create: false });
+      const metaFile = await metaFh.getFile();
+      const meta = JSON.parse(await metaFile.text());
+      delete meta[sampleId];
+      const mw = await metaFh.createWritable();
+      await mw.write(JSON.stringify(meta));
+      await mw.close();
+    } catch(_) {}
+    return true;
+  } catch(e) {
+    if (e && e.name === 'NotFoundError') return true; // 既に無い
+    console.warn('[OPFS] deleteSample failed', sampleId, e);
+    return false;
+  }
+}
+
+// OPFS の全 sample id を列挙 (デバッグ用)
+async function listSamplesInOPFS() {
+  try {
+    const dir = await _opfsGetSamplesDir(false);
+    const out = [];
+    for await (const [name, h] of dir.entries()) {
+      if (name.endsWith('.bin')) out.push(name.slice(0, -4));
+    }
+    return out;
+  } catch(_) { return []; }
+}
+
+// OPFS 使用量を計算 (MB)
+async function getOPFSUsageMB() {
+  try {
+    const est = await navigator.storage.estimate();
+    return (est.usage || 0) / 1024 / 1024;
+  } catch(_) { return 0; }
+}
+
+// ============================================================================
+
 const mtFs = {
   state: 'idle',
   total: 0,
@@ -10903,29 +11053,46 @@ async function mtMediaLoadOne(sampleId) {
   }
   const p = (async () => {
     await mtInitCtx();
-    // 1) handle 優先で File を取得
     let blob = null;
     let name = sampleId;
+    // v10.0.0: 優先順位 OPFS → handle → IndexedDB blob
+    // 0) OPFS 優先 (v10.0.0 の新方式)
     try {
-      const rec = await mtGetHandleFromDB(sampleId);
-      if (rec && rec.handle) {
-        let perm = 'denied';
-        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-        if (perm !== 'granted') {
-          try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
-        }
-        if (perm === 'granted') {
-          try {
-            const f = await rec.handle.getFile();
-            blob = f;
-            name = f.name;
-          } catch(e) {
-            console.warn('[mtMedia] handle getFile failed', e);
-          }
-        }
+      const opfs = await loadSampleFromOPFS(sampleId);
+      if (opfs && opfs.blob) {
+        blob = opfs.blob;
+        name = opfs.name || sampleId;
       }
     } catch(_) {}
-    // 2) blob fallback
+    // 1) handle (後方互換)
+    if (!blob) {
+      try {
+        const rec = await mtGetHandleFromDB(sampleId);
+        if (rec && rec.handle) {
+          let perm = 'denied';
+          try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+          if (perm !== 'granted') {
+            try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
+          }
+          if (perm === 'granted') {
+            try {
+              const f = await rec.handle.getFile();
+              blob = f;
+              name = f.name;
+              // v10.0.0: handle 経由で読めた = まだ OPFS に無い → 自動移行
+              try {
+                const arr = await f.arrayBuffer();
+                const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(f.name, f.type) : 'audio/wav';
+                saveSampleToOPFS(sampleId, arr, f.name, mime).catch(_ => {});
+              } catch(_) {}
+            } catch(e) {
+              console.warn('[mtMedia] handle getFile failed', e);
+            }
+          }
+        }
+      } catch(_) {}
+    }
+    // 2) IndexedDB blob (後方互換)
     if (!blob) {
       try {
         const r = await getSampleFromDB(sampleId);
@@ -10933,6 +11100,8 @@ async function mtMediaLoadOne(sampleId) {
           const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav';
           blob = new Blob([r.data], { type: mime });
           name = r.name || sampleId;
+          // v10.0.0: IDB blob 経由で読めた → 自動的に OPFS にも移行
+          saveSampleToOPFS(sampleId, r.data, name, mime).catch(_ => {});
         }
       } catch(_) {}
     }
@@ -11642,12 +11811,17 @@ function mtDiagPanelToggleDetail() {
   _mtDiagDetailRender();
 }
 
-function _mtDiagDetailRender() {
+async function _mtDiagDetailRender() {
   const detail = document.getElementById('mtDiagDetail');
   if (!detail) return;
   const failedCount = mtFs._failed.size;
   const totalIds = _mtFsCollectAllIds().length;
   const mediaLoaded = Object.keys(mtMediaCache).length;
+  // v10.0.0: OPFS 使用量
+  let opfsMB = 0;
+  try { opfsMB = await getOPFSUsageMB(); } catch(_) {}
+  let opfsCount = 0;
+  try { opfsCount = (await listSamplesInOPFS()).length; } catch(_) {}
   const errors = mtFs.errorLog.slice(0, 20);
   const errHTML = errors.length === 0
     ? '<div class="mt-diag-err-item" style="text-align:center;opacity:0.5;">エラー履歴なし</div>'
@@ -11667,6 +11841,7 @@ function _mtDiagDetailRender() {
     <div class="mt-diag-detail-row"><span class="mt-diag-label">登録 STEM 総数</span><span class="mt-diag-value">${totalIds}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込済 STEM</span><span class="mt-diag-value">${mediaLoaded}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">アプリ内保存 (OPFS)</span><span class="mt-diag-value">${opfsCount} 件 ${opfsMB.toFixed(0)} MB</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
 
     <h4>操作</h4>
