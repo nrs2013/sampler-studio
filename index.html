@@ -3415,7 +3415,18 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.4';
+const APP_VERSION = 'v9.0.5';
+// v9.0.5 アンチクリック網羅:
+//   Fix A: mtMediaStopAll で signal disconnect → audio pause の順序 (master まで届かない)
+//   Fix B: mtMediaSeekTo で master 8ms フェード → currentTime → 復帰
+//   Fix C: mtMediaPlaySong で master を急変させない (既に 0 ならそのまま、ramp が必要なら 8ms)
+//   Fix D: _mtMediaCacheClear もアンチクリック (disconnect 先行、mute、pause、src 解放)
+//   Fix G: mtMediaFadeOut の段4 master 復帰を 20ms linearRamp に
+//   Fix H: 全 STEM ロード失敗時の master 復帰
+//   Fix I: 例外時の master 復帰
+//   Fix K: mtMediaPlaySong で前曲切替時に master 10ms フェード → 15ms 待機 → 切断
+//   Fix L: _mtMediaStopAllWithFade ヘルパー (master 8ms フェード → 12ms 後切断 → 20ms 復帰)
+//   Fix M: mtStop + auto-advance 終了で _mtMediaStopAllWithFade を使用
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11092,12 +11103,18 @@ const mtMediaCache = {};
 const _mtMediaLoadInFlight = new Map(); // sampleId → Promise<entry|null>
 
 // MediaElement キャッシュを完全クリア (ctx 自動復活 / 全クリア時用)
+// v9.0.5: アンチクリック化 — source disconnect を pause より先に
 function _mtMediaCacheClear() {
   for (const id in mtMediaCache) {
     const e = mtMediaCache[id];
     if (!e) { delete mtMediaCache[id]; continue; }
-    try { if (e.audio) { e.audio.pause(); } } catch(_) {}
+    // 1) signal flow を先に切る (これでプチッ出ても master まで届かない)
     try { if (e.source) { e.source.disconnect(); } } catch(_) {}
+    // 2) audio を確実にミュート (念のため二重防御)
+    try { if (e.audio) { e.audio.volume = 0; e.audio.muted = true; } } catch(_) {}
+    // 3) pause
+    try { if (e.audio) { e.audio.pause(); } } catch(_) {}
+    // 4) src を空にして blob URL を解放 (これで内部 buffer も完全に解放)
     try { if (e.audio) { e.audio.src = ''; e.audio.removeAttribute('src'); e.audio.load(); } } catch(_) {}
     try { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); } catch(_) {}
     delete mtMediaCache[id];
@@ -11289,15 +11306,61 @@ function mtMediaSetupGroupRouting() {
   });
 }
 
-// すべての MediaElement を pause + currentTime リセット
+// すべての MediaElement を停止 (v9.0.5: アンチクリック化)
+// 順序が重要:
+//   1) source を group gain から disconnect → signal flow を即時切断 (これでプチッ出ても master 届かない)
+//   2) audio.pause() を呼ぶ (audio 内部停止)
+//   3) connectedTo を null にして、次回再生時に mtMediaConnectToGroup で再接続される
+// この順序で「audio.pause() の過渡応答ノイズ」が master に届かなくなる
 function mtMediaStopAll() {
   for (const id in mtMediaCache) {
     const e = mtMediaCache[id];
-    if (e && e.audio) {
+    if (!e) continue;
+    // 1) signal flow を先に切る
+    if (e.source && e.connectedTo) {
+      try { e.source.disconnect(e.connectedTo); } catch(_) {}
+      e.connectedTo = null;
+    }
+    // 2) audio 本体も pause (リソース節約 + 再生位置が進まないように)
+    if (e.audio) {
       try { e.audio.pause(); } catch(_) {}
     }
   }
   state.multitrack.activeMedia = [];
+}
+
+// v9.0.5: アンチクリック付き stop — master を 8ms で絞り 12ms 後に signal flow 切断
+//         再生中の停止 (auto-advance 終了、STOP ボタン、ESC 後の整理 等) で呼ぶ
+function _mtMediaStopAllWithFade(onDone) {
+  // 再生してないなら即時 stop
+  if (!mtCtx || !mtMasterGain || !state.multitrack.isPlaying) {
+    mtMediaStopAll();
+    if (onDone) try { onDone(); } catch(_) {}
+    return;
+  }
+  // 1) master を 8ms かけて 0 に
+  try {
+    const t = mtCtx.currentTime;
+    const cur = mtMasterGain.gain.value;
+    mtMasterGain.gain.cancelScheduledValues(t);
+    mtMasterGain.gain.setValueAtTime(cur, t);
+    mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.008);
+  } catch(_) {}
+  // 2) 12ms 待って signal flow 切断 + master 復帰 (audio は pause 済みなので音は出ない)
+  setTimeout(() => {
+    mtMediaStopAll();
+    if (mtCtx && mtMasterGain) {
+      try {
+        const t = mtCtx.currentTime;
+        const targetVol = state.masterVol != null ? state.masterVol : 1.0;
+        mtMasterGain.gain.cancelScheduledValues(t);
+        mtMasterGain.gain.setValueAtTime(0, t);
+        // 20ms の滑らかな復帰 (audio は止まってるので耳には影響ないが念のため滑らかに)
+        mtMasterGain.gain.linearRampToValueAtTime(targetVol, t + 0.020);
+      } catch(_) {}
+    }
+    if (onDone) try { onDone(); } catch(_) {}
+  }, 12);
 }
 
 // 現在 song の全 STEM を MediaElement モードで読み込み (並列)
@@ -11350,6 +11413,21 @@ async function mtMediaPlaySong(idx, offset, options) {
     }
     if (mtCtx.state === 'suspended') await mtCtx.resume();
     if (!keepPrevious) {
+      // v9.0.5 Fix K: 前曲が active なら master を 10ms フェードしてから切る
+      //               (signal flow の瞬時切断によるクリック音防止)
+      const hadActive = state.multitrack.isPlaying &&
+                        state.multitrack.activeMedia && state.multitrack.activeMedia.length > 0;
+      if (hadActive && mtMasterGain) {
+        try {
+          const t = mtCtx.currentTime;
+          const cur = mtMasterGain.gain.value;
+          mtMasterGain.gain.cancelScheduledValues(t);
+          mtMasterGain.gain.setValueAtTime(cur, t);
+          mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.010);
+        } catch(_) {}
+        // 15ms 待ってから切断 (耳には聞こえないが click は消える)
+        await new Promise(r => setTimeout(r, 15));
+      }
       mtMediaStopAll();
     } else {
       if (state.multitrack.advanceTimer) {
@@ -11363,10 +11441,24 @@ async function mtMediaPlaySong(idx, offset, options) {
     if (!keepPrevious) {
       mtMediaSetupGroupRouting();
     }
+    // v9.0.5: アンチクリック — master を一瞬 0 にしてから再立ち上げ
+    //         (新曲のロード中・pause/play サイクル中のノイズを隠す)
+    //         既に Fix K で 0 になっていればそのまま、まだ高ければ短く ramp して 0 に
     if (mtMasterGain && !keepPrevious) {
-      const t = mtCtx.currentTime;
-      mtMasterGain.gain.cancelScheduledValues(t);
-      mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t);
+      try {
+        const t = mtCtx.currentTime;
+        const cur = mtMasterGain.gain.value;
+        mtMasterGain.gain.cancelScheduledValues(t);
+        if (cur > 0.001) {
+          // まだ音が出てる状態から 0 に → 短くフェード (クリック防止)
+          mtMasterGain.gain.setValueAtTime(cur, t);
+          mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.008);
+        } else {
+          // 既に 0 (Fix K 後) → そのまま 0 を維持
+          mtMasterGain.gain.setValueAtTime(0, t);
+        }
+        // 後ほど play() 直前に linearRamp で復帰させる (下の方で実施)
+      } catch(_) {}
     }
     const song = state.multitrack.songs[idx];
     // 全 STEM を並列読み込み + group 接続
@@ -11400,6 +11492,15 @@ async function mtMediaPlaySong(idx, offset, options) {
       console.warn(`[mtMedia] overlap warning: ${sharedCount} audio shared with previous song`);
     }
     if (playing.length === 0) {
+      // v9.0.5: master を 0 にしたまま return すると次回再生で音が出なくなる → 復帰させる
+      if (mtMasterGain && !keepPrevious) {
+        try {
+          const tNow = mtCtx.currentTime;
+          const targetVol = state.masterVol != null ? state.masterVol : 1.0;
+          mtMasterGain.gain.cancelScheduledValues(tNow);
+          mtMasterGain.gain.setValueAtTime(targetVol, tNow);
+        } catch(_) {}
+      }
       const assignedTotal = MT_GROUPS.reduce((n, g) => n + mtGetLayers(song, g).length, 0);
       if (assignedTotal === 0) {
         showToast('フェーダーに何も割当てられていません');
@@ -11410,6 +11511,10 @@ async function mtMediaPlaySong(idx, offset, options) {
     }
     if (offset >= maxDur - 0.05) offset = 0;
     mtFsNotifyPlaybackStart();
+    // 再生開始前に volume と muted をリセット (前回の停止で 0 にしてある可能性)
+    for (const a of playing) {
+      try { a.volume = 1; a.muted = false; } catch(_) {}
+    }
     // === 一斉 start (実測 5-15ms ジッター)
     // v9.0.3 Fix10: keepPrevious 中の audio (= 前曲) は再度 play() しない
     //               (二重呼び出しで状態が乱れるのを防ぐ)
@@ -11425,6 +11530,17 @@ async function mtMediaPlaySong(idx, offset, options) {
         mtFsLogError('warn', `${failed} STEM 再生開始失敗`);
       }
     });
+    // v9.0.5: master gain を 30ms フェードインで立ち上げ (新曲開始時のクリック防止)
+    if (mtMasterGain && !keepPrevious) {
+      try {
+        const tNow = mtCtx.currentTime;
+        const targetVol = state.masterVol != null ? state.masterVol : 1.0;
+        // 0 → targetVol を 30ms かけて (耳には瞬時、でも click は出ない)
+        mtMasterGain.gain.cancelScheduledValues(tNow);
+        mtMasterGain.gain.setValueAtTime(0, tNow);
+        mtMasterGain.gain.linearRampToValueAtTime(targetVol, tNow + 0.030);
+      } catch(_) {}
+    }
     state.multitrack.activeMedia = playing;
     state.multitrack.startTime = mtCtx.currentTime - offset; // progress 計算用
     state.multitrack.songDuration = maxDur;
@@ -11460,29 +11576,43 @@ async function mtMediaPlaySong(idx, offset, options) {
         }
         return;
       }
-      mtMediaStopAll();
-      state.multitrack.isPlaying = false;
-      mtStopMeter();
-      if (mode === 'standby') {
-        const curIdx = state.multitrack.currentSongIdx;
-        if (curIdx + 1 < state.multitrack.songs.length) {
-          state.multitrack.selectedIdx = curIdx + 1;
-          state.multitrack.seekOffset = 0;
-          mtRecomputeSongDuration();
-          mtScrollSelectedIntoView();
-          showToast(`▶ 次曲スタンバイ: ${state.multitrack.songs[curIdx + 1].name}`);
-        } else {
-          showToast('セットリスト終了');
+      // v9.0.5: アンチクリック付き stop
+      _mtMediaStopAllWithFade(() => {
+        state.multitrack.isPlaying = false;
+        mtStopMeter();
+        if (mode === 'standby') {
+          const curIdx = state.multitrack.currentSongIdx;
+          if (curIdx + 1 < state.multitrack.songs.length) {
+            state.multitrack.selectedIdx = curIdx + 1;
+            state.multitrack.seekOffset = 0;
+            mtRecomputeSongDuration();
+            mtScrollSelectedIntoView();
+            showToast(`▶ 次曲スタンバイ: ${state.multitrack.songs[curIdx + 1].name}`);
+          } else {
+            showToast('セットリスト終了');
+          }
         }
-      }
-      mtRenderNow();
-      mtRenderSetlist();
+        mtRenderNow();
+        mtRenderSetlist();
+      });
     }, totalMs);
     mtRenderSetlist();
     mtRenderNow();
     mtStartMeter();
     // 隣接曲の MediaElement を裏で先読み (ロードだけ)
     try { mtMediaPrefetchAround(idx); } catch(_) {}
+  } catch(e) {
+    // v9.0.5: 例外時も master を復帰 (master=0 のまま固まらないように)
+    console.error('[mtMedia] play failed', e);
+    if (mtMasterGain && mtCtx) {
+      try {
+        const tNow = mtCtx.currentTime;
+        const targetVol = state.masterVol != null ? state.masterVol : 1.0;
+        mtMasterGain.gain.cancelScheduledValues(tNow);
+        mtMasterGain.gain.setValueAtTime(targetVol, tNow);
+      } catch(_) {}
+    }
+    try { mtFsLogError('error', 'mtMediaPlaySong 例外: ' + (e.message || e)); } catch(_) {}
   } finally {
     _mtPlaySongInFlight = false;
   }
@@ -11502,6 +11632,8 @@ function mtMediaPrefetchAround(centerIdx) {
 }
 
 // シーク (MediaElement)
+// v9.0.5: アンチクリックガード — master を一瞬絞ってから currentTime セット
+//         audio 内部の buffer flush で出るプチッ音を隠す
 function mtMediaSeekTo(seekSec) {
   if (state.multitrack.currentSongIdx < 0 && state.multitrack.selectedIdx < 0) return;
   const idx = state.multitrack.currentSongIdx >= 0 ? state.multitrack.currentSongIdx : state.multitrack.selectedIdx;
@@ -11510,12 +11642,36 @@ function mtMediaSeekTo(seekSec) {
   if (seekSec > dur - 0.05) seekSec = Math.max(0, dur - 0.05);
   state.multitrack.seekOffset = seekSec;
   if (state.multitrack.isPlaying) {
-    // 再生中: 全 audio に currentTime 一斉セット (5-20ms 内で揃う)
+    // 再生中: アンチクリック → currentTime → master 復帰
     const media = state.multitrack.activeMedia || [];
-    for (const a of media) {
-      try { a.currentTime = seekSec; } catch(_) {}
+    const targetVol = state.masterVol != null ? state.masterVol : 1.0;
+    if (mtCtx && mtMasterGain) {
+      try {
+        const t = mtCtx.currentTime;
+        const cur = mtMasterGain.gain.value;
+        mtMasterGain.gain.cancelScheduledValues(t);
+        mtMasterGain.gain.setValueAtTime(cur, t);
+        // 8ms で 0 に絞る (耳に聞こえない速度のフェード)
+        mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.008);
+        // currentTime セット
+        for (const a of media) {
+          try { a.currentTime = seekSec; } catch(_) {}
+        }
+        // 30ms 後に master 復帰 (audio の buffer flush 完了を待つ)
+        mtMasterGain.gain.setValueAtTime(0, t + 0.030);
+        mtMasterGain.gain.linearRampToValueAtTime(targetVol, t + 0.045);
+      } catch(_) {
+        // ramp 失敗時は fallback で即セット
+        for (const a of media) {
+          try { a.currentTime = seekSec; } catch(_) {}
+        }
+      }
+    } else {
+      for (const a of media) {
+        try { a.currentTime = seekSec; } catch(_) {}
+      }
     }
-    state.multitrack.startTime = mtCtx.currentTime - seekSec;
+    state.multitrack.startTime = mtCtx ? (mtCtx.currentTime - seekSec) : -seekSec;
   } else {
     state.multitrack.startTime = -seekSec;
     mtRenderNow();
@@ -11570,8 +11726,12 @@ function mtMediaFadeOut() {
         if (mtCtx && mtMasterGain) {
           try {
             const t2 = mtCtx.currentTime;
+            const targetVol = state.masterVol != null ? state.masterVol : 1.0;
             mtMasterGain.gain.cancelScheduledValues(t2);
-            mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t2);
+            // v9.0.5: 瞬間的な setValueAtTime ではなく、20ms の linearRamp で復帰
+            //         (audio は pause 済みだが、念のため master も滑らかに)
+            mtMasterGain.gain.setValueAtTime(0, t2);
+            mtMasterGain.gain.linearRampToValueAtTime(targetVol, t2 + 0.020);
           } catch(_) {}
         }
         mtRenderNow();
@@ -12233,12 +12393,21 @@ function mtStopSources() {
 }
 
 function mtStop() {
-  // v9.0.0: MediaElement モードは pause、AudioBuffer モードは disconnect
+  // v9.0.0/v9.0.5: MediaElement モードはアンチクリック付き stop
   if (state.multitrack.playbackMode === 'mediaelement') {
-    try { mtMediaStopAll(); } catch(_) {}
-  } else {
-    mtStopSources();
+    try {
+      _mtMediaStopAllWithFade(() => {
+        state.multitrack.isPlaying = false;
+        mtFsNotifyPlaybackStop();
+        mtStopMeter();
+        try { mtClearPlaybackLock(); } catch(_) {}
+        mtRenderSetlist();
+        mtRenderNow();
+      });
+    } catch(_) {}
+    return;
   }
+  mtStopSources();
   state.multitrack.isPlaying = false;
   mtFsNotifyPlaybackStop();
   mtStopMeter();
