@@ -3224,7 +3224,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.2.2';
+const APP_VERSION = 'v8.2.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4592,7 +4592,9 @@ document.addEventListener('keydown', e => {
 
   // Control shortcuts
   if (e.code === state.controlAssign.fadeout.key) { fadeOutAll(); e.preventDefault(); return; }
-  if (e.code === state.controlAssign.stop.key)    { stopAll();    e.preventDefault(); return; }
+  // ESC = パニックストップ。即停止ではなく 2 秒 (= state.fadeTime) フェードアウト。
+  // → ボタン連打のクリック音や手元の事故を防ぎながら確実に止める。
+  if (e.code === state.controlAssign.stop.key)    { fadeOutAll(); e.preventDefault(); return; }
   if (e.code === state.controlAssign.pause.key)   { pauseAll();   e.preventDefault(); return; }
   if (e.code === 'ArrowUp')    { setMasterVol(state.masterVol + 0.03); e.preventDefault(); return; }
   if (e.code === 'ArrowDown')  { setMasterVol(state.masterVol - 0.03); e.preventDefault(); return; }
