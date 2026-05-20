@@ -3415,7 +3415,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.3';
+const APP_VERSION = 'v9.0.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11523,6 +11523,12 @@ function mtMediaSeekTo(seekSec) {
 }
 
 // FADE OUT (MediaElement)
+// v9.0.4: プチッ音防止のため 4段ガード方式
+//   段1: master gain を 0 までフェード
+//   段2: フェード完了後、master を 0 にホールド + 全 audio.volume=0 + muted=true
+//   段3: 50ms 待って audio.pause()
+//   段4: さらに 50ms 待って master を masterVol に復帰 + audio の volume/muted を元に戻す
+// → audio が完全停止する前に master が大きくなる事故を防ぐ
 function mtMediaFadeOut() {
   if (!mtCtx || !mtMasterGain) { mtStop(); return; }
   if (!state.multitrack.isPlaying) { mtStop(); return; }
@@ -11531,21 +11537,48 @@ function mtMediaFadeOut() {
   const curVal = mtMasterGain.gain.value;
   mtMasterGain.gain.cancelScheduledValues(t);
   mtMasterGain.gain.setValueAtTime(curVal, t);
-  mtMasterGain.gain.linearRampToValueAtTime(0.0001, t + dur);
+  // 段1: 0 まで完全に下げる (linearRamp は 0 に到達可能)
+  mtMasterGain.gain.linearRampToValueAtTime(0, t + dur);
   showToast(`MULTI-TRACK FADE OUT (${dur.toFixed(1)}s)`);
   if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+  // 段2: フェード完了直後に audio を完全ミュート (pause の前)
+  const activeList = (state.multitrack.activeMedia || []).slice();
   setTimeout(() => {
-    mtMediaStopAll();
-    state.multitrack.isPlaying = false;
-    mtStopMeter();
+    // master を 0 にホールド (フェードの最後の微小値を確実に潰す)
     if (mtCtx && mtMasterGain) {
-      const t2 = mtCtx.currentTime;
-      mtMasterGain.gain.cancelScheduledValues(t2);
-      mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t2);
+      try {
+        const tH = mtCtx.currentTime;
+        mtMasterGain.gain.cancelScheduledValues(tH);
+        mtMasterGain.gain.setValueAtTime(0, tH);
+      } catch(_) {}
     }
-    mtRenderNow();
-    mtRenderSetlist();
-  }, dur * 1000 + 80);
+    // 全 audio を volume=0 + muted=true (audio 本体側でも遮断)
+    for (const a of activeList) {
+      try { a.volume = 0; } catch(_) {}
+      try { a.muted = true; } catch(_) {}
+    }
+    // 段3: 50ms 待って pause
+    setTimeout(() => {
+      mtMediaStopAll();
+      state.multitrack.isPlaying = false;
+      mtStopMeter();
+      // 段4: さらに 50ms 待って master を復帰 + audio の volume/muted を元に戻す
+      setTimeout(() => {
+        for (const a of activeList) {
+          try { a.volume = 1; a.muted = false; } catch(_) {}
+        }
+        if (mtCtx && mtMasterGain) {
+          try {
+            const t2 = mtCtx.currentTime;
+            mtMasterGain.gain.cancelScheduledValues(t2);
+            mtMasterGain.gain.setValueAtTime(state.masterVol != null ? state.masterVol : 1.0, t2);
+          } catch(_) {}
+        }
+        mtRenderNow();
+        mtRenderSetlist();
+      }, 50);
+    }, 50);
+  }, dur * 1000 + 30);
 }
 
 // 整理: orphan サンプル削除 / 重複 blob 削除
