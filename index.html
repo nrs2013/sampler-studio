@@ -3216,14 +3216,12 @@
       </div>
       <div class="mt-preload-hint">本番前にロード完了するまでお待ちください</div>
     </div>
-    <!-- v8.4.0: 診断パネル (右下常駐) — JS で生成 -->
-    <div class="mt-diag-panel" id="mtDiagPanel" onclick="mtDiagPanelToggleDetail()" title="クリックで詳細・本番モード切替・事前読込">
+    <!-- 診断パネル (右下常駐) — JS で生成 -->
+    <div class="mt-diag-panel" id="mtDiagPanel" onclick="mtDiagPanelToggleDetail()" title="クリックで詳細・本番モード切替">
       <div class="mt-diag-header">
         <span class="mt-diag-dot" id="mtDiagDot"></span>
         <span class="mt-diag-title" id="mtDiagTitle">MT-FS</span>
       </div>
-      <div class="mt-diag-row"><span class="mt-diag-label">CACHE</span><span class="mt-diag-value" id="mtDiagCacheVal">— —</span></div>
-      <div class="mt-diag-bar"><div class="mt-diag-bar-fill" id="mtDiagBarFill" style="width:0%"></div></div>
       <div class="mt-diag-row"><span class="mt-diag-label">STEMS</span><span class="mt-diag-value" id="mtDiagStemsVal">—</span></div>
       <div class="mt-diag-row"><span class="mt-diag-label">ERRORS</span><span class="mt-diag-value" id="mtDiagErrVal">0</span></div>
     </div>
@@ -3415,7 +3413,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.7';
+const APP_VERSION = 'v9.1.0';
+// v9.1.0: 大整理 — MediaElement 専用化 + 不要 UI / dead code 全削除
 // v9.0.7: フェードアウト終了後のプチッ完全撲滅 — master 復帰を撤廃 (0 のまま固定)
 // v9.0.6: playback lock を 10秒 → 5秒に短縮
 // v9.0.5 アンチクリック網羅:
@@ -10339,20 +10338,13 @@ const mtFs = {
   _abortPending: false,
   // v8.3.0: 失敗した sampleId を記録 (リトライ抑制)
   _failed: new Set(),
-  // v8.4.0: メモリプロファイル ('small'|'medium'|'large'|'xlarge'|'xxlarge')
-  memProfile: 'medium',
-  // v8.4.0: 本番モード (true でキャッシュ凍結 + wakeLock + ESC 長押し化)
+  // v8.4.0: 本番モード (true で wakeLock + ESC 長押し化)
   showMode: false,
   _wakeLock: null,
   // v8.4.0: エラー履歴 (最新 50 件、新しいものが先頭)
   errorLog: [],
   // v8.4.0: watchdog 用 interval id
   _watchdogTimer: null,
-  // v8.4.0: 事前読込中フラグ
-  _preloadInFlight: false,
-  _preloadDone: 0,
-  _preloadTotal: 0,
-  _preloadAbort: false,
   // v8.5.0: 別タブで既にアプリが開かれているか (Web Locks)
   _otherTabActive: false,
   // v8.5.0: 直近の freeze/resume タイムスタンプ (診断用)
@@ -10373,30 +10365,7 @@ function mtFsLogError(kind, msg, extra) {
   try { _mtDiagPanelUpdate(); } catch(_) {}
 }
 
-// v8.3.0/8.4.0: LRU 設定
-// 1曲 12 STEM × 70MB ≒ 840MB → 計4曲分を上限とする
-const MT_LRU_KEEP_AHEAD  = 2;   // 次2曲分まで先読み + 保持
-const MT_LRU_KEEP_BEHIND = 1;   // 前1曲分は保持 (戻ったとき即再生)
-const MT_LRU_MAX_BUFFERS = 60;  // 安全弁 (= 5曲分相当)。これを超えたら強制 evict
-
-// v8.4.0: メモリ上限 (バイト)。これを超えるとリハ前読み込みで停止する。
-// navigator.deviceMemory ベースで初期化、ユーザー設定で上書き可能。
-const MT_MEM_PROFILES = {
-  small:  { bytes: 2 * 1024*1024*1024, label: '2 GB (16GB Mac 安全)' },
-  medium: { bytes: 4 * 1024*1024*1024, label: '4 GB (16GB Mac 標準)' },
-  large:  { bytes: 6 * 1024*1024*1024, label: '6 GB (32GB Mac)' },
-  xlarge: { bytes: 10* 1024*1024*1024, label: '10 GB (64GB Mac)' },
-  xxlarge:{ bytes: 15* 1024*1024*1024, label: '15 GB (Studio 級)' },
-};
-function _mtFsAutoProfile() {
-  // navigator.deviceMemory は Chrome では 0.25, 0.5, 1, 2, 4, 8 にクランプされる
-  // (>=8GB はすべて 8 と返ってくる。フィンガープリント対策)
-  const dm = (navigator.deviceMemory || 8);
-  if (dm <= 4) return 'small';
-  if (dm < 8)  return 'medium';
-  // >=8GB: 区別できないので medium をデフォルトに、ユーザーが手動で上げる前提
-  return 'medium';
-}
+// v9.1.0: LRU / メモリプロファイルは MediaElement 専用化により撤去
 
 // v8.3.0: sampleId 単位 in-flight キャッシュ
 // 同じ sampleId に対する並行 _mtFsLoadOne 呼び出しを 1 本にまとめる
@@ -10405,24 +10374,8 @@ const _mtLoadInFlight = new Map(); // sampleId → Promise<{ok, buf, reason}>
 // v8.3.0: mtPlaySong 連打ガード
 let _mtPlaySongInFlight = false;
 
-// v8.3.0: 「保持すべき曲インデックス」を集める (LRU の center 周辺)
-function _mtFsBuildKeepSet() {
-  const m = state.multitrack;
-  const total = (m.songs || []).length;
-  const keep = new Set();
-  if (total === 0) return keep;
-  // 中心 = 現在再生中の曲 > 選択中の曲
-  let center = m.currentSongIdx;
-  if (!(center >= 0 && center < total)) center = m.selectedIdx;
-  if (!(center >= 0 && center < total)) center = 0;
-  for (let d = -MT_LRU_KEEP_BEHIND; d <= MT_LRU_KEEP_AHEAD; d++) {
-    const i = center + d;
-    if (i >= 0 && i < total) keep.add(i);
-  }
-  return keep;
-}
-
-// v8.3.0: 1曲分の sampleId を集める
+// v9.1.0: LRU 関連は MediaElement 専用化により撤去
+// 必要最小限のヘルパー (sampleId 集計) だけ残す
 function _mtFsSongSampleIds(songIdx) {
   const song = state.multitrack.songs[songIdx];
   const ids = new Set();
@@ -10432,103 +10385,8 @@ function _mtFsSongSampleIds(songIdx) {
   }
   return ids;
 }
-
-// v8.3.0: keepSet 内の曲が持つ全 sampleId を集める
-function _mtFsBuildKeepIds() {
-  const keepSongIdx = _mtFsBuildKeepSet();
-  const keepIds = new Set();
-  for (const i of keepSongIdx) {
-    _mtFsSongSampleIds(i).forEach(id => keepIds.add(id));
-  }
-  // 現在 activeSources で鳴っている buffer の sampleId は必ず保護 (念のため)
-  // ※ source 自体は buffer 参照を保持するので削除しても再生は止まらないが、
-  //   削除後に同じ buffer が再度必要になった時に再 decode を防ぐ
-  return keepIds;
-}
-
-// v8.3.0/8.4.0: LRU eviction — keep 外のバッファを破棄してメモリ解放
-// 本番モード ON のときは凍結 (キャッシュを一切捨てない)。
-// メモリ上限超過時のみ強制 evict (本番中の安全策)。
-function _mtFsEvictLRU() {
-  // 本番モード時: 通常の eviction はスキップ。ただし上限超過時は別途処理。
-  if (mtFs.showMode) {
-    _mtFsEvictByMemPressure();
-    return;
-  }
-  const keepIds = _mtFsBuildKeepIds();
-  let removed = 0;
-  let removedBytes = 0;
-  for (const id of Object.keys(mtDecodedCache)) {
-    if (!keepIds.has(id)) {
-      const buf = mtDecodedCache[id];
-      if (buf && typeof buf.length === 'number') {
-        // bytes = samples × ch × 4 (float32)
-        removedBytes += buf.length * (buf.numberOfChannels || 2) * 4;
-      }
-      delete mtDecodedCache[id];
-      removed++;
-    }
-  }
-  if (removed > 0) {
-    console.log(`[mtFs] LRU evict: ${removed} buffers, ~${(removedBytes/1024/1024).toFixed(1)} MB freed`);
-  }
-  // 安全弁: それでも MAX_BUFFERS を超えていたら警告 (この時は keep 内が大きすぎる)
-  const remaining = Object.keys(mtDecodedCache).length;
-  if (remaining > MT_LRU_MAX_BUFFERS) {
-    console.warn(`[mtFs] LRU: cache still has ${remaining} buffers (over ${MT_LRU_MAX_BUFFERS}). Consider reducing LRU range.`);
-  }
-}
-
-// v8.4.0: メモリ上限を超えそうな時の強制 evict。最古アクセスのものから削る。
-// 本番モード中でも上限を 95% 超えたら発動 (タブクラッシュよりはマシ)。
-function _mtFsEvictByMemPressure() {
-  const limitBytes = MT_MEM_PROFILES[mtFs.memProfile].bytes;
-  const currentMB = _mtFsCacheSizeMB();
-  const currentBytes = currentMB * 1024 * 1024;
-  if (currentBytes < limitBytes * 0.95) return;  // まだ余裕あり
-  // 現在曲の sampleId は絶対に守る
-  const protectIds = new Set();
-  const curIdx = state.multitrack.currentSongIdx;
-  if (curIdx >= 0) {
-    _mtFsSongSampleIds(curIdx).forEach(id => protectIds.add(id));
-  }
-  // アクセス時刻順にソートして古いものから削る
-  const entries = Object.keys(mtDecodedCache)
-    .filter(id => !protectIds.has(id))
-    .map(id => ({ id, last: _mtCacheLastAccess[id] || 0 }))
-    .sort((a, b) => a.last - b.last);
-  let freedBytes = 0;
-  const target = currentBytes - limitBytes * 0.80;  // 80% 以下まで戻す
-  for (const e of entries) {
-    const buf = mtDecodedCache[e.id];
-    if (buf && typeof buf.length === 'number') {
-      freedBytes += buf.length * (buf.numberOfChannels || 2) * 4;
-    }
-    delete mtDecodedCache[e.id];
-    delete _mtCacheLastAccess[e.id];
-    if (freedBytes >= target) break;
-  }
-  console.warn(`[mtFs] mem-pressure evict: ${(freedBytes/1024/1024).toFixed(1)} MB freed (limit ${(limitBytes/1024/1024/1024).toFixed(1)} GB)`);
-  mtFsLogError('warn', `メモリ上限近く、古い ${(freedBytes/1024/1024).toFixed(0)}MB を解放`);
-}
-
-// v8.4.0: 最終アクセス時刻 (sampleId → ms timestamp)
-const _mtCacheLastAccess = {};
-function _mtTouchSampleId(sampleId) {
-  if (sampleId) _mtCacheLastAccess[sampleId] = Date.now();
-}
-
-// v8.3.0: メモリ使用量を MB で算出 (診断用)
-function _mtFsCacheSizeMB() {
-  let bytes = 0;
-  for (const id in mtDecodedCache) {
-    const buf = mtDecodedCache[id];
-    if (buf && typeof buf.length === 'number') {
-      bytes += buf.length * (buf.numberOfChannels || 2) * 4;
-    }
-  }
-  return bytes / 1024 / 1024;
-}
+// 旧 AudioBuffer 経路の no-op (mtFsPrioritizeSong 呼び出しは MediaElement では mtMediaPrefetchAround を呼ぶ)
+function _mtTouchSampleId(_id) { /* no-op (LRU 撤去) */ }
 
 function _mtFsCollectAllIds() {
   const ids = [];
@@ -10755,15 +10613,10 @@ async function mtFsInit() {
   const m = state.multitrack;
   const center = (m.selectedIdx >= 0) ? m.selectedIdx
                : (m.currentSongIdx >= 0) ? m.currentSongIdx : 0;
-  // v9.0.3 Fix5: 再生方式に応じて prefetch を分岐
-  // MediaElement モード時は AudioBuffer の decode を走らせない (メモリ無駄)
+  // v9.1.0: MediaElement 専用に統一 (AudioBuffer の prefetch は撤去)
   setTimeout(() => {
     try {
-      if (state.multitrack.playbackMode === 'mediaelement') {
-        if (typeof mtMediaPrefetchAround === 'function') mtMediaPrefetchAround(center);
-      } else {
-        mtFsPrioritizeSong(center);
-      }
+      if (typeof mtMediaPrefetchAround === 'function') mtMediaPrefetchAround(center);
     } catch(_) {}
   }, 100);
   console.log(`[mtFs] init complete (probe only) — ${ids.length} files registered, prefetching around song ${center}`);
@@ -10775,50 +10628,16 @@ async function mtFsReconnect() {
   await _mtFsLoadMany(ids, true);
 }
 
-async function mtFsLoadSongUrgent(songIdx) {
-  const song = state.multitrack.songs[songIdx];
-  if (!song) return;
-  const ids = [];
-  for (const g of MT_GROUPS) {
-    mtGetLayers(song, g).forEach(l => {
-      if (l && l.sampleId && !mtDecodedCache[l.sampleId]) ids.push(l.sampleId);
-    });
-  }
-  if (ids.length === 0) return;
-  // 並列で一気に decode（直列だと 6 ファイルで 6 倍時間かかる）
-  await Promise.all(ids.map(id => _mtFsLoadOne(id, true)));
-  try { mtRecomputeSongDuration(); } catch(_) {}
-}
+// v9.1.0: mtFsLoadSongUrgent は MediaElement 専用化により撤去
+// dead code path (mtPlaySong の AudioBuffer 経路) の参照維持のため no-op スタブ
+async function mtFsLoadSongUrgent() { /* no-op */ }
 
-// 選択中の曲をバックグラウンドで先読み（待たない、SPACE 押下時のラグを減らす）
-// v8.3.0: 隣接曲 (前1 + 当該 + 次2) も同時先読み + LRU eviction を実行
+// 選択中の曲をバックグラウンドで先読み (MediaElement 専用にリダイレクト)
+// 旧コードから呼ばれる箇所が複数あるため、関数は残しつつ MediaElement の prefetch に委譲
 function mtFsPrioritizeSong(songIdx) {
-  const total = state.multitrack.songs.length;
-  if (songIdx < 0 || songIdx >= total) return;
-  // 対象: center ± LRU 範囲
-  const targets = [songIdx];
-  for (let d = 1; d <= MT_LRU_KEEP_AHEAD; d++) {
-    if (songIdx + d < total) targets.push(songIdx + d);
+  if (typeof mtMediaPrefetchAround === 'function') {
+    try { mtMediaPrefetchAround(songIdx); } catch(_) {}
   }
-  for (let d = 1; d <= MT_LRU_KEEP_BEHIND; d++) {
-    if (songIdx - d >= 0) targets.push(songIdx - d);
-  }
-  // 全 sampleId を集めて、未ロードのものだけ load
-  const allIds = new Set();
-  for (const i of targets) {
-    _mtFsSongSampleIds(i).forEach(id => allIds.add(id));
-  }
-  const toLoad = [];
-  for (const id of allIds) {
-    if (!mtDecodedCache[id]) toLoad.push(id);
-  }
-  // 先読みはバックグラウンド (await しない)
-  if (toLoad.length > 0) {
-    console.log(`[mtFs] prefetch ${toLoad.length} STEMs around song ${songIdx}`);
-    Promise.all(toLoad.map(id => _mtFsLoadOne(id, false))).catch(_ => {});
-  }
-  // 同時に LRU eviction を実行 (range 外の buffer を解放)
-  _mtFsEvictLRU();
 }
 
 function mtFsGetBuffer(sampleId) {
@@ -10833,68 +10652,8 @@ function mtFsNotifyPlaybackStop()  { mtFs.isPlaybackActive = false; }
 // v8.4.0: 本番安心パック
 // ============================================================================
 
-// --- 全曲事前読み込み (リハ前用) ---
-async function mtFsPreloadAll() {
-  if (mtFs._preloadInFlight) {
-    showToast('既に事前読み込み中です'); return;
-  }
-  const ids = _mtFsCollectAllIds().filter(id => !mtDecodedCache[id] && !mtFs._failed.has(id));
-  if (ids.length === 0) {
-    showToast('全ファイル既に読み込み済みです');
-    return;
-  }
-  mtFs._preloadInFlight = true;
-  mtFs._preloadAbort = false;
-  mtFs._preloadDone = 0;
-  mtFs._preloadTotal = ids.length;
-  const limitBytes = MT_MEM_PROFILES[mtFs.memProfile].bytes;
-  let stoppedByLimit = false;
-  showToast(`▶ 事前読み込み開始: ${ids.length} ファイル`);
-  try {
-    let idx = 0;
-    const CONCURRENCY = 3;
-    async function worker() {
-      while (idx < ids.length && !mtFs._preloadAbort) {
-        // メモリ上限チェック
-        const curBytes = _mtFsCacheSizeMB() * 1024 * 1024;
-        if (curBytes > limitBytes * 0.95) {
-          stoppedByLimit = true;
-          break;
-        }
-        const i = idx++;
-        const sid = ids[i];
-        if (mtDecodedCache[sid]) { mtFs._preloadDone++; continue; }
-        await _mtFsLoadOne(sid, false);
-        mtFs._preloadDone++;
-        try { _mtDiagPanelUpdate(); } catch(_) {}
-      }
-    }
-    const workers = [];
-    for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
-    await Promise.all(workers);
-  } catch(e) {
-    console.error('[mtFs] preload error', e);
-    mtFsLogError('preload', 'preload エラー: ' + (e.message || e));
-  } finally {
-    mtFs._preloadInFlight = false;
-    if (mtFs._preloadAbort) showToast('事前読み込み中断');
-    else if (stoppedByLimit) showToast(`⚠️ メモリ上限到達、${mtFs._preloadDone}/${mtFs._preloadTotal} で停止`);
-    else showToast(`✓ 事前読み込み完了 ${mtFs._preloadDone} ファイル`);
-    try { _mtDiagPanelUpdate(); } catch(_) {}
-  }
-}
-function mtFsPreloadAbort() { mtFs._preloadAbort = true; }
-
-// --- メモリプロファイル切替 ---
-function mtFsSetMemProfile(profile) {
-  if (!MT_MEM_PROFILES[profile]) return;
-  mtFs.memProfile = profile;
-  try { localStorage.setItem('mt_mem_profile', profile); } catch(_) {}
-  console.log('[mtFs] mem profile →', profile);
-  // 即時 evict (上限縮小時に超過分を解放)
-  _mtFsEvictByMemPressure();
-  try { _mtDiagPanelUpdate(); } catch(_) {}
-}
+// v9.1.0: mtFsPreloadAll / mtFsPreloadAbort / mtFsSetMemProfile は撤去
+// (MediaElement モードでは事前読込もメモリ上限管理も不要)
 
 // --- 本番モード切替 ---
 async function mtFsSetShowMode(on) {
@@ -11822,28 +11581,15 @@ function _mtDiagPanelUpdate() {
   panel.classList.toggle('show-mode', mtFs.showMode);
   const dot = document.getElementById('mtDiagDot');
   const title = document.getElementById('mtDiagTitle');
-  const cacheVal = document.getElementById('mtDiagCacheVal');
-  const barFill = document.getElementById('mtDiagBarFill');
   const stemsVal = document.getElementById('mtDiagStemsVal');
   const errVal = document.getElementById('mtDiagErrVal');
-  // キャッシュ使用量
-  const usedMB = _mtFsCacheSizeMB();
-  const limitMB = MT_MEM_PROFILES[mtFs.memProfile].bytes / 1024 / 1024;
-  const pct = limitMB > 0 ? Math.min(100, (usedMB / limitMB) * 100) : 0;
-  const cacheCount = Object.keys(mtDecodedCache).length;
-  if (cacheVal) cacheVal.textContent = `${usedMB.toFixed(0)}/${limitMB.toFixed(0)} MB`;
-  if (barFill) {
-    barFill.style.width = pct + '%';
-    barFill.classList.remove('warn', 'error');
-    if (pct > 90) barFill.classList.add('error');
-    else if (pct > 70) barFill.classList.add('warn');
-  }
-  // 鳴ってる STEM 数
+  // 鳴ってる STEM 数 / 読込済 STEM 数
   const playing = state.multitrack.isPlaying;
-  const activeCnt = (state.multitrack.activeSources || []).length;
+  const activeCnt = (state.multitrack.activeMedia || []).length;
+  const loadedCnt = Object.keys(mtMediaCache).length;
   if (stemsVal) {
     if (playing) stemsVal.textContent = `${activeCnt} 再生中`;
-    else stemsVal.textContent = `${cacheCount} 常駐`;
+    else stemsVal.textContent = `${loadedCnt} 読込済`;
   }
   // エラー
   if (errVal) {
@@ -11861,11 +11607,9 @@ function _mtDiagPanelUpdate() {
     } else if (mtFs.state === 'needs_reconnect') {
       dot.classList.add('warn');
       title.textContent = 'RECONNECT';
-    } else if (mtFs.state === 'loading' || mtFs._preloadInFlight) {
+    } else if (mtFs.state === 'loading') {
       dot.classList.add('warn');
-      title.textContent = mtFs._preloadInFlight
-        ? `PRELOAD ${mtFs._preloadDone}/${mtFs._preloadTotal}`
-        : 'LOADING';
+      title.textContent = 'LOADING';
     } else if (mtFs.showMode) {
       title.textContent = '本番モード';
     } else {
@@ -11895,14 +11639,9 @@ function mtDiagPanelToggleDetail() {
 function _mtDiagDetailRender() {
   const detail = document.getElementById('mtDiagDetail');
   if (!detail) return;
-  const usedMB = _mtFsCacheSizeMB();
-  const limitGB = MT_MEM_PROFILES[mtFs.memProfile].bytes / 1024 / 1024 / 1024;
-  const cacheCount = Object.keys(mtDecodedCache).length;
   const failedCount = mtFs._failed.size;
   const totalIds = _mtFsCollectAllIds().length;
-  const memOptions = Object.entries(MT_MEM_PROFILES)
-    .map(([k, v]) => `<option value="${k}" ${k === mtFs.memProfile ? 'selected' : ''}>${v.label}</option>`)
-    .join('');
+  const mediaLoaded = Object.keys(mtMediaCache).length;
   const errors = mtFs.errorLog.slice(0, 20);
   const errHTML = errors.length === 0
     ? '<div class="mt-diag-err-item" style="text-align:center;opacity:0.5;">エラー履歴なし</div>'
@@ -11915,45 +11654,21 @@ function _mtDiagDetailRender() {
           <span class="mt-diag-err-msg">${e.msg.replace(/</g,'&lt;').slice(0,140)}</span>
         </div>`;
       }).join('');
-  const preloadStatus = mtFs._preloadInFlight
-    ? `<div class="mt-diag-progress-bar"><div class="mt-diag-progress-fill" style="width:${Math.floor(100*mtFs._preloadDone/Math.max(1,mtFs._preloadTotal))}%"></div></div>
-       <div style="font-size:9px;opacity:0.7;margin-top:2px;">進行中: ${mtFs._preloadDone}/${mtFs._preloadTotal}</div>`
-    : '';
   detail.innerHTML = `
     <button class="mt-diag-close" onclick="mtDiagPanelToggleDetail()" title="閉じる">×</button>
     <h3>📊 MULTI-TRACK 診断</h3>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">状態</span><span class="mt-diag-value">${mtFs.state}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">キャッシュ</span><span class="mt-diag-value">${cacheCount} 件 ${usedMB.toFixed(1)} MB</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">登録 STEM 総数</span><span class="mt-diag-value">${totalIds}</span></div>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">読込済 STEM</span><span class="mt-diag-value">${mediaLoaded}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
 
-    <h4>再生方式 (v9.0.0)</h4>
-    <select class="mt-diag-mem-select" onchange="mtSetPlaybackMode(this.value); _mtDiagDetailRender();">
-      <option value="mediaelement" ${state.multitrack.playbackMode === 'mediaelement' ? 'selected' : ''}>MediaElement (ストリーミング・推奨) — メモリ激軽</option>
-      <option value="audiobuffer" ${state.multitrack.playbackMode === 'audiobuffer' ? 'selected' : ''}>AudioBuffer (全 RAM 展開・旧式) — sample 精度</option>
-    </select>
-    <div style="font-size:9px;opacity:0.6;margin-top:4px;">
-      ${state.multitrack.playbackMode === 'mediaelement'
-        ? '🟢 ディスクからストリーミング再生 (1曲 5-10MB)。LRU・上限管理は不要'
-        : '🟡 全曲を RAM に展開 (1曲 530MB)。LRU 必須、上限注意'}
-    </div>
-
-    <h4>メモリ上限 (${limitGB.toFixed(1)} GB)</h4>
-    <select class="mt-diag-mem-select" onchange="mtFsSetMemProfile(this.value); _mtDiagDetailRender();">${memOptions}</select>
-
     <h4>操作</h4>
-    <div class="mt-diag-btn-row">
-      <button class="mt-diag-btn" onclick="mtFsPreloadAll().then(_mtDiagDetailRender)" ${mtFs._preloadInFlight?'disabled':''}>📥 全曲事前読込</button>
-      ${mtFs._preloadInFlight ? '<button class="mt-diag-btn warn" onclick="mtFsPreloadAbort()">中断</button>' : ''}
-    </div>
-    ${preloadStatus}
     <div class="mt-diag-btn-row">
       <button class="mt-diag-btn ${mtFs.showMode?'show-mode-active':''}" onclick="mtFsSetShowMode(!mtFs.showMode).then(_mtDiagDetailRender)">${mtFs.showMode?'🎭 本番モード OFF':'🎭 本番モード ON'}</button>
     </div>
     <div class="mt-diag-btn-row">
       <button class="mt-diag-btn warn" onclick="mtFsClearErrors(); _mtDiagDetailRender();">エラー履歴クリア</button>
-      <button class="mt-diag-btn warn" onclick="mtFsForceEvict(); _mtDiagDetailRender();">キャッシュ全クリア</button>
     </div>
 
     <h4>エラー履歴 (新しい順 / 最新 20 件)</h4>
@@ -11963,65 +11678,8 @@ function _mtDiagDetailRender() {
 
 function mtFsClearErrors() { mtFs.errorLog = []; _mtDiagPanelUpdate(); }
 
-// v9.0.0/9.0.3: 再生方式の切替 ('audiobuffer' | 'mediaelement')
-function mtSetPlaybackMode(mode) {
-  if (mode !== 'audiobuffer' && mode !== 'mediaelement') return;
-  if (state.multitrack.playbackMode === mode) return;
-  // 再生中なら一旦止める
-  if (state.multitrack.isPlaying) {
-    try { mtStop(); } catch(_) {}
-  }
-  // v9.0.3: 使わない側のキャッシュは捨てる (両方残してメモリを倍食う事故防止)
-  if (mode === 'mediaelement') {
-    // 旧 AudioBuffer 全破棄
-    try {
-      const ids = Object.keys(mtDecodedCache);
-      for (const id of ids) { delete mtDecodedCache[id]; }
-      if (_mtCacheLastAccess) { for (const id in _mtCacheLastAccess) delete _mtCacheLastAccess[id]; }
-      console.log(`[mt] discarded ${ids.length} AudioBuffer entries on mode switch`);
-    } catch(_) {}
-  } else {
-    // 旧 MediaElement 全破棄
-    try { _mtMediaCacheClear(); } catch(_) {}
-  }
-  state.multitrack.playbackMode = mode;
-  try { mtSave(); } catch(_) {}
-  console.log('[mt] playbackMode →', mode);
-  showToast(mode === 'mediaelement'
-    ? '✓ MediaElement 方式に切替 — メモリ激軽でストリーミング再生'
-    : '✓ AudioBuffer 方式に切替 — 全 RAM 展開 (旧式)');
-  try { mtRecomputeSongDuration(); } catch(_) {}
-  try { mtRenderNow(); } catch(_) {}
-  try { _mtDiagPanelUpdate(); } catch(_) {}
-}
-function mtFsForceEvict() {
-  // 現在曲以外を全部破棄 (緊急用)
-  // v9.0.3: MediaElement モード時は再生中以外の audio も全クリア
-  const protectIds = new Set();
-  const curIdx = state.multitrack.currentSongIdx;
-  if (curIdx >= 0) _mtFsSongSampleIds(curIdx).forEach(id => protectIds.add(id));
-  let removed = 0;
-  // AudioBuffer cache
-  for (const id of Object.keys(mtDecodedCache)) {
-    if (!protectIds.has(id)) { delete mtDecodedCache[id]; delete _mtCacheLastAccess[id]; removed++; }
-  }
-  // MediaElement cache (再生中以外)
-  for (const id of Object.keys(mtMediaCache)) {
-    if (!protectIds.has(id)) {
-      const e = mtMediaCache[id];
-      if (e) {
-        try { if (e.audio) e.audio.pause(); } catch(_) {}
-        try { if (e.source) e.source.disconnect(); } catch(_) {}
-        try { if (e.audio) { e.audio.src = ''; e.audio.removeAttribute('src'); e.audio.load(); } } catch(_) {}
-        try { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); } catch(_) {}
-      }
-      delete mtMediaCache[id];
-      removed++;
-    }
-  }
-  showToast(`キャッシュクリア: ${removed} 件破棄`);
-  mtFsLogError('warn', `手動キャッシュクリア: ${removed} 件破棄`);
-}
+// v9.1.0: mtSetPlaybackMode / mtFsForceEvict は撤去
+// (再生方式は MediaElement 固定、キャッシュクリアは UI 廃止)
 
 // ヘッダー右側の本番モードバッジ更新 (将来 mark on header — placeholder)
 function _mtRenderShowModeBadge() { _mtDiagPanelUpdate(); }
@@ -13771,13 +13429,7 @@ async function mtInit() {
 
   // ファイル状態マシン (v8.0) を起動 — permission check → bg load
   mtFsInit().catch(e => console.warn('[mtFs] init failed', e));
-  // v8.4.0: 本番安心パック起動
-  try {
-    // メモリプロファイル復元
-    const savedProf = localStorage.getItem('mt_mem_profile');
-    if (savedProf && MT_MEM_PROFILES[savedProf]) mtFs.memProfile = savedProf;
-    else mtFs.memProfile = _mtFsAutoProfile();
-  } catch(_) {}
+  // v8.4.0/9.1.0: watchdog と診断パネルだけ起動 (メモリプロファイルは撤去)
   try { mtFsStartWatchdog(); } catch(_) {}
   try { _mtDiagPanelStartLoop(); _mtDiagPanelUpdate(); } catch(_) {}
   // v8.5.0: 本番事故防止
