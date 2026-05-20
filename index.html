@@ -118,26 +118,24 @@
     font-size: 8px; color: #5A5A60; text-align: right;
   }
   .fader-track {
-    position: relative; width: 22px; background: #14141A; border-radius: 6px;
+    position: relative; width: 14px; background: #14141A; border-radius: 4px;
     cursor: ns-resize;
     border: 1px solid #25252A;
   }
   .fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
     background: linear-gradient(to top, #3DB5A6, #FF8A0F 80%, #E24B4A 95%);
-    border-radius: 5px;
-  }
-  /* つまみ — 大きく持ちやすく、エッジに溝模様で物理感 */
-  .fader-thumb {
-    position: absolute; left: -10px; right: -10px; height: 20px;
-    background: linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%);
     border-radius: 3px;
+  }
+  /* つまみ — 小ぶり・上品なダークグレー (持ちやすさはキープ) */
+  .fader-thumb {
+    position: absolute; left: -7px; right: -7px; height: 12px;
+    background: linear-gradient(180deg, #4A4A52 0%, #2E2E36 100%);
+    border-radius: 2px;
     transform: translateY(50%);
     pointer-events: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
-    background-image:
-      linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%),
-      repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
+    border: 0.5px solid #5A5A62;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.15);
   }
   /* マスター L/R メーター — はっきり見える本番視認サイズ */
   .meters { display: flex; gap: 2px; align-items: stretch; flex-shrink: 0; }
@@ -2131,9 +2129,9 @@
   }
   /* Fader */
   .mt-strip-fader {
-    position: relative; width: 12px;
+    position: relative; width: 8px;
     background: #14141A;
-    border-radius: 5px;
+    border-radius: 3px;
     cursor: ns-resize;
     flex-shrink: 0;
     border: 1px solid #25252A;
@@ -2163,17 +2161,15 @@
     border-radius: 1px;
     box-shadow: 0 0 4px rgba(61,181,166,0.25);
   }
-  /* つまみ — マスターフェーダーと同じ大きさ / 金属感 */
+  /* つまみ — マスターと同じダークグレーの上品なミニつまみ */
   .mt-strip-fader-thumb {
-    position: absolute; left: -10px; right: -10px; height: 18px;
-    background: linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%);
-    border-radius: 3px;
+    position: absolute; left: -8px; right: -8px; height: 10px;
+    background: linear-gradient(180deg, #4A4A52 0%, #2E2E36 100%);
+    border-radius: 2px;
     transform: translateY(50%);
     pointer-events: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
-    background-image:
-      linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%),
-      repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
+    border: 0.5px solid #5A5A62;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.15);
   }
   /* Meter ステレオ — L / R を 2 本の細いバーで表示 */
   .mt-strip-meter {
@@ -3130,7 +3126,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.15';
+const APP_VERSION = 'v8.1.16';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
