@@ -2329,21 +2329,8 @@
     background: linear-gradient(180deg, rgba(255,184,28,0.18) 0%, #101013 80%) !important;
     box-shadow: 0 0 12px rgba(255,184,28,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
   }
-  /* ready-for-file: 選択中の曲で空のグループは "ファイル待ち" を緑でゆっくりパルス */
-  .mt-strip.ready-for-file {
-    animation: mtStripReady 1.9s ease-in-out infinite;
-  }
-  .mt-strip.ready-for-file.drop-target { animation: none; }
-  @keyframes mtStripReady {
-    0%, 100% {
-      border-color: #1F1F22;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-    }
-    50% {
-      border-color: rgba(61,181,166,0.55);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 10px rgba(61,181,166,0.25);
-    }
-  }
+  /* ready-for-file: 空フェーダーの "ふわっとパルス" は廃止 (気が散るため)
+     アニメーションなしで静かに待つ */
   /* has-layers: 上の .mt-strip.has-layers (ビビッド版) を採用するためここは削除 */
   /* layer-pending: 割当てたが buffer 未ロード → オレンジ点滅でユーザーに reconnect 促す */
   .mt-strip.layer-pending {
@@ -3136,7 +3123,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.9';
+const APP_VERSION = 'v8.1.10';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
