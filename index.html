@@ -3045,7 +3045,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.0.2';
+const APP_VERSION = 'v8.0.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11537,13 +11537,38 @@ if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
 // MULTI-TRACK 初期化（init から呼ぶ）
 async function mtInit() {
   mtLoad();
-  // mtLoad で state.multitrack.songs が populate されるので必ず再描画
-  if (typeof mtRenderAll === 'function') {
-    mtRenderAll();
-    requestAnimationFrame(() => {
-      try { mtRenderAll(); } catch(e) { console.warn('mt re-render frame failed', e); }
+  const songCount = state.multitrack.songs.length;
+  console.log('[mtInit] loaded songs =', songCount);
+
+  // ====================================================================
+  // 多重保険: songs データが loaded されたら必ず DOM に反映する
+  // ====================================================================
+  // setAppMode は state.multitrack.songs が空の状態で mtRenderAll を呼ぶ
+  // 場合があるので、ここで上書きする必要がある。複数タイミングで render
+  // を試み、本番中に「ADD SONG 押すまで何も出ない」事故を確実に防ぐ。
+  const safeRender = (label) => {
+    try {
+      if (typeof mtRenderAll === 'function') {
+        mtRenderAll();
+        console.log('[mtInit] render @', label, 'songs visible =', document.querySelectorAll('#mtSetlistList .mt-song-row').length);
+      }
+    } catch(e) { console.warn('[mtInit] render failed @', label, e); }
+  };
+  safeRender('immediate');
+  requestAnimationFrame(() => safeRender('rAF'));
+  setTimeout(() => safeRender('t+200ms'), 200);
+  setTimeout(() => safeRender('t+1000ms'), 1000);
+
+  // タブ切替でも必ず再描画されるよう、visibilitychange/focus でも保険
+  if (!window._mtInitBoundVisibility) {
+    window._mtInitBoundVisibility = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && state.appMode === 'multi') {
+        safeRender('visibility');
+      }
     });
   }
+
   // ファイル状態マシン (v8.0) を起動 — permission check → bg load
   mtFsInit().catch(e => console.warn('[mtFs] init failed', e));
 }
