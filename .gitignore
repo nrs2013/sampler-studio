@@ -1,1 +1,5 @@
 .claude/
+
+# v11.2.8: バックアップファイルを Git に入れない
+# (index.html.backup-vX.X.X-* / service-worker.js.backup-* 等)
+*.backup-*
