@@ -19,7 +19,10 @@
     background: #0E0E10;
     color: #E6E6EA;
     font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", "Noto Sans JP", sans-serif;
-    overflow: hidden;
+    /* v11.2.9: ウィンドウ縮小時の重なり崩壊を防ぐ — 最小幅 1100px、それ未満は横スクロール */
+    min-width: 1100px;
+    overflow-y: hidden;
+    overflow-x: auto;
     user-select: none;
     /* Prevent Magic Mouse / trackpad horizontal swipe from triggering browser back/forward navigation */
     overscroll-behavior: none;
@@ -3446,7 +3449,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.8';
+const APP_VERSION = 'v11.2.9';
+// v11.2.9: ウィンドウ縮小時の重なり崩壊修正 — body min-width 1100px (それ未満は横スクロール、レイアウトは固定維持)
 // v11.2.8: 本番耐性パッチ — SW キャッシュ名追従 / project.json 保存失敗を toast 通知 / .sampler 二重起動ガード
 // v11.2.7: ANNOUNCE / VIDEO / LOGO の 3 段を flex:1 で固定均等分割 (動的サイズ変動なし)
 // v11.2.6: LOGO カードの枠だけ下まで伸ばす (下の余白を消す)
