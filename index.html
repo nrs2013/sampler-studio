@@ -3129,7 +3129,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.5';
+const APP_VERSION = 'v8.1.6';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3591,13 +3591,48 @@ function dbToLin(db) {
   return Math.pow(10, db / 20);
 }
 
+// マスターフェーダー: スケール表示 +6, +3, 0, -6, -12, -24, -∞ を
+// 位置と一致させる piecewise マッピング。
+// pct (0=bottom, 1=top) ↔ dB の双方向変換。
+const MASTER_DB_STOPS = [
+  { p: 0/6, db: -60 },  // -∞ 近似
+  { p: 1/6, db: -24 },
+  { p: 2/6, db: -12 },
+  { p: 3/6, db: -6  },
+  { p: 4/6, db: 0   },
+  { p: 5/6, db: 3   },
+  { p: 6/6, db: 6   },
+];
+function masterPctToDb(pct) {
+  if (pct <= 0) return -Infinity;
+  if (pct >= 1) return 6;
+  for (let i = 1; i < MASTER_DB_STOPS.length; i++) {
+    if (pct <= MASTER_DB_STOPS[i].p) {
+      const a = MASTER_DB_STOPS[i-1], b = MASTER_DB_STOPS[i];
+      const t = (pct - a.p) / (b.p - a.p);
+      return a.db + (b.db - a.db) * t;
+    }
+  }
+  return 6;
+}
+function masterDbToPct(db) {
+  if (!isFinite(db) || db <= -60) return 0;
+  if (db >= 6) return 1;
+  for (let i = 1; i < MASTER_DB_STOPS.length; i++) {
+    if (db <= MASTER_DB_STOPS[i].db) {
+      const a = MASTER_DB_STOPS[i-1], b = MASTER_DB_STOPS[i];
+      const t = (db - a.db) / (b.db - a.db);
+      return a.p + (b.p - a.p) * t;
+    }
+  }
+  return 1;
+}
+
+const MASTER_MAX_LIN = Math.pow(10, 6/20); // +6 dB = 約 1.995 倍
+
 function setMasterVol(lin) {
-  state.masterVol = Math.max(0, Math.min(1.4, lin)); // up to +3dB
-  // Anti-zipper: cancel any pending ramps, then smoothly ramp from current to target
+  state.masterVol = Math.max(0, Math.min(MASTER_MAX_LIN, lin));
   if (masterGain) safeRamp(masterGain.gain, state.masterVol);
-  // GRAND MASTER: MULTI-TRACK の master gain も同期。
-  // ※ MULTI-TRACK は別 AudioContext (mtCtx) なので別ノードだが、左パネルの
-  //   フェーダーが本アプリ全体のグランドマスターとして全モードを制御する。
   if (typeof mtMasterGain !== 'undefined' && mtMasterGain && mtCtx) {
     try {
       const t = mtCtx.currentTime;
@@ -3607,7 +3642,8 @@ function setMasterVol(lin) {
   }
   const db = linToDb(state.masterVol);
   document.getElementById('masterDbVal').textContent = db === -Infinity ? '-∞' : db.toFixed(1);
-  const pct = (state.masterVol / 1.4) * 100;
+  // スケールと一致する piecewise マッピングで位置を計算
+  const pct = masterDbToPct(db) * 100;
   document.getElementById('masterFill').style.height = pct + '%';
   document.getElementById('masterThumb').style.bottom = pct + '%';
 }
@@ -4396,7 +4432,10 @@ function handleMIDI(e) {
       return;
     }
     if (state.controlAssign.master.midiCC === data1) {
-      setMasterVol((data2 / 127) * 1.4);
+      // MIDI CC 0-127 → piecewise マッピング経由で正しい dB スケールに
+      const pct = data2 / 127;
+      const db = masterPctToDb(pct);
+      setMasterVol(isFinite(db) ? dbToLin(db) : 0);
     }
   }
 }
@@ -6002,9 +6041,11 @@ function bindMasterFader() {
     const y = clientY - rect.top;
     let pct = 1 - (y / rect.height);
     pct = Math.max(0, Math.min(1, pct));
-    let lin = pct * 1.4;
-    // 0dB（lin=1.0）に吸着：±0.07（約 ±0.6dB 相当）以内なら 1.0 にスナップ
-    lin = snapToUnity(lin, 0.07);
+    // piecewise マッピングでスケール (+6/+3/0/-6/-12/-24/-∞) と一致
+    let db = masterPctToDb(pct);
+    // 0dB 付近 (±0.5 dB) はスナップ → 中央 4/6 位置で吸着
+    if (db > -0.5 && db < 0.5) db = 0;
+    const lin = isFinite(db) ? dbToLin(db) : 0;
     setMasterVol(lin);
   };
   fader.addEventListener('mousedown', e => {
