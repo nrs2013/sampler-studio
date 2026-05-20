@@ -265,8 +265,9 @@
   .btn-primary.big-fade.huge-fade:hover { background: #5BC4B0; }
 
   /* LEARN BADGES */
+  /* v11.3.4: font-size 拡大 (8→11px) — 左パネル STOP/PAUSE/MASTER 等の MIDI/KEY バッジが小さくて見えない問題対応 */
   .badge {
-    font-size: 8px; padding: 2px 5px; border-radius: 2px;
+    font-size: 11px; padding: 3px 7px; border-radius: 2px;
     background: #14141A; color: #6A6A70; cursor: pointer; border: none;
     font-family: inherit; letter-spacing: 0.5px;
   }
@@ -397,10 +398,11 @@
   }
   .pad-progress { height: 2px; background: #0E0E10; border-radius: 1px; overflow: hidden; }
   .pad-progress-fill { height: 100%; background: #3DB5A6; border-radius: 1px; width: 0%; }
+  /* v11.3.4: pad 下の MIDI/KEY ショートカット表示を拡大 (7→10px) — 可読性確保 */
   .pad-shortcuts {
-    display: flex; justify-content: space-between; font-size: 7px;
+    display: flex; justify-content: space-between; font-size: 10px;
   }
-  .pad-shortcuts .badge { font-size: 7px; padding: 1px 3px; }
+  .pad-shortcuts .badge { font-size: 10px; padding: 2px 5px; }
 
   /* LEVELS TAB */
   .levels-grid {
@@ -3471,7 +3473,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.3.3';
+const APP_VERSION = 'v11.3.4';
+// v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
 //          デバイスの maxChannelCount に応じて選択肢が動的に変わる → typo 防止、範囲外を物理的に選べない
 //          保存済みアサインが現デバイス範囲外なら "N (範囲外)" として disabled option で表示 (履歴可視化)
