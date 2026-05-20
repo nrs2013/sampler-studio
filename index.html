@@ -2105,6 +2105,148 @@
   }
   .mt-preload-banner.mt-preload-error .mt-preload-label { color: #F5B8B8; }
 
+  /* ============================================================ */
+  /* v8.4.0: 診断パネル (右下常駐)                                 */
+  /* ============================================================ */
+  .mt-diag-panel {
+    position: fixed; right: 12px; bottom: 12px; z-index: 9000;
+    background: linear-gradient(180deg, rgba(15,18,22,0.92), rgba(10,12,15,0.92));
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border: 0.5px solid rgba(61,181,166,0.3); border-radius: 8px;
+    color: #C8D8D0; font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 10px; line-height: 1.5; letter-spacing: 0.3px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(61,181,166,0.1);
+    padding: 8px 10px; min-width: 200px; max-width: 280px;
+    cursor: pointer; user-select: none;
+    transition: all 0.2s;
+  }
+  .mt-diag-panel:hover {
+    border-color: rgba(61,181,166,0.6);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(61,181,166,0.2);
+  }
+  .mt-diag-panel.show-mode {
+    border-color: rgba(255,184,28,0.6);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(255,184,28,0.3);
+    font-size: 11px; min-width: 260px;
+  }
+  .mt-diag-row { display: flex; justify-content: space-between; gap: 12px; }
+  .mt-diag-label { color: rgba(200,216,208,0.6); font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; }
+  .mt-diag-value { color: #3DB5A6; font-weight: 600; }
+  .mt-diag-value.warn { color: #FFB81C; }
+  .mt-diag-value.error { color: #E24B4A; }
+  .mt-diag-panel.show-mode .mt-diag-value { color: #FFB81C; }
+  .mt-diag-bar {
+    height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px;
+    margin: 4px 0 2px; overflow: hidden;
+  }
+  .mt-diag-bar-fill {
+    height: 100%; background: linear-gradient(90deg, #3DB5A6, #88D6C2);
+    transition: width 0.3s;
+  }
+  .mt-diag-bar-fill.warn { background: linear-gradient(90deg, #FFB81C, #FFCB5A); }
+  .mt-diag-bar-fill.error { background: linear-gradient(90deg, #E24B4A, #FF8A8A); }
+  .mt-diag-header {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .mt-diag-title {
+    font-size: 9px; letter-spacing: 1.5px; color: #88D6C2;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .mt-diag-panel.show-mode .mt-diag-title { color: #FFCB5A; }
+  .mt-diag-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #3DB5A6; box-shadow: 0 0 6px #3DB5A6;
+  }
+  .mt-diag-dot.warn { background: #FFB81C; box-shadow: 0 0 6px #FFB81C; }
+  .mt-diag-dot.error { background: #E24B4A; box-shadow: 0 0 6px #E24B4A; }
+  /* 詳細パネル (クリックで展開) */
+  .mt-diag-detail {
+    position: fixed; right: 12px; bottom: 12px; z-index: 9001;
+    background: linear-gradient(180deg, #15181F, #0E1115);
+    border: 0.5px solid rgba(61,181,166,0.5); border-radius: 8px;
+    color: #C8D8D0; font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 10px; line-height: 1.5; letter-spacing: 0.3px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(61,181,166,0.15);
+    padding: 16px 18px; width: 420px; max-height: 540px; overflow: auto;
+  }
+  .mt-diag-detail h3 {
+    font-size: 11px; letter-spacing: 2px; color: #88D6C2; margin: 0 0 12px;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .mt-diag-detail h4 {
+    font-size: 10px; letter-spacing: 1.5px; color: rgba(136,214,194,0.7);
+    margin: 14px 0 6px; text-transform: uppercase; font-weight: 600;
+    border-top: 0.5px solid rgba(61,181,166,0.15); padding-top: 10px;
+  }
+  .mt-diag-detail-row {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 2px 0;
+  }
+  .mt-diag-detail-row .mt-diag-label { font-size: 10px; }
+  .mt-diag-detail-row .mt-diag-value { font-size: 11px; }
+  .mt-diag-mem-select {
+    width: 100%; padding: 4px 6px; background: #0A0B0E;
+    border: 0.5px solid rgba(61,181,166,0.4); border-radius: 4px;
+    color: #C8D8D0; font-family: inherit; font-size: 10px; margin-top: 4px;
+  }
+  .mt-diag-btn {
+    flex: 1; padding: 6px 10px;
+    background: linear-gradient(180deg, rgba(61,181,166,0.12), rgba(61,181,166,0.04));
+    border: 0.5px solid rgba(61,181,166,0.4); color: #88D6C2;
+    border-radius: 4px; font-family: inherit; font-size: 10px;
+    letter-spacing: 1.2px; font-weight: 700; cursor: pointer;
+    transition: all 0.15s; text-transform: uppercase;
+  }
+  .mt-diag-btn:hover {
+    background: linear-gradient(180deg, rgba(61,181,166,0.22), rgba(61,181,166,0.1));
+    border-color: #3DB5A6;
+  }
+  .mt-diag-btn.warn {
+    border-color: rgba(255,184,28,0.4); color: #FFCB5A;
+    background: linear-gradient(180deg, rgba(255,184,28,0.10), rgba(255,184,28,0.04));
+  }
+  .mt-diag-btn.warn:hover {
+    background: linear-gradient(180deg, rgba(255,184,28,0.22), rgba(255,184,28,0.10));
+    border-color: #FFB81C;
+  }
+  .mt-diag-btn.show-mode-active {
+    background: linear-gradient(180deg, #FFB81C, #FFA000);
+    color: #1A1300; border-color: #FFD580;
+    box-shadow: 0 0 12px rgba(255,184,28,0.4);
+  }
+  .mt-diag-btn-row { display: flex; gap: 6px; margin-top: 8px; }
+  .mt-diag-close {
+    position: absolute; top: 8px; right: 10px;
+    background: none; border: none; color: rgba(200,216,208,0.5);
+    font-size: 14px; cursor: pointer; padding: 0; line-height: 1;
+  }
+  .mt-diag-close:hover { color: #E24B4A; }
+  .mt-diag-err-list {
+    max-height: 200px; overflow-y: auto; padding-right: 4px;
+    border: 0.5px solid rgba(61,181,166,0.15); border-radius: 4px;
+    background: #08090C; padding: 6px 8px;
+  }
+  .mt-diag-err-item {
+    padding: 3px 0; border-bottom: 0.5px solid rgba(255,255,255,0.04);
+    font-size: 9px; line-height: 1.5;
+  }
+  .mt-diag-err-item:last-child { border-bottom: none; }
+  .mt-diag-err-time { color: rgba(200,216,208,0.4); font-size: 8px; }
+  .mt-diag-err-kind { color: #FFB81C; font-weight: 600; }
+  .mt-diag-err-kind.warn { color: #FFB81C; }
+  .mt-diag-err-kind.decode { color: #E24B4A; }
+  .mt-diag-err-kind.error { color: #E24B4A; }
+  .mt-diag-err-msg { color: #C8D8D0; }
+  .mt-diag-progress-bar {
+    height: 4px; background: rgba(255,255,255,0.08);
+    border-radius: 2px; overflow: hidden; margin-top: 4px;
+  }
+  .mt-diag-progress-fill {
+    height: 100%; background: linear-gradient(90deg, #3DB5A6, #88D6C2);
+    transition: width 0.2s;
+  }
+
   /* MIXER FADE OUT ボタン (パニックストップ) */
   .mt-fadeout-btn {
     background: linear-gradient(180deg, rgba(226,75,74,0.10), rgba(226,75,74,0.04));
@@ -3074,6 +3216,17 @@
       </div>
       <div class="mt-preload-hint">本番前にロード完了するまでお待ちください</div>
     </div>
+    <!-- v8.4.0: 診断パネル (右下常駐) — JS で生成 -->
+    <div class="mt-diag-panel" id="mtDiagPanel" onclick="mtDiagPanelToggleDetail()" title="クリックで詳細・本番モード切替・事前読込">
+      <div class="mt-diag-header">
+        <span class="mt-diag-dot" id="mtDiagDot"></span>
+        <span class="mt-diag-title" id="mtDiagTitle">MT-FS</span>
+      </div>
+      <div class="mt-diag-row"><span class="mt-diag-label">CACHE</span><span class="mt-diag-value" id="mtDiagCacheVal">— —</span></div>
+      <div class="mt-diag-bar"><div class="mt-diag-bar-fill" id="mtDiagBarFill" style="width:0%"></div></div>
+      <div class="mt-diag-row"><span class="mt-diag-label">STEMS</span><span class="mt-diag-value" id="mtDiagStemsVal">—</span></div>
+      <div class="mt-diag-row"><span class="mt-diag-label">ERRORS</span><span class="mt-diag-value" id="mtDiagErrVal">0</span></div>
+    </div>
     <!-- 1. NOW PLAYING — compact hero -->
     <div class="mt-hero compact" id="mtHero">
       <div class="mt-hero-bg" id="mtHeroBg"></div>
@@ -3262,7 +3415,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.3.0';
+const APP_VERSION = 'v8.4.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -4632,7 +4785,25 @@ document.addEventListener('keydown', e => {
   if (e.code === state.controlAssign.fadeout.key) { fadeOutAll(); e.preventDefault(); return; }
   // ESC = パニックストップ。即停止ではなく 2 秒 (= state.fadeTime) フェードアウト。
   // → ボタン連打のクリック音や手元の事故を防ぎながら確実に止める。
-  if (e.code === state.controlAssign.stop.key)    { fadeOutAll(); e.preventDefault(); return; }
+  // v8.4.0: 本番モード ON 時は長押し 1 秒で発火 (誤押し防止)
+  if (e.code === state.controlAssign.stop.key) {
+    if (typeof mtFs !== 'undefined' && mtFs.showMode) {
+      // 本番モード: 長押し必須。e.repeat が連続して 12 回 (= 約 1 秒) で発火
+      if (e.repeat) {
+        if (!window._mtEscRepeatCnt) window._mtEscRepeatCnt = 0;
+        window._mtEscRepeatCnt++;
+        if (window._mtEscRepeatCnt >= 12) {
+          window._mtEscRepeatCnt = 0;
+          fadeOutAll(); e.preventDefault(); return;
+        }
+      } else {
+        window._mtEscRepeatCnt = 0;
+        try { showToast('本番モード中：ESC は長押しで停止'); } catch(_) {}
+      }
+      e.preventDefault(); return;
+    }
+    fadeOutAll(); e.preventDefault(); return;
+  }
   if (e.code === state.controlAssign.pause.key)   { pauseAll();   e.preventDefault(); return; }
   if (e.code === 'ArrowUp')    { setMasterVol(state.masterVol + 0.03); e.preventDefault(); return; }
   if (e.code === 'ArrowDown')  { setMasterVol(state.masterVol - 0.03); e.preventDefault(); return; }
@@ -6265,6 +6436,8 @@ function setAppMode(m) {
   doSave();
   if (m === 'door') doRenderAll();
   if (m === 'multi' && typeof mtRenderAll === 'function') mtRenderAll();
+  // v8.4.0: 診断パネルは multi 時のみ表示
+  try { if (typeof _mtDiagPanelUpdate === 'function') _mtDiagPanelUpdate(); } catch(_) {}
   // Pad grid の再計算
   if (typeof resizePads === 'function') setTimeout(resizePads, 30);
 }
@@ -10124,13 +10297,59 @@ const mtFs = {
   _abortPending: false,
   // v8.3.0: 失敗した sampleId を記録 (リトライ抑制)
   _failed: new Set(),
+  // v8.4.0: メモリプロファイル ('small'|'medium'|'large'|'xlarge'|'xxlarge')
+  memProfile: 'medium',
+  // v8.4.0: 本番モード (true でキャッシュ凍結 + wakeLock + ESC 長押し化)
+  showMode: false,
+  _wakeLock: null,
+  // v8.4.0: エラー履歴 (最新 50 件、新しいものが先頭)
+  errorLog: [],
+  // v8.4.0: watchdog 用 interval id
+  _watchdogTimer: null,
+  // v8.4.0: 事前読込中フラグ
+  _preloadInFlight: false,
+  _preloadDone: 0,
+  _preloadTotal: 0,
+  _preloadAbort: false,
 };
 
-// v8.3.0: LRU 設定
-// 1曲 12 STEM × 70MB ≒ 840MB → Chrome タブ実用上限 3〜4GB → 計4曲分を上限とする
+// v8.4.0: エラー履歴に追加 (showToast から呼ぶ + watchdog からも)
+function mtFsLogError(kind, msg, extra) {
+  const entry = {
+    ts: Date.now(),
+    kind: kind || 'error',
+    msg: String(msg || ''),
+    extra: extra || null,
+  };
+  mtFs.errorLog.unshift(entry);
+  if (mtFs.errorLog.length > 50) mtFs.errorLog.length = 50;
+  try { _mtDiagPanelUpdate(); } catch(_) {}
+}
+
+// v8.3.0/8.4.0: LRU 設定
+// 1曲 12 STEM × 70MB ≒ 840MB → 計4曲分を上限とする
 const MT_LRU_KEEP_AHEAD  = 2;   // 次2曲分まで先読み + 保持
 const MT_LRU_KEEP_BEHIND = 1;   // 前1曲分は保持 (戻ったとき即再生)
 const MT_LRU_MAX_BUFFERS = 60;  // 安全弁 (= 5曲分相当)。これを超えたら強制 evict
+
+// v8.4.0: メモリ上限 (バイト)。これを超えるとリハ前読み込みで停止する。
+// navigator.deviceMemory ベースで初期化、ユーザー設定で上書き可能。
+const MT_MEM_PROFILES = {
+  small:  { bytes: 2 * 1024*1024*1024, label: '2 GB (16GB Mac 安全)' },
+  medium: { bytes: 4 * 1024*1024*1024, label: '4 GB (16GB Mac 標準)' },
+  large:  { bytes: 6 * 1024*1024*1024, label: '6 GB (32GB Mac)' },
+  xlarge: { bytes: 10* 1024*1024*1024, label: '10 GB (64GB Mac)' },
+  xxlarge:{ bytes: 15* 1024*1024*1024, label: '15 GB (Studio 級)' },
+};
+function _mtFsAutoProfile() {
+  // navigator.deviceMemory は Chrome では 0.25, 0.5, 1, 2, 4, 8 にクランプされる
+  // (>=8GB はすべて 8 と返ってくる。フィンガープリント対策)
+  const dm = (navigator.deviceMemory || 8);
+  if (dm <= 4) return 'small';
+  if (dm < 8)  return 'medium';
+  // >=8GB: 区別できないので medium をデフォルトに、ユーザーが手動で上げる前提
+  return 'medium';
+}
 
 // v8.3.0: sampleId 単位 in-flight キャッシュ
 // 同じ sampleId に対する並行 _mtFsLoadOne 呼び出しを 1 本にまとめる
@@ -10180,8 +10399,15 @@ function _mtFsBuildKeepIds() {
   return keepIds;
 }
 
-// v8.3.0: LRU eviction — keep 外のバッファを破棄してメモリ解放
+// v8.3.0/8.4.0: LRU eviction — keep 外のバッファを破棄してメモリ解放
+// 本番モード ON のときは凍結 (キャッシュを一切捨てない)。
+// メモリ上限超過時のみ強制 evict (本番中の安全策)。
 function _mtFsEvictLRU() {
+  // 本番モード時: 通常の eviction はスキップ。ただし上限超過時は別途処理。
+  if (mtFs.showMode) {
+    _mtFsEvictByMemPressure();
+    return;
+  }
   const keepIds = _mtFsBuildKeepIds();
   let removed = 0;
   let removedBytes = 0;
@@ -10204,6 +10430,45 @@ function _mtFsEvictLRU() {
   if (remaining > MT_LRU_MAX_BUFFERS) {
     console.warn(`[mtFs] LRU: cache still has ${remaining} buffers (over ${MT_LRU_MAX_BUFFERS}). Consider reducing LRU range.`);
   }
+}
+
+// v8.4.0: メモリ上限を超えそうな時の強制 evict。最古アクセスのものから削る。
+// 本番モード中でも上限を 95% 超えたら発動 (タブクラッシュよりはマシ)。
+function _mtFsEvictByMemPressure() {
+  const limitBytes = MT_MEM_PROFILES[mtFs.memProfile].bytes;
+  const currentMB = _mtFsCacheSizeMB();
+  const currentBytes = currentMB * 1024 * 1024;
+  if (currentBytes < limitBytes * 0.95) return;  // まだ余裕あり
+  // 現在曲の sampleId は絶対に守る
+  const protectIds = new Set();
+  const curIdx = state.multitrack.currentSongIdx;
+  if (curIdx >= 0) {
+    _mtFsSongSampleIds(curIdx).forEach(id => protectIds.add(id));
+  }
+  // アクセス時刻順にソートして古いものから削る
+  const entries = Object.keys(mtDecodedCache)
+    .filter(id => !protectIds.has(id))
+    .map(id => ({ id, last: _mtCacheLastAccess[id] || 0 }))
+    .sort((a, b) => a.last - b.last);
+  let freedBytes = 0;
+  const target = currentBytes - limitBytes * 0.80;  // 80% 以下まで戻す
+  for (const e of entries) {
+    const buf = mtDecodedCache[e.id];
+    if (buf && typeof buf.length === 'number') {
+      freedBytes += buf.length * (buf.numberOfChannels || 2) * 4;
+    }
+    delete mtDecodedCache[e.id];
+    delete _mtCacheLastAccess[e.id];
+    if (freedBytes >= target) break;
+  }
+  console.warn(`[mtFs] mem-pressure evict: ${(freedBytes/1024/1024).toFixed(1)} MB freed (limit ${(limitBytes/1024/1024/1024).toFixed(1)} GB)`);
+  mtFsLogError('warn', `メモリ上限近く、古い ${(freedBytes/1024/1024).toFixed(0)}MB を解放`);
+}
+
+// v8.4.0: 最終アクセス時刻 (sampleId → ms timestamp)
+const _mtCacheLastAccess = {};
+function _mtTouchSampleId(sampleId) {
+  if (sampleId) _mtCacheLastAccess[sampleId] = Date.now();
 }
 
 // v8.3.0: メモリ使用量を MB で算出 (診断用)
@@ -10255,7 +10520,7 @@ async function _mtFsProbe(sampleId) {
 //   - 同じ sampleId への並行呼び出しは 1 本に集約 (_mtLoadInFlight)
 //   - 失敗を _failed に記録 (askPermission=true 時は再試行可)
 async function _mtFsLoadOne(sampleId, askPermission) {
-  if (mtDecodedCache[sampleId]) return { ok: true, buf: mtDecodedCache[sampleId] };
+  if (mtDecodedCache[sampleId]) { _mtTouchSampleId(sampleId); return { ok: true, buf: mtDecodedCache[sampleId] }; }
   // 直近 failed と記録され、かつ permission 要求でない (＝同じ条件で再試行しても無駄) ならスキップ
   if (mtFs._failed.has(sampleId) && !askPermission) {
     return { ok: false, reason: 'cached-failure' };
@@ -10281,11 +10546,13 @@ async function _mtFsLoadOne(sampleId, askPermission) {
             const arr = await f.arrayBuffer();
             const buf = await mtRobustDecode(arr, f);
             mtDecodedCache[sampleId] = buf;
+            _mtTouchSampleId(sampleId);
             mtFs._failed.delete(sampleId);
             return { ok: true, buf };
           } catch(e) {
             console.warn('[mtFs] decode failed', sampleId, e);
             mtFs._failed.add(sampleId);
+            try { mtFsLogError('decode', 'decode 失敗: ' + sampleId.slice(-12), { error: String(e) }); } catch(_) {}
             return { ok: false, reason: 'decode-error' };
           }
         }
@@ -10299,11 +10566,13 @@ async function _mtFsLoadOne(sampleId, askPermission) {
         try {
           const buf = await mtRobustDecode(r.data, { name: r.name || sampleId });
           mtDecodedCache[sampleId] = buf;
+          _mtTouchSampleId(sampleId);
           mtFs._failed.delete(sampleId);
           return { ok: true, buf };
         } catch(e) {
           console.warn('[mtFs] blob decode failed', sampleId, e);
           mtFs._failed.add(sampleId);
+          try { mtFsLogError('decode', 'blob decode 失敗: ' + sampleId.slice(-12), { error: String(e) }); } catch(_) {}
           return { ok: false, reason: 'decode-error' };
         }
       }
@@ -10496,11 +10765,149 @@ function mtFsPrioritizeSong(songIdx) {
 }
 
 function mtFsGetBuffer(sampleId) {
+  if (mtDecodedCache[sampleId]) _mtTouchSampleId(sampleId);
   return mtDecodedCache[sampleId] || null;
 }
 
 function mtFsNotifyPlaybackStart() { mtFs.isPlaybackActive = true; }
 function mtFsNotifyPlaybackStop()  { mtFs.isPlaybackActive = false; }
+
+// ============================================================================
+// v8.4.0: 本番安心パック
+// ============================================================================
+
+// --- 全曲事前読み込み (リハ前用) ---
+async function mtFsPreloadAll() {
+  if (mtFs._preloadInFlight) {
+    showToast('既に事前読み込み中です'); return;
+  }
+  const ids = _mtFsCollectAllIds().filter(id => !mtDecodedCache[id] && !mtFs._failed.has(id));
+  if (ids.length === 0) {
+    showToast('全ファイル既に読み込み済みです');
+    return;
+  }
+  mtFs._preloadInFlight = true;
+  mtFs._preloadAbort = false;
+  mtFs._preloadDone = 0;
+  mtFs._preloadTotal = ids.length;
+  const limitBytes = MT_MEM_PROFILES[mtFs.memProfile].bytes;
+  let stoppedByLimit = false;
+  showToast(`▶ 事前読み込み開始: ${ids.length} ファイル`);
+  try {
+    let idx = 0;
+    const CONCURRENCY = 3;
+    async function worker() {
+      while (idx < ids.length && !mtFs._preloadAbort) {
+        // メモリ上限チェック
+        const curBytes = _mtFsCacheSizeMB() * 1024 * 1024;
+        if (curBytes > limitBytes * 0.95) {
+          stoppedByLimit = true;
+          break;
+        }
+        const i = idx++;
+        const sid = ids[i];
+        if (mtDecodedCache[sid]) { mtFs._preloadDone++; continue; }
+        await _mtFsLoadOne(sid, false);
+        mtFs._preloadDone++;
+        try { _mtDiagPanelUpdate(); } catch(_) {}
+      }
+    }
+    const workers = [];
+    for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
+    await Promise.all(workers);
+  } catch(e) {
+    console.error('[mtFs] preload error', e);
+    mtFsLogError('preload', 'preload エラー: ' + (e.message || e));
+  } finally {
+    mtFs._preloadInFlight = false;
+    if (mtFs._preloadAbort) showToast('事前読み込み中断');
+    else if (stoppedByLimit) showToast(`⚠️ メモリ上限到達、${mtFs._preloadDone}/${mtFs._preloadTotal} で停止`);
+    else showToast(`✓ 事前読み込み完了 ${mtFs._preloadDone} ファイル`);
+    try { _mtDiagPanelUpdate(); } catch(_) {}
+  }
+}
+function mtFsPreloadAbort() { mtFs._preloadAbort = true; }
+
+// --- メモリプロファイル切替 ---
+function mtFsSetMemProfile(profile) {
+  if (!MT_MEM_PROFILES[profile]) return;
+  mtFs.memProfile = profile;
+  try { localStorage.setItem('mt_mem_profile', profile); } catch(_) {}
+  console.log('[mtFs] mem profile →', profile);
+  // 即時 evict (上限縮小時に超過分を解放)
+  _mtFsEvictByMemPressure();
+  try { _mtDiagPanelUpdate(); } catch(_) {}
+}
+
+// --- 本番モード切替 ---
+async function mtFsSetShowMode(on) {
+  mtFs.showMode = !!on;
+  if (on) {
+    // 画面スリープ防止 (wakeLock)
+    if ('wakeLock' in navigator) {
+      try {
+        mtFs._wakeLock = await navigator.wakeLock.request('screen');
+        mtFs._wakeLock.addEventListener('release', () => {
+          // 自動解放されたら本番モード中だけ再取得を試みる
+          if (mtFs.showMode) {
+            navigator.wakeLock.request('screen').then(wl => { mtFs._wakeLock = wl; }).catch(_ => {});
+          }
+        });
+        showToast('🎭 本番モード ON — 画面スリープ防止');
+      } catch(e) {
+        showToast('⚠️ wakeLock 取得失敗 (画面スリープ手動 OFF にしてください)');
+        mtFsLogError('warn', 'wakeLock 取得失敗: ' + (e.message || e));
+      }
+    } else {
+      showToast('🎭 本番モード ON (wakeLock 非対応ブラウザ)');
+    }
+  } else {
+    if (mtFs._wakeLock) {
+      try { await mtFs._wakeLock.release(); } catch(_) {}
+      mtFs._wakeLock = null;
+    }
+    showToast('🎭 本番モード OFF');
+  }
+  try { _mtDiagPanelUpdate(); } catch(_) {}
+  try { _mtRenderShowModeBadge(); } catch(_) {}
+}
+
+// --- source 残留 watchdog ---
+function mtFsStartWatchdog() {
+  if (mtFs._watchdogTimer) return;
+  mtFs._watchdogTimer = setInterval(() => {
+    try {
+      // 再生中は触らない
+      if (state.multitrack.isPlaying) return;
+      // 「鳴り終わってるはずの source」を sweep
+      const sources = state.multitrack.activeSources || [];
+      if (sources.length === 0) return;
+      const before = sources.length;
+      const survive = [];
+      for (const src of sources) {
+        try {
+          // buffer 終わってる or stop 済みなら disconnect
+          src.stop(0);
+          src.disconnect();
+        } catch(_) {
+          // 既に止まってる
+        }
+      }
+      state.multitrack.activeSources = survive;
+      if (before > 0) {
+        console.log(`[mtFs] watchdog: cleaned ${before} stale sources`);
+      }
+    } catch(e) {
+      console.warn('[mtFs] watchdog error', e);
+    }
+  }, 30000); // 30 秒ごと
+}
+function mtFsStopWatchdog() {
+  if (mtFs._watchdogTimer) {
+    clearInterval(mtFs._watchdogTimer);
+    mtFs._watchdogTimer = null;
+  }
+}
 
 // 整理: orphan サンプル削除 / 重複 blob 削除
 async function mtFsCleanup() {
@@ -10582,6 +10989,163 @@ function mtFsRender() {
 async function mtRestoreBuffers() { return mtFsInit(); }
 async function mtReconnectFiles() { return mtFsReconnect(); }
 function mtRenderReconnectUI() { mtFsRender(); }
+
+// ============================================================================
+// v8.4.0: 診断パネル UI
+// ============================================================================
+function _mtDiagPanelUpdate() {
+  const panel = document.getElementById('mtDiagPanel');
+  if (!panel) return;
+  // multiPage 以外では非表示
+  if (state.appMode !== 'multi') { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  panel.classList.toggle('show-mode', mtFs.showMode);
+  const dot = document.getElementById('mtDiagDot');
+  const title = document.getElementById('mtDiagTitle');
+  const cacheVal = document.getElementById('mtDiagCacheVal');
+  const barFill = document.getElementById('mtDiagBarFill');
+  const stemsVal = document.getElementById('mtDiagStemsVal');
+  const errVal = document.getElementById('mtDiagErrVal');
+  // キャッシュ使用量
+  const usedMB = _mtFsCacheSizeMB();
+  const limitMB = MT_MEM_PROFILES[mtFs.memProfile].bytes / 1024 / 1024;
+  const pct = limitMB > 0 ? Math.min(100, (usedMB / limitMB) * 100) : 0;
+  const cacheCount = Object.keys(mtDecodedCache).length;
+  if (cacheVal) cacheVal.textContent = `${usedMB.toFixed(0)}/${limitMB.toFixed(0)} MB`;
+  if (barFill) {
+    barFill.style.width = pct + '%';
+    barFill.classList.remove('warn', 'error');
+    if (pct > 90) barFill.classList.add('error');
+    else if (pct > 70) barFill.classList.add('warn');
+  }
+  // 鳴ってる STEM 数
+  const playing = state.multitrack.isPlaying;
+  const activeCnt = (state.multitrack.activeSources || []).length;
+  if (stemsVal) {
+    if (playing) stemsVal.textContent = `${activeCnt} 再生中`;
+    else stemsVal.textContent = `${cacheCount} 常駐`;
+  }
+  // エラー
+  if (errVal) {
+    errVal.textContent = String(mtFs.errorLog.length);
+    errVal.classList.remove('warn', 'error');
+    if (mtFs.errorLog.length > 5) errVal.classList.add('error');
+    else if (mtFs.errorLog.length > 0) errVal.classList.add('warn');
+  }
+  // 状態ドット
+  if (dot && title) {
+    dot.classList.remove('warn', 'error');
+    if (mtFs.state === 'error') {
+      dot.classList.add('error');
+      title.textContent = 'ERROR';
+    } else if (mtFs.state === 'needs_reconnect') {
+      dot.classList.add('warn');
+      title.textContent = 'RECONNECT';
+    } else if (mtFs.state === 'loading' || mtFs._preloadInFlight) {
+      dot.classList.add('warn');
+      title.textContent = mtFs._preloadInFlight
+        ? `PRELOAD ${mtFs._preloadDone}/${mtFs._preloadTotal}`
+        : 'LOADING';
+    } else if (mtFs.showMode) {
+      title.textContent = '本番モード';
+    } else {
+      title.textContent = 'MT-FS READY';
+    }
+  }
+}
+
+let _mtDiagPanelUpdateTimer = null;
+function _mtDiagPanelStartLoop() {
+  if (_mtDiagPanelUpdateTimer) return;
+  _mtDiagPanelUpdateTimer = setInterval(_mtDiagPanelUpdate, 1000);
+}
+
+// クリックで詳細展開
+function mtDiagPanelToggleDetail() {
+  let detail = document.getElementById('mtDiagDetail');
+  if (detail) { detail.remove(); return; }
+  detail = document.createElement('div');
+  detail.id = 'mtDiagDetail';
+  detail.className = 'mt-diag-detail';
+  detail.onclick = (e) => e.stopPropagation();
+  document.body.appendChild(detail);
+  _mtDiagDetailRender();
+}
+
+function _mtDiagDetailRender() {
+  const detail = document.getElementById('mtDiagDetail');
+  if (!detail) return;
+  const usedMB = _mtFsCacheSizeMB();
+  const limitGB = MT_MEM_PROFILES[mtFs.memProfile].bytes / 1024 / 1024 / 1024;
+  const cacheCount = Object.keys(mtDecodedCache).length;
+  const failedCount = mtFs._failed.size;
+  const totalIds = _mtFsCollectAllIds().length;
+  const memOptions = Object.entries(MT_MEM_PROFILES)
+    .map(([k, v]) => `<option value="${k}" ${k === mtFs.memProfile ? 'selected' : ''}>${v.label}</option>`)
+    .join('');
+  const errors = mtFs.errorLog.slice(0, 20);
+  const errHTML = errors.length === 0
+    ? '<div class="mt-diag-err-item" style="text-align:center;opacity:0.5;">エラー履歴なし</div>'
+    : errors.map(e => {
+        const t = new Date(e.ts);
+        const tStr = t.toLocaleTimeString();
+        return `<div class="mt-diag-err-item">
+          <span class="mt-diag-err-time">${tStr}</span>
+          <span class="mt-diag-err-kind ${e.kind}">[${e.kind}]</span>
+          <span class="mt-diag-err-msg">${e.msg.replace(/</g,'&lt;').slice(0,140)}</span>
+        </div>`;
+      }).join('');
+  const preloadStatus = mtFs._preloadInFlight
+    ? `<div class="mt-diag-progress-bar"><div class="mt-diag-progress-fill" style="width:${Math.floor(100*mtFs._preloadDone/Math.max(1,mtFs._preloadTotal))}%"></div></div>
+       <div style="font-size:9px;opacity:0.7;margin-top:2px;">進行中: ${mtFs._preloadDone}/${mtFs._preloadTotal}</div>`
+    : '';
+  detail.innerHTML = `
+    <button class="mt-diag-close" onclick="mtDiagPanelToggleDetail()" title="閉じる">×</button>
+    <h3>📊 MULTI-TRACK 診断</h3>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">状態</span><span class="mt-diag-value">${mtFs.state}</span></div>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">キャッシュ</span><span class="mt-diag-value">${cacheCount} 件 ${usedMB.toFixed(1)} MB</span></div>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">登録 STEM 総数</span><span class="mt-diag-value">${totalIds}</span></div>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
+
+    <h4>メモリ上限 (${limitGB.toFixed(1)} GB)</h4>
+    <select class="mt-diag-mem-select" onchange="mtFsSetMemProfile(this.value); _mtDiagDetailRender();">${memOptions}</select>
+
+    <h4>操作</h4>
+    <div class="mt-diag-btn-row">
+      <button class="mt-diag-btn" onclick="mtFsPreloadAll().then(_mtDiagDetailRender)" ${mtFs._preloadInFlight?'disabled':''}>📥 全曲事前読込</button>
+      ${mtFs._preloadInFlight ? '<button class="mt-diag-btn warn" onclick="mtFsPreloadAbort()">中断</button>' : ''}
+    </div>
+    ${preloadStatus}
+    <div class="mt-diag-btn-row">
+      <button class="mt-diag-btn ${mtFs.showMode?'show-mode-active':''}" onclick="mtFsSetShowMode(!mtFs.showMode).then(_mtDiagDetailRender)">${mtFs.showMode?'🎭 本番モード OFF':'🎭 本番モード ON'}</button>
+    </div>
+    <div class="mt-diag-btn-row">
+      <button class="mt-diag-btn warn" onclick="mtFsClearErrors(); _mtDiagDetailRender();">エラー履歴クリア</button>
+      <button class="mt-diag-btn warn" onclick="mtFsForceEvict(); _mtDiagDetailRender();">キャッシュ全クリア</button>
+    </div>
+
+    <h4>エラー履歴 (新しい順 / 最新 20 件)</h4>
+    <div class="mt-diag-err-list">${errHTML}</div>
+  `;
+}
+
+function mtFsClearErrors() { mtFs.errorLog = []; _mtDiagPanelUpdate(); }
+function mtFsForceEvict() {
+  // 現在曲以外を全部破棄 (緊急用)
+  const protectIds = new Set();
+  const curIdx = state.multitrack.currentSongIdx;
+  if (curIdx >= 0) _mtFsSongSampleIds(curIdx).forEach(id => protectIds.add(id));
+  let removed = 0;
+  for (const id of Object.keys(mtDecodedCache)) {
+    if (!protectIds.has(id)) { delete mtDecodedCache[id]; delete _mtCacheLastAccess[id]; removed++; }
+  }
+  showToast(`キャッシュクリア: ${removed} 件破棄`);
+  mtFsLogError('warn', `手動キャッシュクリア: ${removed} 件破棄`);
+}
+
+// ヘッダー右側の本番モードバッジ更新 (将来 mark on header — placeholder)
+function _mtRenderShowModeBadge() { _mtDiagPanelUpdate(); }
 
 // ---- 再生エンジン ----
 // options.keepPrevious=true で前曲の source を止めない（オーバーラップ）
@@ -12274,6 +12838,15 @@ async function mtInit() {
 
   // ファイル状態マシン (v8.0) を起動 — permission check → bg load
   mtFsInit().catch(e => console.warn('[mtFs] init failed', e));
+  // v8.4.0: 本番安心パック起動
+  try {
+    // メモリプロファイル復元
+    const savedProf = localStorage.getItem('mt_mem_profile');
+    if (savedProf && MT_MEM_PROFILES[savedProf]) mtFs.memProfile = savedProf;
+    else mtFs.memProfile = _mtFsAutoProfile();
+  } catch(_) {}
+  try { mtFsStartWatchdog(); } catch(_) {}
+  try { _mtDiagPanelStartLoop(); _mtDiagPanelUpdate(); } catch(_) {}
 }
 
 async function init() {
