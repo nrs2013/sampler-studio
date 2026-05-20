@@ -682,10 +682,9 @@
   /* 下段プール: 左カラム row3 */
   .do-left-bottom-col { grid-column: 1; grid-row: 3; min-height: 0; overflow-y: auto;
                         display: flex; flex-direction: column; gap: 8px; }
-  /* NOW カード: 右カラム row1-2 (BGMペア + DUCK の高さ分) */
-  #doNowCard.do-grid { grid-column: 2; grid-row: 1 / span 2; }
-  /* SCHEDULE カード: 右カラム row3 (下段、フル高) */
-  .do-sched-card.do-grid { grid-column: 2; grid-row: 3; min-height: 0;
+  /* v11.2.2: NOW は BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる */
+  #doNowCard.do-grid { grid-column: 2; grid-row: 1; }
+  .do-sched-card.do-grid { grid-column: 2; grid-row: 2 / span 2; min-height: 0;
                            display: flex; flex-direction: column; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
   .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
@@ -3440,7 +3439,9 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.0';
+const APP_VERSION = 'v11.2.2';
+// v11.2.2: NOW カードを BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる
+// v11.2.1: doorPage display を flex → grid に修正 (setAppMode で grid を上書きしないように)
 // v11.2.0: DOOR OPEN 全体 grid 化 — DUCK を左に、NOW + SCHEDULE 右カラム連続
 // v11.1.1: DOOR OPEN 上下の列幅を揃える (BGM 2 つを左カラム内で 2 分割、NOW を右カラム)
 // v11.1.0: DOOR OPEN レイアウト変更 — 左から DOOR/WORKOUT BGM、右に時計 (NOW)
