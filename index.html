@@ -3413,7 +3413,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v10.1.0';
+const APP_VERSION = 'v10.2.0';
+// v10.2.0: project.json 自動保存 + フォルダから開く + 専用ダイアログ UI (DP 方式)
 // v10.1.0: プロジェクトフォルダ方式 — Finder で見える保存先 (OPFS から切替)
 // v10.0.0 Phase 1: OPFS 自動コピー保存 — 取り込み時にアプリ内コピーで原本依存撤廃
 // v9.1.1: ESC 効かない問題修正 — playbackMode を 'mediaelement' 強制固定 + デバッグログ追加
@@ -3498,7 +3499,124 @@ function projGoTop() {
   projSetActiveId(null);
   location.reload();
 }
-// v10.1.0: プロジェクト作成時に保存先フォルダを選ばせる
+// v10.2.0: 既存のプロジェクトフォルダから project.json を読み込んで開く
+async function projOpenFromFolder() {
+  if (!('showDirectoryPicker' in window)) {
+    alert('お使いのブラウザはフォルダ選択に対応していません。Chrome で開いてください。');
+    return;
+  }
+  let dirHandle;
+  try {
+    dirHandle = await window.showDirectoryPicker({
+      id: 'sampler-studio-open-project',
+      mode: 'readwrite',
+      startIn: 'documents',
+    });
+  } catch(e) {
+    if (e && e.name === 'AbortError') return;
+    console.warn('[projOpen] picker failed', e);
+    alert('フォルダ選択に失敗しました: ' + (e.message || e));
+    return;
+  }
+  // project.json を読む
+  const data = await loadProjectJSONFromFolder(dirHandle);
+  if (!data) {
+    alert(
+      'このフォルダには project.json がありません。\n\n' +
+      'SAMPLER STUDIO のプロジェクトフォルダ (project.json を含む) を選んでください。'
+    );
+    return;
+  }
+  if (data._format !== 'sampler-studio-project') {
+    alert('project.json の形式が認識できません。');
+    return;
+  }
+  // 既存リストに登録 (上書き or 新規)
+  const list = projGetList();
+  const id = data.projectId || ('p_' + Date.now());
+  let existing = list.find(p => p.id === id);
+  if (!existing) {
+    list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
+    projSetList(list);
+  } else {
+    existing.folderPath = dirHandle.name;
+    existing.updatedAt = Date.now();
+    projSetList(list);
+  }
+  // フォルダ handle を保存
+  try { await saveProjectFolderHandle(id, dirHandle, dirHandle.name); } catch(e) { console.warn(e); }
+  // state を localStorage に書き込む (このプロジェクトキーで)
+  try {
+    if (data.state && data.state.multitrack) {
+      localStorage.setItem(id + ':samplerMultitrack', JSON.stringify(data.state.multitrack));
+    }
+    if (data.state && data.state.sampler) {
+      const samplerState = {
+        banks: data.state.sampler.banks,
+        currentBank: data.state.sampler.currentBank,
+        masterVol: data.state.sampler.masterVol,
+        fadeTime: data.state.sampler.fadeTime,
+        fadeCurve: data.state.sampler.fadeCurve,
+        appMode: data.state.appMode || 'sampler',
+      };
+      localStorage.setItem(id + ':samplerStudioState', JSON.stringify(samplerState));
+    }
+    if (data.state && data.state.door) {
+      localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
+    }
+  } catch(e) { console.warn('[projOpen] state restore failed', e); }
+  // プロジェクトを開く
+  projSwitchTo(id);
+}
+
+// v10.2.0: 専用 HTML ダイアログ — confirm より丁寧に説明 + 警告強調
+function _projShowFolderDialog(projectName) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = [
+      'position:fixed','inset:0','background:rgba(0,0,0,0.7)','z-index:99999',
+      'display:flex','align-items:center','justify-content:center',
+      'backdrop-filter:blur(4px)','-webkit-backdrop-filter:blur(4px)',
+    ].join(';');
+    const dialog = document.createElement('div');
+    dialog.style.cssText = [
+      'background:linear-gradient(180deg, #15181F, #0E1115)',
+      'border:0.5px solid rgba(61,181,166,0.5)','border-radius:10px',
+      'color:#C8D8D0',"font-family:'SF Mono', 'Menlo', monospace",
+      'padding:24px 28px','max-width:520px','line-height:1.6',
+      'box-shadow:0 8px 40px rgba(0,0,0,0.8)',
+    ].join(';');
+    dialog.innerHTML = `
+      <div style="font-size:13px;letter-spacing:2px;color:#88D6C2;margin-bottom:14px;font-weight:700;">📁 プロジェクトフォルダを選んでください</div>
+      <div style="font-size:13px;color:#C8D8D0;margin-bottom:14px;">
+        プロジェクト「<b style="color:#FFFFFF;">${projectName.replace(/</g,'&lt;')}</b>」用に、アプリが新しいフォルダを作って音源と設定を保存します。
+      </div>
+      <div style="font-size:12px;color:rgba(200,216,208,0.7);margin-bottom:18px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;">
+        <div style="font-weight:700;color:#88D6C2;margin-bottom:6px;">推奨の場所</div>
+        Mac の「書類」(Documents) 直下。<br/>
+        例: <code style="color:#FFCB5A;">~/Documents/${projectName.replace(/</g,'&lt;')}/</code>
+      </div>
+      <div style="font-size:12px;color:#FFCB5A;margin-bottom:18px;background:rgba(255,184,28,0.05);border:0.5px solid rgba(255,184,28,0.3);border-radius:6px;padding:10px 14px;">
+        <div style="font-weight:700;margin-bottom:6px;">⚠️ 重要な注意</div>
+        ・このフォルダの中身を Finder で <b>動かさない / 削除しない</b>でください<br/>
+        ・別の Mac に持っていく時は<b>フォルダごとコピー</b>してください<br/>
+        ・誤って動かすとアプリで再生できなくなります
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
+        <button id="projCancelBtn" style="padding:8px 18px;background:transparent;border:0.5px solid rgba(200,216,208,0.3);color:#C8D8D0;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">キャンセル</button>
+        <button id="projOkBtn" style="padding:8px 18px;background:linear-gradient(180deg, rgba(61,181,166,0.25), rgba(61,181,166,0.10));border:0.5px solid rgba(61,181,166,0.5);color:#88D6C2;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:700;">フォルダを選ぶ →</button>
+      </div>
+    `;
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+    const close = (result) => { try { document.body.removeChild(overlay); } catch(_) {} resolve(result); };
+    dialog.querySelector('#projCancelBtn').onclick = () => close(false);
+    dialog.querySelector('#projOkBtn').onclick = () => close(true);
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+  });
+}
+
+// v10.1.0/v10.2.0: プロジェクト作成時に保存先フォルダを選ばせる (専用 UI)
 async function projCreateNew() {
   const name = prompt('新しいプロジェクト名:', 'New Project');
   if (!name || !name.trim()) return;
@@ -3508,15 +3626,9 @@ async function projCreateNew() {
   let dirHandle = null;
   let displayPath = '';
   if ('showDirectoryPicker' in window) {
-    const proceed = confirm(
-      `プロジェクト「${safeName}」の音源を保存するフォルダを選んでください。\n\n` +
-      `推奨: Mac の「書類」(Documents) フォルダ。\n` +
-      `アプリが「${safeName}」というサブフォルダを作って、ドロップした音源をすべてそこに保存します。\n\n` +
-      `OK で フォルダ選択ダイアログを開きます。`
-    );
+    const proceed = await _projShowFolderDialog(safeName);
     if (!proceed) {
-      const alt = confirm('保存先を選ばないと音源は保存されません。\nそれでも作成しますか?（後で「フォルダを再選択」で設定可能）');
-      if (!alt) return;
+      return; // キャンセル
     } else {
       try {
         const parent = await window.showDirectoryPicker({
@@ -3529,14 +3641,12 @@ async function projCreateNew() {
         displayPath = (parent.name || '') + '/' + safeName;
       } catch(e) {
         if (e && e.name === 'AbortError') {
-          // ユーザーがキャンセル
-          const alt = confirm('フォルダ選択をキャンセルしました。\n保存先を選ばずにプロジェクトを作成しますか?');
-          if (!alt) return;
-        } else {
-          console.warn('[proj] showDirectoryPicker failed', e);
-          alert('フォルダ選択に失敗しました: ' + (e.message || e));
+          // ユーザーがキャンセル → 作成中止
           return;
         }
+        console.warn('[proj] showDirectoryPicker failed', e);
+        alert('フォルダ選択に失敗しました: ' + (e.message || e));
+        return;
       }
     }
   } else {
@@ -3657,6 +3767,12 @@ function renderTopPage() {
   nc.innerHTML = `<div class="tp-new-icon">+</div><div class="tp-new-label">NEW PROJECT</div>`;
   nc.addEventListener('click', projCreateNew);
   grid.appendChild(nc);
+  // v10.2.0: + OPEN FROM FOLDER card
+  const oc = document.createElement('div');
+  oc.className = 'tp-new';
+  oc.innerHTML = `<div class="tp-new-icon">📁</div><div class="tp-new-label">OPEN FROM FOLDER</div>`;
+  oc.addEventListener('click', projOpenFromFolder);
+  grid.appendChild(oc);
 }
 function showTopPage() {
   document.getElementById('topPage').classList.add('active');
@@ -4468,6 +4584,89 @@ async function listProjectFolderFiles(projectId) {
     }
   } catch(_) {}
   return out;
+}
+
+// v10.2.0: project.json をプロジェクトフォルダに書き出し
+// (DP 等のプロジェクトバンドル方式と同じ思想)
+async function saveProjectJSONToFolder(projectId) {
+  const dirHandle = await ensureProjectFolderPermission(projectId);
+  if (!dirHandle) return false;
+  try {
+    const list = projGetList();
+    const projMeta = list.find(p => p.id === projectId) || {};
+    // 現在の state を JSON 化
+    const data = {
+      _format: 'sampler-studio-project',
+      _formatVersion: 1,
+      _appVersion: APP_VERSION,
+      projectId,
+      projectName: projMeta.name || '無題',
+      savedAt: Date.now(),
+      state: {
+        multitrack: (typeof mtSerialize === 'function') ? mtSerialize() : null,
+        sampler: {
+          banks: state.banks,
+          currentBank: state.currentBank,
+          masterVol: state.masterVol,
+          fadeTime: state.fadeTime,
+          fadeCurve: state.fadeCurve,
+        },
+        door: state.door ? {
+          bgm: {
+            door: state.door.bgm && state.door.bgm.door ? {
+              sampleId: state.door.bgm.door.sampleId,
+              sampleName: state.door.bgm.door.sampleName,
+              vol: state.door.bgm.door.vol,
+              loop: state.door.bgm.door.loop,
+            } : null,
+            workout: state.door.bgm && state.door.bgm.workout ? {
+              sampleId: state.door.bgm.workout.sampleId,
+              sampleName: state.door.bgm.workout.sampleName,
+              vol: state.door.bgm.workout.vol,
+              loop: state.door.bgm.workout.loop,
+            } : null,
+          },
+          duck: state.door.duck,
+          library: (state.door.library || []).map(l => l ? { sampleId: l.sampleId, sampleName: l.sampleName, level: l.level } : null),
+          schedule: state.door.schedule || [],
+        } : null,
+        appMode: state.appMode,
+      },
+    };
+    const fh = await dirHandle.getFileHandle('project.json', { create: true });
+    const w = await fh.createWritable();
+    await w.write(JSON.stringify(data, null, 2));
+    await w.close();
+    return true;
+  } catch(e) {
+    console.warn('[projJSON] save failed', e);
+    return false;
+  }
+}
+
+// v10.2.0: プロジェクトフォルダから project.json を読み込み
+async function loadProjectJSONFromFolder(dirHandle) {
+  try {
+    const fh = await dirHandle.getFileHandle('project.json', { create: false });
+    const file = await fh.getFile();
+    return JSON.parse(await file.text());
+  } catch(e) {
+    if (e && e.name === 'NotFoundError') return null;
+    console.warn('[projJSON] load failed', e);
+    return null;
+  }
+}
+
+// v10.2.0: 自動保存 (デバウンス) — state 変更時に project.json も更新
+let _saveProjectJSONTimer = null;
+function scheduleSaveProjectJSON() {
+  if (_saveProjectJSONTimer) clearTimeout(_saveProjectJSONTimer);
+  _saveProjectJSONTimer = setTimeout(async () => {
+    _saveProjectJSONTimer = null;
+    const pid = (typeof projGetActiveId === 'function') ? projGetActiveId() : null;
+    if (!pid) return;
+    try { await saveProjectJSONToFolder(pid); } catch(_) {}
+  }, 2000); // 2秒デバウンス
 }
 
 async function saveSampleToDB(id, arrayBuffer, name) {
@@ -9571,6 +9770,8 @@ function mtSave() {
     const key = projKey('samplerMultitrack');
     localStorage.setItem(key, JSON.stringify(mtSerialize()));
   } catch(e) { console.warn('mtSave failed', e); }
+  // v10.2.0: プロジェクトフォルダにも project.json を自動保存 (デバウンス)
+  try { if (typeof scheduleSaveProjectJSON === 'function') scheduleSaveProjectJSON(); } catch(_) {}
 }
 function mtLoad() {
   try {
