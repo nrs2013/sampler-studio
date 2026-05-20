@@ -1972,15 +1972,16 @@
   .mt-strip {
     position: relative;
     display: flex; flex-direction: column; align-items: stretch; gap: 3px;
-    padding: 10px 4px 6px 4px;
+    padding: 11px 4px 6px 4px;
     background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
     border: 1px solid #2A2A30;
-    border-radius: 7px;
+    border-radius: 8px;
     min-width: 0;
     box-shadow:
       0 2px 6px rgba(0,0,0,0.45),
       inset 0 1px 0 rgba(255,255,255,0.04),
       inset 0 -1px 0 rgba(0,0,0,0.4);
+    transition: box-shadow 0.2s, border-color 0.2s;
   }
   /* グループカラー（currentColor として使えるよう strip 本体に色付け） */
   .mt-strip[data-mt-strip="click"]  { color: #8DB7F5; }
@@ -1989,21 +1990,51 @@
   .mt-strip[data-mt-strip="other"]  { color: #EF9F27; }
   .mt-strip[data-mt-strip="bass"]   { color: #85B7EB; }
   .mt-strip[data-mt-strip="drums"]  { color: #ED93B1; }
-  /* カード上端のカラーバンド — 横一線でグループ色を見せる */
+  /* ビビッドなグループカラーの薄い背景オーバーレイ */
+  .mt-strip[data-mt-strip="click"]  {
+    background: linear-gradient(180deg, rgba(141,183,245,0.12) 0%, rgba(141,183,245,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+  }
+  .mt-strip[data-mt-strip="vocal"]  {
+    background: linear-gradient(180deg, rgba(240,199,94,0.12) 0%, rgba(240,199,94,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+  }
+  .mt-strip[data-mt-strip="chorus"] {
+    background: linear-gradient(180deg, rgba(151,196,89,0.12) 0%, rgba(151,196,89,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+  }
+  .mt-strip[data-mt-strip="other"]  {
+    background: linear-gradient(180deg, rgba(239,159,39,0.12) 0%, rgba(239,159,39,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+  }
+  .mt-strip[data-mt-strip="bass"]   {
+    background: linear-gradient(180deg, rgba(133,183,235,0.12) 0%, rgba(133,183,235,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+  }
+  .mt-strip[data-mt-strip="drums"]  {
+    background: linear-gradient(180deg, rgba(237,147,177,0.12) 0%, rgba(237,147,177,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+  }
+  /* カード上端のカラーバンド — 厚めにしてビビッドに */
   .mt-strip::before {
     content: ''; position: absolute; left: 4px; right: 4px; top: 3px;
-    height: 3px;
+    height: 4px;
     background: currentColor;
     border-radius: 2px;
-    opacity: 0.85;
-    box-shadow: 0 0 6px currentColor;
+    opacity: 1;
+    box-shadow: 0 0 10px currentColor, 0 0 18px currentColor;
   }
-  .mt-strip.active::before { opacity: 1; box-shadow: 0 0 12px currentColor; }
-  /* SOLO 中 — グループカラーで囲む */
+  .mt-strip.active::before {
+    box-shadow: 0 0 14px currentColor, 0 0 24px currentColor;
+  }
+  /* ファイルが入ってる時はカード全体にうっすらグロー */
+  .mt-strip.has-layers {
+    border-color: currentColor;
+    box-shadow:
+      0 0 12px rgba(0,0,0,0.4),
+      0 0 0 0.5px currentColor,
+      inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  /* SOLO 中 — グループカラーでより強く光る */
   .mt-strip.solo {
     border-color: currentColor;
     box-shadow:
-      0 0 0 1px currentColor,
+      0 0 0 1.5px currentColor,
+      0 0 18px currentColor,
       0 2px 8px rgba(0,0,0,0.5),
       inset 0 0 20px rgba(255,255,255,0.03);
   }
@@ -2306,16 +2337,7 @@
       box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 10px rgba(125,184,158,0.25);
     }
   }
-  /* has-layers: ファイルが割当済み (load 完了) → 該当色で枠を強調 */
-  .mt-strip.has-layers {
-    border-color: rgba(125,184,158,0.35);
-  }
-  .mt-strip[data-mt-strip="drums"].has-layers  { border-color: rgba(237,147,177,0.5); }
-  .mt-strip[data-mt-strip="bass"].has-layers   { border-color: rgba(133,183,235,0.5); }
-  .mt-strip[data-mt-strip="other"].has-layers  { border-color: rgba(239,159,39,0.5);  }
-  .mt-strip[data-mt-strip="chorus"].has-layers { border-color: rgba(151,196,89,0.5);  }
-  .mt-strip[data-mt-strip="vocal"].has-layers  { border-color: rgba(240,199,94,0.5);  }
-  .mt-strip[data-mt-strip="click"].has-layers  { border-color: rgba(141,183,245,0.5); }
+  /* has-layers: 上の .mt-strip.has-layers (ビビッド版) を採用するためここは削除 */
   /* layer-pending: 割当てたが buffer 未ロード → オレンジ点滅でユーザーに reconnect 促す */
   .mt-strip.layer-pending {
     animation: mtStripPending 1.5s ease-in-out infinite;
@@ -3107,7 +3129,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.1';
+const APP_VERSION = 'v8.1.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
