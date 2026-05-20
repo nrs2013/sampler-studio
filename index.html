@@ -688,8 +688,9 @@
   .do-sched-card.do-grid { grid-column: 2; grid-row: 2 / span 2; min-height: 0; min-width: 0;
                            display: flex; flex-direction: column; overflow: hidden; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
-  /* v11.2.5: LOGO カードは自然な高さに (flex:1 撤回。下に余白が出ても OK) */
-  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+  /* v11.2.6: LOGO カードの枠だけ下まで伸ばす (中身は自然な高さで上詰め)
+     → 「カードの下が余白扱い」になり、画面下の空白が消える */
+  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; flex: 1; min-height: 0; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .do-logo-head-left { display: flex; align-items: center; gap: 8px; }
   .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
@@ -3441,7 +3442,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.5';
+const APP_VERSION = 'v11.2.6';
+// v11.2.6: LOGO カードの枠だけ下まで伸ばす (下の余白を消す)
 // v11.2.5: BGM カード内部スペース拡張 + LOGO カード縮小 (見た目の息継ぎ確保)
 // v11.2.4: LOGO カードを下まで伸ばして余白を埋める
 // v11.2.3: 縮小時のレイアウト崩れ修正 (grid track を minmax(0, ...) に、grid item に min-width:0)
