@@ -3415,7 +3415,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.4.0';
+const APP_VERSION = 'v8.5.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10311,6 +10311,11 @@ const mtFs = {
   _preloadDone: 0,
   _preloadTotal: 0,
   _preloadAbort: false,
+  // v8.5.0: 別タブで既にアプリが開かれているか (Web Locks)
+  _otherTabActive: false,
+  // v8.5.0: 直近の freeze/resume タイムスタンプ (診断用)
+  _lastFrozenAt: 0,
+  _lastResumedAt: 0,
 };
 
 // v8.4.0: エラー履歴に追加 (showToast から呼ぶ + watchdog からも)
@@ -10909,6 +10914,120 @@ function mtFsStopWatchdog() {
   }
 }
 
+// ============================================================================
+// v8.5.0: 本番事故防止 (Chrome 133+ 凍結対策 + 二重起動防止)
+// ============================================================================
+
+// --- Page Lifecycle ---
+// Chrome 133 (2025/2) で省エネモード時に背景タブを freeze する仕様が追加された。
+// 本番中にうっかり別タブを触ったり、OS が省エネ判定をすると JS が停止 → メモリ
+// 回収 → 復帰時に音が出ない事故が起こり得る。freeze/resume を検知して安全対応する。
+let _mtPageLifecycleBound = false;
+function mtBindPageLifecycle() {
+  if (_mtPageLifecycleBound) return;
+  _mtPageLifecycleBound = true;
+  // 凍結直前 (Chrome が背景タブを止める瞬間)
+  document.addEventListener('freeze', (e) => {
+    mtFs._lastFrozenAt = Date.now();
+    console.warn('[mtFs] page freezing — Chrome 省エネモードに入る可能性');
+    try { mtFsLogError('warn', 'タブ凍結直前 (Chrome 省エネモード)'); } catch(_) {}
+    // 本番モード時は強警告 (ただしこの時点で UI 更新は限定的)
+    if (mtFs.showMode) {
+      try { showToast('⚠️ タブ凍結警告 — Chrome を前面に戻してください'); } catch(_) {}
+    }
+  });
+  // 復帰時 (タブが再びアクティブになった瞬間)
+  document.addEventListener('resume', async (e) => {
+    mtFs._lastResumedAt = Date.now();
+    const frozenMs = mtFs._lastFrozenAt ? (Date.now() - mtFs._lastFrozenAt) : 0;
+    console.log(`[mtFs] page resumed after ${frozenMs}ms`);
+    try { mtFsLogError('info', `タブ復帰 (凍結 ${(frozenMs/1000).toFixed(1)}秒)`); } catch(_) {}
+    // AudioContext が suspended になっていたら resume
+    if (mtCtx && mtCtx.state === 'suspended') {
+      try {
+        await mtCtx.resume();
+        console.log('[mtFs] AudioContext resumed after freeze');
+      } catch(err) {
+        console.warn('[mtFs] ctx resume failed', err);
+        mtFsLogError('error', 'AudioContext resume 失敗: ' + (err.message || err));
+      }
+    }
+    // 診断パネル更新
+    try { _mtDiagPanelUpdate(); } catch(_) {}
+    // 凍結時間が長かったら toast で知らせる
+    if (frozenMs > 1000) {
+      try { showToast(`▶ タブ復帰 (${(frozenMs/1000).toFixed(1)}秒 凍結) — 念のため診断パネル確認`); } catch(_) {}
+    }
+  });
+  // visibilitychange も併用 (freeze 来ないブラウザ用の保険)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && mtCtx && mtCtx.state === 'suspended') {
+      mtCtx.resume().catch(_ => {});
+    }
+  });
+  console.log('[mtFs] Page Lifecycle (freeze/resume) bound');
+}
+
+// --- Web Locks (二重起動防止) ---
+// 同じアプリを 2 タブで開いた瞬間に検知 → 2 つ目のタブは「読み取り専用」モードに。
+// chrome.tabs みたいに「既に開いてるよ」と教えてくれる仕組み。
+let _mtMainLockHeld = false;
+let _mtMainLockReleaseFn = null;
+async function mtAcquireMainLock() {
+  if (!('locks' in navigator)) {
+    console.warn('[mtFs] Web Locks API 非対応');
+    return;
+  }
+  try {
+    // ifAvailable: true → 既に他タブが持っていれば lock = null で即帰る
+    navigator.locks.request(
+      'sampler-studio-main',
+      { mode: 'exclusive', ifAvailable: true },
+      async (lock) => {
+        if (lock === null) {
+          // 別タブが既に持っている
+          console.warn('[mtFs] 別タブが既に SAMPLER STUDIO を開いています');
+          mtFs._otherTabActive = true;
+          try { mtFsLogError('warn', '別タブで既に SAMPLER STUDIO が開かれています'); } catch(_) {}
+          try { _mtShowDuplicateTabWarning(); } catch(_) {}
+          return; // lock 取得しないまま終了
+        }
+        // ロック取得成功 — ずっと保持する (タブが閉じるまで)
+        _mtMainLockHeld = true;
+        mtFs._otherTabActive = false;
+        console.log('[mtFs] main lock acquired (このタブが主)');
+        // callback が return すると lock が release される。なので
+        // 永続化のため await Promise でずっと待つ。
+        await new Promise(resolve => { _mtMainLockReleaseFn = resolve; });
+      }
+    ).catch(err => console.warn('[mtFs] lock request error', err));
+  } catch(e) {
+    console.warn('[mtFs] lock request error', e);
+  }
+}
+
+// 2 タブ目検知時の警告 UI
+function _mtShowDuplicateTabWarning() {
+  let warn = document.getElementById('mtDuplicateTabWarn');
+  if (warn) return;
+  warn = document.createElement('div');
+  warn.id = 'mtDuplicateTabWarn';
+  warn.style.cssText = [
+    'position:fixed', 'top:0', 'left:0', 'right:0',
+    'background:linear-gradient(180deg, #E24B4A, #B83A39)',
+    'color:#FFF', 'padding:14px 20px', 'z-index:99999',
+    "font-family:'SF Mono', 'Menlo', monospace", 'font-size:13px',
+    'font-weight:700', 'text-align:center', 'letter-spacing:0.5px',
+    'box-shadow:0 4px 16px rgba(0,0,0,0.6)',
+    'border-bottom:1px solid rgba(255,255,255,0.3)'
+  ].join(';');
+  warn.innerHTML = '⚠️ 別タブで既に SAMPLER STUDIO が開かれています。本タブの再生操作は事故防止のため制限されます。&nbsp;&nbsp;<button onclick="document.getElementById(\'mtDuplicateTabWarn\').remove()" style="background:rgba(0,0,0,0.3);color:#fff;border:0.5px solid rgba(255,255,255,0.4);padding:3px 10px;border-radius:3px;cursor:pointer;font-family:inherit;font-size:11px;margin-left:8px;">理解した</button>';
+  document.body.appendChild(warn);
+}
+
+// 別タブで既にアプリが開いてるか確認 (再生操作前のガード用)
+function mtIsOtherTabActive() { return mtFs._otherTabActive === true; }
+
 // 整理: orphan サンプル削除 / 重複 blob 削除
 async function mtFsCleanup() {
   const refIds = new Set(_mtFsCollectAllIds());
@@ -11152,6 +11271,11 @@ function _mtRenderShowModeBadge() { _mtDiagPanelUpdate(); }
 // v8.3.0: 連打ガード + 部分再生フォールバック (1.5秒タイムアウト)
 async function mtPlaySong(idx, offset, options) {
   if (idx < 0 || idx >= state.multitrack.songs.length) return;
+  // v8.5.0: 別タブで既に SAMPLER STUDIO が開かれていたら、本タブは再生禁止
+  if (mtIsOtherTabActive()) {
+    try { showToast('⚠️ 別タブで開かれているため、このタブからは再生できません'); } catch(_) {}
+    return;
+  }
   if (!isFinite(offset) || offset < 0) offset = 0;
   const keepPrevious = options && options.keepPrevious === true;
   // 同曲を再生中に keepPrevious=true で再呼出 → 50ms ずれて二重再生 →
@@ -12847,6 +12971,9 @@ async function mtInit() {
   } catch(_) {}
   try { mtFsStartWatchdog(); } catch(_) {}
   try { _mtDiagPanelStartLoop(); _mtDiagPanelUpdate(); } catch(_) {}
+  // v8.5.0: 本番事故防止
+  try { mtBindPageLifecycle(); } catch(_) {}
+  try { mtAcquireMainLock(); } catch(_) {}
 }
 
 async function init() {
