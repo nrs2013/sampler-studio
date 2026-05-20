@@ -3262,7 +3262,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.2.6';
+const APP_VERSION = 'v8.3.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9310,10 +9310,54 @@ function mtUndo() {
 }
 
 // ---- AudioContext / Routing ----
+// v8.3.0: ctx 死亡時 (closed / interrupted) に検知して全リソースをリセットし、
+// 次回 mtInitCtx で再構築できるようにする。本番中のスリープ復帰や長時間稼働で
+// AudioContext が死んでも自動復旧。
+function _mtTeardownCtxResources(reason) {
+  console.warn('[mtFs] tearing down ctx resources, reason:', reason);
+  try { mtStopSources(); } catch(_) {}
+  state.multitrack.isPlaying = false;
+  try { mtFsNotifyPlaybackStop(); } catch(_) {}
+  if (state.multitrack.advanceTimer) {
+    try { clearTimeout(state.multitrack.advanceTimer); } catch(_) {}
+    state.multitrack.advanceTimer = null;
+  }
+  try { if (mtCtx) mtCtx.close(); } catch(_) {}
+  mtCtx = null;
+  mtMasterGain = null;
+  mtMerger = null;
+  mtMasterSplitter = null;
+  mtMasterAnalyserL = null;
+  mtMasterAnalyserR = null;
+  mtMasterAnalyserBufL = null;
+  mtMasterAnalyserBufR = null;
+  mtGroupGainNodes = {};
+  mtGroupAnalysers = {};
+  mtGroupAnalyserData = {};
+  // mtDecodedCache は ctx に紐づく AudioBuffer を保持しているので破棄
+  // (新しい ctx では再 decode が必要になる)
+  mtDecodedCache = {};
+  if (mtFs._failed) mtFs._failed.clear();
+  if (_mtLoadInFlight) _mtLoadInFlight.clear();
+  try { showToast('⚠️ AudioContext がリセットされました。SPACE でもう一度再生してください。'); } catch(_) {}
+  try { mtRenderNow(); mtRenderSetlist(); } catch(_) {}
+}
+
 async function mtInitCtx() {
   if (mtCtx) return mtCtx;
   // 高サンプルレートかつ低遅延寄りで作成
   mtCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
+  // v8.3.0: ctx 死亡検知ハンドラ
+  try {
+    mtCtx.onstatechange = () => {
+      if (!mtCtx) return;
+      const st = mtCtx.state;
+      console.log('[mtFs] ctx state →', st);
+      if (st === 'closed' || st === 'interrupted') {
+        _mtTeardownCtxResources('state=' + st);
+      }
+    };
+  } catch(_) {}
   mtMasterGain = mtCtx.createGain();
   // グランドマスター連動 — 左パネルの MASTER フェーダー値で初期化
   mtMasterGain.gain.value = (typeof state !== 'undefined' && state.masterVol != null) ? state.masterVol : 1.0;
@@ -10078,7 +10122,101 @@ const mtFs = {
   _readyFlashTimer: null,
   _loadingInFlight: false,
   _abortPending: false,
+  // v8.3.0: 失敗した sampleId を記録 (リトライ抑制)
+  _failed: new Set(),
 };
+
+// v8.3.0: LRU 設定
+// 1曲 12 STEM × 70MB ≒ 840MB → Chrome タブ実用上限 3〜4GB → 計4曲分を上限とする
+const MT_LRU_KEEP_AHEAD  = 2;   // 次2曲分まで先読み + 保持
+const MT_LRU_KEEP_BEHIND = 1;   // 前1曲分は保持 (戻ったとき即再生)
+const MT_LRU_MAX_BUFFERS = 60;  // 安全弁 (= 5曲分相当)。これを超えたら強制 evict
+
+// v8.3.0: sampleId 単位 in-flight キャッシュ
+// 同じ sampleId に対する並行 _mtFsLoadOne 呼び出しを 1 本にまとめる
+const _mtLoadInFlight = new Map(); // sampleId → Promise<{ok, buf, reason}>
+
+// v8.3.0: mtPlaySong 連打ガード
+let _mtPlaySongInFlight = false;
+
+// v8.3.0: 「保持すべき曲インデックス」を集める (LRU の center 周辺)
+function _mtFsBuildKeepSet() {
+  const m = state.multitrack;
+  const total = (m.songs || []).length;
+  const keep = new Set();
+  if (total === 0) return keep;
+  // 中心 = 現在再生中の曲 > 選択中の曲
+  let center = m.currentSongIdx;
+  if (!(center >= 0 && center < total)) center = m.selectedIdx;
+  if (!(center >= 0 && center < total)) center = 0;
+  for (let d = -MT_LRU_KEEP_BEHIND; d <= MT_LRU_KEEP_AHEAD; d++) {
+    const i = center + d;
+    if (i >= 0 && i < total) keep.add(i);
+  }
+  return keep;
+}
+
+// v8.3.0: 1曲分の sampleId を集める
+function _mtFsSongSampleIds(songIdx) {
+  const song = state.multitrack.songs[songIdx];
+  const ids = new Set();
+  if (!song) return ids;
+  for (const g of MT_GROUPS) {
+    mtGetLayers(song, g).forEach(l => { if (l && l.sampleId) ids.add(l.sampleId); });
+  }
+  return ids;
+}
+
+// v8.3.0: keepSet 内の曲が持つ全 sampleId を集める
+function _mtFsBuildKeepIds() {
+  const keepSongIdx = _mtFsBuildKeepSet();
+  const keepIds = new Set();
+  for (const i of keepSongIdx) {
+    _mtFsSongSampleIds(i).forEach(id => keepIds.add(id));
+  }
+  // 現在 activeSources で鳴っている buffer の sampleId は必ず保護 (念のため)
+  // ※ source 自体は buffer 参照を保持するので削除しても再生は止まらないが、
+  //   削除後に同じ buffer が再度必要になった時に再 decode を防ぐ
+  return keepIds;
+}
+
+// v8.3.0: LRU eviction — keep 外のバッファを破棄してメモリ解放
+function _mtFsEvictLRU() {
+  const keepIds = _mtFsBuildKeepIds();
+  let removed = 0;
+  let removedBytes = 0;
+  for (const id of Object.keys(mtDecodedCache)) {
+    if (!keepIds.has(id)) {
+      const buf = mtDecodedCache[id];
+      if (buf && typeof buf.length === 'number') {
+        // bytes = samples × ch × 4 (float32)
+        removedBytes += buf.length * (buf.numberOfChannels || 2) * 4;
+      }
+      delete mtDecodedCache[id];
+      removed++;
+    }
+  }
+  if (removed > 0) {
+    console.log(`[mtFs] LRU evict: ${removed} buffers, ~${(removedBytes/1024/1024).toFixed(1)} MB freed`);
+  }
+  // 安全弁: それでも MAX_BUFFERS を超えていたら警告 (この時は keep 内が大きすぎる)
+  const remaining = Object.keys(mtDecodedCache).length;
+  if (remaining > MT_LRU_MAX_BUFFERS) {
+    console.warn(`[mtFs] LRU: cache still has ${remaining} buffers (over ${MT_LRU_MAX_BUFFERS}). Consider reducing LRU range.`);
+  }
+}
+
+// v8.3.0: メモリ使用量を MB で算出 (診断用)
+function _mtFsCacheSizeMB() {
+  let bytes = 0;
+  for (const id in mtDecodedCache) {
+    const buf = mtDecodedCache[id];
+    if (buf && typeof buf.length === 'number') {
+      bytes += buf.length * (buf.numberOfChannels || 2) * 4;
+    }
+  }
+  return bytes / 1024 / 1024;
+}
 
 function _mtFsCollectAllIds() {
   const ids = [];
@@ -10113,48 +10251,71 @@ async function _mtFsProbe(sampleId) {
 
 // 1 サンプルを decode して cache に格納
 // returns: { ok: true, buf } or { ok: false, reason }
+// v8.3.0:
+//   - 同じ sampleId への並行呼び出しは 1 本に集約 (_mtLoadInFlight)
+//   - 失敗を _failed に記録 (askPermission=true 時は再試行可)
 async function _mtFsLoadOne(sampleId, askPermission) {
   if (mtDecodedCache[sampleId]) return { ok: true, buf: mtDecodedCache[sampleId] };
-  await mtInitCtx();
-  // 1) handle 優先
-  try {
-    const rec = await mtGetHandleFromDB(sampleId);
-    if (rec && rec.handle) {
-      let perm = 'denied';
-      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-      if (perm !== 'granted' && askPermission) {
-        try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
+  // 直近 failed と記録され、かつ permission 要求でない (＝同じ条件で再試行しても無駄) ならスキップ
+  if (mtFs._failed.has(sampleId) && !askPermission) {
+    return { ok: false, reason: 'cached-failure' };
+  }
+  // 既に同じ sampleId の load Promise が走っていれば、それに相乗りする
+  if (_mtLoadInFlight.has(sampleId)) {
+    return await _mtLoadInFlight.get(sampleId);
+  }
+  const p = (async () => {
+    await mtInitCtx();
+    // 1) handle 優先
+    try {
+      const rec = await mtGetHandleFromDB(sampleId);
+      if (rec && rec.handle) {
+        let perm = 'denied';
+        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+        if (perm !== 'granted' && askPermission) {
+          try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
+        }
+        if (perm === 'granted') {
+          try {
+            const f = await rec.handle.getFile();
+            const arr = await f.arrayBuffer();
+            const buf = await mtRobustDecode(arr, f);
+            mtDecodedCache[sampleId] = buf;
+            mtFs._failed.delete(sampleId);
+            return { ok: true, buf };
+          } catch(e) {
+            console.warn('[mtFs] decode failed', sampleId, e);
+            mtFs._failed.add(sampleId);
+            return { ok: false, reason: 'decode-error' };
+          }
+        }
+        return { ok: false, reason: 'denied' };
       }
-      if (perm === 'granted') {
+    } catch(_) {}
+    // 2) blob fallback
+    try {
+      const r = await getSampleFromDB(sampleId);
+      if (r && r.data) {
         try {
-          const f = await rec.handle.getFile();
-          const arr = await f.arrayBuffer();
-          const buf = await mtRobustDecode(arr, f);
+          const buf = await mtRobustDecode(r.data, { name: r.name || sampleId });
           mtDecodedCache[sampleId] = buf;
+          mtFs._failed.delete(sampleId);
           return { ok: true, buf };
         } catch(e) {
-          console.warn('[mtFs] decode failed', sampleId, e);
+          console.warn('[mtFs] blob decode failed', sampleId, e);
+          mtFs._failed.add(sampleId);
           return { ok: false, reason: 'decode-error' };
         }
       }
-      return { ok: false, reason: 'denied' };
-    }
-  } catch(_) {}
-  // 2) blob fallback
+    } catch(_) {}
+    return { ok: false, reason: 'orphan' };
+  })();
+  _mtLoadInFlight.set(sampleId, p);
   try {
-    const r = await getSampleFromDB(sampleId);
-    if (r && r.data) {
-      try {
-        const buf = await mtRobustDecode(r.data, { name: r.name || sampleId });
-        mtDecodedCache[sampleId] = buf;
-        return { ok: true, buf };
-      } catch(e) {
-        console.warn('[mtFs] blob decode failed', sampleId, e);
-        return { ok: false, reason: 'decode-error' };
-      }
-    }
-  } catch(_) {}
-  return { ok: false, reason: 'orphan' };
+    return await p;
+  } finally {
+    _mtLoadInFlight.delete(sampleId);
+  }
 }
 
 // 4 並列ワーカーで一括 decode
@@ -10236,6 +10397,10 @@ async function _mtFsLoadMany(ids, askPermission) {
 }
 
 // === 公開 API ===
+// v8.3.0: 起動時に全曲 decode する旧設計を撤廃。
+// 本番想定 (20曲 × 12 STEM × 100MB) で全 decode するとメモリ 17GB に達し
+// タブクラッシュ。起動時は probe (permission チェック) のみ実行し、
+// decode は selectedIdx 周辺の曲だけバックグラウンドで先読みする。
 async function mtFsInit() {
   if (!state.multitrack.songs.length) {
     mtFs.state = 'idle';
@@ -10264,8 +10429,18 @@ async function mtFsInit() {
     console.log('[mtFs] needs reconnect', needGesture);
     return;
   }
-  // 全 OK → bg decode 開始（await しない）
-  _mtFsLoadMany(ids, false);
+  // 全 OK → state を ready にして、選択中曲周辺だけ先読み開始
+  mtFs.state = 'ready';
+  mtFs.total = ids.length;
+  mtFs.loaded = 0;
+  // 先読みは ready 表示の後、idle時間で実行 (本番想定でも UI は即操作可能)
+  mtFsRender();
+  // selectedIdx 周辺だけ非同期で先読み (await しない)
+  const m = state.multitrack;
+  const center = (m.selectedIdx >= 0) ? m.selectedIdx
+               : (m.currentSongIdx >= 0) ? m.currentSongIdx : 0;
+  setTimeout(() => { try { mtFsPrioritizeSong(center); } catch(_) {} }, 100);
+  console.log(`[mtFs] init complete (probe only) — ${ids.length} files registered, prefetching around song ${center}`);
 }
 
 async function mtFsReconnect() {
@@ -10290,18 +10465,34 @@ async function mtFsLoadSongUrgent(songIdx) {
 }
 
 // 選択中の曲をバックグラウンドで先読み（待たない、SPACE 押下時のラグを減らす）
+// v8.3.0: 隣接曲 (前1 + 当該 + 次2) も同時先読み + LRU eviction を実行
 function mtFsPrioritizeSong(songIdx) {
-  const song = state.multitrack.songs[songIdx];
-  if (!song) return;
-  const ids = [];
-  for (const g of MT_GROUPS) {
-    mtGetLayers(song, g).forEach(l => {
-      if (l && l.sampleId && !mtDecodedCache[l.sampleId]) ids.push(l.sampleId);
-    });
+  const total = state.multitrack.songs.length;
+  if (songIdx < 0 || songIdx >= total) return;
+  // 対象: center ± LRU 範囲
+  const targets = [songIdx];
+  for (let d = 1; d <= MT_LRU_KEEP_AHEAD; d++) {
+    if (songIdx + d < total) targets.push(songIdx + d);
   }
-  if (ids.length === 0) return;
-  // 並列で先読み（await しない、結果も返さない）
-  Promise.all(ids.map(id => _mtFsLoadOne(id, false))).catch(_ => {});
+  for (let d = 1; d <= MT_LRU_KEEP_BEHIND; d++) {
+    if (songIdx - d >= 0) targets.push(songIdx - d);
+  }
+  // 全 sampleId を集めて、未ロードのものだけ load
+  const allIds = new Set();
+  for (const i of targets) {
+    _mtFsSongSampleIds(i).forEach(id => allIds.add(id));
+  }
+  const toLoad = [];
+  for (const id of allIds) {
+    if (!mtDecodedCache[id]) toLoad.push(id);
+  }
+  // 先読みはバックグラウンド (await しない)
+  if (toLoad.length > 0) {
+    console.log(`[mtFs] prefetch ${toLoad.length} STEMs around song ${songIdx}`);
+    Promise.all(toLoad.map(id => _mtFsLoadOne(id, false))).catch(_ => {});
+  }
+  // 同時に LRU eviction を実行 (range 外の buffer を解放)
+  _mtFsEvictLRU();
 }
 
 function mtFsGetBuffer(sampleId) {
@@ -10394,6 +10585,7 @@ function mtRenderReconnectUI() { mtFsRender(); }
 
 // ---- 再生エンジン ----
 // options.keepPrevious=true で前曲の source を止めない（オーバーラップ）
+// v8.3.0: 連打ガード + 部分再生フォールバック (1.5秒タイムアウト)
 async function mtPlaySong(idx, offset, options) {
   if (idx < 0 || idx >= state.multitrack.songs.length) return;
   if (!isFinite(offset) || offset < 0) offset = 0;
@@ -10406,6 +10598,13 @@ async function mtPlaySong(idx, offset, options) {
     console.log('[mtPlaySong] same song already playing, ignoring re-trigger');
     return;
   }
+  // v8.3.0: 連打ガード — 同時に 2 つの mtPlaySong が走らないようにする
+  if (_mtPlaySongInFlight) {
+    console.log('[mtPlaySong] another play already in flight, ignoring');
+    return;
+  }
+  _mtPlaySongInFlight = true;
+  try {
   await mtInitCtx();
   if (mtCtx.state === 'suspended') await mtCtx.resume();
   if (!keepPrevious) {
@@ -10428,16 +10627,40 @@ async function mtPlaySong(idx, offset, options) {
   // groupBuffers: { drums: [AudioBuffer, ...], bass: [...] }
   // 未ロードの layer があれば lazy-load してから集計
   let needsLoad = false;
+  let totalLayers = 0;
+  let loadedLayers = 0;
   for (const g of MT_GROUPS) {
     for (const layer of mtGetLayers(song, g)) {
-      if (!mtDecodedCache[layer.sampleId]) { needsLoad = true; break; }
+      totalLayers++;
+      if (mtDecodedCache[layer.sampleId]) loadedLayers++;
+      else needsLoad = true;
     }
-    if (needsLoad) break;
   }
   if (needsLoad) {
-    // この曲のレイヤーを優先 lazy load（preload より優先）
-    // mtFsLoadSongUrgent が permission 要求 + 直列 decode を行う
-    await mtFsLoadSongUrgent(idx);
+    // v8.3.0: 部分再生フォールバック
+    // 「全 STEM のロード待ち」と「1.5秒タイムアウト」で race。
+    // タイムアウトしたら、その時点でロード済みの STEM だけで再生開始 (本番で
+    // 「SPACE 押したのに鳴らない」を防ぐ)。残りはバックグラウンドで継続。
+    const loadPromise = mtFsLoadSongUrgent(idx);
+    const timeoutMs = 1500;
+    const timeoutPromise = new Promise(r => setTimeout(() => r('__timeout__'), timeoutMs));
+    const result = await Promise.race([loadPromise, timeoutPromise]);
+    if (result === '__timeout__') {
+      // ロードが間に合わなかった — ロード済み STEM 数を再カウント
+      let nowLoaded = 0;
+      for (const g of MT_GROUPS) {
+        for (const layer of mtGetLayers(song, g)) {
+          if (mtDecodedCache[layer.sampleId]) nowLoaded++;
+        }
+      }
+      console.warn(`[mtPlaySong] urgent load timeout (${timeoutMs}ms): ${nowLoaded}/${totalLayers} loaded, starting partial`);
+      if (nowLoaded > 0) {
+        showToast(`⚠️ 部分再生中 (${nowLoaded}/${totalLayers} STEM)`);
+        // 残り STEM はバックグラウンドで継続デコード (await しない)
+        // 完了しても今再生中の source には反映されないが、次回再生に役立つ
+      }
+      // ロード 0 件なら、この後の hasAny チェックで弾かれる (既存処理に任せる)
+    }
   }
   // 再生開始 → preload 用のワーカーに「メインスレッド負荷を抑えて」と通知
   mtFsNotifyPlaybackStart();
@@ -10591,6 +10814,13 @@ async function mtPlaySong(idx, offset, options) {
   mtRenderSetlist();
   mtRenderNow();
   mtStartMeter();
+  // v8.3.0: 再生開始後に「次の次の曲」を先読み + LRU eviction
+  // (auto-advance で次曲が来た時にすぐ鳴るように)
+  try { mtFsPrioritizeSong(idx); } catch(_) {}
+  } finally {
+    // v8.3.0: 連打ガード解除 (例外時も必ず下ろす)
+    _mtPlaySongInFlight = false;
+  }
 }
 
 // ---- SEEK ----
