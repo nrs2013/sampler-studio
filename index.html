@@ -666,8 +666,8 @@
 
   /* DOOR OPEN PAGE */
   #doorPage { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow-y: auto; }
-  /* 上段は 3 カラム（NOW / DOOR BGM / WORKOUT BGM）に戻す */
-  .do-top { display: grid; grid-template-columns: minmax(280px, 1.4fr) minmax(220px, 1fr) minmax(220px, 1fr); gap: 8px; }
+  /* v11.1.0: 上段は 3 カラム（DOOR BGM / WORKOUT BGM / NOW＝時計を右側）に */
+  .do-top { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(280px, 1.4fr); gap: 8px; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
   .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -3013,19 +3013,7 @@
   <!-- DOOR OPEN PAGE -->
   <div id="doorPage" style="display:none;">
     <div class="do-top">
-      <!-- NOW / NEXT — 横並び -->
-      <div class="do-card" id="doNowCard">
-        <div class="now-block">
-          <div class="do-card-head">NOW</div>
-          <div class="do-clock-now" id="doClockNow">--:--</div>
-          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
-        </div>
-        <div class="now-block next-block">
-          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
-          <div class="do-clock-next-name" id="doNextName">予定なし</div>
-          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
-        </div>
-      </div>
+      <!-- v11.1.0: 左から DOOR BGM / WORKOUT BGM / NOW (時計を右側に) -->
       <!-- DOOR OPEN BGM -->
       <div class="do-card do-bgm-card" id="doBgmCardDoor" data-slot="door">
         <div class="do-bgm-row">
@@ -3096,6 +3084,19 @@
             <div class="do-bgm-vol-thumb workout" id="doBgmVolThumbWorkout" style="left:50%;"></div>
           </div>
           <span class="do-bgm-vol-db" id="doBgmVolDbWorkout">0.0</span>
+        </div>
+      </div>
+      <!-- v11.1.0: NOW / NEXT (右側に移動) -->
+      <div class="do-card" id="doNowCard">
+        <div class="now-block">
+          <div class="do-card-head">NOW</div>
+          <div class="do-clock-now" id="doClockNow">--:--</div>
+          <div class="do-status-badge" id="doStatusBadge">● 待機中</div>
+        </div>
+        <div class="now-block next-block">
+          <div class="do-clock-next-label" id="doNextLabel">NEXT —</div>
+          <div class="do-clock-next-name" id="doNextName">予定なし</div>
+          <div class="do-clock-next-eta" id="doNextEta">--:--</div>
         </div>
       </div>
 
@@ -3421,7 +3422,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.0.1';
+const APP_VERSION = 'v11.1.0';
+// v11.1.0: DOOR OPEN レイアウト変更 — 左から DOOR/WORKOUT BGM、右に時計 (NOW)
 // v11.0.1: MPC 風サンプラーアイコン追加 (4x4 パッド + 緑LED)
 // v11.0.0: PWA + File Handling API — .sampler ダブルクリック起動 (DP方式の完成形)
 // v10.2.0: project.json 自動保存 + フォルダから開く + 専用ダイアログ UI (DP 方式)
