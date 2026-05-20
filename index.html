@@ -688,9 +688,8 @@
   .do-sched-card.do-grid { grid-column: 2; grid-row: 2 / span 2; min-height: 0; min-width: 0;
                            display: flex; flex-direction: column; overflow: hidden; }
   /* LOGO カード（amber #C9A96A テーマ）— コンパクト横並びレイアウト */
-  /* v11.2.4: LOGO カードを下まで伸ばす (.do-left-bottom-col の余白を埋める) */
-  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; flex: 1; min-height: 0; }
-  .do-logo-card .do-logo-body { flex: 1; min-height: 0; }
+  /* v11.2.5: LOGO カードは自然な高さに (flex:1 撤回。下に余白が出ても OK) */
+  .do-logo-card { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
   .do-logo-head-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .do-logo-head-left { display: flex; align-items: center; gap: 8px; }
   .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
@@ -778,7 +777,7 @@
   .do-bgm-tag.tag-door { background: rgba(93,202,165,0.2); color: #3DB5A6; }
   .do-bgm-tag.tag-workout { background: rgba(46,122,255,0.2); color: #2E7AFF; }
   .do-bgm-sub { font-size: 10px; color: #6A6A70; }
-  .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* WORKOUT 用色違いボタン／フィル */
   .do-bgm-btn.primary.door { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-btn.primary.door:hover { background: #5BC4B0; }
@@ -792,8 +791,8 @@
   .do-bgm-vol-fill.workout { background: #2E7AFF; }
   .do-bgm-vol-thumb.door { background: #3DB5A6; }
   .do-bgm-vol-thumb.workout { background: #2E7AFF; }
-  /* BGMカード共通 */
-  .do-bgm-card { padding: 10px; }
+  /* BGMカード共通 (v11.2.5: 内部スペース拡張で文字とボタンの息継ぎ確保) */
+  .do-bgm-card { padding: 14px 14px 16px; }
   .do-card {
     background: #131316; border: 0.5px solid #1F1F22; border-radius: 8px; padding: 10px;
     transition: border-color 0.15s, background 0.15s;
@@ -833,11 +832,11 @@
   .do-status-badge.playing { background: rgba(226,75,74,0.15); color: #E24B4A; }
 
   /* BGM */
-  .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .do-bgm-name { font-size: 11px; color: #C8C8CE; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .do-bgm-load { font-size: 9px; color: #6A6A70; cursor: pointer; padding: 4px 10px; background: #14141A; border-radius: 3px; border: none; font-family: inherit; letter-spacing: 1px; }
   .do-bgm-load:hover { background: #25252A; color: #E6E6EA; }
-  .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; }
   .do-bgm-btn {
     width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #25252A;
     background: #14141A; color: #E6E6EA; cursor: pointer; display: flex;
@@ -851,8 +850,8 @@
   .do-bgm-btn.primary:hover { background: #5BC4B0; }
   .do-bgm-btn.active { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
-  .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; }
-  .do-bgm-bar { height: 4px; background: #14141A; border-radius: 2px; overflow: hidden; }
+  .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; margin-bottom: 8px; }
+  .do-bgm-bar { height: 4px; background: #14141A; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
   .do-bgm-bar-fill { height: 100%; background: #3DB5A6; width: 0%; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
   .do-bgm-vol-label { font-size: 9px; color: #6A6A70; letter-spacing: 1.5px; width: 30px; }
@@ -3442,7 +3441,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.4';
+const APP_VERSION = 'v11.2.5';
+// v11.2.5: BGM カード内部スペース拡張 + LOGO カード縮小 (見た目の息継ぎ確保)
 // v11.2.4: LOGO カードを下まで伸ばして余白を埋める
 // v11.2.3: 縮小時のレイアウト崩れ修正 (grid track を minmax(0, ...) に、grid item に min-width:0)
 // v11.2.2: NOW カードを BGM ペアと同じ高さに、SCHEDULE が DUCK 行も吸収して上に伸びる
