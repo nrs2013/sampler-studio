@@ -3045,7 +3045,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.0.1';
+const APP_VERSION = 'v8.0.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9885,10 +9885,15 @@ async function _mtFsLoadMany(ids, askPermission) {
       mtFs.state = 'ready';
       mtFs.showReadyFlash = true;
       if (mtFs._readyFlashTimer) clearTimeout(mtFs._readyFlashTimer);
+      // 6 秒間表示（本番中見落とさない長さ）
       mtFs._readyFlashTimer = setTimeout(() => {
         mtFs.showReadyFlash = false;
         mtFsRender();
-      }, 2500);
+      }, 6000);
+      // 同時に toast でも知らせる（バナーを見てなくても分かる）
+      if (mtFs.loaded > 0) {
+        try { showToast(`✓ 全 ${mtFs.loaded} ファイル読込完了 — SPACE で即時再生 OK`); } catch(_) {}
+      }
     }
   }
   state.multitrack.needsReconnect = (deniedCount > 0);
@@ -9947,10 +9952,24 @@ async function mtFsLoadSongUrgent(songIdx) {
     });
   }
   if (ids.length === 0) return;
-  for (const id of ids) {
-    await _mtFsLoadOne(id, true);
-  }
+  // 並列で一気に decode（直列だと 6 ファイルで 6 倍時間かかる）
+  await Promise.all(ids.map(id => _mtFsLoadOne(id, true)));
   try { mtRecomputeSongDuration(); } catch(_) {}
+}
+
+// 選択中の曲をバックグラウンドで先読み（待たない、SPACE 押下時のラグを減らす）
+function mtFsPrioritizeSong(songIdx) {
+  const song = state.multitrack.songs[songIdx];
+  if (!song) return;
+  const ids = [];
+  for (const g of MT_GROUPS) {
+    mtGetLayers(song, g).forEach(l => {
+      if (l && l.sampleId && !mtDecodedCache[l.sampleId]) ids.push(l.sampleId);
+    });
+  }
+  if (ids.length === 0) return;
+  // 並列で先読み（await しない、結果も返さない）
+  Promise.all(ids.map(id => _mtFsLoadOne(id, false))).catch(_ => {});
 }
 
 function mtFsGetBuffer(sampleId) {
@@ -10280,12 +10299,14 @@ function mtSelectNext() {
   mtScrollSelectedIntoView();
   mtRenderSetlist();
   mtRenderNow();
+  mtFsPrioritizeSong(state.multitrack.selectedIdx);
 }
 function mtSelectPrev() {
   if (state.multitrack.songs.length === 0) return;
   state.multitrack.selectedIdx = Math.max(0, state.multitrack.selectedIdx - 1);
   state.multitrack.seekOffset = 0;
   mtRecomputeSongDuration();
+  mtFsPrioritizeSong(state.multitrack.selectedIdx);
   mtScrollSelectedIntoView();
   mtRenderSetlist();
   mtRenderNow();
@@ -10768,6 +10789,8 @@ function mtRenderSetlist() {
       mtRecomputeSongDuration();
       mtRenderSetlist();
       mtRenderNow();
+      // 選択した曲を背景で先読み（SPACE 押下時のラグを減らす）
+      mtFsPrioritizeSong(idx);
     });
     row.dataset.songIdx = String(idx);
     // 左端 grip ハンドル（点々）— ここを掴んだときだけ並べ替え drag が始まる
