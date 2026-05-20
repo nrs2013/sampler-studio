@@ -2131,12 +2131,12 @@
   }
   /* Fader */
   .mt-strip-fader {
-    position: relative; width: 7px;
-    background: linear-gradient(180deg, #08080A, #0E0E10);
-    border-radius: 3px; cursor: pointer;
+    position: relative; width: 12px;
+    background: #14141A;
+    border-radius: 5px;
+    cursor: ns-resize;
     flex-shrink: 0;
-    border: 0.5px solid #1A1A1E;
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.6);
+    border: 1px solid #25252A;
   }
   /* dB tick marks — JS で fader 内に注入 */
   .mt-strip-fader-tick {
@@ -2163,15 +2163,17 @@
     border-radius: 1px;
     box-shadow: 0 0 4px rgba(61,181,166,0.25);
   }
+  /* つまみ — マスターフェーダーと同じ大きさ / 金属感 */
   .mt-strip-fader-thumb {
-    position: absolute; left: -7px; right: -7px; height: 11px;
-    background: linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%);
-    border-radius: 2px; transform: translateY(50%);
+    position: absolute; left: -10px; right: -10px; height: 18px;
+    background: linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%);
+    border-radius: 3px;
+    transform: translateY(50%);
     pointer-events: none;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.4);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.6);
     background-image:
-      linear-gradient(180deg, #D8D8DC 0%, #A8A8AE 100%),
-      repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 3px);
+      linear-gradient(180deg, #E8E8EC 0%, #B8B8BE 50%, #E8E8EC 100%),
+      repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px);
   }
   /* Meter ステレオ — L / R を 2 本の細いバーで表示 */
   .mt-strip-meter {
@@ -3128,7 +3130,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.14';
+const APP_VERSION = 'v8.1.15';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
