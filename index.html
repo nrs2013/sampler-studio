@@ -122,7 +122,7 @@
   }
   .fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #3DB5A6, #EF9F27 80%, #E24B4A 95%);
+    background: linear-gradient(to top, #3DB5A6, #FF8A0F 80%, #E24B4A 95%);
     border-radius: 7px;
   }
   .fader-thumb {
@@ -142,7 +142,7 @@
   }
   .meter-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: linear-gradient(to top, #2E7A5B 0%, #3DB5A6 55%, #EF9F27 78%, #E24B4A 93%);
+    background: linear-gradient(to top, #2E7A5B 0%, #3DB5A6 55%, #FF8A0F 78%, #E24B4A 93%);
     transition: height 0.05s linear;
     height: 0%;
   }
@@ -195,7 +195,7 @@
     box-shadow: 0 0 5px rgba(93,202,165,0.55);
     z-index: 2; touch-action: none;
   }
-  .curve-handle.h2 { background: #EF9F27; box-shadow: 0 0 5px rgba(239,159,39,0.55); }
+  .curve-handle.h2 { background: #FF8A0F; box-shadow: 0 0 5px rgba(255,138,15,0.55); }
   .curve-handle:active { cursor: grabbing; }
   .curve-hint {
     position: absolute; bottom: 2px; right: 4px; font-size: 7px;
@@ -230,8 +230,8 @@
   }
   .btn-stop { border-color: #E24B4A; color: #E24B4A; }
   .btn-stop:hover { background: rgba(226,75,74,0.1); }
-  .btn-pause { border-color: #EF9F27; color: #EF9F27; }
-  .btn-pause:hover { background: rgba(239,159,39,0.1); }
+  .btn-pause { border-color: #FF8A0F; color: #FF8A0F; }
+  .btn-pause:hover { background: rgba(255,138,15,0.1); }
   /* STOP / PAUSE — 小さくしてフェーダーに高さを譲る */
   .btn-outline.btn-big {
     padding: 7px 4px; font-size: 10px; font-weight: 500;
@@ -561,7 +561,7 @@
     content: ''; width: 10px; height: 30px; background: #3DB5A6; border-radius: 2px;
     box-shadow: 0 0 6px rgba(93,202,165,0.5);
   }
-  .trim-handle.end::before, .trim-handle.end::after { background: #EF9F27; box-shadow: 0 0 6px rgba(239,159,39,0.5); }
+  .trim-handle.end::before, .trim-handle.end::after { background: #FF8A0F; box-shadow: 0 0 6px rgba(255,138,15,0.5); }
   .trim-playhead {
     position: absolute; top: 0; bottom: 0; width: 1.5px; background: #E6E6EA;
     pointer-events: none; z-index: 1; box-shadow: 0 0 4px #E6E6EA;
@@ -740,22 +740,22 @@
     padding: 3px 10px; font-size: 10px; letter-spacing: 1.5px; font-weight: 600; border-radius: 4px;
   }
   .do-bgm-tag.tag-door { background: rgba(93,202,165,0.2); color: #3DB5A6; }
-  .do-bgm-tag.tag-workout { background: rgba(133,183,235,0.2); color: #85B7EB; }
+  .do-bgm-tag.tag-workout { background: rgba(46,122,255,0.2); color: #2E7AFF; }
   .do-bgm-sub { font-size: 10px; color: #6A6A70; }
   .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* WORKOUT 用色違いボタン／フィル */
   .do-bgm-btn.primary.door { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-btn.primary.door:hover { background: #5BC4B0; }
-  .do-bgm-btn.primary.workout { background: #85B7EB; color: #042C53; border-color: #85B7EB; }
+  .do-bgm-btn.primary.workout { background: #2E7AFF; color: #042C53; border-color: #2E7AFF; }
   .do-bgm-btn.primary.workout:hover { background: #B5D4F4; }
   .do-bgm-btn.active.door { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
-  .do-bgm-btn.active.workout { background: #85B7EB; color: #042C53; border-color: #85B7EB; }
+  .do-bgm-btn.active.workout { background: #2E7AFF; color: #042C53; border-color: #2E7AFF; }
   .do-bgm-bar-fill.door { background: #3DB5A6; }
-  .do-bgm-bar-fill.workout { background: #85B7EB; }
+  .do-bgm-bar-fill.workout { background: #2E7AFF; }
   .do-bgm-vol-fill.door { background: #3DB5A6; }
-  .do-bgm-vol-fill.workout { background: #85B7EB; }
+  .do-bgm-vol-fill.workout { background: #2E7AFF; }
   .do-bgm-vol-thumb.door { background: #3DB5A6; }
-  .do-bgm-vol-thumb.workout { background: #85B7EB; }
+  .do-bgm-vol-thumb.workout { background: #2E7AFF; }
   /* BGMカード共通 */
   .do-bgm-card { padding: 10px; }
   .do-card {
@@ -793,7 +793,7 @@
     padding: 2px 10px; border-radius: 4px; font-size: 11px; letter-spacing: 0.5px;
     align-self: flex-start;
   }
-  .do-status-badge.duck { background: rgba(239,159,39,0.15); color: #EF9F27; }
+  .do-status-badge.duck { background: rgba(255,138,15,0.15); color: #FF8A0F; }
   .do-status-badge.playing { background: rgba(226,75,74,0.15); color: #E24B4A; }
 
   /* BGM */
@@ -853,10 +853,10 @@
   .do-duck-label { font-size: 11px; color: #C8C8CE; }
   .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #3DB5A6; }
   .do-duck-bar { height: 4px; background: #14141A; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
-  .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #EF9F27; border-radius: 2px; pointer-events: none; }
+  .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #FF8A0F; border-radius: 2px; pointer-events: none; }
   .do-duck-bar-thumb {
     position: absolute; top: 50%; transform: translate(-50%, -50%);
-    width: 18px; height: 18px; background: #EF9F27; border-radius: 50%;
+    width: 18px; height: 18px; background: #FF8A0F; border-radius: 50%;
     pointer-events: none; box-shadow: 0 0 0 1.5px #131316;
   }
   .do-duck-bar.gray .do-duck-bar-fill { background: #5A5A60; }
@@ -892,24 +892,24 @@
     transition: border-color 0.15s, background 0.15s;
   }
   /* 半透明枠：A1=ピンク / A2=青 / A3=緑 / A4=オレンジ */
-  .do-lib-slot.slot-0 { background: rgba(237,147,177,0.06); border-color: rgba(237,147,177,0.5); }
-  .do-lib-slot.slot-1 { background: rgba(133,183,235,0.06); border-color: rgba(133,183,235,0.5); }
-  .do-lib-slot.slot-2 { background: rgba(151,196,89,0.06); border-color: rgba(151,196,89,0.5); }
-  .do-lib-slot.slot-3 { background: rgba(239,159,39,0.06); border-color: rgba(239,159,39,0.5); }
+  .do-lib-slot.slot-0 { background: rgba(255,74,143,0.06); border-color: rgba(255,74,143,0.5); }
+  .do-lib-slot.slot-1 { background: rgba(46,122,255,0.06); border-color: rgba(46,122,255,0.5); }
+  .do-lib-slot.slot-2 { background: rgba(107,199,36,0.06); border-color: rgba(107,199,36,0.5); }
+  .do-lib-slot.slot-3 { background: rgba(255,138,15,0.06); border-color: rgba(255,138,15,0.5); }
   .do-lib-slot.has-content { cursor: grab; }
   /* 再生中は枠を 1px に強調 */
-  .do-lib-slot.playing.slot-0 { border: 1px solid #ED93B1; }
-  .do-lib-slot.playing.slot-1 { border: 1px solid #85B7EB; }
-  .do-lib-slot.playing.slot-2 { border: 1px solid #97C459; }
-  .do-lib-slot.playing.slot-3 { border: 1px solid #EF9F27; }
+  .do-lib-slot.playing.slot-0 { border: 1px solid #FF4A8F; }
+  .do-lib-slot.playing.slot-1 { border: 1px solid #2E7AFF; }
+  .do-lib-slot.playing.slot-2 { border: 1px solid #6BC724; }
+  .do-lib-slot.playing.slot-3 { border: 1px solid #FF8A0F; }
   /* hover でちょっとだけ白く（緑にはしない） */
   .do-lib-slot.has-content:hover { border-color: rgba(230,230,234,0.5); }
   .do-lib-slot.empty { border-style: dashed; cursor: pointer; }
   .do-lib-slot.empty:hover { border-color: rgba(230,230,234,0.4); }
-  .do-lib-slot.empty.slot-0 { background: rgba(237,147,177,0.03); border-color: rgba(237,147,177,0.35); }
-  .do-lib-slot.empty.slot-1 { background: rgba(133,183,235,0.03); border-color: rgba(133,183,235,0.35); }
-  .do-lib-slot.empty.slot-2 { background: rgba(151,196,89,0.03); border-color: rgba(151,196,89,0.35); }
-  .do-lib-slot.empty.slot-3 { background: rgba(239,159,39,0.03); border-color: rgba(239,159,39,0.35); }
+  .do-lib-slot.empty.slot-0 { background: rgba(255,74,143,0.08); border-color: rgba(255,74,143,0.35); }
+  .do-lib-slot.empty.slot-1 { background: rgba(46,122,255,0.08); border-color: rgba(46,122,255,0.35); }
+  .do-lib-slot.empty.slot-2 { background: rgba(107,199,36,0.08); border-color: rgba(107,199,36,0.35); }
+  .do-lib-slot.empty.slot-3 { background: rgba(255,138,15,0.08); border-color: rgba(255,138,15,0.35); }
   .do-lib-slot.dragging { opacity: 0.4; }
   .do-lib-slot.drop-over { border-color: rgba(230,230,234,0.7); background: rgba(255,255,255,0.04); }
   .do-lib-slot-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -918,23 +918,23 @@
     font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
   }
   /* バッジは色を抑えめに：背景=色の20%、文字=色そのもの */
-  .do-lib-badge.color-0 { background: rgba(237,147,177,0.2); color: #ED93B1; }
-  .do-lib-badge.color-1 { background: rgba(133,183,235,0.2); color: #85B7EB; }
-  .do-lib-badge.color-2 { background: rgba(151,196,89,0.2); color: #97C459; }
-  .do-lib-badge.color-3 { background: rgba(239,159,39,0.2); color: #EF9F27; }
+  .do-lib-badge.color-0 { background: rgba(255,74,143,0.2); color: #FF4A8F; }
+  .do-lib-badge.color-1 { background: rgba(46,122,255,0.2); color: #2E7AFF; }
+  .do-lib-badge.color-2 { background: rgba(107,199,36,0.2); color: #6BC724; }
+  .do-lib-badge.color-3 { background: rgba(255,138,15,0.2); color: #FF8A0F; }
   .do-lib-actions { display: flex; gap: 4px; align-items: center; }
   .do-lib-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
   .do-lib-act:hover { color: #3DB5A6; }
   .do-lib-act.del:hover { color: #E24B4A; }
   .do-lib-act.play { font-size: 14px; }
-  .do-lib-act.play.playing-btn.color-0 { background: #ED93B1; color: #4B1528; font-weight: 600; padding: 2px 8px; }
-  .do-lib-act.play.playing-btn.color-1 { background: #85B7EB; color: #042C53; font-weight: 600; padding: 2px 8px; }
-  .do-lib-act.play.playing-btn.color-2 { background: #97C459; color: #173404; font-weight: 600; padding: 2px 8px; }
-  .do-lib-act.play.playing-btn.color-3 { background: #EF9F27; color: #0E1A14; font-weight: 600; padding: 2px 8px; }
-  .do-lib-act.play.color-0:hover { color: #ED93B1; }
-  .do-lib-act.play.color-1:hover { color: #85B7EB; }
-  .do-lib-act.play.color-2:hover { color: #97C459; }
-  .do-lib-act.play.color-3:hover { color: #EF9F27; }
+  .do-lib-act.play.playing-btn.color-0 { background: #FF4A8F; color: #4B1528; font-weight: 600; padding: 2px 8px; }
+  .do-lib-act.play.playing-btn.color-1 { background: #2E7AFF; color: #042C53; font-weight: 600; padding: 2px 8px; }
+  .do-lib-act.play.playing-btn.color-2 { background: #6BC724; color: #173404; font-weight: 600; padding: 2px 8px; }
+  .do-lib-act.play.playing-btn.color-3 { background: #FF8A0F; color: #0E1A14; font-weight: 600; padding: 2px 8px; }
+  .do-lib-act.play.color-0:hover { color: #FF4A8F; }
+  .do-lib-act.play.color-1:hover { color: #2E7AFF; }
+  .do-lib-act.play.color-2:hover { color: #6BC724; }
+  .do-lib-act.play.color-3:hover { color: #FF8A0F; }
   .do-lib-name { font-size: 12px; font-weight: 500; color: #E6E6EA; word-break: break-all; line-height: 1.3; margin-top: 2px; }
   .do-lib-meta { font-size: 10px; color: #6A6A70; margin-top: 3px; font-family: inherit; }
   .do-lib-empty-text { font-size: 11px; margin-top: 6px; color: #5A5A60; }
@@ -955,18 +955,18 @@
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
     height: 6px; border-radius: 3px; pointer-events: none;
   }
-  .do-lib-vol-fill.color-0 { background: #ED93B1; }
-  .do-lib-vol-fill.color-1 { background: #85B7EB; }
-  .do-lib-vol-fill.color-2 { background: #97C459; }
-  .do-lib-vol-fill.color-3 { background: #EF9F27; }
+  .do-lib-vol-fill.color-0 { background: #FF4A8F; }
+  .do-lib-vol-fill.color-1 { background: #2E7AFF; }
+  .do-lib-vol-fill.color-2 { background: #6BC724; }
+  .do-lib-vol-fill.color-3 { background: #FF8A0F; }
   .do-lib-vol-thumb {
     position: absolute; top: 50%; transform: translate(-50%, -50%);
     width: 20px; height: 20px; border-radius: 50%; pointer-events: none;
   }
-  .do-lib-vol-thumb.color-0 { background: #ED93B1; }
-  .do-lib-vol-thumb.color-1 { background: #85B7EB; }
-  .do-lib-vol-thumb.color-2 { background: #97C459; }
-  .do-lib-vol-thumb.color-3 { background: #EF9F27; }
+  .do-lib-vol-thumb.color-0 { background: #FF4A8F; }
+  .do-lib-vol-thumb.color-1 { background: #2E7AFF; }
+  .do-lib-vol-thumb.color-2 { background: #6BC724; }
+  .do-lib-vol-thumb.color-3 { background: #FF8A0F; }
   .do-lib-vol-db { font-size: 10px; color: #E6E6EA; min-width: 36px; text-align: right; font-family: inherit; }
 
   /* ====================== TOP PAGE (project picker) ====================== */
@@ -1223,7 +1223,7 @@
     position: absolute; inset: 0;
     background:
       radial-gradient(700px 160px at 8% 30%, rgba(61,181,166,0.10), transparent 60%),
-      radial-gradient(500px 140px at 85% 70%, rgba(133,183,235,0.06), transparent 60%),
+      radial-gradient(500px 140px at 85% 70%, rgba(46,122,255,0.06), transparent 60%),
       linear-gradient(180deg, #16161B 0%, #0C0C0F 100%);
     transition: opacity 0.3s;
   }
@@ -1269,10 +1269,10 @@
   }
   /* ロード中: NOW チップをオレンジで明滅 → 視覚的に「まだ待って」 */
   .mt-hero-trackchip.loading {
-    color: #EF9F27;
-    background: rgba(239,159,39,0.10);
-    border-color: rgba(239,159,39,0.8);
-    box-shadow: inset 0 0 8px rgba(239,159,39,0.12), 0 0 12px rgba(239,159,39,0.25);
+    color: #FF8A0F;
+    background: rgba(255,138,15,0.10);
+    border-color: rgba(255,138,15,0.8);
+    box-shadow: inset 0 0 8px rgba(255,138,15,0.22), 0 0 12px rgba(255,138,15,0.25);
     animation: mt-loading-pulse 1.2s ease-in-out infinite;
   }
   @keyframes mt-loading-pulse {
@@ -1281,20 +1281,20 @@
   }
   /* ロード中: ステータスもオレンジに、PLAY ボタン縁もオレンジパルス */
   .mt-hero.mt-loading .mt-hero-status {
-    color: #EF9F27;
+    color: #FF8A0F;
     font-weight: 700;
   }
   .mt-hero.mt-loading .mt-tbtn.play {
-    border-color: rgba(239,159,39,0.8);
-    box-shadow: 0 0 12px rgba(239,159,39,0.4);
+    border-color: rgba(255,138,15,0.8);
+    box-shadow: 0 0 12px rgba(255,138,15,0.4);
     animation: mt-loading-pulse 1.2s ease-in-out infinite;
   }
   /* NEXT SONG チップ（黄） — 外枠だけ黄色、中は半透明でクールに */
   .mt-hero-trackchip--next {
-    color: #F0C75E;
-    background: rgba(240,199,94,0.06);
-    border: 1px solid rgba(240,199,94,0.7);
-    box-shadow: inset 0 0 8px rgba(240,199,94,0.06);
+    color: #FFB81C;
+    background: rgba(255,184,28,0.06);
+    border: 1px solid rgba(255,184,28,0.7);
+    box-shadow: inset 0 0 8px rgba(255,184,28,0.06);
     text-shadow: none;
   }
   /* NOW → NEXT を繋ぐ矢印（囲みなし、文字だけ） */
@@ -1346,28 +1346,28 @@
   /* ロケート ドロップ ハンドル — 掴んでタイムラインに離す */
   .mt-locate-drop {
     width: 26px; height: 22px; padding: 0; flex-shrink: 0;
-    background: linear-gradient(180deg, rgba(240,199,94,0.12), rgba(240,199,94,0.04));
-    border: 0.5px solid rgba(240,199,94,0.4); border-radius: 4px;
-    color: #F0C75E; cursor: grab;
+    background: linear-gradient(180deg, rgba(255,184,28,0.22), rgba(255,184,28,0.04));
+    border: 0.5px solid rgba(255,184,28,0.4); border-radius: 4px;
+    color: #FFB81C; cursor: grab;
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; line-height: 1; font-family: inherit;
     transition: all 0.12s;
   }
-  .mt-locate-drop:hover { filter: brightness(1.2); border-color: #F0C75E; }
-  .mt-locate-drop:active, .mt-locate-drop.dragging { cursor: grabbing; box-shadow: 0 0 10px rgba(240,199,94,0.4); }
+  .mt-locate-drop:hover { filter: brightness(1.2); border-color: #FFB81C; }
+  .mt-locate-drop:active, .mt-locate-drop.dragging { cursor: grabbing; box-shadow: 0 0 10px rgba(255,184,28,0.4); }
   .mt-locate-glyph { pointer-events: none; }
   /* ドラッグ中のゴースト（カーソルに追従） */
   .mt-locate-ghost {
     position: fixed; z-index: 99999; pointer-events: none;
     width: 16px; height: 16px; margin: -8px 0 0 -8px;
-    color: #F0C75E; font-size: 14px; line-height: 1;
-    text-shadow: 0 0 8px rgba(240,199,94,0.8);
+    color: #FFB81C; font-size: 14px; line-height: 1;
+    text-shadow: 0 0 8px rgba(255,184,28,0.8);
   }
   /* ロケート マーカー（タイムライン上の旗） */
   .mt-locate-marker {
     position: absolute; top: -3px; bottom: -3px;
-    width: 2px; background: #F0C75E;
-    box-shadow: 0 0 6px rgba(240,199,94,0.6);
+    width: 2px; background: #FFB81C;
+    box-shadow: 0 0 6px rgba(255,184,28,0.6);
     cursor: pointer; z-index: 3;
     pointer-events: auto;
   }
@@ -1376,8 +1376,8 @@
     width: 0; height: 0;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
-    border-top: 5px solid #F0C75E;
-    filter: drop-shadow(0 0 4px rgba(240,199,94,0.6));
+    border-top: 5px solid #FFB81C;
+    filter: drop-shadow(0 0 4px rgba(255,184,28,0.6));
   }
   .mt-locate-marker:hover { width: 3px; background: #FFE89A; }
   .mt-locate-marker:hover::before { border-top-color: #FFE89A; }
@@ -1415,8 +1415,8 @@
   .mt-hero-timeline.dragging .mt-hero-timeline-thumb { transition: none; }
   /* ロケートドロップ中にタイムラインがハイライト */
   .mt-hero-timeline.locate-target .mt-hero-timeline-track {
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(240,199,94,0.5);
-    background: rgba(240,199,94,0.08);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,184,28,0.5);
+    background: rgba(255,184,28,0.08);
   }
   .mt-hero-meta-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; text-transform: uppercase; }
@@ -1531,9 +1531,9 @@
     box-shadow: 0 0 6px rgba(61,181,166,0.25);
   }
   .mt-song-loadcount.has-unassigned {
-    background: rgba(240,199,94,0.18);
-    color: #F0C75E;
-    box-shadow: 0 0 6px rgba(240,199,94,0.3);
+    background: rgba(255,184,28,0.18);
+    color: #FFB81C;
+    box-shadow: 0 0 6px rgba(255,184,28,0.3);
   }
   .mt-song-row:hover { border-color: #2A2A30; background: rgba(255,255,255,0.025); }
   .mt-song-row.playing {
@@ -1544,15 +1544,15 @@
   .mt-song-row.queued  { border-color: rgba(61,181,166,0.4); }
   /* selected (= NEXT UP): playing と区別して "金色で強く"。SPACE で重ねて再生される曲 */
   .mt-song-row.selected:not(.playing) {
-    border-color: #F0C75E;
-    background: linear-gradient(90deg, rgba(240,199,94,0.18), rgba(240,199,94,0.03) 70%);
-    box-shadow: inset 3px 0 0 #F0C75E, 0 0 14px rgba(240,199,94,0.2);
+    border-color: #FFB81C;
+    background: linear-gradient(90deg, rgba(255,184,28,0.18), rgba(255,184,28,0.08) 70%);
+    box-shadow: inset 3px 0 0 #FFB81C, 0 0 14px rgba(255,184,28,0.2);
   }
   /* selected 行の play ボタンを金色でパルス、SPACE で重なることを示唆 */
   .mt-song-row.selected:not(.playing) .mt-song-play {
-    background: linear-gradient(180deg, #F0C75E, #C9A03D);
-    color: #2A1F08; border-color: #F0C75E;
-    box-shadow: 0 0 10px rgba(240,199,94,0.5);
+    background: linear-gradient(180deg, #FFB81C, #C9A03D);
+    color: #2A1F08; border-color: #FFB81C;
+    box-shadow: 0 0 10px rgba(255,184,28,0.5);
     animation: mtNextPulse 1.6s ease-in-out infinite;
   }
   @keyframes mtNextPulse {
@@ -1563,7 +1563,7 @@
   .mt-song-nextbadge { display: none; }
   .mt-song-row.selected:not(.playing) .mt-song-nextbadge {
     display: inline-block;
-    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    background: linear-gradient(180deg, #FFB81C, #C9A03D);
     color: #2A1F08;
     font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
     padding: 1px 7px;
@@ -1571,7 +1571,7 @@
     margin-left: 8px;
     vertical-align: middle;
     text-shadow: 0 1px 0 rgba(255,255,255,0.2);
-    box-shadow: 0 0 6px rgba(240,199,94,0.4);
+    box-shadow: 0 0 6px rgba(255,184,28,0.4);
     user-select: none;
   }
   /* "▶ NOW PLAY" インラインバッジ — playing のときだけ表示 */
@@ -1664,25 +1664,25 @@
     min-width: 0;
   }
   /* グループごとの左ボーダー色（空のときは薄く、has-content で濃く） */
-  .mt-track-slot[data-group="drums"]  { border-left-color: rgba(237,147,177,0.3); }
-  .mt-track-slot[data-group="bass"]   { border-left-color: rgba(133,183,235,0.3); }
-  .mt-track-slot[data-group="other"]  { border-left-color: rgba(239,159,39,0.3); }
-  .mt-track-slot[data-group="chorus"] { border-left-color: rgba(151,196,89,0.3); }
-  .mt-track-slot[data-group="vocal"]  { border-left-color: rgba(240,199,94,0.3); }
+  .mt-track-slot[data-group="drums"]  { border-left-color: rgba(255,74,143,0.3); }
+  .mt-track-slot[data-group="bass"]   { border-left-color: rgba(46,122,255,0.3); }
+  .mt-track-slot[data-group="other"]  { border-left-color: rgba(255,138,15,0.3); }
+  .mt-track-slot[data-group="chorus"] { border-left-color: rgba(107,199,36,0.3); }
+  .mt-track-slot[data-group="vocal"]  { border-left-color: rgba(255,184,28,0.3); }
 
   .mt-track-slot.has-content { border-style: solid; }
-  .mt-track-slot.has-content[data-group="drums"]  { background: rgba(237,147,177,0.10); border-color: rgba(237,147,177,0.5); border-left-color: #ED93B1; color: #F5B8CC; }
-  .mt-track-slot.has-content[data-group="bass"]   { background: rgba(133,183,235,0.10); border-color: rgba(133,183,235,0.5); border-left-color: #85B7EB; color: #ACCEF2; }
-  .mt-track-slot.has-content[data-group="other"]  { background: rgba(239,159,39,0.10); border-color: rgba(239,159,39,0.5); border-left-color: #EF9F27; color: #F5C470; }
-  .mt-track-slot.has-content[data-group="chorus"] { background: rgba(151,196,89,0.10); border-color: rgba(151,196,89,0.5); border-left-color: #97C459; color: #B8D88A; }
-  .mt-track-slot.has-content[data-group="vocal"]  { background: rgba(240,199,94,0.10); border-color: rgba(240,199,94,0.5); border-left-color: #F0C75E; color: #F5DC9A; }
+  .mt-track-slot.has-content[data-group="drums"]  { background: rgba(255,74,143,0.10); border-color: rgba(255,74,143,0.5); border-left-color: #FF4A8F; color: #F5B8CC; }
+  .mt-track-slot.has-content[data-group="bass"]   { background: rgba(46,122,255,0.10); border-color: rgba(46,122,255,0.5); border-left-color: #2E7AFF; color: #ACCEF2; }
+  .mt-track-slot.has-content[data-group="other"]  { background: rgba(255,138,15,0.10); border-color: rgba(255,138,15,0.5); border-left-color: #FF8A0F; color: #F5C470; }
+  .mt-track-slot.has-content[data-group="chorus"] { background: rgba(107,199,36,0.10); border-color: rgba(107,199,36,0.5); border-left-color: #6BC724; color: #B8D88A; }
+  .mt-track-slot.has-content[data-group="vocal"]  { background: rgba(255,184,28,0.10); border-color: rgba(255,184,28,0.5); border-left-color: #FFB81C; color: #F5DC9A; }
   .mt-track-slot.has-content:hover { color: #FFFFFF; filter: brightness(1.15); }
 
   .mt-track-slot.drop-over {
     border-color: #3DB5A6; background: rgba(61,181,166,0.28); color: #FFFFFF;
     border-style: solid; box-shadow: 0 0 0 1px rgba(61,181,166,0.4);
   }
-  .mt-track-slot.loading { color: #EF9F27; border-color: #EF9F27; background: rgba(239,159,39,0.08); }
+  .mt-track-slot.loading { color: #FF8A0F; border-color: #FF8A0F; background: rgba(255,138,15,0.08); }
 
   .mt-song-del {
     color: #4A4A50; background: transparent; border: none; cursor: pointer;
@@ -1740,17 +1740,17 @@
   /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
   .mt-reconnect-banner {
     display: flex; align-items: center; gap: 12px;
-    background: linear-gradient(90deg, rgba(240,199,94,0.10), rgba(240,199,94,0.04));
-    border: 0.5px solid rgba(240,199,94,0.4); border-radius: 8px;
+    background: linear-gradient(90deg, rgba(255,184,28,0.10), rgba(255,184,28,0.04));
+    border: 0.5px solid rgba(255,184,28,0.4); border-radius: 8px;
     padding: 8px 14px;
-    font-size: 11px; color: #F0C75E; letter-spacing: 0.5px;
+    font-size: 11px; color: #FFB81C; letter-spacing: 0.5px;
     flex-shrink: 0;
   }
   .mt-reconnect-icon { font-size: 14px; }
   .mt-reconnect-text { flex: 1; }
   .mt-reconnect-text strong { color: #FFE89A; font-weight: 700; }
   .mt-reconnect-banner .mt-btn.primary {
-    background: linear-gradient(180deg, #F0C75E, #C9A03D);
+    background: linear-gradient(180deg, #FFB81C, #C9A03D);
     color: #2A1F08; border: none;
     padding: 6px 16px; font-weight: 700;
   }
@@ -1768,8 +1768,8 @@
     overflow: hidden;
     /* 上下に細い色アクセント線 */
     box-shadow:
-      inset 0 1px 0 rgba(239,159,39,0.6),
-      inset 0 -1px 0 rgba(239,159,39,0.3),
+      inset 0 1px 0 rgba(255,138,15,0.6),
+      inset 0 -1px 0 rgba(255,138,15,0.3),
       0 1px 0 rgba(0,0,0,0.4);
   }
   /* 動く光の帯（背景） */
@@ -1777,7 +1777,7 @@
     content: '';
     position: absolute; inset: 0;
     background: linear-gradient(90deg,
-      transparent 0%, rgba(239,159,39,0.05) 50%, transparent 100%);
+      transparent 0%, rgba(255,138,15,0.05) 50%, transparent 100%);
     background-size: 200% 100%;
     animation: mt-preload-sweep 2.4s linear infinite;
     pointer-events: none;
@@ -1795,8 +1795,8 @@
     display: inline-block;
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: #EF9F27;
-    box-shadow: 0 0 10px #EF9F27, 0 0 2px rgba(255,255,255,0.4) inset;
+    background: #FF8A0F;
+    box-shadow: 0 0 10px #FF8A0F, 0 0 2px rgba(255,255,255,0.4) inset;
     animation: mt-preload-dot 1.2s ease-in-out infinite;
     flex-shrink: 0;
   }
@@ -1829,7 +1829,7 @@
   }
   .mt-preload-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #EF9F27 0%, #F5C470 50%, #EF9F27 100%);
+    background: linear-gradient(90deg, #FF8A0F 0%, #F5C470 50%, #FF8A0F 100%);
     background-size: 200% 100%;
     animation: mt-preload-shimmer 1.6s linear infinite;
     transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -1984,30 +1984,30 @@
     transition: box-shadow 0.2s, border-color 0.2s;
   }
   /* グループカラー（currentColor として使えるよう strip 本体に色付け） */
-  .mt-strip[data-mt-strip="click"]  { color: #8DB7F5; }
-  .mt-strip[data-mt-strip="vocal"]  { color: #F0C75E; }
-  .mt-strip[data-mt-strip="chorus"] { color: #97C459; }
-  .mt-strip[data-mt-strip="other"]  { color: #EF9F27; }
-  .mt-strip[data-mt-strip="bass"]   { color: #85B7EB; }
-  .mt-strip[data-mt-strip="drums"]  { color: #ED93B1; }
+  .mt-strip[data-mt-strip="click"]  { color: #4FA3FF; }
+  .mt-strip[data-mt-strip="vocal"]  { color: #FFB81C; }
+  .mt-strip[data-mt-strip="chorus"] { color: #6BC724; }
+  .mt-strip[data-mt-strip="other"]  { color: #FF8A0F; }
+  .mt-strip[data-mt-strip="bass"]   { color: #2E7AFF; }
+  .mt-strip[data-mt-strip="drums"]  { color: #FF4A8F; }
   /* ビビッドなグループカラーの薄い背景オーバーレイ */
   .mt-strip[data-mt-strip="click"]  {
-    background: linear-gradient(180deg, rgba(141,183,245,0.12) 0%, rgba(141,183,245,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+    background: linear-gradient(180deg, rgba(79,163,255,0.22) 0%, rgba(79,163,255,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
   }
   .mt-strip[data-mt-strip="vocal"]  {
-    background: linear-gradient(180deg, rgba(240,199,94,0.12) 0%, rgba(240,199,94,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+    background: linear-gradient(180deg, rgba(255,184,28,0.22) 0%, rgba(255,184,28,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
   }
   .mt-strip[data-mt-strip="chorus"] {
-    background: linear-gradient(180deg, rgba(151,196,89,0.12) 0%, rgba(151,196,89,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+    background: linear-gradient(180deg, rgba(107,199,36,0.22) 0%, rgba(107,199,36,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
   }
   .mt-strip[data-mt-strip="other"]  {
-    background: linear-gradient(180deg, rgba(239,159,39,0.12) 0%, rgba(239,159,39,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+    background: linear-gradient(180deg, rgba(255,138,15,0.22) 0%, rgba(255,138,15,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
   }
   .mt-strip[data-mt-strip="bass"]   {
-    background: linear-gradient(180deg, rgba(133,183,235,0.12) 0%, rgba(133,183,235,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+    background: linear-gradient(180deg, rgba(46,122,255,0.22) 0%, rgba(46,122,255,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
   }
   .mt-strip[data-mt-strip="drums"]  {
-    background: linear-gradient(180deg, rgba(237,147,177,0.12) 0%, rgba(237,147,177,0.03) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
+    background: linear-gradient(180deg, rgba(255,74,143,0.22) 0%, rgba(255,74,143,0.08) 100%), linear-gradient(180deg, #14141A 0%, #0A0A0E 100%);
   }
   /* カード上端のカラーバンド — 厚めにしてビビッドに */
   .mt-strip::before {
@@ -2054,12 +2054,12 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     min-width: 0;
   }
-  .mt-strip-label.drums  { color: #ED93B1; }
-  .mt-strip-label.bass   { color: #85B7EB; }
-  .mt-strip-label.other  { color: #EF9F27; }
-  .mt-strip-label.chorus { color: #97C459; }
-  .mt-strip-label.vocal  { color: #F0C75E; }
-  .mt-strip-label.click  { color: #8DB7F5; }
+  .mt-strip-label.drums  { color: #FF4A8F; }
+  .mt-strip-label.bass   { color: #2E7AFF; }
+  .mt-strip-label.other  { color: #FF8A0F; }
+  .mt-strip-label.chorus { color: #6BC724; }
+  .mt-strip-label.vocal  { color: #FFB81C; }
+  .mt-strip-label.click  { color: #4FA3FF; }
   /* 割当ファイル数 (このフェーダーに何ファイル入っているか)
      - 0 (empty): グレー
      - 1+ ロード済: 緑
@@ -2179,7 +2179,7 @@
     background: linear-gradient(to top,
       #2E7A5B 0%,
       #3DB5A6 55%,
-      #EF9F27 78%,
+      #FF8A0F 78%,
       #E24B4A 93%);
     height: 0%;
     transition: height 0.04s linear;
@@ -2187,7 +2187,7 @@
   .mt-strip-meter-fill.clip { box-shadow: 0 0 6px #E24B4A; }
   .mt-strip-peak {
     position: absolute; left: 0; right: 0; height: 2px;
-    background: #F0C75E; box-shadow: 0 0 4px #F0C75E;
+    background: #FFB81C; box-shadow: 0 0 4px #FFB81C;
     transition: bottom 0.3s ease-out, opacity 0.3s;
     opacity: 0;
   }
@@ -2228,9 +2228,9 @@
   }
   /* SOLO active (黄色) */
   .mt-stripbtn.solo.active {
-    background: linear-gradient(180deg, #F0C75E, #C9A03D);
-    color: #2A1F08; border-color: #F0C75E;
-    box-shadow: 0 0 10px rgba(240,199,94,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    background: linear-gradient(180deg, #FFB81C, #C9A03D);
+    color: #2A1F08; border-color: #FFB81C;
+    box-shadow: 0 0 10px rgba(255,184,28,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
   }
   .mt-strip.muted .mt-strip-fader-fill { opacity: 0.2; }
   .mt-strip.muted .mt-strip-meter-fill { opacity: 0.15; }
@@ -2287,9 +2287,9 @@
   }
   .mt-songinfo-row:active { cursor: grabbing; }
   .mt-songinfo-row.assigned { background: rgba(255,255,255,0.02); }
-  .mt-songinfo-row.pool { background: rgba(240,199,94,0.06); border: 0.5px solid rgba(240,199,94,0.18); }
+  .mt-songinfo-row.pool { background: rgba(255,184,28,0.06); border: 0.5px solid rgba(255,184,28,0.18); }
   .mt-songinfo-row:hover { background: rgba(255,255,255,0.05); }
-  .mt-songinfo-row.pool:hover { background: rgba(240,199,94,0.12); }
+  .mt-songinfo-row.pool:hover { background: rgba(255,184,28,0.22); }
   .mt-songinfo-row.dragging { opacity: 0.4; }
   /* グループセレクタ（枠+背景うっすらグループ色、選択時の文字色もグループ色） */
   .mt-songinfo-groupsel {
@@ -2318,9 +2318,9 @@
   .mt-songinfo-del:hover { color: #E24B4A; }
   /* mixer strip: drop target highlight */
   .mt-strip.drop-target {
-    border-color: #F0C75E !important;
-    background: linear-gradient(180deg, rgba(240,199,94,0.18) 0%, #101013 80%) !important;
-    box-shadow: 0 0 12px rgba(240,199,94,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+    border-color: #FFB81C !important;
+    background: linear-gradient(180deg, rgba(255,184,28,0.18) 0%, #101013 80%) !important;
+    box-shadow: 0 0 12px rgba(255,184,28,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
   }
   /* ready-for-file: 選択中の曲で空のグループは "ファイル待ち" を緑でゆっくりパルス */
   .mt-strip.ready-for-file {
@@ -2341,18 +2341,18 @@
   /* layer-pending: 割当てたが buffer 未ロード → オレンジ点滅でユーザーに reconnect 促す */
   .mt-strip.layer-pending {
     animation: mtStripPending 1.5s ease-in-out infinite;
-    border-color: #EF9F27;
+    border-color: #FF8A0F;
   }
   @keyframes mtStripPending {
     0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); }
-    50%      { box-shadow: 0 0 8px rgba(239,159,39,0.4); }
+    50%      { box-shadow: 0 0 8px rgba(255,138,15,0.4); }
   }
   /* layer 数チップ */
   .mt-strip-layer-badge {
     display: inline-block; color: #3DB5A6; font-size: 7px; letter-spacing: 0;
     margin-right: 3px; vertical-align: middle;
   }
-  .mt-strip-layer-badge.pending { color: #EF9F27; }
+  .mt-strip-layer-badge.pending { color: #FF8A0F; }
   /* 行も drop target ハイライト */
   .mt-song-row.drop-target {
     border-color: #3DB5A6 !important;
@@ -2492,10 +2492,10 @@
     display: inline-block; padding: 2px 6px; border-radius: 3px;
     font-size: 9px; font-weight: 600; letter-spacing: 0.5px;
   }
-  .do-chip-badge.color-0 { background: #ED93B1; color: #4B1528; }
-  .do-chip-badge.color-1 { background: #85B7EB; color: #042C53; }
-  .do-chip-badge.color-2 { background: #97C459; color: #173404; }
-  .do-chip-badge.color-3 { background: #EF9F27; color: #0E1A14; }
+  .do-chip-badge.color-0 { background: #FF4A8F; color: #4B1528; }
+  .do-chip-badge.color-1 { background: #2E7AFF; color: #042C53; }
+  .do-chip-badge.color-2 { background: #6BC724; color: #173404; }
+  .do-chip-badge.color-3 { background: #FF8A0F; color: #0E1A14; }
   .do-chip-badge.color-missing { background: #5A5A60; color: #E6E6EA; }
   .do-chip-label { font-weight: 500; }
   .do-chip-dur { font-family: inherit; font-size: 9px; color: #6A6A70; margin-left: 2px; }
@@ -3042,7 +3042,7 @@
         <!-- ROUTING を AUDIO IFACE に統合（インライン、コンパクト） -->
         <div class="mt-routing-inline-label" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">ROUTING · PARA-OUT</div>
         <div class="mt-ch-strip" id="mtChMatrix">
-          <div class="mt-ch-pill" style="--c:#8DB7F5">
+          <div class="mt-ch-pill" style="--c:#4FA3FF">
             <span class="mt-ch-glabel">CL</span>
             <div class="mt-ch-row">
               <input type="number" class="mt-ch-input" id="mtChClickL" min="1" max="32" value="1" onchange="mtSetCh('click','L',this.value)" title="CLICK L">
@@ -3050,7 +3050,7 @@
               <input type="number" class="mt-ch-input" id="mtChClickR" min="1" max="32" value="2" onchange="mtSetCh('click','R',this.value)" title="CLICK R">
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#F0C75E">
+          <div class="mt-ch-pill" style="--c:#FFB81C">
             <span class="mt-ch-glabel">VO</span>
             <div class="mt-ch-row">
               <input type="number" class="mt-ch-input" id="mtChVocalL" min="1" max="32" value="3" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L">
@@ -3058,7 +3058,7 @@
               <input type="number" class="mt-ch-input" id="mtChVocalR" min="1" max="32" value="4" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R">
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#97C459">
+          <div class="mt-ch-pill" style="--c:#6BC724">
             <span class="mt-ch-glabel">CH</span>
             <div class="mt-ch-row">
               <input type="number" class="mt-ch-input" id="mtChChorusL" min="1" max="32" value="5" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L">
@@ -3066,7 +3066,7 @@
               <input type="number" class="mt-ch-input" id="mtChChorusR" min="1" max="32" value="6" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R">
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#EF9F27">
+          <div class="mt-ch-pill" style="--c:#FF8A0F">
             <span class="mt-ch-glabel">OT</span>
             <div class="mt-ch-row">
               <input type="number" class="mt-ch-input" id="mtChOtherL" min="1" max="32" value="7" onchange="mtSetCh('other','L',this.value)" title="OTHER L">
@@ -3074,7 +3074,7 @@
               <input type="number" class="mt-ch-input" id="mtChOtherR" min="1" max="32" value="8" onchange="mtSetCh('other','R',this.value)" title="OTHER R">
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#85B7EB">
+          <div class="mt-ch-pill" style="--c:#2E7AFF">
             <span class="mt-ch-glabel">BA</span>
             <div class="mt-ch-row">
               <input type="number" class="mt-ch-input" id="mtChBassL" min="1" max="32" value="9" onchange="mtSetCh('bass','L',this.value)" title="BASS L">
@@ -3082,7 +3082,7 @@
               <input type="number" class="mt-ch-input" id="mtChBassR" min="1" max="32" value="10" onchange="mtSetCh('bass','R',this.value)" title="BASS R">
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#ED93B1">
+          <div class="mt-ch-pill" style="--c:#FF4A8F">
             <span class="mt-ch-glabel">DR</span>
             <div class="mt-ch-row">
               <input type="number" class="mt-ch-input" id="mtChDrumsL" min="1" max="32" value="11" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L">
@@ -3129,7 +3129,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.3';
+const APP_VERSION = 'v8.1.4';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -3827,7 +3827,7 @@ function pauseAll() {
   if (!isPaused) {
     ctx.suspend();
     isPaused = true;
-    document.getElementById('pauseBtn').style.background = 'rgba(239,159,39,0.2)';
+    document.getElementById('pauseBtn').style.background = 'rgba(255,138,15,0.2)';
   } else {
     ctx.resume();
     isPaused = false;
@@ -6825,14 +6825,14 @@ function doRenderVideoLibrary() {
           <span class="do-vid-badge">V${i+1}</span>
           <div style="display:flex; gap:2px;">
             ${needsRelink
-              ? `<button class="do-vid-act" data-action="relink" title="ファイルを再選択" style="color:#EF9F27;">📁</button>`
+              ? `<button class="do-vid-act" data-action="relink" title="ファイルを再選択" style="color:#FF8A0F;">📁</button>`
               : `<button class="do-vid-act play${isPlaying ? ' playing-btn' : ''}" data-action="play" title="${isPlaying ? '停止' : 'サブモニターで再生'}">${isPlaying ? '■' : '▶'}</button>`}
             <button class="do-vid-act del" data-action="del" title="削除">×</button>
           </div>
         </div>
         <div class="do-vid-thumb" style="${needsRelink ? 'opacity:0.5;' : ''}">${it.thumbDataUrl ? `<img src="${it.thumbDataUrl}" alt="">` : '▶'}</div>
         <div class="do-vid-name">${escapeHtml(it.sampleName || '')}</div>
-        <div class="do-vid-meta">${durStr}${needsRelink ? ' &nbsp;<span style="color:#EF9F27;">⚠ 再リンクが必要</span>' : ''}</div>
+        <div class="do-vid-meta">${durStr}${needsRelink ? ' &nbsp;<span style="color:#FF8A0F;">⚠ 再リンクが必要</span>' : ''}</div>
       `;
       if (!needsRelink) {
         slot.querySelector('[data-action=play]').addEventListener('click', e => {
@@ -7016,7 +7016,7 @@ function doRenderLogo() {
   } else {
     const reLink = !it.file;
     if (nameEl) {
-      nameEl.innerHTML = escapeHtml(it.sampleName) + (reLink ? ' <span style="color:#EF9F27;font-size:9px;">⚠ 再リンク</span>' : '');
+      nameEl.innerHTML = escapeHtml(it.sampleName) + (reLink ? ' <span style="color:#FF8A0F;font-size:9px;">⚠ 再リンク</span>' : '');
       nameEl.style.color = '#C8C8CE';
     }
     previewEl.className = 'do-logo-preview';
@@ -8832,7 +8832,7 @@ function initOutputMode() {
         _pendingPlay = m;
         if (enableOverlay) {
           const labelEl = enableOverlay.querySelector('div');
-          if (labelEl) labelEl.style.color = '#EF9F27';
+          if (labelEl) labelEl.style.color = '#FF8A0F';
         }
         bc.postMessage({ event: 'pending-unlock', name: m.name });
         return;
@@ -8927,12 +8927,12 @@ const MT_GROUP_LABELS_JP = {
   click:'クリック', vocal:'ボーカル', chorus:'コーラス', other:'OTHER', bass:'ベース', drums:'リズム'
 };
 const MT_GROUP_COLORS = {
-  click:'#8DB7F5',   // light blue (click track convention)
-  vocal:'#F0C75E',   // gold
-  chorus:'#97C459',  // lime
-  other:'#EF9F27',   // orange
-  bass:'#85B7EB',    // blue
-  drums:'#ED93B1'    // pink
+  click:'#4FA3FF',   // light blue (click track convention)
+  vocal:'#FFB81C',   // gold
+  chorus:'#6BC724',  // lime
+  other:'#FF8A0F',   // orange
+  bass:'#2E7AFF',    // blue
+  drums:'#FF4A8F'    // pink
 };
 // hex (#RRGGBB) → rgba(r, g, b, a) 文字列
 function hexToRgba(hex, alpha = 1) {
@@ -11087,7 +11087,7 @@ function mtRenderSetlist() {
     delayInput.title = '次曲スタートまでの秒数（負値で前倒し＝オーバーラップ）';
     delayInput.disabled = (autoNext === 'stop');
     // 0 → 白、非 0 → 黄色で「変更されてる」と分かるように
-    delayInput.style.color = (nextDelay === 0) ? '#FFFFFF' : '#F0C75E';
+    delayInput.style.color = (nextDelay === 0) ? '#FFFFFF' : '#FFB81C';
     delayInput.onclick = (e) => e.stopPropagation();
     delayInput.onchange = () => {
       let v = parseFloat(delayInput.value);
@@ -11095,7 +11095,7 @@ function mtRenderSetlist() {
       if (v < -60) v = -60; if (v > 60) v = 60;
       if (song.nextDelay !== v) mtPushUndo();
       song.nextDelay = v;
-      delayInput.style.color = (v === 0) ? '#FFFFFF' : '#F0C75E';
+      delayInput.style.color = (v === 0) ? '#FFFFFF' : '#FFB81C';
       mtSave();
     };
     row.appendChild(delayInput);
