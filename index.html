@@ -3413,7 +3413,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.1.0';
+const APP_VERSION = 'v9.1.1';
+// v9.1.1: ESC 効かない問題修正 — playbackMode を 'mediaelement' 強制固定 + デバッグログ追加
 // v9.1.0: 大整理 — MediaElement 専用化 + 不要 UI / dead code 全削除
 // v9.0.7: フェードアウト終了後のプチッ完全撲滅 — master 復帰を撤廃 (0 のまま固定)
 // v9.0.6: playback lock を 10秒 → 5秒に短縮
@@ -4802,6 +4803,7 @@ document.addEventListener('keydown', e => {
   // → ボタン連打のクリック音や手元の事故を防ぎながら確実に止める。
   // v8.4.0: 本番モード ON 時は長押し 1 秒で発火 (誤押し防止)
   if (e.code === state.controlAssign.stop.key) {
+    console.log('[ESC] pressed, repeat=' + e.repeat + ', showMode=' + (mtFs && mtFs.showMode) + ', mtPlaying=' + state.multitrack.isPlaying + ', playbackMode=' + state.multitrack.playbackMode);
     if (typeof mtFs !== 'undefined' && mtFs.showMode) {
       // 本番モード: 長押し必須。e.repeat が連続して 12 回 (= 約 1 秒) で発火
       if (e.repeat) {
@@ -4809,6 +4811,7 @@ document.addEventListener('keydown', e => {
         window._mtEscRepeatCnt++;
         if (window._mtEscRepeatCnt >= 12) {
           window._mtEscRepeatCnt = 0;
+          console.log('[ESC] long press fired → fadeOutAll');
           fadeOutAll(); e.preventDefault(); return;
         }
       } else {
@@ -4817,6 +4820,7 @@ document.addEventListener('keydown', e => {
       }
       e.preventDefault(); return;
     }
+    console.log('[ESC] normal mode → fadeOutAll');
     fadeOutAll(); e.preventDefault(); return;
   }
   if (e.code === state.controlAssign.pause.key)   { pauseAll();   e.preventDefault(); return; }
@@ -9386,10 +9390,11 @@ function mtRestore(saved) {
   m.gapSec = 0;
   // autoAdvance: UI 廃止後は常に true（各曲ごとの autoNext / nextDelay が支配的）
   m.autoAdvance = true;
-  // v9.0.0: playbackMode 復元 ('audiobuffer' | 'mediaelement')
-  if (saved.playbackMode === 'audiobuffer' || saved.playbackMode === 'mediaelement') {
-    m.playbackMode = saved.playbackMode;
-  }
+  // v9.1.1: playbackMode は MediaElement に強制固定
+  // (旧 'audiobuffer' 設定が localStorage に残っていても無視。
+  //  AudioBuffer モードは v9.1.0 で UI も内部経路も廃止済みのため、
+  //  ここで復元すると ESC が効かない等の不具合が出る)
+  m.playbackMode = 'mediaelement';
   // channelMap はスプレッドマージ必須。古いセーブで 'click' が無いケースに
   // 'click' のデフォルト ({L:1,R:2}) を残してから saved 値で上書きしないと
   // mtRenderAll の cm.L 読み出しで TypeError になり、setlist 全体の render が
@@ -11439,8 +11444,9 @@ function mtMediaSeekTo(seekSec) {
 //   段4: さらに 50ms 待って master を masterVol に復帰 + audio の volume/muted を元に戻す
 // → audio が完全停止する前に master が大きくなる事故を防ぐ
 function mtMediaFadeOut() {
-  if (!mtCtx || !mtMasterGain) { mtStop(); return; }
-  if (!state.multitrack.isPlaying) { mtStop(); return; }
+  console.log('[mtMediaFadeOut] called, isPlaying=' + state.multitrack.isPlaying + ', mtCtx=' + (mtCtx ? mtCtx.state : 'null') + ', masterGain=' + (mtMasterGain ? mtMasterGain.gain.value : 'null'));
+  if (!mtCtx || !mtMasterGain) { console.warn('[mtMediaFadeOut] no ctx/gain, calling mtStop'); mtStop(); return; }
+  if (!state.multitrack.isPlaying) { console.warn('[mtMediaFadeOut] not playing, calling mtStop'); mtStop(); return; }
   const dur = Math.max(0.1, state.fadeTime || 2.0);
   const t = mtCtx.currentTime;
   const curVal = mtMasterGain.gain.value;
