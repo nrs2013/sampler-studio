@@ -1795,6 +1795,74 @@
   }
 
   /* PRELOAD BANNER — ファイル準備中の大きな視認バナー */
+  /* ========== PLAYBACK STARTED フルスクリーンオーバーレイ ========== */
+  /* 再生開始から 10 秒間、ダブルタップ防止＆「鳴ってます」アピール */
+  .mt-playback-overlay {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(61,181,166,0.18) 0%, rgba(0,0,0,0.88) 60%);
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;  /* ロック中も背面 UI への click は通す (ESC 等は document keydown で拾う) */
+    user-select: none;
+    animation: mt-pb-fadein 0.25s ease-out;
+  }
+  .mt-playback-overlay.show { display: flex; }
+  @keyframes mt-pb-fadein {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .mt-pb-icon {
+    font-size: 100px;
+    color: #3DB5A6;
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(61,181,166,0.8), 0 0 60px rgba(61,181,166,0.4);
+    animation: mt-pb-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes mt-pb-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50%      { transform: scale(1.08); opacity: 0.85; }
+  }
+  .mt-pb-label {
+    font-family: 'SF Mono', monospace;
+    font-size: 36px;
+    letter-spacing: 8px;
+    font-weight: 800;
+    color: #88D6C2;
+    margin-top: 24px;
+    text-shadow: 0 0 18px rgba(61,181,166,0.5);
+  }
+  .mt-pb-song {
+    font-size: 22px;
+    color: #FFFFFF;
+    margin-top: 18px;
+    max-width: 80vw;
+    text-align: center;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .mt-pb-hint {
+    margin-top: 32px;
+    font-size: 12px;
+    color: rgba(184,224,204,0.7);
+    letter-spacing: 2px;
+    font-family: 'SF Mono', monospace;
+  }
+  .mt-pb-counter {
+    margin-top: 18px;
+    font-family: 'SF Mono', monospace;
+    font-size: 56px; font-weight: 800;
+    color: #FFFFFF;
+    width: 90px; height: 90px;
+    border: 2px solid #3DB5A6;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 20px rgba(61,181,166,0.4), inset 0 0 20px rgba(61,181,166,0.1);
+  }
+
   /* ========== ファイル状態バナー（ミニマル・本番卓風） ========== */
   .mt-preload-banner {
     display: flex; flex-direction: column; gap: 9px;
@@ -3126,7 +3194,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.16';
+const APP_VERSION = 'v8.2.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10376,6 +10444,9 @@ async function mtPlaySong(idx, offset, options) {
   state.multitrack.currentSongIdx = idx;
   state.multitrack.selectedIdx = idx;
   state.multitrack.isPlaying = true;
+  // 再生開始 → 10 秒ロック + 画面いっぱい「PLAYBACK STARTED」表示
+  // (ダブルタップ事故防止、本番中の安心感)
+  try { mtStartPlaybackLock(song.name); } catch(_) {}
   // 終了時 auto-advance（残り時間と曲ごとの挙動で計算）
   // モード判定:
   //   'auto'     - グローバル ON + song.autoNext='auto' → 次曲を自動再生 (nextDelay 適用、負値で前倒し)
@@ -10539,6 +10610,8 @@ function mtStop() {
   state.multitrack.isPlaying = false;
   mtFsNotifyPlaybackStop();
   mtStopMeter();
+  // STOP / ESC は playback lock を即解除（ユーザーが停止意思を示しているので）
+  try { mtClearPlaybackLock(); } catch(_) {}
   mtRenderSetlist();
   mtRenderNow();
 }
@@ -10546,6 +10619,7 @@ function mtStop() {
 function mtPlayPause() {
   // 新仕様: PLAY ボタンは SPACE と同じくオーバーラップ。STOP は ■ STOP ボタンか ESC で。
   if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+  if (mtIsPlaybackLocked()) { return; }
   const idx = state.multitrack.selectedIdx >= 0
     ? state.multitrack.selectedIdx
     : Math.max(0, state.multitrack.currentSongIdx);
@@ -10572,6 +10646,7 @@ function mtPlayNext() {
 //   ライブで「いいタイミングで重ねる」用途。停止は ESC で。
 function mtSpaceKey() {
   if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+  if (mtIsPlaybackLocked()) { return; }
   const idx = state.multitrack.selectedIdx >= 0 ? state.multitrack.selectedIdx : 0;
   const wasPlaying = state.multitrack.isPlaying;
   mtPlaySong(idx, state.multitrack.seekOffset || 0, { keepPrevious: wasPlaying });
@@ -10580,9 +10655,63 @@ function mtSpaceKey() {
 // ENTER キー：ハイライト曲を「頭」から重ねる（seekOffset リセット）
 function mtEnterKey() {
   if (state.multitrack.songs.length === 0) { showToast('曲がありません'); return; }
+  if (mtIsPlaybackLocked()) { return; }
   state.multitrack.seekOffset = 0;
   const wasPlaying = state.multitrack.isPlaying;
   mtPlaySong(state.multitrack.selectedIdx, 0, { keepPrevious: wasPlaying });
+}
+
+// =============================================================
+// 再生ダブルタップ防止ロック (本番事故対策)
+// =============================================================
+// 押した瞬間〜音が立ち上がるまで「鳴ってないんじゃない?」と疑って
+// 連打すると、二重再生でカオスになる事故が多発。10 秒間は新規 PLAY/SPACE
+// を完全ブロックし、画面いっぱいの「▶ PLAYBACK」表示で「ちゃんと再生
+// されたよ」を視覚的に通知する。STOP/ESC/FADE OUT はロック中も有効。
+const MT_PLAYBACK_LOCK_MS = 10000;
+let mtPlaybackLockUntil = 0;
+function mtIsPlaybackLocked() {
+  return Date.now() < mtPlaybackLockUntil;
+}
+function mtClearPlaybackLock() {
+  mtPlaybackLockUntil = 0;
+  const overlay = document.getElementById('mtPlaybackOverlay');
+  if (overlay) overlay.classList.remove('show');
+}
+function mtStartPlaybackLock(songName) {
+  mtPlaybackLockUntil = Date.now() + MT_PLAYBACK_LOCK_MS;
+  // 画面いっぱいオーバーレイを表示
+  let overlay = document.getElementById('mtPlaybackOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'mtPlaybackOverlay';
+    overlay.className = 'mt-playback-overlay';
+    overlay.innerHTML = `
+      <div class="mt-pb-icon">▶</div>
+      <div class="mt-pb-label">PLAYBACK STARTED</div>
+      <div class="mt-pb-song" id="mtPlaybackOverlaySong"></div>
+      <div class="mt-pb-hint">10 秒間、追加再生はロック中 — ESC で停止可</div>
+      <div class="mt-pb-counter" id="mtPlaybackOverlayCounter">10</div>
+    `;
+    document.body.appendChild(overlay);
+  }
+  const songEl = overlay.querySelector('#mtPlaybackOverlaySong');
+  if (songEl) songEl.textContent = songName || '';
+  overlay.classList.add('show');
+  // カウントダウン
+  const counterEl = overlay.querySelector('#mtPlaybackOverlayCounter');
+  let remain = Math.ceil(MT_PLAYBACK_LOCK_MS / 1000);
+  if (counterEl) counterEl.textContent = remain;
+  const tick = () => {
+    remain--;
+    if (counterEl) counterEl.textContent = Math.max(0, remain);
+    if (remain > 0 && Date.now() < mtPlaybackLockUntil) {
+      setTimeout(tick, 1000);
+    } else {
+      mtClearPlaybackLock();
+    }
+  };
+  setTimeout(tick, 1000);
 }
 
 // 選択中の曲の最大長を求める（停止中もスクラバーに total を出すため）
@@ -11007,8 +11136,9 @@ function mtRenderSetlist() {
     const playBtn = document.createElement('button'); playBtn.className = 'mt-song-play';
     playBtn.textContent = (idx === state.multitrack.currentSongIdx && state.multitrack.isPlaying) ? '■' : '▶';
     playBtn.onclick = () => {
-      if (idx === state.multitrack.currentSongIdx && state.multitrack.isPlaying) mtStop();
-      else mtPlaySong(idx);
+      if (idx === state.multitrack.currentSongIdx && state.multitrack.isPlaying) { mtStop(); return; }
+      if (mtIsPlaybackLocked()) { return; }
+      mtPlaySong(idx);
     };
     row.appendChild(playBtn);
     // 曲名 + 状態バッジ（ダブルクリックで rename モード）
