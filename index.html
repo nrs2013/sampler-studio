@@ -2000,57 +2000,50 @@
     flex: 1;     /* カードの残り高さを全部使う */
     min-height: 0;
   }
-  /* 各フェーダーを「個別カード」として囲む — グループカラーの上端帯付き */
+  /* 各フェーダーを「個別カード」として囲む — 非アクティブはモヤなしのクリーンな箱 */
   .mt-strip {
     position: relative;
     display: flex; flex-direction: column; align-items: stretch; gap: 3px;
     padding: 11px 4px 6px 4px;
-    background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
+    background: #0E0E12;
     border: 1px solid #2A2A30;
     border-radius: 8px;
     min-width: 0;
-    box-shadow:
-      0 2px 6px rgba(0,0,0,0.45),
-      inset 0 1px 0 rgba(255,255,255,0.04),
-      inset 0 -1px 0 rgba(0,0,0,0.4);
-    transition: box-shadow 0.2s, border-color 0.2s;
+    /* モヤモヤする drop-shadow / inset shadow は廃止 → スッキリ */
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  /* グループカラー（currentColor として使えるよう strip 本体に色付け） */
+  /* グループカラー (currentColor として使えるよう strip 本体に色付け) */
   .mt-strip[data-mt-strip="click"]  { color: #4FA3FF; }
   .mt-strip[data-mt-strip="vocal"]  { color: #FFB81C; }
   .mt-strip[data-mt-strip="chorus"] { color: #6BC724; }
   .mt-strip[data-mt-strip="other"]  { color: #FF8A0F; }
   .mt-strip[data-mt-strip="bass"]   { color: #2E7AFF; }
   .mt-strip[data-mt-strip="drums"]  { color: #FF4A8F; }
-  /* グラデは外して dark のシンプル背景に。色は上端バンドと枠線だけで表現。 */
-  /* カード上端のカラーバンド — 厚めにしてビビッドに */
+  /* 上端カラーバンド — グロー控えめでスッキリ */
   .mt-strip::before {
     content: ''; position: absolute; left: 4px; right: 4px; top: 3px;
     height: 4px;
     background: currentColor;
     border-radius: 2px;
-    opacity: 1;
-    box-shadow: 0 0 10px currentColor, 0 0 18px currentColor;
+    opacity: 0.85;
+  }
+  /* アクティブ (再生中) — その strip 色でグロー */
+  .mt-strip.active {
+    border-color: currentColor;
+    box-shadow: 0 0 18px currentColor, 0 0 0 0.5px currentColor;
   }
   .mt-strip.active::before {
-    box-shadow: 0 0 14px currentColor, 0 0 24px currentColor;
+    opacity: 1;
+    box-shadow: 0 0 14px currentColor;
   }
-  /* ファイルが入ってる時はカード全体にうっすらグロー */
+  /* ファイル割当済 (has-layers) — 細枠で識別、グロー無し */
   .mt-strip.has-layers {
     border-color: currentColor;
-    box-shadow:
-      0 0 12px rgba(0,0,0,0.4),
-      0 0 0 0.5px currentColor,
-      inset 0 1px 0 rgba(255,255,255,0.04);
   }
-  /* SOLO 中 — グループカラーでより強く光る */
+  /* SOLO 中 — その strip 色で強く光る */
   .mt-strip.solo {
     border-color: currentColor;
-    box-shadow:
-      0 0 0 1.5px currentColor,
-      0 0 18px currentColor,
-      0 2px 8px rgba(0,0,0,0.5),
-      inset 0 0 20px rgba(255,255,255,0.03);
+    box-shadow: 0 0 0 1.5px currentColor, 0 0 18px currentColor;
   }
 
   /* ストリップヘッダー: グループ名 + ファイル数 / CH 番号 (2 行) */
@@ -3143,7 +3136,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.8';
+const APP_VERSION = 'v8.1.9';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
