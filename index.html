@@ -3413,7 +3413,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v10.0.0';
+const APP_VERSION = 'v10.1.0';
+// v10.1.0: プロジェクトフォルダ方式 — Finder で見える保存先 (OPFS から切替)
 // v10.0.0 Phase 1: OPFS 自動コピー保存 — 取り込み時にアプリ内コピーで原本依存撤廃
 // v9.1.1: ESC 効かない問題修正 — playbackMode を 'mediaelement' 強制固定 + デバッグログ追加
 // v9.1.0: 大整理 — MediaElement 専用化 + 不要 UI / dead code 全削除
@@ -3497,12 +3498,57 @@ function projGoTop() {
   projSetActiveId(null);
   location.reload();
 }
-function projCreateNew() {
+// v10.1.0: プロジェクト作成時に保存先フォルダを選ばせる
+async function projCreateNew() {
   const name = prompt('新しいプロジェクト名:', 'New Project');
   if (!name || !name.trim()) return;
+  const safeName = name.trim();
   const id = 'p_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+  // 親フォルダ選択 (showDirectoryPicker)
+  let dirHandle = null;
+  let displayPath = '';
+  if ('showDirectoryPicker' in window) {
+    const proceed = confirm(
+      `プロジェクト「${safeName}」の音源を保存するフォルダを選んでください。\n\n` +
+      `推奨: Mac の「書類」(Documents) フォルダ。\n` +
+      `アプリが「${safeName}」というサブフォルダを作って、ドロップした音源をすべてそこに保存します。\n\n` +
+      `OK で フォルダ選択ダイアログを開きます。`
+    );
+    if (!proceed) {
+      const alt = confirm('保存先を選ばないと音源は保存されません。\nそれでも作成しますか?（後で「フォルダを再選択」で設定可能）');
+      if (!alt) return;
+    } else {
+      try {
+        const parent = await window.showDirectoryPicker({
+          id: 'sampler-studio-projects',
+          mode: 'readwrite',
+          startIn: 'documents',
+        });
+        // [プロジェクト名]/ サブフォルダを作成
+        dirHandle = await parent.getDirectoryHandle(safeName, { create: true });
+        displayPath = (parent.name || '') + '/' + safeName;
+      } catch(e) {
+        if (e && e.name === 'AbortError') {
+          // ユーザーがキャンセル
+          const alt = confirm('フォルダ選択をキャンセルしました。\n保存先を選ばずにプロジェクトを作成しますか?');
+          if (!alt) return;
+        } else {
+          console.warn('[proj] showDirectoryPicker failed', e);
+          alert('フォルダ選択に失敗しました: ' + (e.message || e));
+          return;
+        }
+      }
+    }
+  } else {
+    alert('お使いのブラウザはフォルダ選択に対応していません。Chrome で開いてください。');
+    return;
+  }
+  // handle を IndexedDB に保存
+  if (dirHandle) {
+    try { await saveProjectFolderHandle(id, dirHandle, displayPath); } catch(e) { console.warn(e); }
+  }
   const list = projGetList();
-  list.push({ id, name: name.trim(), createdAt: Date.now(), updatedAt: Date.now() });
+  list.push({ id, name: safeName, folderPath: displayPath, createdAt: Date.now(), updatedAt: Date.now() });
   projSetList(list);
   projSwitchTo(id);
 }
@@ -4338,6 +4384,90 @@ async function mtDeleteHandleFromDB(id) {
     tx.oncomplete = () => resolve();
     tx.onerror = e => reject(e);
   });
+}
+
+// v10.1.0: プロジェクトフォルダの DirectoryHandle 保存/取得 (mtHandles 流用、キーに _projDir プレフィックス)
+async function saveProjectFolderHandle(projectId, dirHandle, displayPath) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('mtHandles', 'readwrite');
+    tx.objectStore('mtHandles').put({ id: '_projDir:' + projectId, handle: dirHandle, name: displayPath });
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e);
+  });
+}
+async function getProjectFolderHandle(projectId) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('mtHandles', 'readonly');
+    const req = tx.objectStore('mtHandles').get('_projDir:' + projectId);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = e => reject(e);
+  });
+}
+async function deleteProjectFolderHandle(projectId) {
+  if (!db) await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('mtHandles', 'readwrite');
+    tx.objectStore('mtHandles').delete('_projDir:' + projectId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e);
+  });
+}
+
+// プロジェクトフォルダの permission 確認 (granted で取得 + 必要なら request)
+async function ensureProjectFolderPermission(projectId) {
+  const rec = await getProjectFolderHandle(projectId);
+  if (!rec || !rec.handle) return null;
+  let perm = 'denied';
+  try { perm = await rec.handle.queryPermission({ mode: 'readwrite' }); } catch(_) {}
+  if (perm !== 'granted') {
+    try { perm = await rec.handle.requestPermission({ mode: 'readwrite' }); } catch(_) {}
+  }
+  return perm === 'granted' ? rec.handle : null;
+}
+
+// プロジェクトフォルダにファイルを書き込み (ファイル名で識別)
+async function saveSampleToProjectFolder(projectId, fileName, data) {
+  const dirHandle = await ensureProjectFolderPermission(projectId);
+  if (!dirHandle) return false;
+  try {
+    const fh = await dirHandle.getFileHandle(fileName, { create: true });
+    const w = await fh.createWritable();
+    await w.write(data);
+    await w.close();
+    return true;
+  } catch(e) {
+    console.warn('[projFolder] saveSample failed', fileName, e);
+    return false;
+  }
+}
+
+// プロジェクトフォルダからファイルを読み込み
+async function loadSampleFromProjectFolder(projectId, fileName) {
+  const dirHandle = await ensureProjectFolderPermission(projectId);
+  if (!dirHandle) return null;
+  try {
+    const fh = await dirHandle.getFileHandle(fileName, { create: false });
+    return await fh.getFile();
+  } catch(e) {
+    if (e && e.name === 'NotFoundError') return null;
+    console.warn('[projFolder] loadSample failed', fileName, e);
+    return null;
+  }
+}
+
+// プロジェクトフォルダ内のファイル一覧
+async function listProjectFolderFiles(projectId) {
+  const dirHandle = await ensureProjectFolderPermission(projectId);
+  if (!dirHandle) return [];
+  const out = [];
+  try {
+    for await (const [name, h] of dirHandle.entries()) {
+      if (h.kind === 'file') out.push(name);
+    }
+  } catch(_) {}
+  return out;
 }
 
 async function saveSampleToDB(id, arrayBuffer, name) {
@@ -10089,12 +10219,22 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     const arrBuf = await file.arrayBuffer();
     const sampleId = `mt-${state.multitrack.songs[songIdx].id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
     const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(file.name, file.type) : (file.type || 'audio/wav');
-    // === v10.0.0: OPFS にコピー保存 (これがメイン) ===
+    // === v10.1.0: プロジェクトフォルダにコピー保存 (これがメイン、Finder で見える) ===
+    let savedToProjectFolder = false;
+    const activeProjectId = projGetActiveId();
+    if (activeProjectId) {
+      try {
+        savedToProjectFolder = await saveSampleToProjectFolder(activeProjectId, file.name, arrBuf);
+      } catch(e) { console.warn('[projFolder] save failed', e); }
+    }
+    // フォールバック1: OPFS (Phase 1 から残置、プロジェクトフォルダ未設定 or 書込み失敗時)
     let savedToOPFS = false;
-    try {
-      savedToOPFS = await saveSampleToOPFS(sampleId, arrBuf, file.name, mime);
-    } catch(e) { console.warn('[OPFS] save failed', e); }
-    // 後方互換: handle も保存 (元ファイル参照のため、OPFS から削除された時の fallback)
+    if (!savedToProjectFolder) {
+      try {
+        savedToOPFS = await saveSampleToOPFS(sampleId, arrBuf, file.name, mime);
+      } catch(e) { console.warn('[OPFS] save failed', e); }
+    }
+    // フォールバック2: handle 参照
     let usingHandle = false;
     if (handle) {
       try {
@@ -10102,14 +10242,21 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
         usingHandle = true;
       } catch(e) { console.warn('mt saveHandleToDB failed', e); }
     }
-    // 後方互換: OPFS 失敗時は IndexedDB blob にフォールバック
-    if (!savedToOPFS && !usingHandle) {
+    // フォールバック3: IndexedDB blob (最終手段)
+    if (!savedToProjectFolder && !savedToOPFS && !usingHandle) {
       try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
         console.warn('mt saveSampleToDB failed', e);
         showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
       }
     }
-    const entry = { sampleId, name: file.name, byHandle: usingHandle, inOPFS: savedToOPFS };
+    // entry にどこに保存されているかを記録
+    const entry = {
+      sampleId, name: file.name,
+      byHandle: usingHandle,
+      inOPFS: savedToOPFS,
+      inProjectFolder: savedToProjectFolder, // v10.1.0: プロジェクトフォルダに保存済み
+      fileName: file.name, // フォルダ内のファイル名 (識別用)
+    };
     const song = state.multitrack.songs[songIdx];
     if (!song.unassigned) song.unassigned = [];
     if (targetGroup && MT_GROUPS.includes(targetGroup)) {
@@ -10123,7 +10270,9 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     mtRecomputeSongDuration();
     mtRenderSetlist();
     mtRenderNow();
-    const where = savedToOPFS ? 'アプリ内保存' : (usingHandle ? 'ローカル参照' : 'ブラウザ保存');
+    const where = savedToProjectFolder ? 'プロジェクトフォルダ'
+                : (savedToOPFS ? 'アプリ内保存'
+                : (usingHandle ? 'ローカル参照' : 'ブラウザ保存'));
     const sizeMB = (arrBuf.byteLength / 1024 / 1024).toFixed(1);
     showToast(`📂 読込: ${file.name} (${sizeMB} MB・${where})`);
   } catch(e) {
@@ -11055,15 +11204,48 @@ async function mtMediaLoadOne(sampleId) {
     await mtInitCtx();
     let blob = null;
     let name = sampleId;
-    // v10.0.0: 優先順位 OPFS → handle → IndexedDB blob
-    // 0) OPFS 優先 (v10.0.0 の新方式)
+    // v10.1.0: 優先順位
+    //   0) プロジェクトフォルダ (新方式、Finder で見える)
+    //   1) OPFS (v10.0.0 の旧方式)
+    //   2) handle (v8.x 以前の旧方式)
+    //   3) IndexedDB blob (最古)
+    // 0) プロジェクトフォルダ — 現在のプロジェクトで取り込んだファイル
+    //    entry.fileName が分かれば、そのファイル名で読みに行く
     try {
-      const opfs = await loadSampleFromOPFS(sampleId);
-      if (opfs && opfs.blob) {
-        blob = opfs.blob;
-        name = opfs.name || sampleId;
+      const activeProjectId = projGetActiveId();
+      // entry を songs から逆引き
+      let entryName = null;
+      for (const s of state.multitrack.songs) {
+        for (const g of MT_GROUPS) {
+          for (const l of mtGetLayers(s, g)) {
+            if (l && l.sampleId === sampleId) { entryName = l.fileName || l.name; break; }
+          }
+          if (entryName) break;
+        }
+        if (entryName) break;
+        for (const u of (s.unassigned || [])) {
+          if (u && u.sampleId === sampleId) { entryName = u.fileName || u.name; break; }
+        }
+        if (entryName) break;
+      }
+      if (activeProjectId && entryName) {
+        const f = await loadSampleFromProjectFolder(activeProjectId, entryName);
+        if (f) {
+          blob = f;
+          name = entryName;
+        }
       }
     } catch(_) {}
+    // 1) OPFS (v10.0.0 のデータ)
+    if (!blob) {
+      try {
+        const opfs = await loadSampleFromOPFS(sampleId);
+        if (opfs && opfs.blob) {
+          blob = opfs.blob;
+          name = opfs.name || sampleId;
+        }
+      } catch(_) {}
+    }
     // 1) handle (後方互換)
     if (!blob) {
       try {
@@ -11822,6 +12004,17 @@ async function _mtDiagDetailRender() {
   try { opfsMB = await getOPFSUsageMB(); } catch(_) {}
   let opfsCount = 0;
   try { opfsCount = (await listSamplesInOPFS()).length; } catch(_) {}
+  // v10.1.0: プロジェクトフォルダ情報
+  let folderInfo = '未設定';
+  try {
+    const pid = projGetActiveId();
+    if (pid) {
+      const rec = await getProjectFolderHandle(pid);
+      if (rec && rec.name) folderInfo = rec.name;
+      const dirHandle = await ensureProjectFolderPermission(pid);
+      if (!dirHandle && rec) folderInfo += ' (許可待ち)';
+    }
+  } catch(_) {}
   const errors = mtFs.errorLog.slice(0, 20);
   const errHTML = errors.length === 0
     ? '<div class="mt-diag-err-item" style="text-align:center;opacity:0.5;">エラー履歴なし</div>'
@@ -11841,6 +12034,7 @@ async function _mtDiagDetailRender() {
     <div class="mt-diag-detail-row"><span class="mt-diag-label">登録 STEM 総数</span><span class="mt-diag-value">${totalIds}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込済 STEM</span><span class="mt-diag-value">${mediaLoaded}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
+    <div class="mt-diag-detail-row"><span class="mt-diag-label">プロジェクトフォルダ</span><span class="mt-diag-value" style="font-size:10px;">${folderInfo}</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">アプリ内保存 (OPFS)</span><span class="mt-diag-value">${opfsCount} 件 ${opfsMB.toFixed(0)} MB</span></div>
     <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
 
