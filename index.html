@@ -3353,6 +3353,9 @@
           <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
             <option value="">— 検出中… —</option>
           </select>
+          <!-- v11.3.1: 診断コピー + デバイス再検出ボタン -->
+          <button class="mt-btn ghost subtle" onclick="mtCopyDiagnostic()" title="出力デバイス・チャンネル設定の診断情報をクリップボードにコピー (本番トラブル時に Claude に貼って報告)" style="margin-left:4px; padding:3px 8px; font-size:9px;">📋 診断</button>
+          <button class="mt-btn ghost subtle" onclick="mtRefreshDevices(true)" title="デバイス一覧を再検出 (USB 接続後など)" style="margin-left:4px; padding:3px 8px; font-size:9px;">⟳</button>
         </div>
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
@@ -3449,7 +3452,23 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.2.9';
+const APP_VERSION = 'v11.3.2';
+// v11.3.2: MULTI-TRACK 自己レビュー後の堅牢化パッチ (各オーディオ I/F 流れの再確認) —
+//          (A) mtSetDevice の ctx.close 前に onstatechange=null (誤リセット toast 抑制)
+//          (B) createChannelMerger を try ガード (上限 ch 超え時の例外で全停止しない)
+//          (C) mtSetCh の rebuild に .catch (promise rejection 補足)
+//          (D) channelMap 範囲外チェック (起動時 + デバイス切替成功時)
+//          (E) 同 ch 重複アサイン警告 (加算ミキシング → クリッピング予防)
+//          (F) setSinkId 失敗時に state を実態 (default) に同期
+//          (G) stereo fallback された group を診断ログに集計
+// v11.3.1: MULTI-TRACK 業界標準ロバスト化 (全インターフェース対応) —
+//          (1) mtInitCtx に sinkId option 対応 (Chrome 110+) + setSinkId fallback
+//          (2) mtSetDevice 全面改修 (ctx 完全再作成、in-flight ガード、rollback、再生中フェード停止)
+//          (3) devicechange イベント監視 (USB 挿抜検知 → 自動 fallback)
+//          (4) mtRebuildRouting in-flight ガード (連続呼び出し競合防止)
+//          (5) 診断スナップショット export (mtCopyDiagnostic → クリップボード)
+//          (6) UI に「📋 診断コピー」ボタン追加 (実機トラブル時のワンクリック報告)
+// v11.3.0: MULTI-TRACK チャンネルアサイン無音バグ修正 — mtRebuildRouting で group routing も再構築 / 切替アンチクリック / 範囲外警告 / 診断ログ
 // v11.2.9: ウィンドウ縮小時の重なり崩壊修正 — body min-width 1100px (それ未満は横スクロール、レイアウトは固定維持)
 // v11.2.8: 本番耐性パッチ — SW キャッシュ名追従 / project.json 保存失敗を toast 通知 / .sampler 二重起動ガード
 // v11.2.7: ANNOUNCE / VIDEO / LOGO の 3 段を flex:1 で固定均等分割 (動的サイズ変動なし)
@@ -9958,10 +9977,42 @@ function _mtTeardownCtxResources(reason) {
   try { mtRenderNow(); mtRenderSetlist(); } catch(_) {}
 }
 
-async function mtInitCtx() {
+async function mtInitCtx(options) {
   if (mtCtx) return mtCtx;
-  // 高サンプルレートかつ低遅延寄りで作成
-  mtCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'playback' });
+  options = options || {};
+  // v11.3.1: sinkId 指定があればコンストラクタ option で渡す (Chrome 110+ で対応)
+  //          コンストラクタ option を使うと AudioContext が最初からデバイスに紐づき、
+  //          destination.maxChannelCount が正しい値で取得される (setSinkId だけだと更新されないケースあり)
+  const sinkId = (options.sinkId !== undefined) ? options.sinkId
+                : (state.multitrack.outputDeviceId || '');
+  const ctxOpts = { latencyHint: 'playback' };
+  let ctxCreated = false;
+  if (sinkId) {
+    try {
+      mtCtx = new (window.AudioContext || window.webkitAudioContext)({ ...ctxOpts, sinkId });
+      ctxCreated = true;
+      console.log('[mtInitCtx] AudioContext created with sinkId option:', sinkId.slice(0, 12) + '…');
+    } catch(e) {
+      console.warn('[mtInitCtx] sinkId option not supported, fallback to setSinkId', e.message || e);
+    }
+  }
+  if (!ctxCreated) {
+    mtCtx = new (window.AudioContext || window.webkitAudioContext)(ctxOpts);
+    if (sinkId && typeof mtCtx.setSinkId === 'function') {
+      try {
+        await mtCtx.setSinkId(sinkId);
+        console.log('[mtInitCtx] setSinkId applied:', sinkId.slice(0, 12) + '…');
+      } catch(e) {
+        console.warn('[mtInitCtx] setSinkId failed', e);
+        try { mtFsLogError('warn', 'setSinkId 失敗: ' + (e.message || e)); } catch(_) {}
+        // v11.3.2: setSinkId 失敗時、実態は default device で動作中 → state を同期
+        //          (state が古いデバイス ID のままだと UI と実態が乖離する)
+        state.multitrack.outputDeviceId = '';
+        state.multitrack.outputDeviceLabel = 'システムデフォルト (フォールバック)';
+        try { showToast('⚠️ 選択デバイスが使えず、システムデフォルトにフォールバック'); } catch(_) {}
+      }
+    }
+  }
   // v8.3.0: ctx 死亡検知ハンドラ
   try {
     mtCtx.onstatechange = () => {
@@ -10007,6 +10058,8 @@ async function mtInitCtx() {
     mtGroupAnalyserData[g] = { L: new Float32Array(anL.fftSize), R: new Float32Array(anR.fftSize) };
   }
   await mtRebuildRouting();
+  // v11.3.2: 起動時に channelMap の範囲チェック (異デバイスで開いた時の保存設定が範囲外なケースを検知)
+  try { _mtCheckChannelMapBounds(); } catch(_) {}
   return mtCtx;
 }
 
@@ -10081,34 +10134,111 @@ function mtDbToLin(db) {
 }
 
 // destination のチャンネル数を更新し、ChannelMerger を再構築
+// v11.3.0: アサイン変更時の無音バグ修正 — group → merger の経路も即時再構築
+//         アンチクリック対応 — 再生中なら master を 10ms フェードしてから切替
+// v11.3.1: in-flight ガード — 連続呼び出し時の競合 (merger 二重作成 / disconnect 競合) 防止
+let _mtRebuildInFlight = false;
 async function mtRebuildRouting() {
+  if (!mtCtx) return;
+  // v11.3.1: 既に実行中なら完了を待ってから新規実行 (最大 2 秒)
+  if (_mtRebuildInFlight) {
+    const startWait = Date.now();
+    while (_mtRebuildInFlight && Date.now() - startWait < 2000) {
+      await new Promise(r => setTimeout(r, 20));
+    }
+    if (_mtRebuildInFlight) {
+      console.warn('[mtRebuildRouting] previous run did not finish in 2s, forcing through');
+    }
+  }
+  _mtRebuildInFlight = true;
+  try {
+  await _mtRebuildRoutingInner();
+  } finally {
+    _mtRebuildInFlight = false;
+  }
+}
+async function _mtRebuildRoutingInner() {
   if (!mtCtx) return;
   const maxCh = mtCtx.destination.maxChannelCount || 2;
   const needCh = mtMaxAssignedChannel();
   const ch = Math.min(maxCh, Math.max(2, needCh));
+
+  // v11.3.0: アンチクリック — 再生中は master gain を一瞬絞ってから切替 (プチッ音防止)
+  let restoreGain = null;
+  if (state.multitrack.isPlaying && mtMasterGain) {
+    try {
+      const t = mtCtx.currentTime;
+      const cur = mtMasterGain.gain.value;
+      restoreGain = (cur > 0.001) ? cur : (state.masterVol != null ? state.masterVol : 1.0);
+      mtMasterGain.gain.cancelScheduledValues(t);
+      mtMasterGain.gain.setValueAtTime(cur, t);
+      mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.010);
+      await new Promise(r => setTimeout(r, 12));
+    } catch(_) {}
+  }
+
   try {
     mtCtx.destination.channelCount = ch;
     mtCtx.destination.channelCountMode = 'explicit';
     mtCtx.destination.channelInterpretation = 'discrete';
   } catch(e) {
-    console.warn('destination channelCount set failed', e);
+    console.warn('[mtRebuildRouting] destination channelCount set failed (要求 ' + ch + 'ch)', e);
   }
   state.multitrack.outputChannelCount = ch;
-  // 既存ノードを切断・破棄
+
+  // master/merger 経路の作り直し
+  // v11.3.2: createChannelMerger を try ガード — 大型 I/F (RME UFX 60ch 等) でブラウザ上限超え時の
+  //          例外で全停止しないように。merger=null なら mtMediaSetupGroupRouting が stereo fallback する。
   try { if (mtMerger) mtMerger.disconnect(); } catch(_) {}
-  mtMerger = mtCtx.createChannelMerger(ch);
-  mtMerger.connect(mtMasterGain);
+  mtMerger = null;
+  try {
+    mtMerger = mtCtx.createChannelMerger(ch);
+    mtMerger.connect(mtMasterGain);
+  } catch(e) {
+    console.error('[mtRebuildRouting] createChannelMerger(' + ch + ') failed → stereo direct fallback', e);
+    try { mtFsLogError('warn', `ChannelMerger(${ch}ch) 作成失敗 — ステレオ直結で動作 (${e.message || e})`); } catch(_) {}
+    try { showToast(`⚠️ ${ch}ch マージャー作成失敗 — ステレオで動作します`); } catch(_) {}
+    mtMerger = null;
+  }
   try { mtMasterGain.disconnect(); } catch(_) {}
   mtMasterGain.connect(mtCtx.destination);
   // 左パネル MASTER メーター用 analyser tap も復活させる
-  // （disconnect() で外れているため、ここで明示的に再接続）
   if (mtMasterSplitter) {
     try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
   }
-  // v9.0.3 Fix11: master/merger の経路を mtMediaSetupGroupRouting で重複構築しないよう
-  // 「確立済み」マーク。逆に MediaElement モードで再生中に channelMap を変えた場合は
-  // group gain → merger の経路が古くなるので、group routing 部分は次回再生時に再構築される。
+
+  // v11.3.0: master/merger 経路は今やり直したので確立済みマーク + group routing を強制再構築
+  //          これが無いと、アサイン変更後 group gain は「行き先のない old merger」に繋がったまま → 無音
   if (typeof mtFs !== 'undefined') mtFs._mediaMasterRoutingDone = true;
+  if (typeof mtMediaSetupGroupRouting === 'function') {
+    try {
+      mtMediaSetupGroupRouting();
+    } catch(e) {
+      console.warn('[mtRebuildRouting] group routing rebuild failed', e);
+      try { mtFsLogError('error', 'group routing 再構築失敗: ' + (e.message || e)); } catch(_) {}
+    }
+  }
+
+  // v11.3.0: アンチクリック復帰 — master gain を 30ms フェードインで戻す
+  if (restoreGain !== null && mtMasterGain) {
+    try {
+      const t = mtCtx.currentTime;
+      mtMasterGain.gain.cancelScheduledValues(t);
+      mtMasterGain.gain.setValueAtTime(0, t);
+      mtMasterGain.gain.linearRampToValueAtTime(restoreGain, t + 0.030);
+    } catch(_) {}
+  }
+
+  // v11.3.0: 診断ログ強化 — 実機で問題発生時の手がかり
+  console.log('[mtRebuildRouting] done:', {
+    requestedCh: ch,
+    deviceMaxCh: maxCh,
+    actualDestCh: mtCtx.destination.channelCount,
+    mergerInputs: mtMerger ? mtMerger.numberOfInputs : null,
+    wasPlaying: state.multitrack.isPlaying,
+    channelMap: { ...state.multitrack.channelMap },
+  });
+
   mtUpdateChStatus();
 }
 
@@ -10166,28 +10296,130 @@ async function mtRefreshDevices(askPermission) {
   sel.value = state.multitrack.outputDeviceId || '';
 }
 
+// v11.3.1: 出力デバイス切替を全面改修 — 業界標準パターン
+//   方針: setSinkId だけだと maxChannelCount が更新されないブラウザ/デバイスがあるため、
+//         確実性重視で AudioContext を完全に閉じて新規作成する。
+//   流れ:
+//     1) 再生中ならアンチクリック付きで停止 (master fade → audio.pause)
+//     2) MediaElement cache を全クリア (ctx 紐付きの MediaElementSource を破棄)
+//     3) mtCtx.close() で旧 ctx を完全終了
+//     4) 全グローバル参照 (master/merger/group gain/analyser) を null 化
+//     5) 新 ctx を sinkId option 付きで作成 (mtInitCtx)
+//     6) routing 再構築 (mtInitCtx → mtRebuildRouting)
+//     7) 成功時は再取得した maxChannelCount を toast に表示
+//     8) 失敗時は前デバイス ID にロールバック + ctx 再作成
+//   in-flight ガード: 切替中の重複呼び出しを完全ブロック
+let _mtSetDeviceInFlight = false;
 async function mtSetDevice(deviceId) {
-  state.multitrack.outputDeviceId = deviceId || '';
-  // ラベル更新
-  const sel = document.getElementById('mtDeviceSelect');
-  if (sel && sel.selectedOptions[0]) state.multitrack.outputDeviceLabel = sel.selectedOptions[0].textContent;
-  await mtInitCtx();
-  // AudioContext は setSinkId に対応していないバージョンがあるため try
-  try {
-    if (typeof mtCtx.setSinkId === 'function') {
-      await mtCtx.setSinkId(deviceId || '');
-      showToast(`出力デバイス: ${state.multitrack.outputDeviceLabel || 'デフォルト'}`);
-    } else {
-      // 古いブラウザでは出力は変えられない
-      console.warn('AudioContext.setSinkId 未対応 — システム設定で切替えてください');
-      showToast('⚠️ AudioContext.setSinkId 未対応。Chrome 110+ を使ってください。');
-    }
-  } catch(e) {
-    console.error('setSinkId failed', e);
-    showToast('出力デバイス切替失敗: ' + (e.message || e));
+  if (_mtSetDeviceInFlight) {
+    try { showToast('⏳ デバイス切替中です — 少々お待ちください'); } catch(_) {}
+    return;
   }
-  await mtRebuildRouting();
-  mtSave();
+  _mtSetDeviceInFlight = true;
+  const prevDeviceId = state.multitrack.outputDeviceId;
+  const prevLabel = state.multitrack.outputDeviceLabel;
+  const wasPlaying = !!state.multitrack.isPlaying;
+  try {
+    state.multitrack.outputDeviceId = deviceId || '';
+    const sel = document.getElementById('mtDeviceSelect');
+    if (sel && sel.selectedOptions[0]) {
+      state.multitrack.outputDeviceLabel = sel.selectedOptions[0].textContent;
+    } else if (!deviceId) {
+      state.multitrack.outputDeviceLabel = 'システムデフォルト';
+    }
+
+    // 1) 再生中ならアンチクリック付き停止
+    if (wasPlaying) {
+      try { _mtMediaStopAllWithFade(); } catch(_) {}
+      await new Promise(r => setTimeout(r, 50));
+      try { mtMediaStopAll(); } catch(_) {}
+      state.multitrack.isPlaying = false;
+      try { mtStopMeter(); } catch(_) {}
+    }
+
+    // 2) MediaElement cache クリア (ctx 紐付きノードを破棄)
+    try { if (typeof _mtMediaCacheClear === 'function') _mtMediaCacheClear(); } catch(e) { console.warn('[mtSetDevice] cache clear failed', e); }
+
+    // 3) 旧 ctx を完全終了
+    //    v11.3.2: 意図的な close なので onstatechange を外す
+    //    (これをしないと _mtTeardownCtxResources の "AudioContext がリセット" toast が誤発火する)
+    if (mtCtx && mtCtx.state !== 'closed') {
+      try { mtCtx.onstatechange = null; } catch(_) {}
+      try { await mtCtx.close(); } catch(e) { console.warn('[mtSetDevice] ctx.close failed', e); }
+    }
+
+    // 4) グローバル参照の null 化 (mtInitCtx が if (mtCtx) return mtCtx で早期 return しないように)
+    mtCtx = null;
+    mtMerger = null;
+    mtMasterGain = null;
+    mtMasterSplitter = null;
+    mtMasterAnalyserL = null;
+    mtMasterAnalyserR = null;
+    mtMasterAnalyserBufL = null;
+    mtMasterAnalyserBufR = null;
+    mtGroupGainNodes = {};
+    mtGroupAnalysers = {};
+    mtGroupAnalyserData = {};
+    mtDecodedCache = {};
+    if (typeof mtFs !== 'undefined') mtFs._mediaMasterRoutingDone = false;
+    if (typeof mtFs !== 'undefined' && mtFs._failed) mtFs._failed.clear();
+    if (typeof _mtLoadInFlight !== 'undefined' && _mtLoadInFlight) _mtLoadInFlight.clear();
+
+    // 5) 新 ctx を sinkId 付きで作成 + 全ノード再構築 (mtRebuildRouting も内部で呼ばれる)
+    await mtInitCtx({ sinkId: deviceId || '' });
+
+    // 6) routing を明示的にもう一度 (sanity: mtInitCtx 内で呼ばれるが多重実行は in-flight ガードで安全)
+    await mtRebuildRouting();
+
+    // 7) 成功通知
+    const maxCh = mtCtx && mtCtx.destination ? (mtCtx.destination.maxChannelCount || 2) : 2;
+    const sr = mtCtx ? Math.round(mtCtx.sampleRate) : '?';
+    try { showToast(`✓ 出力デバイス切替完了: ${state.multitrack.outputDeviceLabel || 'デフォルト'} (最大 ${maxCh}ch / ${sr}Hz)`); } catch(_) {}
+    if (wasPlaying) {
+      try { showToast('▶ 再生は停止しました — SPACE でもう一度再生'); } catch(_) {}
+    }
+    try { mtFsLogError('info', `デバイス切替: ${state.multitrack.outputDeviceLabel || 'default'} (max ${maxCh}ch, ${sr}Hz)`); } catch(_) {}
+    // v11.3.2: 新デバイスの max ch に対して channelMap が範囲外なら一括警告
+    try { _mtCheckChannelMapBounds(); } catch(_) {}
+  } catch(e) {
+    console.error('[mtSetDevice] failed', e);
+    try { showToast(`⚠️ デバイス切替失敗: ${e.message || e} — 元のデバイスに戻します`); } catch(_) {}
+    try { mtFsLogError('error', 'デバイス切替失敗 → rollback: ' + (e.message || e)); } catch(_) {}
+    // 8) rollback: 前デバイスで ctx 再作成を試行
+    state.multitrack.outputDeviceId = prevDeviceId || '';
+    state.multitrack.outputDeviceLabel = prevLabel || '';
+    const selBack = document.getElementById('mtDeviceSelect');
+    if (selBack) selBack.value = prevDeviceId || '';
+    try {
+      if (mtCtx && mtCtx.state !== 'closed') {
+        try { mtCtx.onstatechange = null; } catch(_) {}
+        try { await mtCtx.close(); } catch(_) {}
+      }
+      mtCtx = null;
+      mtMerger = null;
+      mtMasterGain = null;
+      mtMasterSplitter = null;
+      mtMasterAnalyserL = null;
+      mtMasterAnalyserR = null;
+      mtGroupGainNodes = {};
+      mtGroupAnalysers = {};
+      mtGroupAnalyserData = {};
+      mtDecodedCache = {};
+      if (typeof mtFs !== 'undefined') mtFs._mediaMasterRoutingDone = false;
+      await mtInitCtx({ sinkId: prevDeviceId || '' });
+      await mtRebuildRouting();
+      try { showToast('✓ 元のデバイスに戻しました'); } catch(_) {}
+    } catch(e2) {
+      console.error('[mtSetDevice] rollback failed', e2);
+      try { showToast('⚠️ ロールバックも失敗 — ページ再読込してください'); } catch(_) {}
+      try { mtFsLogError('error', 'ロールバック失敗: ' + (e2.message || e2)); } catch(_) {}
+    }
+  } finally {
+    _mtSetDeviceInFlight = false;
+    try { mtSave(); } catch(_) {}
+    try { if (typeof mtUpdateChStatus === 'function') mtUpdateChStatus(); } catch(_) {}
+    try { mtRenderNow(); mtRenderSetlist(); } catch(_) {}
+  }
 }
 
 function mtSetCh(group, side, val) {
@@ -10196,7 +10428,62 @@ function mtSetCh(group, side, val) {
   mtPushUndo();
   state.multitrack.channelMap[group][side] = v;
   mtSave();
-  if (mtCtx) mtRebuildRouting();
+  if (mtCtx) {
+    // v11.3.0: 範囲外チャンネル設定時に警告 (デバイス最大 ch を超えた → stereo fallback)
+    const maxCh = mtCtx.destination.maxChannelCount || 2;
+    if (v > maxCh) {
+      try { showToast(`⚠️ Ch ${v} はデバイス最大 ${maxCh} ch を超え — ステレオ ch 1-2 にフォールバック (設定値は保存されます)`); } catch(_) {}
+    }
+    // v11.3.2: 同 ch 重複アサイン警告 — 加算ミキシングでクリッピングのリスクを事前通知
+    const dup = _mtFindChannelConflicts(group, side, v);
+    if (dup.length > 0) {
+      try { showToast(`⚠️ Ch ${v} は他でも使用中: ${dup.join(', ')} (加算ミキシング → クリッピング注意)`); } catch(_) {}
+    }
+    // v11.3.2: promise rejection 補足 (silent fail 防止)
+    mtRebuildRouting().catch(e => {
+      console.error('[mtSetCh] mtRebuildRouting failed', e);
+      try { mtFsLogError('error', 'チャンネル切替 routing 失敗: ' + (e.message || e)); } catch(_) {}
+    });
+  }
+}
+
+// v11.3.2: 同 ch に他グループがアサインされてないか検査
+function _mtFindChannelConflicts(currentGroup, currentSide, currentVal) {
+  const conflicts = [];
+  for (const g of MT_GROUPS) {
+    if (g === currentGroup) {
+      // 同グループの逆 side との重複も検出 (例: vocal.L=4 で vocal.R=4 設定)
+      const otherSide = currentSide === 'L' ? 'R' : 'L';
+      if (state.multitrack.channelMap[g] && state.multitrack.channelMap[g][otherSide] === currentVal) {
+        conflicts.push(`${g}.${otherSide}`);
+      }
+      continue;
+    }
+    const cm = state.multitrack.channelMap[g];
+    if (!cm) continue;
+    if (cm.L === currentVal) conflicts.push(`${g}.L`);
+    if (cm.R === currentVal) conflicts.push(`${g}.R`);
+  }
+  return conflicts;
+}
+
+// v11.3.2: 起動時 / デバイス切替後の channelMap 範囲チェック
+//          現在の destination.maxChannelCount を超えるアサインがあれば一括警告
+function _mtCheckChannelMapBounds() {
+  if (!mtCtx) return;
+  const maxCh = mtCtx.destination.maxChannelCount || 2;
+  const violations = [];
+  for (const g of MT_GROUPS) {
+    const cm = state.multitrack.channelMap[g];
+    if (!cm) continue;
+    if (cm.L > maxCh) violations.push(`${g}.L=${cm.L}`);
+    if (cm.R > maxCh) violations.push(`${g}.R=${cm.R}`);
+  }
+  if (violations.length > 0) {
+    try { showToast(`⚠️ デバイス最大 ${maxCh} ch を超えるアサイン ${violations.length} 個 — ステレオ fallback で動作`); } catch(_) {}
+    try { mtFsLogError('warn', `範囲外アサイン検出: ${violations.join(', ')} (max=${maxCh})`); } catch(_) {}
+    console.warn('[mtCheckBounds] out-of-range assignments:', violations, 'maxCh=', maxCh);
+  }
 }
 
 function mtSetGap(val) {
@@ -11318,6 +11605,109 @@ function mtFsStopWatchdog() {
 // Chrome 133 (2025/2) で省エネモード時に背景タブを freeze する仕様が追加された。
 // 本番中にうっかり別タブを触ったり、OS が省エネ判定をすると JS が停止 → メモリ
 // 回収 → 復帰時に音が出ない事故が起こり得る。freeze/resume を検知して安全対応する。
+
+// v11.3.1: USB 挿抜などのデバイス変更検知 → 自動 fallback
+//          (現選択デバイスが消えたらシステムデフォルトに切替、新デバイス出現は通知のみ)
+let _mtDevicechangeBound = false;
+function mtBindDeviceChange() {
+  if (_mtDevicechangeBound) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.addEventListener) {
+    console.warn('[mtDevice] devicechange API not available');
+    return;
+  }
+  _mtDevicechangeBound = true;
+  navigator.mediaDevices.addEventListener('devicechange', async () => {
+    console.log('[mtDevice] devicechange event fired');
+    try { await mtRefreshDevices(false); } catch(_) {}
+    const curId = state.multitrack.outputDeviceId;
+    if (!curId) return; // システムデフォルト使用中は監視対象外
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const found = devices.find(d => d.kind === 'audiooutput' && d.deviceId === curId);
+      if (!found) {
+        const lostLabel = state.multitrack.outputDeviceLabel || curId.slice(0, 8);
+        try { showToast(`⚠️ 出力デバイス「${lostLabel}」が切断されました — システムデフォルトに切替`); } catch(_) {}
+        try { mtFsLogError('warn', `デバイス切断: ${lostLabel}`); } catch(_) {}
+        await mtSetDevice('');
+      }
+    } catch(e) {
+      console.warn('[mtDevice] devicechange check failed', e);
+    }
+  });
+  console.log('[mtDevice] devicechange listener bound');
+}
+
+// v11.3.1: 診断スナップショット — 実機トラブル時の Copy-Paste 用 JSON ダンプ
+//          ユーザーが「📋 診断コピー」ボタンを押すと、現状の audio routing 全情報がクリップボードに入る
+function mtDiagSnapshot() {
+  const safe = (fn, fallback) => { try { return fn(); } catch(_) { return fallback; } };
+  return {
+    appVersion: typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'n/a',
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    audioContext: mtCtx ? {
+      state: mtCtx.state,
+      sampleRate: mtCtx.sampleRate,
+      baseLatency: safe(() => mtCtx.baseLatency, null),
+      outputLatency: safe(() => mtCtx.outputLatency, null),
+      sinkId: safe(() => (mtCtx.sinkId !== undefined ? (mtCtx.sinkId || '(default)') : 'n/a'), 'n/a'),
+    } : null,
+    destination: mtCtx ? {
+      channelCount: mtCtx.destination.channelCount,
+      channelCountMode: mtCtx.destination.channelCountMode,
+      channelInterpretation: mtCtx.destination.channelInterpretation,
+      maxChannelCount: mtCtx.destination.maxChannelCount,
+      numberOfInputs: mtCtx.destination.numberOfInputs,
+    } : null,
+    selectedDevice: {
+      id: state.multitrack.outputDeviceId,
+      label: state.multitrack.outputDeviceLabel,
+    },
+    outputChannelCount: state.multitrack.outputChannelCount,
+    merger: mtMerger ? { numberOfInputs: mtMerger.numberOfInputs } : null,
+    masterGain: mtMasterGain ? { value: mtMasterGain.gain.value } : null,
+    channelMap: { ...state.multitrack.channelMap },
+    playback: {
+      isPlaying: state.multitrack.isPlaying,
+      currentSongIdx: state.multitrack.currentSongIdx,
+      activeMediaCount: state.multitrack.activeMedia ? state.multitrack.activeMedia.length : 0,
+      songsCount: state.multitrack.songs ? state.multitrack.songs.length : 0,
+      playbackMode: state.multitrack.playbackMode,
+    },
+    groups: Object.fromEntries(MT_GROUPS.map(g => [g, {
+      gainNodeValue: mtGroupGainNodes[g] ? mtGroupGainNodes[g].gain.value : null,
+      stateGain: state.multitrack.groupGains[g],
+      mute: state.multitrack.groupMute[g],
+      solo: state.multitrack.groupSolo[g],
+      ch: state.multitrack.channelMap[g],
+    }])),
+    flags: {
+      mediaMasterRoutingDone: typeof mtFs !== 'undefined' && !!mtFs._mediaMasterRoutingDone,
+      setDeviceInFlight: typeof _mtSetDeviceInFlight !== 'undefined' ? _mtSetDeviceInFlight : null,
+      rebuildInFlight: typeof _mtRebuildInFlight !== 'undefined' ? _mtRebuildInFlight : null,
+      devicechangeBound: _mtDevicechangeBound,
+    },
+    recentErrors: (typeof mtFs !== 'undefined' && mtFs._errors) ? mtFs._errors.slice(-10) : null,
+  };
+}
+
+async function mtCopyDiagnostic() {
+  const data = mtDiagSnapshot();
+  const text = JSON.stringify(data, null, 2);
+  console.log('=== MULTI-TRACK DIAG ===\n' + text);
+  try {
+    await navigator.clipboard.writeText(text);
+    try { showToast('✓ 診断情報をクリップボードにコピーしました — チャットに貼れます'); } catch(_) {}
+  } catch(e) {
+    console.warn('[mtCopyDiag] clipboard failed', e);
+    try { showToast('⚠️ コピー失敗 — Chrome DevTools コンソールの [MULTI-TRACK DIAG] を参照'); } catch(_) {}
+  }
+}
+if (typeof window !== 'undefined') {
+  window.mtDiagSnapshot = mtDiagSnapshot;
+  window.mtCopyDiagnostic = mtCopyDiagnostic;
+}
+
 let _mtPageLifecycleBound = false;
 function mtBindPageLifecycle() {
   if (_mtPageLifecycleBound) return;
@@ -11670,6 +12060,9 @@ function mtMediaSetupGroupRouting() {
     mtFs._mediaMasterRoutingDone = true;
   }
   // 3) 各 group gain → 出力経路
+  // v11.3.2: stereo fallback された group を集計 (診断ログに含めるため)
+  const stereoFallbackGroups = [];
+  const multiChGroups = [];
   for (const g of MT_GROUPS) {
     const gain = mtGroupGainNodes[g];
     if (!gain) continue;
@@ -11689,18 +12082,23 @@ function mtMediaSetupGroupRouting() {
       gain.connect(splitter);
       splitter.connect(mtMerger, 0, chL);
       splitter.connect(mtMerger, 1, chR);
+      multiChGroups.push(`${g}→${chL+1}/${chR+1}`);
     } else {
       // stereo 出力 (一般的な Mac はここを通る)
       gain.connect(mtMasterGain);
+      stereoFallbackGroups.push(`${g}(want ${chL+1}/${chR+1})`);
     }
   }
   // 4) デバッグ用: 各ノードの接続状況を console に出す
+  // v11.3.2: stereo fallback の内訳も含めて、実機トラブル時の手がかりを増やす
   console.log('[mtMedia] routing rebuilt:', {
     ctxState: mtCtx.state,
     destChannelCount: mtCtx.destination.channelCount,
     destMaxChannelCount: mtCtx.destination.maxChannelCount,
     mergerInputs: mtMerger ? mtMerger.numberOfInputs : null,
     masterGainValue: mtMasterGain.gain.value,
+    multiCh: multiChGroups,
+    stereoFallback: stereoFallbackGroups,
   });
 }
 
@@ -14090,6 +14488,7 @@ async function mtInit() {
   try { _mtDiagPanelStartLoop(); _mtDiagPanelUpdate(); } catch(_) {}
   // v8.5.0: 本番事故防止
   try { mtBindPageLifecycle(); } catch(_) {}
+  try { mtBindDeviceChange(); } catch(_) {}
   try { mtAcquireMainLock(); } catch(_) {}
   // v9.0.3 Fix6: タブ閉じ時に MediaElement の blob URL を全部解放 (メモリリーク防止)
   if (!window._mtBeforeUnloadBound) {
