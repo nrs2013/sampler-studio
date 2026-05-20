@@ -1830,6 +1830,45 @@
     background: linear-gradient(90deg, #7DB89E, #B8E0CC);
     box-shadow: 0 0 8px rgba(125,184,158,0.6);
   }
+  /* RECONNECT 状態 — 赤系で「アクション必要」を伝える */
+  .mt-preload-banner.mt-preload-reconnect {
+    background: linear-gradient(90deg, rgba(226,75,74,0.18), rgba(226,75,74,0.06));
+    border-color: rgba(226,75,74,0.7);
+    color: #F5B8B8;
+    box-shadow: 0 0 24px rgba(226,75,74,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+    animation: mt-preload-glow 1.4s ease-in-out infinite;
+  }
+  .mt-preload-banner.mt-preload-reconnect .mt-preload-label,
+  .mt-preload-banner.mt-preload-reconnect .mt-preload-count {
+    color: #FFD8D8;
+  }
+  .mt-preload-banner.mt-preload-reconnect .mt-preload-bar-fill {
+    background: linear-gradient(90deg, #E24B4A, #F5B8B8);
+    box-shadow: 0 0 8px rgba(226,75,74,0.6);
+  }
+  .mt-fs-reconnect-btn {
+    background: linear-gradient(180deg, #F5C470, #E5A53D);
+    color: #2A1F08;
+    border: none;
+    padding: 6px 18px;
+    border-radius: 5px;
+    font-family: 'SF Mono', monospace;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(245,196,112,0.5);
+    transition: filter 0.12s;
+  }
+  .mt-fs-reconnect-btn:hover { filter: brightness(1.15); }
+  .mt-fs-reconnect-btn:active { filter: brightness(0.9); }
+  /* ERROR 状態 — 赤、明滅なし */
+  .mt-preload-banner.mt-preload-error {
+    background: linear-gradient(90deg, rgba(226,75,74,0.20), rgba(226,75,74,0.06));
+    border-color: rgba(226,75,74,0.8);
+    color: #F5B8B8;
+    animation: none;
+  }
 
   /* MIXER FADE OUT ボタン (パニックストップ) */
   .mt-fadeout-btn {
@@ -3006,7 +3045,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v7.34.2';
+const APP_VERSION = 'v8.0.0';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -8828,11 +8867,7 @@ let mtMasterGain = null;
 let mtMerger = null;            // ChannelMerger node (size = outputChannelCount)
 let mtDecodedCache = {};        // { sampleId: AudioBuffer }  in-memory cache
 let mtMeterRaf = null;
-let mtRestoreInProgress = false; // 起動時バッファ復元が走ってる間だけ true → ロード中表示
-// バックグラウンド preload の進捗（起動直後にすべてのファイルを並列 decode）
-let mtPreloadTotal = 0;
-let mtPreloadDone = 0;
-let mtPreloadAbort = false;     // セッション中に preload を中断したいとき true
+// 旧フラグは廃止。mtFs (v8.0 ファイル状態マシン) に統一
 let mtGroupGainNodes = {};      // { drums: GainNode, bass: GainNode, ... }
 let mtGroupAnalysers = {};      // { drums: AnalyserNode, ... }
 let mtGroupAnalyserData = {};   // { drums: Float32Array, ... }  reusable buffers
@@ -9544,37 +9579,10 @@ async function _mtDecodeOrThrow(arrayBuffer, label) {
 
 // 指定 sampleId のバッファを必要に応じて lazy-load して mtDecodedCache に乗せる。
 // 戻り値: AudioBuffer or null。askPermission=true なら handle に permission 要求も行う。
+// 旧 API 互換: 内部実装は mtFs (v8.0) に統一
 async function mtEnsureBufferLoaded(sampleId, askPermission = false) {
-  if (mtDecodedCache[sampleId]) return mtDecodedCache[sampleId];
-  await mtInitCtx();
-  // 1) handle 優先
-  try {
-    const rec = await mtGetHandleFromDB(sampleId);
-    if (rec && rec.handle) {
-      let perm = 'denied';
-      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-      if (perm !== 'granted' && askPermission) {
-        try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
-      }
-      if (perm === 'granted') {
-        const f = await rec.handle.getFile();
-        const arr = await f.arrayBuffer();
-        const buf = await mtRobustDecode(arr, f);
-        mtDecodedCache[sampleId] = buf;
-        return buf;
-      }
-    }
-  } catch (e) { console.warn('mtEnsureBufferLoaded handle path failed', sampleId, e); }
-  // 2) blob フォールバック
-  try {
-    const rec = await getSampleFromDB(sampleId);
-    if (rec && rec.data) {
-      const buf = await mtRobustDecode(rec.data, { name: rec.name || sampleId });
-      mtDecodedCache[sampleId] = buf;
-      return buf;
-    }
-  } catch (e) { console.warn('mtEnsureBufferLoaded blob path failed', sampleId, e); }
-  return null;
+  const r = await _mtFsLoadOne(sampleId, askPermission);
+  return r.ok ? r.buf : null;
 }
 
 // SELECTED SONG → mixer fader の drag で呼ばれる
@@ -9698,226 +9706,327 @@ async function mtRemoveTrack(songIdx, group, sampleId) {
   mtRenderNow();
 }
 
-// 起動時バッファ復元
-// 1. handle がある場合：permission granted なら即 read & decode
-//                       prompt 必要なら needsReconnect 旗を立てて待機
-// 2. handle がない（旧形式）：IDB blob から復元
-// 起動時: 軽い permission チェックだけ素早く実行（即時完了）。
-// 続けて mtPreloadBuffers() がバックグラウンドで全ファイルを並列 decode。
-// これでアプリは即操作可能、再生時には全曲ロード済みでゼロロス。
-async function mtRestoreBuffers() {
-  if (!state.multitrack.songs.length) return;
-  mtRestoreInProgress = true;
-  try { mtRenderNow(); } catch(_) {}
-  let needsReconnect = false;
-  let reconnectCount = 0;
-  const sampleIds = [];
+// ============================================================================
+// MULTI-TRACK FILE SYSTEM v8.0 — 状態マシン式の統一管理
+// ============================================================================
+// 起動時に大量のファイルを安全に decode し、SPACE 押下の瞬間にゼロロス再生
+// できるよう備える。状態を一元化し、本番事故（ロード中表示が消えない、
+// 権限切れに気づかない等）を防ぐ。
+//
+// 状態 (mtFs.state):
+//   'idle'            - 曲 0 件
+//   'checking'        - 起動直後、permission チェック中（〜100ms）
+//   'needs_reconnect' - 権限切れ。RECONNECT ボタン表示
+//   'loading'         - decode 実行中。進捗バー表示
+//   'ready'           - 全 decode 完了。即時再生 OK
+//   'error'           - 致命的エラー
+//
+// 公開 API:
+//   mtFsInit()              起動時、permission check → load
+//   mtFsReconnect()         RECONNECT ボタンから呼ぶ、権限要求 → load
+//   mtFsLoadSongUrgent(idx) 再生直前に必要曲を優先 load
+//   mtFsGetBuffer(id)       buffer 取得（無ければ null）
+//   mtFsNotifyPlaybackStart/Stop  再生中フラグ
+//   mtFsCleanup()           整理: orphan/旧 blob 削除
+//   mtFsRender()            バナー UI 更新
+const mtFs = {
+  state: 'idle',
+  total: 0,
+  loaded: 0,
+  failed: 0,
+  needsReconnect: 0,
+  errorMessage: null,
+  isPlaybackActive: false,
+  showReadyFlash: false,
+  _readyFlashTimer: null,
+  _loadingInFlight: false,
+  _abortPending: false,
+};
+
+function _mtFsCollectAllIds() {
+  const ids = [];
   for (const s of state.multitrack.songs) {
     for (const g of MT_GROUPS) {
-      mtGetLayers(s, g).forEach(l => { if (l && l.sampleId) sampleIds.push(l.sampleId); });
+      mtGetLayers(s, g).forEach(l => { if (l && l.sampleId) ids.push(l.sampleId); });
     }
-    (s.unassigned || []).forEach(u => { if (u && u.sampleId) sampleIds.push(u.sampleId); });
+    (s.unassigned || []).forEach(u => { if (u && u.sampleId) ids.push(u.sampleId); });
   }
-  // permission を並列に確認（decode は一切しない）
-  const checks = sampleIds.map(async (id) => {
-    try {
-      const rec = await mtGetHandleFromDB(id);
-      if (!rec || !rec.handle) return 'no-handle';
-      let perm = 'denied';
-      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-      return perm;
-    } catch(_) { return 'error'; }
-  });
-  const results = await Promise.all(checks);
-  for (const r of results) {
-    if (r !== 'granted' && r !== 'no-handle') {
-      needsReconnect = true; reconnectCount++;
-    }
-  }
-  mtRestoreInProgress = false;
-  if (needsReconnect) {
-    state.multitrack.needsReconnect = true;
-    state.multitrack.reconnectCount = reconnectCount;
-  }
-  mtRenderSetlist();
-  mtRenderNow();
-  mtRenderReconnectUI();
-  // バックグラウンドで全 decode 開始（await しない — UI は即操作 OK）
-  mtPreloadBuffers().catch(e => console.warn('preload failed', e));
+  return ids;
 }
 
-// バックグラウンドで全ファイルを並列 decode してキャッシュに乗せる。
-// CONCURRENCY=4 ワーカー並列で重いブラウザ work を時分割。
-// 完了後は SPACE 押した瞬間に再生（ゼロロス）になる。
-async function mtPreloadBuffers() {
-  if (!state.multitrack.songs.length) {
-    console.log('[mt-preload] no songs, skip');
-    return;
-  }
-  await mtInitCtx();
-  // まだロードされていない sampleId を収集
-  const sampleIds = [];
-  for (const s of state.multitrack.songs) {
-    for (const g of MT_GROUPS) {
-      mtGetLayers(s, g).forEach(l => {
-        if (l && l.sampleId && !mtDecodedCache[l.sampleId]) sampleIds.push(l.sampleId);
-      });
-    }
-    (s.unassigned || []).forEach(u => {
-      if (u && u.sampleId && !mtDecodedCache[u.sampleId]) sampleIds.push(u.sampleId);
-    });
-  }
-  console.log('[mt-preload] start', sampleIds.length, 'files');
-  if (sampleIds.length === 0) {
-    // 既にすべて読み込み済み → ✓ ALL READY を 2 秒表示してユーザーに知らせる
-    showAllReadyFlash();
-    return;
-  }
-  mtPreloadTotal = sampleIds.length;
-  mtPreloadDone = 0;
-  mtPreloadAbort = false;
-  try { mtRenderNow(); } catch(_) {}
-
-  const CONCURRENCY = 4;
-  let idx = 0;
-  let successCount = 0;
-  let failCount = 0;
-  async function worker() {
-    while (idx < sampleIds.length) {
-      if (mtPreloadAbort) return;
-      const i = idx++;
-      const sid = sampleIds[i];
-      let ok = false;
+// 在庫状態だけ確認（decode しない）
+// returns: 'granted' | 'prompt' | 'denied' | 'blob' | 'orphan'
+async function _mtFsProbe(sampleId) {
+  if (mtDecodedCache[sampleId]) return 'granted';
+  try {
+    const rec = await mtGetHandleFromDB(sampleId);
+    if (rec && rec.handle) {
       try {
-        const buf = await mtEnsureBufferLoaded(sid, false);
-        if (buf) ok = true;
-      } catch(e) {
-        console.warn('[mt-preload] entry failed', sid, e);
+        const p = await rec.handle.queryPermission({ mode: 'read' });
+        return p;
+      } catch(_) { return 'denied'; }
+    }
+  } catch(_) {}
+  try {
+    const r = await getSampleFromDB(sampleId);
+    if (r && r.data) return 'blob';
+  } catch(_) {}
+  return 'orphan';
+}
+
+// 1 サンプルを decode して cache に格納
+// returns: { ok: true, buf } or { ok: false, reason }
+async function _mtFsLoadOne(sampleId, askPermission) {
+  if (mtDecodedCache[sampleId]) return { ok: true, buf: mtDecodedCache[sampleId] };
+  await mtInitCtx();
+  // 1) handle 優先
+  try {
+    const rec = await mtGetHandleFromDB(sampleId);
+    if (rec && rec.handle) {
+      let perm = 'denied';
+      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+      if (perm !== 'granted' && askPermission) {
+        try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
       }
-      if (ok) successCount++; else failCount++;
-      mtPreloadDone++;
-      if (mtPreloadDone % 2 === 0 || mtPreloadDone === mtPreloadTotal) {
-        try { mtRenderNow(); } catch(_) {}
+      if (perm === 'granted') {
+        try {
+          const f = await rec.handle.getFile();
+          const arr = await f.arrayBuffer();
+          const buf = await mtRobustDecode(arr, f);
+          mtDecodedCache[sampleId] = buf;
+          return { ok: true, buf };
+        } catch(e) {
+          console.warn('[mtFs] decode failed', sampleId, e);
+          return { ok: false, reason: 'decode-error' };
+        }
+      }
+      return { ok: false, reason: 'denied' };
+    }
+  } catch(_) {}
+  // 2) blob fallback
+  try {
+    const r = await getSampleFromDB(sampleId);
+    if (r && r.data) {
+      try {
+        const buf = await mtRobustDecode(r.data, { name: r.name || sampleId });
+        mtDecodedCache[sampleId] = buf;
+        return { ok: true, buf };
+      } catch(e) {
+        console.warn('[mtFs] blob decode failed', sampleId, e);
+        return { ok: false, reason: 'decode-error' };
+      }
+    }
+  } catch(_) {}
+  return { ok: false, reason: 'orphan' };
+}
+
+// 4 並列ワーカーで一括 decode
+async function _mtFsLoadMany(ids, askPermission) {
+  if (mtFs._loadingInFlight) {
+    console.log('[mtFs] load already in flight, skip');
+    return;
+  }
+  mtFs._loadingInFlight = true;
+  mtFs._abortPending = false;
+  mtFs.total = ids.length;
+  mtFs.loaded = 0;
+  mtFs.failed = 0;
+  mtFs.needsReconnect = 0;
+  mtFs.state = ids.length > 0 ? 'loading' : 'ready';
+  mtFsRender();
+  console.log('[mtFs] load start', { count: ids.length, askPermission });
+  let deniedCount = 0;
+  let idx = 0;
+  const CONCURRENCY = 4;
+  async function worker() {
+    while (idx < ids.length) {
+      if (mtFs._abortPending) return;
+      // 再生中は decode を間引き → メインスレッド負荷を抑え音切れ防止
+      if (mtFs.isPlaybackActive) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      const i = idx++;
+      const sid = ids[i];
+      const res = await _mtFsLoadOne(sid, askPermission);
+      if (res.ok) {
+        mtFs.loaded++;
+      } else {
+        mtFs.failed++;
+        if (res.reason === 'denied') deniedCount++;
+      }
+      const total = mtFs.loaded + mtFs.failed;
+      if (total % 2 === 0 || total === ids.length) {
+        mtFsRender();
       }
     }
   }
   const workers = [];
   for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
   await Promise.all(workers);
-  console.log('[mt-preload] done', { success: successCount, fail: failCount });
-  // 完了 → 状態リセット
-  mtPreloadTotal = 0;
-  mtPreloadDone = 0;
-  try { mtRenderNow(); } catch(_) {}
-  try { mtRecomputeSongDuration(); } catch(_) {}
-  if (successCount > 0) {
-    showToast(`✓ ${successCount} ファイル読込完了` + (failCount > 0 ? ` (${failCount} 件は要 RECONNECT)` : ''));
-    showAllReadyFlash();
+  mtFs._loadingInFlight = false;
+  // 完了状態判定
+  if (deniedCount > 0) {
+    mtFs.state = 'needs_reconnect';
+    mtFs.needsReconnect = deniedCount;
+  } else {
+    mtFs.state = 'ready';
+    mtFs.showReadyFlash = true;
+    if (mtFs._readyFlashTimer) clearTimeout(mtFs._readyFlashTimer);
+    mtFs._readyFlashTimer = setTimeout(() => {
+      mtFs.showReadyFlash = false;
+      mtFsRender();
+    }, 2500);
   }
+  // legacy 連携
+  state.multitrack.needsReconnect = (deniedCount > 0);
+  state.multitrack.reconnectCount = deniedCount;
+  try { mtRecomputeSongDuration(); } catch(_) {}
+  mtFsRender();
+  console.log('[mtFs] load complete', { loaded: mtFs.loaded, failed: mtFs.failed, denied: deniedCount });
 }
 
-// 「✓ ALL READY」バナーを 2 秒だけ表示してユーザーに「準備 OK」を伝える
-let _mtAllReadyTimer = null;
-function showAllReadyFlash() {
+// === 公開 API ===
+async function mtFsInit() {
+  if (!state.multitrack.songs.length) {
+    mtFs.state = 'idle';
+    mtFsRender();
+    return;
+  }
+  mtFs.state = 'checking';
+  mtFs.total = 0;
+  mtFs.loaded = 0;
+  mtFs.failed = 0;
+  mtFs.needsReconnect = 0;
+  mtFsRender();
+  const ids = _mtFsCollectAllIds();
+  const probes = await Promise.all(ids.map(id => _mtFsProbe(id)));
+  let needGesture = 0;
+  for (const p of probes) {
+    if (p === 'prompt' || p === 'denied') needGesture++;
+  }
+  if (needGesture > 0) {
+    mtFs.state = 'needs_reconnect';
+    mtFs.needsReconnect = needGesture;
+    mtFs.total = ids.length;
+    state.multitrack.needsReconnect = true;
+    state.multitrack.reconnectCount = needGesture;
+    mtFsRender();
+    console.log('[mtFs] needs reconnect', needGesture);
+    return;
+  }
+  // 全 OK → bg decode 開始（await しない）
+  _mtFsLoadMany(ids, false);
+}
+
+async function mtFsReconnect() {
+  console.log('[mtFs] reconnect requested');
+  const ids = _mtFsCollectAllIds();
+  await _mtFsLoadMany(ids, true);
+}
+
+async function mtFsLoadSongUrgent(songIdx) {
+  const song = state.multitrack.songs[songIdx];
+  if (!song) return;
+  const ids = [];
+  for (const g of MT_GROUPS) {
+    mtGetLayers(song, g).forEach(l => {
+      if (l && l.sampleId && !mtDecodedCache[l.sampleId]) ids.push(l.sampleId);
+    });
+  }
+  if (ids.length === 0) return;
+  for (const id of ids) {
+    await _mtFsLoadOne(id, true);
+  }
+  try { mtRecomputeSongDuration(); } catch(_) {}
+}
+
+function mtFsGetBuffer(sampleId) {
+  return mtDecodedCache[sampleId] || null;
+}
+
+function mtFsNotifyPlaybackStart() { mtFs.isPlaybackActive = true; }
+function mtFsNotifyPlaybackStop()  { mtFs.isPlaybackActive = false; }
+
+// 整理: orphan サンプル削除 / 重複 blob 削除
+async function mtFsCleanup() {
+  const refIds = new Set(_mtFsCollectAllIds());
+  let removedOrphans = 0;
+  let removedBlobsWithHandle = 0;
+  try {
+    const allSamples = await _getAllFromStore('samples');
+    for (const s of allSamples) {
+      if (!s || !s.id) continue;
+      if (!s.id.startsWith('mt-')) continue; // 他アプリ用は触らない
+      if (!refIds.has(s.id)) {
+        try { await deleteSampleFromDB(s.id); removedOrphans++; } catch(_) {}
+        continue;
+      }
+      try {
+        const h = await mtGetHandleFromDB(s.id);
+        if (h && h.handle) {
+          await deleteSampleFromDB(s.id);
+          removedBlobsWithHandle++;
+        }
+      } catch(_) {}
+    }
+  } catch(e) { console.warn('[mtFs] cleanup failed', e); }
+  showToast(`✓ 整理完了: orphan ${removedOrphans} / 重複 blob ${removedBlobsWithHandle}`);
+  return { removedOrphans, removedBlobsWithHandle };
+}
+
+// UI 描画: バナー 1 つで全状態をカバー
+function mtFsRender() {
   const banner = document.getElementById('mtPreloadBanner');
   if (!banner) return;
-  banner.classList.add('mt-preload-ready');
-  banner.style.display = 'flex';
   const label = banner.querySelector('.mt-preload-label');
+  const hint = banner.querySelector('.mt-preload-hint');
   const count = banner.querySelector('#mtPreloadCount');
   const fill = banner.querySelector('#mtPreloadBarFill');
-  const hint = banner.querySelector('.mt-preload-hint');
-  if (label) label.textContent = 'ALL READY';
-  if (count) count.textContent = '✓';
-  if (fill) fill.style.width = '100%';
-  if (hint) hint.textContent = '全ファイル準備完了。SPACE で即時再生 OK';
-  if (_mtAllReadyTimer) clearTimeout(_mtAllReadyTimer);
-  _mtAllReadyTimer = setTimeout(() => {
-    banner.classList.remove('mt-preload-ready');
+  banner.classList.remove('mt-preload-ready', 'mt-preload-reconnect', 'mt-preload-error');
+  const st = mtFs.state;
+  if (st === 'idle' || (st === 'ready' && !mtFs.showReadyFlash)) {
     banner.style.display = 'none';
-  }, 2500);
-}
-
-// 再接続：ユーザージェスチャーから呼ばれる（permission 要求あり）
-async function mtReconnectFiles() {
-  await mtInitCtx();
-  let granted = 0, denied = 0;
-  for (const s of state.multitrack.songs) {
-    for (const g of MT_GROUPS) {
-      const t = s.tracks && s.tracks[g];
-      if (!t || !t.sampleId) continue;
-      if (mtDecodedCache[t.sampleId]) continue; // 既にメモリにある
-      try {
-        const rec = await mtGetHandleFromDB(t.sampleId);
-        if (!rec || !rec.handle) {
-          // blob があれば使う（一応）
-          try {
-            const r = await getSampleFromDB(t.sampleId);
-            if (r && r.data) {
-              const buf = await mtRobustDecode(r.data, {name: r.name||"blob"});
-              mtDecodedCache[t.sampleId] = buf;
-              granted++;
-            }
-          } catch(_) {}
-          continue;
-        }
-        let perm = 'denied';
-        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(e) {}
-        if (perm !== 'granted') {
-          try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(e) { perm = 'denied'; }
-        }
-        if (perm === 'granted') {
-          const f = await rec.handle.getFile();
-          const arr = await f.arrayBuffer();
-          const buf = await mtRobustDecode(arr, {name: "restored"});
-          mtDecodedCache[t.sampleId] = buf;
-          granted++;
-        } else {
-          denied++;
-        }
-      } catch(e) {
-        console.warn('mt reconnect failed', t.sampleId, e);
-        denied++;
-      }
-    }
+    return;
   }
-  state.multitrack.needsReconnect = (denied > 0);
-  state.multitrack.reconnectCount = denied;
-  mtRecomputeSongDuration();
-  mtRenderSetlist();
-  mtRenderNow();
-  mtRenderReconnectUI();
-  if (denied === 0) {
-    showToast(`✓ 再接続完了 (${granted} ファイル)`);
-  } else {
-    showToast(`⚠️ ${granted} 成功 / ${denied} 失敗 — フォルダごと再選択を試してください`);
+  banner.style.display = 'flex';
+  if (st === 'checking') {
+    if (label) label.textContent = 'CHECKING';
+    if (count) count.textContent = '...';
+    if (fill) fill.style.width = '5%';
+    if (hint) hint.textContent = 'ファイルの状態を確認しています';
+  } else if (st === 'loading') {
+    if (label) label.textContent = 'LOADING';
+    const done = mtFs.loaded + mtFs.failed;
+    if (count) count.textContent = `${done} / ${mtFs.total}`;
+    const pct = mtFs.total > 0 ? (done / mtFs.total) * 100 : 0;
+    if (fill) fill.style.width = pct.toFixed(1) + '%';
+    if (hint) hint.textContent = '本番前にロード完了するまでお待ちください';
+  } else if (st === 'needs_reconnect') {
+    banner.classList.add('mt-preload-reconnect');
+    if (label) label.textContent = 'RECONNECT 必要';
+    if (count) count.textContent = `${mtFs.needsReconnect} 件`;
+    if (fill) fill.style.width = '100%';
+    if (hint) hint.innerHTML = 'ローカルファイルへのアクセス許可が必要 &nbsp; <button class="mt-fs-reconnect-btn" onclick="mtFsReconnect()">RECONNECT</button>';
+  } else if (st === 'ready') {
+    banner.classList.add('mt-preload-ready');
+    if (label) label.textContent = 'ALL READY';
+    if (count) count.textContent = '✓';
+    if (fill) fill.style.width = '100%';
+    if (hint) hint.textContent = '全ファイル準備完了。SPACE で即時再生 OK';
+  } else if (st === 'error') {
+    banner.classList.add('mt-preload-error');
+    if (label) label.textContent = 'ERROR';
+    if (count) count.textContent = '⚠️';
+    if (fill) fill.style.width = '0%';
+    if (hint) hint.textContent = mtFs.errorMessage || '不明なエラー';
   }
 }
 
-// 再接続バナーの表示・非表示
-function mtRenderReconnectUI() {
-  const hero = document.getElementById('mtHero');
-  if (!hero) return;
-  let banner = document.getElementById('mtReconnectBanner');
-  if (state.multitrack.needsReconnect) {
-    if (!banner) {
-      banner = document.createElement('div');
-      banner.id = 'mtReconnectBanner';
-      banner.className = 'mt-reconnect-banner';
-      banner.innerHTML = `
-        <span class="mt-reconnect-icon">📁</span>
-        <span class="mt-reconnect-text">ローカルファイル <strong id="mtReconnectCount">${state.multitrack.reconnectCount||0}</strong> 件にアクセス許可が必要です</span>
-        <button class="mt-btn primary" onclick="mtReconnectFiles()">RECONNECT</button>
-      `;
-      hero.parentNode.insertBefore(banner, hero.nextSibling);
-    } else {
-      const cnt = banner.querySelector('#mtReconnectCount');
-      if (cnt) cnt.textContent = state.multitrack.reconnectCount || 0;
-    }
-  } else {
-    if (banner) banner.remove();
-  }
-}
+// 旧 API は新 API に委譲（既存呼び出し箇所の互換維持）
+// 旧 API の互換ラッパー（既存の呼び出し箇所のため残す）
+async function mtRestoreBuffers() { return mtFsInit(); }
+async function mtReconnectFiles() { return mtFsReconnect(); }
+function mtRenderReconnectUI() { mtFsRender(); }
 
 // ---- 再生エンジン ----
 // options.keepPrevious=true で前曲の source を止めない（オーバーラップ）
@@ -9955,15 +10064,11 @@ async function mtPlaySong(idx, offset, options) {
   }
   if (needsLoad) {
     // この曲のレイヤーを優先 lazy load（preload より優先）
-    // toast は出さない（preload 中に押された場合に背景進捗だけで十分）
-    for (const g of MT_GROUPS) {
-      for (const layer of mtGetLayers(song, g)) {
-        if (!mtDecodedCache[layer.sampleId]) {
-          await mtEnsureBufferLoaded(layer.sampleId, true);
-        }
-      }
-    }
+    // mtFsLoadSongUrgent が permission 要求 + 直列 decode を行う
+    await mtFsLoadSongUrgent(idx);
   }
+  // 再生開始 → preload 用のワーカーに「メインスレッド負荷を抑えて」と通知
+  mtFsNotifyPlaybackStart();
   const groupBuffers = {};
   let hasAny = false;
   let maxDur = 0;
@@ -10204,6 +10309,7 @@ function mtStopSources() {
 function mtStop() {
   mtStopSources();
   state.multitrack.isPlaying = false;
+  mtFsNotifyPlaybackStop();
   mtStopMeter();
   mtRenderSetlist();
   mtRenderNow();
@@ -10967,41 +11073,22 @@ function mtRenderNow() {
       nextChipName.textContent = '— なし —';
     }
   }
-  // ロード中表示: restore 中 OR 背景 preload 中
-  const isPreloading = mtPreloadTotal > 0 && mtPreloadDone < mtPreloadTotal;
-  const isLoading = mtRestoreInProgress || isPreloading;
+  // ロード状態: mtFs (v8.0) に統一。バナーは mtFsRender() が完全に管理
+  const isLoading = mtFs.state === 'checking' || mtFs.state === 'loading';
   const nowChip = document.getElementById('mtHeroTrackChip');
   if (nowChip) nowChip.classList.toggle('loading', isLoading);
   if (hero) hero.classList.toggle('mt-loading', isLoading);
+  try { mtFsRender(); } catch(_) {}
 
-  // 大きなプリロードバナーの表示/更新（最重要 UI: 見落とさないように）
-  const preloadBanner = document.getElementById('mtPreloadBanner');
-  const preloadFill = document.getElementById('mtPreloadBarFill');
-  const preloadCount = document.getElementById('mtPreloadCount');
-  if (preloadBanner) {
-    if (isPreloading) {
-      // ready クラスが残ってる場合は外す（preload 再開時のクリーンアップ）
-      preloadBanner.classList.remove('mt-preload-ready');
-      const label = preloadBanner.querySelector('.mt-preload-label');
-      const hint = preloadBanner.querySelector('.mt-preload-hint');
-      if (label) label.textContent = 'FILES LOADING';
-      if (hint) hint.textContent = '本番前にロード完了するまでお待ちください';
-      preloadBanner.style.display = 'flex';
-      const pct = mtPreloadTotal > 0 ? (mtPreloadDone / mtPreloadTotal) * 100 : 0;
-      if (preloadFill) preloadFill.style.width = pct.toFixed(1) + '%';
-      if (preloadCount) preloadCount.textContent = `${mtPreloadDone} / ${mtPreloadTotal}`;
-    } else if (!preloadBanner.classList.contains('mt-preload-ready')) {
-      // ready 表示中は触らない、それ以外は隠す
-      preloadBanner.style.display = 'none';
-    }
-  }
-
-  // ステータス（バナーと併用、こちらは小さく）
+  // ステータス行（バナーと併用、こちらは小さく）
   if (status) {
-    if (isPreloading) {
-      status.textContent = `📂 ${mtPreloadDone}/${mtPreloadTotal} ファイル読込中`;
-    } else if (mtRestoreInProgress) {
-      status.textContent = '📂 起動中...';
+    if (mtFs.state === 'loading') {
+      const done = mtFs.loaded + mtFs.failed;
+      status.textContent = `📂 ${done}/${mtFs.total} ファイル読込中`;
+    } else if (mtFs.state === 'checking') {
+      status.textContent = '📂 確認中...';
+    } else if (mtFs.state === 'needs_reconnect') {
+      status.textContent = `📁 ${mtFs.needsReconnect} 件 要 RECONNECT`;
     } else if (m.isPlaying) status.textContent = 'PLAYING · ESC で停止';
     else if (cur) status.textContent = 'READY · SPACE 再生 / ESC 停止';
     else status.textContent = 'EMPTY · 曲を追加';
@@ -11414,19 +11501,15 @@ if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
 // MULTI-TRACK 初期化（init から呼ぶ）
 async function mtInit() {
   mtLoad();
-  // mtLoad で state.multitrack.songs が初めて populate されるので、
-  // 必ず再描画する。setAppMode は songs が空の状態で一度 mtRenderAll を
-  // 呼んでしまっているため、ここで上書きする必要がある。
-  // appMode に関わらず描画（裏で multi-page DOM を準備しておく）。
+  // mtLoad で state.multitrack.songs が populate されるので必ず再描画
   if (typeof mtRenderAll === 'function') {
     mtRenderAll();
-    // DOM タイミングのため次フレームでも再描画（保険）
     requestAnimationFrame(() => {
       try { mtRenderAll(); } catch(e) { console.warn('mt re-render frame failed', e); }
     });
   }
-  // バッファ復元は async でバックグラウンド
-  mtRestoreBuffers().catch(e => console.warn('mtRestoreBuffers failed', e));
+  // ファイル状態マシン (v8.0) を起動 — permission check → bg load
+  mtFsInit().catch(e => console.warn('[mtFs] init failed', e));
 }
 
 async function init() {
