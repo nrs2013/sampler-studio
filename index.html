@@ -3194,7 +3194,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.2.0';
+const APP_VERSION = 'v8.2.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10328,6 +10328,14 @@ async function mtPlaySong(idx, offset, options) {
   if (idx < 0 || idx >= state.multitrack.songs.length) return;
   if (!isFinite(offset) || offset < 0) offset = 0;
   const keepPrevious = options && options.keepPrevious === true;
+  // 同曲を再生中に keepPrevious=true で再呼出 → 50ms ずれて二重再生 →
+  // フランジャーに聞こえる事故防止。同じ曲なら何もしない。
+  if (keepPrevious && state.multitrack.isPlaying &&
+      state.multitrack.currentSongIdx === idx &&
+      Math.abs((state.multitrack.seekOffset || 0) - offset) < 0.01) {
+    console.log('[mtPlaySong] same song already playing, ignoring re-trigger');
+    return;
+  }
   await mtInitCtx();
   if (mtCtx.state === 'suspended') await mtCtx.resume();
   if (!keepPrevious) {
@@ -10445,8 +10453,14 @@ async function mtPlaySong(idx, offset, options) {
   state.multitrack.selectedIdx = idx;
   state.multitrack.isPlaying = true;
   // 再生開始 → 10 秒ロック + 画面いっぱい「PLAYBACK STARTED」表示
-  // (ダブルタップ事故防止、本番中の安心感)
-  try { mtStartPlaybackLock(song.name); } catch(_) {}
+  // 重要: src.start は既にスケジュール済み (audio thread で別途処理)。
+  // overlay 生成 (paint heavy) は次フレームに遅延して、main thread 経由の
+  // 副次的な audio スケジューリングへの影響を最小化する。
+  try {
+    requestAnimationFrame(() => {
+      try { mtStartPlaybackLock(song.name); } catch(_) {}
+    });
+  } catch(_) {}
   // 終了時 auto-advance（残り時間と曲ごとの挙動で計算）
   // モード判定:
   //   'auto'     - グローバル ON + song.autoNext='auto' → 次曲を自動再生 (nextDelay 適用、負値で前倒し)
