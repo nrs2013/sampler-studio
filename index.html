@@ -3415,7 +3415,8 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.5';
+const APP_VERSION = 'v9.0.6';
+// v9.0.6: playback lock を 10秒 → 5秒に短縮
 // v9.0.5 アンチクリック網羅:
 //   Fix A: mtMediaStopAll で signal disconnect → audio pause の順序 (master まで届かない)
 //   Fix B: mtMediaSeekTo で master 8ms フェード → currentTime → 復帰
@@ -12469,7 +12470,7 @@ function mtEnterKey() {
 // 連打すると、二重再生でカオスになる事故が多発。10 秒間は新規 PLAY/SPACE
 // を完全ブロックし、画面いっぱいの「▶ PLAYBACK」表示で「ちゃんと再生
 // されたよ」を視覚的に通知する。STOP/ESC/FADE OUT はロック中も有効。
-const MT_PLAYBACK_LOCK_MS = 10000;
+const MT_PLAYBACK_LOCK_MS = 5000;
 let mtPlaybackLockUntil = 0;
 function mtIsPlaybackLocked() {
   return Date.now() < mtPlaybackLockUntil;
@@ -12491,8 +12492,8 @@ function mtStartPlaybackLock(songName) {
       <div class="mt-pb-icon">▶</div>
       <div class="mt-pb-label">PLAYBACK STARTED</div>
       <div class="mt-pb-song" id="mtPlaybackOverlaySong"></div>
-      <div class="mt-pb-hint">10 秒間、追加再生はロック中 — ESC で停止可</div>
-      <div class="mt-pb-counter" id="mtPlaybackOverlayCounter">10</div>
+      <div class="mt-pb-hint">${Math.ceil(MT_PLAYBACK_LOCK_MS/1000)} 秒間、追加再生はロック中 — ESC で停止可</div>
+      <div class="mt-pb-counter" id="mtPlaybackOverlayCounter">${Math.ceil(MT_PLAYBACK_LOCK_MS/1000)}</div>
     `;
     document.body.appendChild(overlay);
   }
