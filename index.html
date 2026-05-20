@@ -3045,7 +3045,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.0.0';
+const APP_VERSION = 'v8.0.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9137,6 +9137,11 @@ async function mtRebuildRouting() {
   mtMerger.connect(mtMasterGain);
   try { mtMasterGain.disconnect(); } catch(_) {}
   mtMasterGain.connect(mtCtx.destination);
+  // 左パネル MASTER メーター用 analyser tap も復活させる
+  // （disconnect() で外れているため、ここで明示的に再接続）
+  if (mtMasterSplitter) {
+    try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
+  }
   mtUpdateChStatus();
 }
 
@@ -9821,6 +9826,7 @@ async function _mtFsLoadOne(sampleId, askPermission) {
 }
 
 // 4 並列ワーカーで一括 decode
+// 重要: try/finally で _loadingInFlight を必ず下ろす（例外でも stuck しない）
 async function _mtFsLoadMany(ids, askPermission) {
   if (mtFs._loadingInFlight) {
     console.log('[mtFs] load already in flight, skip');
@@ -9836,48 +9842,55 @@ async function _mtFsLoadMany(ids, askPermission) {
   mtFsRender();
   console.log('[mtFs] load start', { count: ids.length, askPermission });
   let deniedCount = 0;
-  let idx = 0;
-  const CONCURRENCY = 4;
-  async function worker() {
-    while (idx < ids.length) {
-      if (mtFs._abortPending) return;
-      // 再生中は decode を間引き → メインスレッド負荷を抑え音切れ防止
-      if (mtFs.isPlaybackActive) {
-        await new Promise(r => setTimeout(r, 100));
-      }
-      const i = idx++;
-      const sid = ids[i];
-      const res = await _mtFsLoadOne(sid, askPermission);
-      if (res.ok) {
-        mtFs.loaded++;
-      } else {
-        mtFs.failed++;
-        if (res.reason === 'denied') deniedCount++;
-      }
-      const total = mtFs.loaded + mtFs.failed;
-      if (total % 2 === 0 || total === ids.length) {
-        mtFsRender();
+  try {
+    let idx = 0;
+    const CONCURRENCY = 4;
+    async function worker() {
+      while (idx < ids.length) {
+        if (mtFs._abortPending) return;
+        if (mtFs.isPlaybackActive) {
+          await new Promise(r => setTimeout(r, 100));
+        }
+        const i = idx++;
+        const sid = ids[i];
+        const res = await _mtFsLoadOne(sid, askPermission);
+        if (res.ok) {
+          mtFs.loaded++;
+        } else {
+          mtFs.failed++;
+          if (res.reason === 'denied') deniedCount++;
+        }
+        const total = mtFs.loaded + mtFs.failed;
+        if (total % 2 === 0 || total === ids.length) {
+          mtFsRender();
+        }
       }
     }
+    const workers = [];
+    for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
+    await Promise.all(workers);
+  } catch(e) {
+    console.error('[mtFs] load error', e);
+    mtFs.state = 'error';
+    mtFs.errorMessage = e && e.message ? e.message : '読込中に例外';
+  } finally {
+    mtFs._loadingInFlight = false;
   }
-  const workers = [];
-  for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
-  await Promise.all(workers);
-  mtFs._loadingInFlight = false;
-  // 完了状態判定
-  if (deniedCount > 0) {
-    mtFs.state = 'needs_reconnect';
-    mtFs.needsReconnect = deniedCount;
-  } else {
-    mtFs.state = 'ready';
-    mtFs.showReadyFlash = true;
-    if (mtFs._readyFlashTimer) clearTimeout(mtFs._readyFlashTimer);
-    mtFs._readyFlashTimer = setTimeout(() => {
-      mtFs.showReadyFlash = false;
-      mtFsRender();
-    }, 2500);
+  // 完了状態判定（state === 'error' なら触らない）
+  if (mtFs.state !== 'error') {
+    if (deniedCount > 0) {
+      mtFs.state = 'needs_reconnect';
+      mtFs.needsReconnect = deniedCount;
+    } else {
+      mtFs.state = 'ready';
+      mtFs.showReadyFlash = true;
+      if (mtFs._readyFlashTimer) clearTimeout(mtFs._readyFlashTimer);
+      mtFs._readyFlashTimer = setTimeout(() => {
+        mtFs.showReadyFlash = false;
+        mtFsRender();
+      }, 2500);
+    }
   }
-  // legacy 連携
   state.multitrack.needsReconnect = (deniedCount > 0);
   state.multitrack.reconnectCount = deniedCount;
   try { mtRecomputeSongDuration(); } catch(_) {}
