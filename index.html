@@ -3128,7 +3128,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.13';
+const APP_VERSION = 'v8.1.14';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9066,6 +9066,27 @@ function mtRestore(saved) {
   // mtRenderAll の cm.L 読み出しで TypeError になり、setlist 全体の render が
   // 失敗していた致命バグ（v8.0.3 で発見）。
   if (saved.channelMap) m.channelMap = { ...m.channelMap, ...saved.channelMap };
+  // 衝突検出マイグレーション (v8.1.14): 旧 v7.25.x までは drums=1/2 でデフォルト
+  // 保存されていた。click 追加後 v7.26.0 で click=1/2 にしたので衝突するケース
+  // がある。同じ L/R を複数 group が持つ場合は新デフォルトに全リセット。
+  {
+    const seen = new Set();
+    let conflict = false;
+    for (const g of MT_GROUPS) {
+      const cm = m.channelMap[g];
+      if (!cm) continue;
+      const key = cm.L + '/' + cm.R;
+      if (seen.has(key)) { conflict = true; break; }
+      seen.add(key);
+    }
+    if (conflict) {
+      console.warn('[mtRestore] channelMap conflict detected, resetting to defaults');
+      m.channelMap = {
+        click: {L:1,R:2}, vocal: {L:3,R:4}, chorus: {L:5,R:6},
+        other: {L:7,R:8}, bass: {L:9,R:10}, drums: {L:11,R:12}
+      };
+    }
+  }
   if (saved.groupGains) m.groupGains = { ...m.groupGains, ...saved.groupGains };
   if (saved.groupMute) m.groupMute = { ...m.groupMute, ...saved.groupMute };
   if (saved.groupSolo) m.groupSolo = { ...m.groupSolo, ...saved.groupSolo };
