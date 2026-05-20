@@ -1467,24 +1467,19 @@
     font-size: 8px; letter-spacing: 0.5px; color: #5A5A60;
     font-family: 'SF Mono', monospace; margin-right: 2px;
   }
-  /* 3 カラム縦流し: 左列 1〜8 を上から下 → 中央 9〜16 → 右 17〜24
-     25 曲以上は自動で 4 列目以降に流れる（grid-auto-flow: column）
-     本番中スクロールしないよう、視線は上から下へ単純に進む */
+  /* 2 カラム縦流し（デフォルト）: 左列 1〜8 を上から下 → 右列 9〜16
+     17 曲以上は自動で 3 列目以降に流れる（grid-auto-flow: column）
+     2 列が「左右ちょうどよく配置」のデフォルト、追加は overflow */
   .mt-setlist-list {
     display: grid;
     grid-auto-flow: column;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-    grid-auto-columns: minmax(0, 1fr);  /* 4 列目以降も同じ幅で */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-auto-columns: minmax(0, 1fr);  /* 3 列目以降も同じ幅で */
     /* grid-template-rows は JS で repeat(8, auto) を設定 */
     gap: 4px 8px;
     overflow-y: auto; padding-right: 2px;
     flex: 1; min-height: 0;
     align-content: start;
-  }
-  @media (max-width: 1100px) {
-    .mt-setlist-list {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
   }
   @media (max-width: 720px) {
     .mt-setlist-list {
@@ -3112,7 +3107,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v8.1.0';
+const APP_VERSION = 'v8.1.1';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -10839,12 +10834,11 @@ function mtRenderSetlist() {
   const list = document.getElementById('mtSetlistList');
   if (!list) return;
   list.innerHTML = '';
-  // 3 カラム縦流し、1 列あたり常に 8 行：
-  //   1 列目: 1〜8、2 列目: 9〜16、3 列目: 17〜24
-  // 25 曲以上は自動で 4 列目以降に流れる（grid-auto-flow: column）
-  // 曲数に関わらず常に 8 行を確保 → ユーザーの期待通り 1 列目に 8 曲まで入る
+  // 2 カラム縦流し（デフォルト）、1 列あたり常に 8 行：
+  //   1 列目: 1〜8、2 列目: 9〜16
+  // 17 曲以上は自動で 3 列目以降に追加（grid-auto-flow: column）
   list.style.gridTemplateRows = 'repeat(8, auto)';
-  // ヘッダー（旧 STYLE / NEXT START）は 3 カラム化で各列とは整列しなくなるので常時非表示
+  // ヘッダー（旧 STYLE / NEXT START）は複数カラム化で各列と整列しないので常時非表示
   const header = document.getElementById('mtSetlistHeader');
   if (header) header.style.display = 'none';
   state.multitrack.songs.forEach((song, idx) => {
