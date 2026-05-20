@@ -3415,7 +3415,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.1';
+const APP_VERSION = 'v9.0.2';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -11163,12 +11163,27 @@ function mtMediaConnectToGroup(entry, group) {
   }
 }
 
-// v9.0.1: 重要修正 — group gain → 出力経路 (ChannelMerger or masterGain) の構築
+// v9.0.1/0.2: 重要修正 — 全 audio routing を再構築
 // AudioBuffer モードでは mtPlaySong 内で都度作るが、MediaElement モードでは
-// 別途明示的に経路を確立する必要がある。これが無いと group gain → 出力先に
-// 何も繋がらず無音になる。
+// 別途明示的に経路を確立する必要がある。これが無いと無音。
+// v9.0.2: master → destination, merger → master の経路も保証 (途中で切れてる可能性対策)
 function mtMediaSetupGroupRouting() {
   if (!mtCtx || !mtMasterGain) return;
+  // 1) master → destination を保証 (mtRebuildRouting で組まれてるはずだが念のため)
+  try {
+    mtMasterGain.disconnect();
+    mtMasterGain.connect(mtCtx.destination);
+    // master meter tap (左パネル MASTER メーター用)
+    if (mtMasterSplitter) {
+      try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
+    }
+  } catch(e) { console.warn('[mtMedia] master routing fix failed', e); }
+  // 2) merger → master を保証 (multi-channel 出力時用)
+  if (mtMerger) {
+    try { mtMerger.disconnect(); } catch(_) {}
+    try { mtMerger.connect(mtMasterGain); } catch(e) { console.warn('[mtMedia] merger→master failed', e); }
+  }
+  // 3) 各 group gain → 出力経路
   for (const g of MT_GROUPS) {
     const gain = mtGroupGainNodes[g];
     if (!gain) continue;
@@ -11193,7 +11208,14 @@ function mtMediaSetupGroupRouting() {
       gain.connect(mtMasterGain);
     }
   }
-  console.log('[mtMedia] group routing rebuilt');
+  // 4) デバッグ用: 各ノードの接続状況を console に出す
+  console.log('[mtMedia] routing rebuilt:', {
+    ctxState: mtCtx.state,
+    destChannelCount: mtCtx.destination.channelCount,
+    destMaxChannelCount: mtCtx.destination.maxChannelCount,
+    mergerInputs: mtMerger ? mtMerger.numberOfInputs : null,
+    masterGainValue: mtMasterGain.gain.value,
+  });
 }
 
 // すべての MediaElement を pause + currentTime リセット
