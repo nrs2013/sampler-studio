@@ -3415,7 +3415,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v9.0.2';
+const APP_VERSION = 'v9.0.3';
 
 // ===========================
 // PROJECT MANAGEMENT (multi-project support)
@@ -9497,6 +9497,9 @@ function mtUndo() {
 function _mtTeardownCtxResources(reason) {
   console.warn('[mtFs] tearing down ctx resources, reason:', reason);
   try { mtStopSources(); } catch(_) {}
+  // v9.0.3 Fix1: MediaElement モードの audio/source/blob URL も完全クリア
+  // (古い ctx に紐づく MediaElementSource は新 ctx で使えない)
+  try { _mtMediaCacheClear(); } catch(_) {}
   state.multitrack.isPlaying = false;
   try { mtFsNotifyPlaybackStop(); } catch(_) {}
   if (state.multitrack.advanceTimer) {
@@ -9520,6 +9523,8 @@ function _mtTeardownCtxResources(reason) {
   mtDecodedCache = {};
   if (mtFs._failed) mtFs._failed.clear();
   if (_mtLoadInFlight) _mtLoadInFlight.clear();
+  // v9.0.3 Fix11: routing 確立フラグもリセット
+  mtFs._mediaMasterRoutingDone = false;
   try { showToast('⚠️ AudioContext がリセットされました。SPACE でもう一度再生してください。'); } catch(_) {}
   try { mtRenderNow(); mtRenderSetlist(); } catch(_) {}
 }
@@ -9671,6 +9676,10 @@ async function mtRebuildRouting() {
   if (mtMasterSplitter) {
     try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
   }
+  // v9.0.3 Fix11: master/merger の経路を mtMediaSetupGroupRouting で重複構築しないよう
+  // 「確立済み」マーク。逆に MediaElement モードで再生中に channelMap を変えた場合は
+  // group gain → merger の経路が古くなるので、group routing 部分は次回再生時に再構築される。
+  if (typeof mtFs !== 'undefined') mtFs._mediaMasterRoutingDone = true;
   mtUpdateChStatus();
 }
 
@@ -10167,12 +10176,24 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
     return;
   }
   // 1.5) バッファ lazy-load（permission 要求あり）
-  if (!mtDecodedCache[sampleId]) {
-    const buf = await mtEnsureBufferLoaded(sampleId, true);
-    if (!buf) {
-      showToast('⚠️ ファイルが復元できません: ' + entry.name);
-      console.error('[mtAssign] buffer not loadable', { sampleId, entry });
-      return;
+  // v9.0.3: playbackMode に応じて MediaElement or AudioBuffer をロード
+  if (state.multitrack.playbackMode === 'mediaelement') {
+    if (!mtMediaCache[sampleId] || !mtMediaCache[sampleId].audio) {
+      const e = await mtMediaLoadOne(sampleId);
+      if (!e) {
+        showToast('⚠️ ファイルが復元できません: ' + entry.name);
+        console.error('[mtAssign] media not loadable', { sampleId, entry });
+        return;
+      }
+    }
+  } else {
+    if (!mtDecodedCache[sampleId]) {
+      const buf = await mtEnsureBufferLoaded(sampleId, true);
+      if (!buf) {
+        showToast('⚠️ ファイルが復元できません: ' + entry.name);
+        console.error('[mtAssign] buffer not loadable', { sampleId, entry });
+        return;
+      }
     }
   }
   // 2) src から外す (immutable な再代入で確実に: 同じ entry 参照を絶対に持たない)
@@ -10721,7 +10742,17 @@ async function mtFsInit() {
   const m = state.multitrack;
   const center = (m.selectedIdx >= 0) ? m.selectedIdx
                : (m.currentSongIdx >= 0) ? m.currentSongIdx : 0;
-  setTimeout(() => { try { mtFsPrioritizeSong(center); } catch(_) {} }, 100);
+  // v9.0.3 Fix5: 再生方式に応じて prefetch を分岐
+  // MediaElement モード時は AudioBuffer の decode を走らせない (メモリ無駄)
+  setTimeout(() => {
+    try {
+      if (state.multitrack.playbackMode === 'mediaelement') {
+        if (typeof mtMediaPrefetchAround === 'function') mtMediaPrefetchAround(center);
+      } else {
+        mtFsPrioritizeSong(center);
+      }
+    } catch(_) {}
+  }, 100);
   console.log(`[mtFs] init complete (probe only) — ${ids.length} files registered, prefetching around song ${center}`);
 }
 
@@ -11055,93 +11086,132 @@ function mtIsOtherTabActive() { return mtFs._otherTabActive === true; }
 //              blobUrl: string, duration: number, name: string, connectedTo: GainNode|null }
 const mtMediaCache = {};
 
+// v9.0.3: sampleId 単位の in-flight キャッシュ — 同じ sampleId への並行
+// 呼び出しを 1 本にまとめる。これが無いと createMediaElementSource を
+// 同じ audio に 2 回呼んで InvalidStateError になる。
+const _mtMediaLoadInFlight = new Map(); // sampleId → Promise<entry|null>
+
+// MediaElement キャッシュを完全クリア (ctx 自動復活 / 全クリア時用)
+function _mtMediaCacheClear() {
+  for (const id in mtMediaCache) {
+    const e = mtMediaCache[id];
+    if (!e) { delete mtMediaCache[id]; continue; }
+    try { if (e.audio) { e.audio.pause(); } } catch(_) {}
+    try { if (e.source) { e.source.disconnect(); } } catch(_) {}
+    try { if (e.audio) { e.audio.src = ''; e.audio.removeAttribute('src'); e.audio.load(); } } catch(_) {}
+    try { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); } catch(_) {}
+    delete mtMediaCache[id];
+  }
+  if (_mtMediaLoadInFlight) _mtMediaLoadInFlight.clear();
+  state.multitrack.activeMedia = [];
+  console.log('[mtMedia] cache cleared');
+}
+
 // MediaElement で 1 STEM を読み込み + ctx に接続準備
 // 既にロード済みならキャッシュを返す
+// v9.0.3: in-flight キャッシュで並行呼び出しを集約
 async function mtMediaLoadOne(sampleId) {
   if (mtMediaCache[sampleId] && mtMediaCache[sampleId].audio) {
     return mtMediaCache[sampleId];
   }
-  await mtInitCtx();
-  // 1) handle 優先で File を取得
-  let blob = null;
-  let name = sampleId;
-  try {
-    const rec = await mtGetHandleFromDB(sampleId);
-    if (rec && rec.handle) {
-      let perm = 'denied';
-      try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
-      if (perm !== 'granted') {
-        try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
-      }
-      if (perm === 'granted') {
-        try {
-          const f = await rec.handle.getFile();
-          blob = f;
-          name = f.name;
-        } catch(e) {
-          console.warn('[mtMedia] handle getFile failed', e);
+  // 既に同じ sampleId へのロードが走っていればそれに相乗りする
+  if (_mtMediaLoadInFlight.has(sampleId)) {
+    return await _mtMediaLoadInFlight.get(sampleId);
+  }
+  const p = (async () => {
+    await mtInitCtx();
+    // 1) handle 優先で File を取得
+    let blob = null;
+    let name = sampleId;
+    try {
+      const rec = await mtGetHandleFromDB(sampleId);
+      if (rec && rec.handle) {
+        let perm = 'denied';
+        try { perm = await rec.handle.queryPermission({ mode: 'read' }); } catch(_) {}
+        if (perm !== 'granted') {
+          try { perm = await rec.handle.requestPermission({ mode: 'read' }); } catch(_) {}
+        }
+        if (perm === 'granted') {
+          try {
+            const f = await rec.handle.getFile();
+            blob = f;
+            name = f.name;
+          } catch(e) {
+            console.warn('[mtMedia] handle getFile failed', e);
+          }
         }
       }
-    }
-  } catch(_) {}
-  // 2) blob fallback
-  if (!blob) {
-    try {
-      const r = await getSampleFromDB(sampleId);
-      if (r && r.data) {
-        const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav';
-        blob = new Blob([r.data], { type: mime });
-        name = r.name || sampleId;
-      }
     } catch(_) {}
-  }
-  if (!blob) {
-    console.warn('[mtMedia] no source for', sampleId);
-    return null;
-  }
-  const blobUrl = URL.createObjectURL(blob);
-  const audio = new Audio();
-  audio.src = blobUrl;
-  audio.preload = 'auto';
-  audio.crossOrigin = 'anonymous'; // メーター解析・MediaElementSource 用
-  // loadedmetadata まで待つ (duration が分かるように)
+    // 2) blob fallback
+    if (!blob) {
+      try {
+        const r = await getSampleFromDB(sampleId);
+        if (r && r.data) {
+          const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav';
+          blob = new Blob([r.data], { type: mime });
+          name = r.name || sampleId;
+        }
+      } catch(_) {}
+    }
+    if (!blob) {
+      console.warn('[mtMedia] no source for', sampleId);
+      return null;
+    }
+    const blobUrl = URL.createObjectURL(blob);
+    const audio = new Audio();
+    audio.src = blobUrl;
+    audio.preload = 'auto';
+    // v9.0.3: crossOrigin は blob URL では不要 (同一 origin 扱い) — 削除
+    // loadedmetadata まで待つ (duration が分かるように)
+    try {
+      await new Promise((resolve, reject) => {
+        const cleanup = () => {
+          audio.removeEventListener('loadedmetadata', onLoaded);
+          audio.removeEventListener('error', onError);
+        };
+        const onLoaded = () => { cleanup(); resolve(); };
+        const onError = (e) => { cleanup(); reject(new Error('audio error')); };
+        audio.addEventListener('loadedmetadata', onLoaded, { once: true });
+        audio.addEventListener('error', onError, { once: true });
+        setTimeout(() => { cleanup(); reject(new Error('media load timeout')); }, 30000);
+      });
+    } catch(e) {
+      console.warn('[mtMedia] load failed for', sampleId, e);
+      try { URL.revokeObjectURL(blobUrl); } catch(_) {}
+      try { mtFsLogError('error', 'MediaElement 読込失敗: ' + name + ' / ' + (e.message || e)); } catch(_) {}
+      return null;
+    }
+    // 二重作成防止: ロード中に別の経路で cache に登録された場合は捨ててそちらを使う
+    if (mtMediaCache[sampleId] && mtMediaCache[sampleId].audio) {
+      try { URL.revokeObjectURL(blobUrl); } catch(_) {}
+      return mtMediaCache[sampleId];
+    }
+    // MediaElementAudioSourceNode — 一度作ったらこの audio とずっと紐付く
+    let source = null;
+    try {
+      source = mtCtx.createMediaElementSource(audio);
+    } catch(e) {
+      console.warn('[mtMedia] createMediaElementSource failed', e);
+      try { URL.revokeObjectURL(blobUrl); } catch(_) {}
+      try { mtFsLogError('error', 'MediaElementSource 作成失敗: ' + (e.message || e)); } catch(_) {}
+      return null;
+    }
+    const entry = {
+      audio, source, blobUrl,
+      duration: audio.duration || 0,
+      name,
+      connectedTo: null, // 現在繋がってる GainNode (mtMediaConnectToGroup で更新)
+    };
+    mtMediaCache[sampleId] = entry;
+    console.log(`[mtMedia] loaded ${name} (${(audio.duration||0).toFixed(1)}s)`);
+    return entry;
+  })();
+  _mtMediaLoadInFlight.set(sampleId, p);
   try {
-    await new Promise((resolve, reject) => {
-      const cleanup = () => {
-        audio.removeEventListener('loadedmetadata', onLoaded);
-        audio.removeEventListener('error', onError);
-      };
-      const onLoaded = () => { cleanup(); resolve(); };
-      const onError = (e) => { cleanup(); reject(new Error('audio error')); };
-      audio.addEventListener('loadedmetadata', onLoaded, { once: true });
-      audio.addEventListener('error', onError, { once: true });
-      setTimeout(() => { cleanup(); reject(new Error('media load timeout')); }, 30000);
-    });
-  } catch(e) {
-    console.warn('[mtMedia] load failed for', sampleId, e);
-    URL.revokeObjectURL(blobUrl);
-    try { mtFsLogError('error', 'MediaElement 読込失敗: ' + name + ' / ' + (e.message || e)); } catch(_) {}
-    return null;
+    return await p;
+  } finally {
+    _mtMediaLoadInFlight.delete(sampleId);
   }
-  // MediaElementAudioSourceNode — 一度作ったらこの audio とずっと紐付く
-  let source = null;
-  try {
-    source = mtCtx.createMediaElementSource(audio);
-  } catch(e) {
-    console.warn('[mtMedia] createMediaElementSource failed', e);
-    URL.revokeObjectURL(blobUrl);
-    try { mtFsLogError('error', 'MediaElementSource 作成失敗: ' + (e.message || e)); } catch(_) {}
-    return null;
-  }
-  const entry = {
-    audio, source, blobUrl,
-    duration: audio.duration || 0,
-    name,
-    connectedTo: null, // 現在繋がってる GainNode (mtMediaConnectToGroup で更新)
-  };
-  mtMediaCache[sampleId] = entry;
-  console.log(`[mtMedia] loaded ${name} (${(audio.duration||0).toFixed(1)}s)`);
-  return entry;
 }
 
 // MediaElementSource を指定 group の gain に接続 (per-STEM gain は不要、group gain で十分)
@@ -11163,25 +11233,26 @@ function mtMediaConnectToGroup(entry, group) {
   }
 }
 
-// v9.0.1/0.2: 重要修正 — 全 audio routing を再構築
+// v9.0.1/0.2/0.3: 全 audio routing を再構築
 // AudioBuffer モードでは mtPlaySong 内で都度作るが、MediaElement モードでは
 // 別途明示的に経路を確立する必要がある。これが無いと無音。
-// v9.0.2: master → destination, merger → master の経路も保証 (途中で切れてる可能性対策)
+// v9.0.3 Fix11: master/merger 経路は初回のみ。再生のたびに切ると一瞬無音になる。
 function mtMediaSetupGroupRouting() {
   if (!mtCtx || !mtMasterGain) return;
-  // 1) master → destination を保証 (mtRebuildRouting で組まれてるはずだが念のため)
-  try {
-    mtMasterGain.disconnect();
-    mtMasterGain.connect(mtCtx.destination);
-    // master meter tap (左パネル MASTER メーター用)
-    if (mtMasterSplitter) {
-      try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
+  // 1) master/merger 経路: 一度だけ確立し、ctx 寿命中は維持
+  if (!mtFs._mediaMasterRoutingDone) {
+    try {
+      mtMasterGain.disconnect();
+      mtMasterGain.connect(mtCtx.destination);
+      if (mtMasterSplitter) {
+        try { mtMasterGain.connect(mtMasterSplitter); } catch(_) {}
+      }
+    } catch(e) { console.warn('[mtMedia] master routing fix failed', e); }
+    if (mtMerger) {
+      try { mtMerger.disconnect(); } catch(_) {}
+      try { mtMerger.connect(mtMasterGain); } catch(e) { console.warn('[mtMedia] merger→master failed', e); }
     }
-  } catch(e) { console.warn('[mtMedia] master routing fix failed', e); }
-  // 2) merger → master を保証 (multi-channel 出力時用)
-  if (mtMerger) {
-    try { mtMerger.disconnect(); } catch(_) {}
-    try { mtMerger.connect(mtMasterGain); } catch(e) { console.warn('[mtMedia] merger→master failed', e); }
+    mtFs._mediaMasterRoutingDone = true;
   }
   // 3) 各 group gain → 出力経路
   for (const g of MT_GROUPS) {
@@ -11230,13 +11301,20 @@ function mtMediaStopAll() {
 }
 
 // 現在 song の全 STEM を MediaElement モードで読み込み (並列)
+// v9.0.3 Fix4: 同じ sampleId が複数 group に置かれた状態を検出 + 警告
 async function mtMediaLoadSongAll(songIdx) {
   const song = state.multitrack.songs[songIdx];
   if (!song) return [];
   const tasks = [];
+  const seenIds = new Set();
   for (const g of MT_GROUPS) {
     for (const layer of mtGetLayers(song, g)) {
       if (layer && layer.sampleId) {
+        if (seenIds.has(layer.sampleId)) {
+          console.warn('[mtMedia] 同じ sampleId が複数 group に存在:', layer.sampleId, '(' + g + ')');
+          try { mtFsLogError('warn', '同 sampleId 複数 group 検出: ' + (layer.name || layer.sampleId).slice(0,40)); } catch(_) {}
+        }
+        seenIds.add(layer.sampleId);
         tasks.push(mtMediaLoadOne(layer.sampleId).then(e => ({ entry: e, group: g })));
       }
     }
@@ -11264,6 +11342,12 @@ async function mtMediaPlaySong(idx, offset, options) {
   _mtPlaySongInFlight = true;
   try {
     await mtInitCtx();
+    // v9.0.3 Fix12: 初期化失敗ガード
+    if (!mtCtx) {
+      console.warn('[mtMedia] AudioContext 初期化失敗');
+      showToast('⚠️ AudioContext 初期化失敗');
+      return;
+    }
     if (mtCtx.state === 'suspended') await mtCtx.resume();
     if (!keepPrevious) {
       mtMediaStopAll();
@@ -11274,7 +11358,11 @@ async function mtMediaPlaySong(idx, offset, options) {
       }
     }
     // v9.0.1: group gain → 出力経路を確立 (これが無いと無音)
-    mtMediaSetupGroupRouting();
+    // v9.0.3 Fix3: オーバーラップ時 (前曲が鳴ってる) は routing を組み直さない
+    //              (gain.disconnect で前曲が一瞬切れる事故防止)
+    if (!keepPrevious) {
+      mtMediaSetupGroupRouting();
+    }
     if (mtMasterGain && !keepPrevious) {
       const t = mtCtx.currentTime;
       mtMasterGain.gain.cancelScheduledValues(t);
@@ -11283,12 +11371,23 @@ async function mtMediaPlaySong(idx, offset, options) {
     const song = state.multitrack.songs[idx];
     // 全 STEM を並列読み込み + group 接続
     const loaded = await mtMediaLoadSongAll(idx);
+    // v9.0.3 Fix9: オーバーラップ時、前曲の activeMedia と新曲の audio が同じ場合
+    // 「同じファイルを共有してる」状態。currentTime=0 にすると前曲が頭に戻る事故。
+    const prevActive = new Set(keepPrevious ? (state.multitrack.activeMedia || []) : []);
     const playing = [];
     let maxDur = 0;
+    let sharedCount = 0;
     for (const item of loaded) {
       if (!item || !item.entry || !item.entry.audio) continue;
       const e = item.entry;
       mtMediaConnectToGroup(e, item.group);
+      // オーバーラップ時の共有 audio は触らない (前曲が継続して鳴ってる)
+      if (prevActive.has(e.audio)) {
+        sharedCount++;
+        maxDur = Math.max(maxDur, e.duration || 0);
+        playing.push(e.audio); // 引き続き active として管理
+        continue;
+      }
       try { e.audio.pause(); } catch(_) {}
       try {
         const seekTo = Math.min(offset, Math.max(0, (e.duration || 0) - 0.05));
@@ -11296,6 +11395,9 @@ async function mtMediaPlaySong(idx, offset, options) {
       } catch(_) {}
       maxDur = Math.max(maxDur, e.duration || 0);
       playing.push(e.audio);
+    }
+    if (sharedCount > 0) {
+      console.warn(`[mtMedia] overlap warning: ${sharedCount} audio shared with previous song`);
     }
     if (playing.length === 0) {
       const assignedTotal = MT_GROUPS.reduce((n, g) => n + mtGetLayers(song, g).length, 0);
@@ -11309,15 +11411,17 @@ async function mtMediaPlaySong(idx, offset, options) {
     if (offset >= maxDur - 0.05) offset = 0;
     mtFsNotifyPlaybackStart();
     // === 一斉 start (実測 5-15ms ジッター)
-    // setTimeout で同フレーム内に play() を一括発火
-    const playPromises = playing.map(a => {
+    // v9.0.3 Fix10: keepPrevious 中の audio (= 前曲) は再度 play() しない
+    //               (二重呼び出しで状態が乱れるのを防ぐ)
+    const toPlay = playing.filter(a => prevActive.has(a) ? false : true);
+    const playPromises = toPlay.map(a => {
       try { return a.play(); } catch(_) { return Promise.resolve(); }
     });
     // play() 失敗は無視 (個別 STEM が読めなくても他の STEM は再生継続)
     Promise.allSettled(playPromises).then(results => {
       const failed = results.filter(r => r.status === 'rejected').length;
       if (failed > 0) {
-        console.warn(`[mtMedia] ${failed}/${playing.length} STEMs failed to play`);
+        console.warn(`[mtMedia] ${failed}/${toPlay.length} STEMs failed to play`);
         mtFsLogError('warn', `${failed} STEM 再生開始失敗`);
       }
     });
@@ -11678,13 +11782,26 @@ function _mtDiagDetailRender() {
 
 function mtFsClearErrors() { mtFs.errorLog = []; _mtDiagPanelUpdate(); }
 
-// v9.0.0: 再生方式の切替 ('audiobuffer' | 'mediaelement')
+// v9.0.0/9.0.3: 再生方式の切替 ('audiobuffer' | 'mediaelement')
 function mtSetPlaybackMode(mode) {
   if (mode !== 'audiobuffer' && mode !== 'mediaelement') return;
   if (state.multitrack.playbackMode === mode) return;
   // 再生中なら一旦止める
   if (state.multitrack.isPlaying) {
     try { mtStop(); } catch(_) {}
+  }
+  // v9.0.3: 使わない側のキャッシュは捨てる (両方残してメモリを倍食う事故防止)
+  if (mode === 'mediaelement') {
+    // 旧 AudioBuffer 全破棄
+    try {
+      const ids = Object.keys(mtDecodedCache);
+      for (const id of ids) { delete mtDecodedCache[id]; }
+      if (_mtCacheLastAccess) { for (const id in _mtCacheLastAccess) delete _mtCacheLastAccess[id]; }
+      console.log(`[mt] discarded ${ids.length} AudioBuffer entries on mode switch`);
+    } catch(_) {}
+  } else {
+    // 旧 MediaElement 全破棄
+    try { _mtMediaCacheClear(); } catch(_) {}
   }
   state.multitrack.playbackMode = mode;
   try { mtSave(); } catch(_) {}
@@ -11698,12 +11815,28 @@ function mtSetPlaybackMode(mode) {
 }
 function mtFsForceEvict() {
   // 現在曲以外を全部破棄 (緊急用)
+  // v9.0.3: MediaElement モード時は再生中以外の audio も全クリア
   const protectIds = new Set();
   const curIdx = state.multitrack.currentSongIdx;
   if (curIdx >= 0) _mtFsSongSampleIds(curIdx).forEach(id => protectIds.add(id));
   let removed = 0;
+  // AudioBuffer cache
   for (const id of Object.keys(mtDecodedCache)) {
     if (!protectIds.has(id)) { delete mtDecodedCache[id]; delete _mtCacheLastAccess[id]; removed++; }
+  }
+  // MediaElement cache (再生中以外)
+  for (const id of Object.keys(mtMediaCache)) {
+    if (!protectIds.has(id)) {
+      const e = mtMediaCache[id];
+      if (e) {
+        try { if (e.audio) e.audio.pause(); } catch(_) {}
+        try { if (e.source) e.source.disconnect(); } catch(_) {}
+        try { if (e.audio) { e.audio.src = ''; e.audio.removeAttribute('src'); e.audio.load(); } } catch(_) {}
+        try { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); } catch(_) {}
+      }
+      delete mtMediaCache[id];
+      removed++;
+    }
   }
   showToast(`キャッシュクリア: ${removed} 件破棄`);
   mtFsLogError('warn', `手動キャッシュクリア: ${removed} 件破棄`);
@@ -13093,8 +13226,19 @@ function mtUpdateProgress() {
   if (!fill || !cur || !tot) return;
   let t = 0;
   const d = m.songDuration || 0;
-  if (m.isPlaying && mtCtx) {
-    t = Math.max(0, mtCtx.currentTime - m.startTime);
+  if (m.isPlaying) {
+    // v9.0.3: MediaElement モードは audio.currentTime を直接見る (より正確)
+    if (m.playbackMode === 'mediaelement' && m.activeMedia && m.activeMedia.length > 0) {
+      // active な audio の中で再生中のものを優先 (paused でないもの)
+      for (const a of m.activeMedia) {
+        if (a && !a.paused && isFinite(a.currentTime)) { t = a.currentTime; break; }
+      }
+      if (t === 0 && m.activeMedia[0] && isFinite(m.activeMedia[0].currentTime)) {
+        t = m.activeMedia[0].currentTime;
+      }
+    } else if (mtCtx) {
+      t = Math.max(0, mtCtx.currentTime - m.startTime);
+    }
   } else {
     // 停止中もシーク位置を表示
     t = m.seekOffset || 0;
@@ -13449,6 +13593,20 @@ async function mtInit() {
   // v8.5.0: 本番事故防止
   try { mtBindPageLifecycle(); } catch(_) {}
   try { mtAcquireMainLock(); } catch(_) {}
+  // v9.0.3 Fix6: タブ閉じ時に MediaElement の blob URL を全部解放 (メモリリーク防止)
+  if (!window._mtBeforeUnloadBound) {
+    window._mtBeforeUnloadBound = true;
+    window.addEventListener('beforeunload', () => {
+      try {
+        for (const id in mtMediaCache) {
+          const e = mtMediaCache[id];
+          if (e && e.blobUrl) {
+            try { URL.revokeObjectURL(e.blobUrl); } catch(_) {}
+          }
+        }
+      } catch(_) {}
+    });
+  }
 }
 
 async function init() {
