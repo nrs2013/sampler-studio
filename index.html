@@ -1266,22 +1266,60 @@
   .mt-btn.danger { color: #E24B4A; border-color: rgba(226,75,74,0.4); }
   .mt-btn.danger:hover { background: rgba(226,75,74,0.1); }
 
-  .mt-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; }
+  /* v11.9.3: AUDIO IFACE 行のデザイン刷新 — 統一感のある polished pill 化 */
+  .mt-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
   .mt-label {
-    font-size: 9px; letter-spacing: 2px; color: #6A6A70; font-weight: 500;
-    min-width: 82px; text-transform: uppercase;
+    font-size: 10px; letter-spacing: 2px; color: #5A5A60; font-weight: 500;
+    min-width: 76px; text-transform: uppercase;
   }
-  .mt-row-note { font-size: 10px; color: #5A5A60; letter-spacing: 0.5px; }
+  /* DEVICE select + ⟳ ボタン を 1 つのコンテナに見せる */
+  .mt-row > .mt-select {
+    flex: 1;
+    background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
+    border: 1px solid #25252A;
+    color: #E6E6EA;
+    padding: 9px 12px; border-radius: 6px;
+    font-family: inherit; font-size: 12px; cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .mt-row > .mt-select:hover { border-color: #3A3A42; }
+  .mt-row > .mt-select:focus { outline: none; border-color: #3DB5A6; }
+  /* DEVICE 行の ⟳ ボタンを正方形に + select と高さ揃え */
+  .mt-row > .mt-btn.ghost.subtle {
+    width: 32px; height: 32px; padding: 0 !important;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
+    border: 1px solid #25252A;
+    border-radius: 6px;
+    font-size: 13px !important;
+    color: #888890;
+    transition: all 0.15s;
+    margin-left: 0 !important;
+  }
+  .mt-row > .mt-btn.ghost.subtle:hover {
+    border-color: #3DB5A6;
+    color: #3DB5A6;
+    background: linear-gradient(180deg, #1A1A22 0%, #14141A 100%);
+  }
+  /* CHANNELS 行: 数値バッジ + 状態テキストを 1 つの pill にまとめる */
   .mt-num-readout {
-    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 12px; color: #5BC4B0;
-    background: #0B0B0D; padding: 3px 8px; border-radius: 3px;
-    border: 0.5px solid #1F1F22; text-shadow: 0 0 8px rgba(146,201,176,0.3);
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+    font-size: 13px; font-weight: 500; color: #5BC4B0;
+    background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
+    padding: 7px 14px; border-radius: 6px;
+    border: 1px solid rgba(91,196,176,0.3);
+    text-shadow: 0 0 8px rgba(91,196,176,0.4);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
   }
-  .mt-select {
-    flex: 1; background: #0E0E10; border: 0.5px solid #25252A; color: #E6E6EA;
-    padding: 7px 10px; border-radius: 4px; font-family: inherit; font-size: 11px; cursor: pointer;
+  /* 状態テキスト (デバイス最大 / 必要) — 不足時は色変える */
+  .mt-row-note {
+    font-size: 11px; color: #6A6A70;
+    letter-spacing: 0.3px;
+    font-weight: 400;
   }
-  .mt-select:focus { outline: none; border-color: #3DB5A6; }
+  .mt-row-note.warn { color: #FFCB5A; }
   .mt-input-num {
     width: 60px; background: #0E0E10; border: 0.5px solid #25252A; color: #E6E6EA;
     padding: 5px 8px; border-radius: 3px; font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
@@ -3351,7 +3389,7 @@
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
           <span id="mtChCount" class="mt-num-readout">—</span>
-          <span class="mt-row-note" id="mtChStatus" style="font-size:9px;">未検出</span>
+          <span class="mt-row-note" id="mtChStatus">未検出</span>
         </div>
         <!-- ROUTING を AUDIO IFACE に統合（インライン、コンパクト） -->
         <div class="mt-routing-inline-label" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">ROUTING · PARA-OUT</div>
@@ -3444,7 +3482,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.2';
+const APP_VERSION = 'v11.9.3';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10312,7 +10350,10 @@ function mtUpdateChStatus() {
   if (cc) cc.textContent = state.multitrack.outputChannelCount + ' ch';
   if (cs) {
     const max = mtCtx ? mtCtx.destination.maxChannelCount : 2;
-    cs.textContent = `デバイス最大 ${max} ch（必要 ${mtMaxAssignedChannel()} ch）`;
+    const need = mtMaxAssignedChannel();
+    // v11.9.3: 不足時は warn クラスを付ける (CSS で色が橙に)
+    cs.textContent = `デバイス最大 ${max} ch ／ 必要 ${need} ch`;
+    cs.classList.toggle('warn', need > max);
   }
 }
 
