@@ -1273,8 +1273,10 @@
     min-width: 76px; text-transform: uppercase;
   }
   /* DEVICE select + ⟳ ボタン を 1 つのコンテナに見せる */
+  /* v11.9.8: 右端ギリギリまで伸ばさず、適度な余白を確保 */
   .mt-row > .mt-select {
     flex: 1;
+    max-width: 320px;
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
     border: 1px solid #25252A;
     color: #E6E6EA;
@@ -3514,7 +3516,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.7';
+const APP_VERSION = 'v11.9.8';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
