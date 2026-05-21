@@ -2587,7 +2587,8 @@
     background: rgba(61,181,166,0.08) !important;
   }
 
-  /* CHANNEL ROUTING - フェーダーストリップと同じカードデザイン（縦積み） */
+  /* CHANNEL ROUTING - フェーダーストリップと同じカードデザイン */
+  /* v11.9.1: 6 列 × 1 行のまま、各ピル内を縦積み (L → mode → R) に */
   .mt-ch-strip {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -2598,7 +2599,8 @@
     position: relative;
     display: flex; flex-direction: column; align-items: center;
     gap: 3px;
-    padding: 9px 3px 6px 3px;
+    /* v11.9.1: 縦積みレイアウトに合わせて上下 padding を広げる */
+    padding: 11px 4px 8px 4px;
     background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
     border: 1px solid #2A2A30;
     border-radius: 7px;
@@ -2619,13 +2621,19 @@
     box-shadow: 0 0 6px currentColor;
   }
   .mt-ch-glabel {
-    font-size: 10px; letter-spacing: 1.2px; font-weight: 500;
+    /* v11.9.1: 縦積みレイアウトに合わせて少し大きく + 太く */
+    font-size: 11px; letter-spacing: 1.5px; font-weight: 600;
     color: currentColor;
-    margin: 0;
+    margin: 0 0 2px 0;
     flex-shrink: 0;
   }
+  /* v11.9.1: チャンネル選択を縦積み (L → mode → R) — プロのミキサーっぽいレイアウト */
   .mt-ch-row {
-    display: flex; align-items: center; justify-content: center; gap: 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
     width: 100%;
   }
   .mt-ch-sep {
@@ -2648,11 +2656,12 @@
   .mt-ch-input { -moz-appearance: textfield; }
 
   /* v11.3.3: チャンネルアサインを <select> 化 (デバイス ch 数に動的追従、typo 防止) */
+  /* v11.9.1: 縦積みレイアウトに合わせて大型化 — 数字を読みやすく */
   .mt-ch-select {
-    width: 38px; min-width: 0;
+    width: 80%; min-width: 0; max-width: 56px;
     background: #06060A; border: 0.5px solid #1A1A1E; color: #FFFFFF;
-    padding: 2px 0; border-radius: 3px;
-    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px;
+    padding: 4px 0; border-radius: 3px;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 14px;
     text-align: center; font-weight: 500;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
     -webkit-appearance: none; -moz-appearance: none; appearance: none;
@@ -2667,17 +2676,18 @@
   .mt-ch-select option:disabled { color: #FF6464; }
 
   /* v11.8.0: MONO/STEREO トグルボタン (チャンネルピル内) */
+  /* v11.9.1: 縦積みレイアウト用に少し大きく */
   .mt-ch-mode {
     flex-shrink: 0;
-    width: 22px; height: 18px; padding: 0;
+    width: 36px; height: 16px; padding: 0;
     background: rgba(0,0,0,0.4);
     border: 0.5px solid rgba(255,255,255,0.15);
     color: #88D6C2;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
-    font-size: 8px; font-weight: 500; letter-spacing: 0.5px;
+    font-size: 9px; font-weight: 500; letter-spacing: 0.8px;
     border-radius: 3px;
     cursor: pointer;
-    line-height: 16px;
+    line-height: 14px;
     text-align: center;
     transition: all 0.12s;
   }
@@ -3435,7 +3445,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.0';
+const APP_VERSION = 'v11.9.1';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
