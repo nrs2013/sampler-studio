@@ -1687,7 +1687,9 @@
   /* ============= 2. SETLIST (flex-grow, 2 カラム grid) ============= */
   .mt-setlist-card {
     display: flex; flex-direction: column;
-    flex: 1; min-height: 0;
+    /* v11.9.11: bottom-row も flex:1 になったので、SETLIST に 2:1 の優先度を与えて
+       SETLIST が縮みすぎないようにする */
+    flex: 2 1 0; min-height: 0;
   }
   /* STEM 凡例（ヘッダー右） */
   .mt-legend {
@@ -1970,7 +1972,9 @@
     display: grid;
     grid-template-columns: auto minmax(240px, 1fr) minmax(280px, 1.3fr);
     gap: 8px;
-    flex-shrink: 0;
+    /* v11.9.11: 画面下端まで伸びるよう flex:1 化 (SELECTED SONG カードを最大化) */
+    flex: 1 1 0;
+    min-height: 250px;
   }
   /* 横幅が狭くなったら 2 段組に: 上 = MIXER + AUDIO IFACE / 下 = SELECTED SONG */
   @media (max-width: 1400px) {
@@ -2560,10 +2564,10 @@
   }
 
   /* SELECTED SONG カード — ヘッダー無し、ファイル一覧最大化 */
+  /* v11.9.11: height 固定を撤去、grid stretch で bottom-row の高さに自動追従 */
   .mt-songinfo-card {
     padding: 8px 10px; display: flex; flex-direction: column; min-width: 0;
-    height: 250px;
-    flex-shrink: 0;
+    min-height: 250px;
   }
   .mt-songinfo-list {
     display: flex; flex-direction: column; gap: 2px;
@@ -3516,7 +3520,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.10';
+const APP_VERSION = 'v11.9.11';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
