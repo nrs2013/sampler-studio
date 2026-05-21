@@ -3345,8 +3345,7 @@
           <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
             <option value="">— 検出中… —</option>
           </select>
-          <!-- v11.3.1: 診断コピー + デバイス再検出ボタン -->
-          <button class="mt-btn ghost subtle" onclick="mtCopyDiagnostic()" title="出力デバイス・チャンネル設定の診断情報をクリップボードにコピー (本番トラブル時に Claude に貼って報告)" style="margin-left:4px; padding:3px 8px; font-size:9px;">📋 診断</button>
+          <!-- v11.9.2: 「📋 診断」ボタン撤去 (本番運用には不要) -->
           <button class="mt-btn ghost subtle" onclick="mtRefreshDevices()" title="デバイス一覧を再検出 (USB 接続後など) — マイク権限は要求しません" style="margin-left:4px; padding:3px 8px; font-size:9px;">⟳</button>
         </div>
         <div class="mt-row">
@@ -3445,7 +3444,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.1';
+const APP_VERSION = 'v11.9.2';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -11812,8 +11811,7 @@ function mtBindDeviceChange() {
   console.log('[mtDevice] devicechange listener bound');
 }
 
-// v11.3.1: 診断スナップショット — 実機トラブル時の Copy-Paste 用 JSON ダンプ
-//          ユーザーが「📋 診断コピー」ボタンを押すと、現状の audio routing 全情報がクリップボードに入る
+// v11.3.1: 診断スナップショット (互換のため残置、UI からは呼ばれない)
 function mtDiagSnapshot() {
   const safe = (fn, fallback) => { try { return fn(); } catch(_) { return fallback; } };
   return {
