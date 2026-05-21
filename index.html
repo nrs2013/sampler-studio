@@ -3335,13 +3335,13 @@
           <div class="mt-hero-now-block">
             <span class="mt-hero-trackchip" id="mtHeroTrackChip">NOW</span>
             <input class="mt-hero-title" id="mtNowName" type="text"
-                   placeholder="— 待機中 —"
+                   placeholder="— STANDBY —"
                    title="クリックして曲名を変更（選択中の曲）" />
           </div>
           <div class="mt-hero-center-group">
             <span class="mt-hero-trackchip mt-hero-trackchip--next">NEXT SONG</span>
           </div>
-          <span class="mt-hero-nexttitle" id="mtHeroNextChipName">— なし —</span>
+          <span class="mt-hero-nexttitle" id="mtHeroNextChipName">— NONE —</span>
         </div>
         <div class="mt-hero-bottom">
           <!-- スクラバー（クリック/ドラッグでシーク）+ ロケート ドロップハンドル -->
@@ -3517,7 +3517,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.5.4';
+const APP_VERSION = 'v11.5.5';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -14112,7 +14112,7 @@ function mtRenderNow() {
     if (baseIdx >= 0 && baseIdx + 1 < m.songs.length) {
       nextChipName.textContent = m.songs[baseIdx + 1].name || '無題';
     } else {
-      nextChipName.textContent = '— なし —';
+      nextChipName.textContent = '— NONE —';
     }
   }
   // ロード状態: mtFs (v8.0) に統一。バナーは mtFsRender() が完全に管理
