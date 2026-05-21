@@ -449,19 +449,19 @@
   .pad.empty .pad-fader-card { display: none; }
   .pad.empty .pad-body { flex: 1; }
 
-  /* v12.3.0: Grip handle を top-LEFT に移動 (押し間違いで再生されにくい位置へ) */
+  /* v12.4.5: Grip handle — 背景枠を撤去、ホバー時だけ控えめに浮き出る */
   .pad-grip {
     position: absolute; top: 3px; left: 3px;
     width: 22px; height: 22px;
-    background: rgba(93,202,165,0.12); border-radius: 4px;
+    background: transparent; border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     cursor: grab; z-index: 4;
-    color: #3DB5A6; font-size: 11px;
-    transition: background 0.1s;
+    color: #5A5A60; font-size: 11px;
+    transition: background 0.1s, color 0.1s;
     -webkit-user-drag: element;
   }
-  .pad-grip:hover { background: rgba(93,202,165,0.3); }
-  .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
+  .pad-grip:hover { background: rgba(93,202,165,0.15); color: #3DB5A6; }
+  .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.3); color: #3DB5A6; }
   .pad.empty .pad-grip { display: none; }
 
   /* v12.4.4: パッド色 — pad-body + fader-card を一つの枠で囲う (B 案) */
@@ -484,16 +484,22 @@
   .pad.has-color .pad-fader-fill { background: var(--pad-c); }
   .pad.has-color .pad-fader-db { color: var(--pad-c); }
 
-  /* パッド色変更ボタン (色ドット) — pad-head 内、pad-num の右隣 */
+  /* v12.4.5: 色ドット — デフォルト (色なし) では中空の○、色付きパッドでは非表示 */
   .pad-color-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--pad-c, #3A3A40);
-    border: 1px solid rgba(255,255,255,0.15);
+    width: 11px; height: 11px; border-radius: 50%;
+    background: transparent;
+    border: 1px dashed #5A5A60;
     cursor: pointer; padding: 0;
     flex-shrink: 0;
-    transition: transform 0.1s, box-shadow 0.1s;
+    transition: transform 0.1s, border-color 0.1s, background 0.1s;
+    opacity: 0.5;
   }
-  .pad-color-dot:hover { transform: scale(1.25); box-shadow: 0 0 6px var(--pad-c, #5A5A60); }
+  .pad-color-dot:hover {
+    transform: scale(1.25); opacity: 1;
+    border-color: #3DB5A6; border-style: solid;
+  }
+  /* 色付きパッドではドットは隠す (外枠で色は分かるので冗長) */
+  .pad.has-color .pad-color-dot { display: none; }
 
   /* 色選択ポップオーバー (画面に fixed で表示) */
   .pad-color-popover {
@@ -512,20 +518,20 @@
   .pcp-swatch:hover { transform: scale(1.1); border-color: rgba(255,255,255,0.4); }
   .pcp-swatch.sel { border-color: #FFFFFF; }
 
-  /* Edit (trim) button — top-RIGHT (grip 移動に伴い、右端ぴったりへ) */
+  /* v12.4.5: EDIT ボタン — 普段は地味なグレー、hover で teal */
   .pad-edit-btn {
     position: absolute; top: 3px; right: 3px;
     height: 22px; padding: 0 7px;
-    background: rgba(93,202,165,0.12); border-radius: 4px;
+    background: transparent; border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; z-index: 4;
-    color: #3DB5A6; font-size: 10px;
+    color: #5A5A60; font-size: 10px;
     letter-spacing: 1px; font-weight: 500;
     border: none; font-family: inherit;
-    transition: background 0.1s;
+    transition: background 0.1s, color 0.1s;
   }
-  .pad-edit-btn:hover { background: rgba(93,202,165,0.3); }
-  .pad-edit-btn:active { background: rgba(93,202,165,0.5); }
+  .pad-edit-btn:hover { background: rgba(93,202,165,0.15); color: #3DB5A6; }
+  .pad-edit-btn:active { background: rgba(93,202,165,0.3); color: #3DB5A6; }
   .pad-body.empty .pad-edit-btn { display: none; }
 
   /* Flash effect when assigned key/MIDI is pressed */
@@ -571,6 +577,12 @@
     display: flex; justify-content: space-between; font-size: 10px;
   }
   .pad-shortcuts .badge { font-size: 10px; padding: 2px 5px; }
+  /* v12.4.5: pad 内のバッジは普段は地味なグレー、ホバーで色が出る (常時カラーがガチャつく対策)。
+     LEARN 中のバッジ (.learning) は親ルールが pulse 色を当てるので影響なし。 */
+  .pad-shortcuts .badge.midi,
+  .pad-shortcuts .badge.key { color: #5A5A60; }
+  .pad-body:hover .pad-shortcuts .badge.midi { color: #3DB5A6; }
+  .pad-body:hover .pad-shortcuts .badge.key  { color: #E6E6EA; }
 
   /* LEVELS TAB */
   .levels-grid {
@@ -3710,7 +3722,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.4.4';
+const APP_VERSION = 'v12.4.5';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
