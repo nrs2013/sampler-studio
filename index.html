@@ -2421,6 +2421,13 @@
     text-align: left;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     min-width: 0;
+    cursor: text;
+  }
+  .mt-strip-label:hover {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-thickness: 0.5px;
+    text-underline-offset: 2px;
   }
   .mt-strip-label.drums  { color: #FF4A8F; }
   .mt-strip-label.bass   { color: #2E7AFF; }
@@ -2428,6 +2435,17 @@
   .mt-strip-label.chorus { color: #6BC724; }
   .mt-strip-label.vocal  { color: #FFB81C; }
   .mt-strip-label.click  { color: #4FA3FF; }
+  .mt-strip-label.extra1 { color: #9B5DE5; }
+  .mt-strip-label.extra2 { color: #00BBC9; }
+  /* v12.2 (Phase C): ラベル編集中の入力フィールド (ストリップ内インライン) */
+  .mt-strip-label-edit {
+    font-family: inherit; font-size: 10px; letter-spacing: 1.2px; font-weight: 500;
+    background: #06060A; border: 0.5px solid #3DB5A6; color: #E6E6EA;
+    padding: 1px 4px; border-radius: 3px;
+    width: 100%; min-width: 0;
+    outline: none;
+    text-transform: uppercase;
+  }
   /* 割当ファイル数 (このフェーダーに何ファイル入っているか)
      - 0 (empty): グレー
      - 1+ ロード済: 緑
@@ -3601,7 +3619,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.1.1';
+const APP_VERSION = 'v12.2.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -4111,6 +4129,9 @@ const state = {
       click: true, vocal: true, chorus: true, other: true, bass: true, drums: true,
       extra1: false, extra2: false,
     },
+    // v12.2 (Phase C): グループラベルのユーザー上書き ({} = デフォルトを使う)
+    // ダブルクリックで編集可能。MT_GROUP_LABELS が fallback。
+    groupLabels: {},
     groupGains: {
       click: 1.0, vocal: 1.0, chorus: 1.0, other: 1.0, bass: 1.0, drums: 1.0,
       extra1: 1.0, extra2: 1.0,
@@ -9976,6 +9997,16 @@ function mtIsGroupVisible(g) {
 function mtVisibleGroups() {
   return MT_GROUPS.filter(mtIsGroupVisible);
 }
+// v12.2 (Phase C): グループのラベル取得 (ユーザー上書きがあればそれを、無ければデフォルト)
+function mtGetGroupLabel(g) {
+  const overrides = (state.multitrack && state.multitrack.groupLabels) || {};
+  return overrides[g] || MT_GROUP_LABELS[g] || (g || '').toUpperCase();
+}
+// ROUTING ピル用の短縮ラベル (最初の 2 文字 大文字)
+function mtGetGroupShortLabel(g) {
+  const full = mtGetGroupLabel(g);
+  return full.replace(/\s+/g, '').substring(0, 2).toUpperCase();
+}
 // hex (#RRGGBB) → rgba(r, g, b, a) 文字列
 function hexToRgba(hex, alpha = 1) {
   if (!hex || hex[0] !== '#') return hex;
@@ -10015,6 +10046,7 @@ function mtSerialize() {
     playbackMode: m.playbackMode, // v9.0.0
     channelMap: m.channelMap,
     groupVisible: m.groupVisible, // v12.0
+    groupLabels: m.groupLabels,   // v12.2
     groupGains: m.groupGains,
     groupMute: m.groupMute,
     groupSolo: m.groupSolo,
@@ -10087,6 +10119,8 @@ function mtRestore(saved) {
   if (saved.groupSolo) m.groupSolo = { ...m.groupSolo, ...saved.groupSolo };
   // v12.0: groupVisible (旧プリセットには無いので、無ければデフォルトを維持)
   if (saved.groupVisible) m.groupVisible = { ...m.groupVisible, ...saved.groupVisible };
+  // v12.2: groupLabels (ユーザーがリネームしたラベル)
+  if (saved.groupLabels) m.groupLabels = { ...(m.groupLabels || {}), ...saved.groupLabels };
   // v12.0: extras が channelMap に欠けてたら追加 (旧プリセット用フォールバック)
   if (!m.channelMap.extra1) m.channelMap.extra1 = { L: 12, R: 12, mono: true };
   if (!m.channelMap.extra2) m.channelMap.extra2 = { L: 13, R: 13, mono: true };
@@ -10826,9 +10860,66 @@ function mtShowNextHiddenGroup() {
       console.error('[mtShowNextHiddenGroup] rebuild failed', e);
     });
   }
-  try { showToast(`グループ追加: ${MT_GROUP_LABELS[hidden] || hidden}`); } catch(_) {}
+  try { showToast(`グループ追加: ${mtGetGroupLabel(hidden)}`); } catch(_) {}
 }
 try { window.mtShowNextHiddenGroup = mtShowNextHiddenGroup; } catch(_) {}
+
+// v12.2 (Phase C): フェーダーストリップのラベルをインラインで編集
+// ダブルクリックされた span を input に置換し、Enter で保存 / Esc でキャンセル
+function _mtStartRenameGroup(group, spanEl) {
+  if (!spanEl || !spanEl.parentNode) return;
+  if (typeof mtFs !== 'undefined' && mtFs.showMode) {
+    try { showToast('🎭 本番モード中はリネームできません'); } catch(_) {}
+    return;
+  }
+  const current = mtGetGroupLabel(group);
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = current;
+  inp.maxLength = 12;
+  inp.className = 'mt-strip-label-edit';
+  inp.style.color = (typeof MT_GROUP_COLORS !== 'undefined' && MT_GROUP_COLORS[group]) ? MT_GROUP_COLORS[group] : '#E6E6EA';
+  const finish = (commit) => {
+    if (commit) {
+      let v = (inp.value || '').trim();
+      if (!v) v = MT_GROUP_LABELS[group] || group.toUpperCase();
+      if (v !== current) {
+        try { if (typeof mtPushUndo === 'function') mtPushUndo(); } catch(_) {}
+        if (!state.multitrack.groupLabels) state.multitrack.groupLabels = {};
+        // デフォルトと同じ値なら override を削除 (将来 MT_GROUP_LABELS 変更時の追従用)
+        if (v === MT_GROUP_LABELS[group]) {
+          delete state.multitrack.groupLabels[group];
+        } else {
+          state.multitrack.groupLabels[group] = v;
+        }
+        try { mtSave(); } catch(_) {}
+        try { mtRenderMixer(); } catch(_) {}
+        try { _mtUpdateChGlabels(); } catch(_) {}
+      }
+    }
+    // input を span に戻す (失敗時 + コミット後のリセット)
+    try { mtRenderMixer(); } catch(_) {}
+  };
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+  });
+  inp.addEventListener('blur', () => finish(true));
+  spanEl.parentNode.replaceChild(inp, spanEl);
+  inp.focus();
+  inp.select();
+}
+
+// v12.2 (Phase C): ROUTING ピルの短縮ラベル (CL/VO 等) を groupLabels に同期
+function _mtUpdateChGlabels() {
+  for (const g of MT_GROUPS) {
+    const pill = document.getElementById(`mtChPill_${g}`);
+    if (!pill) continue;
+    const glabel = pill.querySelector('.mt-ch-glabel');
+    if (glabel) glabel.textContent = mtGetGroupShortLabel(g);
+  }
+}
+try { window._mtUpdateChGlabels = _mtUpdateChGlabels; } catch(_) {}
 
 // v12.1: 指定 extras を非表示に戻す
 function mtHideGroup(g) {
@@ -10844,7 +10935,7 @@ function mtHideGroup(g) {
   }
   // 確認 — アサインされたファイルがあるか調べる
   const hasLayers = state.multitrack.songs.some(s => mtGetLayers(s, g).length > 0);
-  const label = MT_GROUP_LABELS[g] || g;
+  const label = mtGetGroupLabel(g);
   const msg = hasLayers
     ? `${label} を隠しますか？\n（アサインされたファイルは内部に残ります。再度表示すれば元に戻ります）`
     : `${label} を隠しますか？`;
@@ -10896,12 +10987,12 @@ function mtToggleMono(group) {
     const maxCh = mtCtx && mtCtx.destination ? (mtCtx.destination.maxChannelCount || 2) : 2;
     const newR = Math.min(maxCh, (cm.L || 1) + 1);
     cm.R = newR;
-    try { showToast(`${MT_GROUP_LABELS[group]} → STEREO (L=${cm.L} / R=${cm.R})`); } catch(_) {}
+    try { showToast(`${mtGetGroupLabel(group)} → STEREO (L=${cm.L} / R=${cm.R})`); } catch(_) {}
   } else {
     // stereo → mono: R を L に揃える
     cm.mono = true;
     cm.R = cm.L;
-    try { showToast(`${MT_GROUP_LABELS[group]} → MONO (ch ${cm.L} のみ使用)`); } catch(_) {}
+    try { showToast(`${mtGetGroupLabel(group)} → MONO (ch ${cm.L} のみ使用)`); } catch(_) {}
   }
   mtSave();
   _mtUpdateChSelects();
@@ -11457,8 +11548,8 @@ async function mtAssignFileToGroup(songIdx, sampleId, targetGroup) {
   } else {
     const cnt = song.tracks[targetGroup].length;
     showToast(cnt > 1
-      ? `${MT_GROUP_LABELS[targetGroup]} に追加 (layer ${cnt}): ${entry.name}`
-      : `${MT_GROUP_LABELS[targetGroup]} ← ${entry.name}`);
+      ? `${mtGetGroupLabel(targetGroup)} に追加 (layer ${cnt}): ${entry.name}`
+      : `${mtGetGroupLabel(targetGroup)} ← ${entry.name}`);
   }
 }
 
@@ -13600,6 +13691,8 @@ function mtRecomputeSongDuration() {
 function mtRenderAll() {
   // v12.0: ROUTING ピルの表示/非表示を同期 (extras はデフォルト非表示)
   try { _mtUpdateGroupVisibility(); } catch(_) {}
+  // v12.2: ROUTING ピルの短縮ラベル (CL/VO 等) を groupLabels に同期
+  try { _mtUpdateChGlabels(); } catch(_) {}
   mtRefreshDevices();
   mtUpdateChStatus();
   mtBindTimeline();
@@ -13668,7 +13761,14 @@ function mtRenderMixer() {
     const labelRow = document.createElement('div'); labelRow.className = 'mt-strip-label-row';
     const lbl = document.createElement('span');
     lbl.className = 'mt-strip-label ' + g;
-    lbl.textContent = MT_GROUP_LABELS[g];
+    lbl.textContent = mtGetGroupLabel(g);
+    lbl.title = 'ダブルクリックでリネーム';
+    lbl.dataset.mtGroup = g;
+    // v12.2 (Phase C): ダブルクリックでリネーム入力
+    lbl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      _mtStartRenameGroup(g, lbl);
+    });
     labelRow.appendChild(lbl);
     // v11.9.6: MONO/ST バッジは撤去 — メーター本数 (1本=mono / 2本=stereo) と
     // ROUTING カードの M/ST ボタンで情報は十分。トラック名の表示領域を優先。
@@ -14434,8 +14534,8 @@ function mtRenderSongInfo() {
     for (const g of MT_GROUPS) {
       const o = document.createElement('option');
       o.value = g;
-      // フルネームで識別しやすく（CLICK / VOCAL / CHORUS / OTHER / BASS / RHYTHM）
-      o.textContent = MT_GROUP_LABELS[g];
+      // v12.2: ユーザーリネームを反映 (mtGetGroupLabel)
+      o.textContent = mtGetGroupLabel(g);
       // ネイティブ select の option を色付け（Chrome/Safari は反映する）
       o.style.color = MT_GROUP_COLORS[g];
       o.style.backgroundColor = '#0F0F14';
