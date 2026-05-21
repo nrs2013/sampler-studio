@@ -5,7 +5,7 @@
 // 注意: 音源データ (blob URL / OPFS / プロジェクトフォルダ) は SW では扱わない。
 // SW はあくまでアプリ本体 (HTML/JS/CSS) のキャッシュのみ。
 
-const SW_CACHE_NAME = 'sampler-studio-v12.2.2';
+const SW_CACHE_NAME = 'sampler-studio-v12.2.3';
 const APP_SHELL = [
   './',
   './index.html',

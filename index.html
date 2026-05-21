@@ -3058,7 +3058,7 @@
     <button class="mode-tab active" id="modeTabSampler" onclick="setAppMode('sampler')">SAMPLER</button>
     <button class="mode-tab" id="modeTabMulti" onclick="setAppMode('multi')">MULTI-TRACK</button>
     <!-- v11.5.4: SHOW MODE トグル — ラベルは英語固定 (色とランプで ON/OFF を示す) -->
-    <button class="show-mode-toggle-big" id="headerShowModeBtn" onclick="headerToggleShowMode()" title="SHOW MODE ON: 再生ロック (5秒) & ESC 長押し停止 + 画面スリープ防止 / OFF: 編集中の制約なし">
+    <button class="show-mode-toggle-big" id="headerShowModeBtn" onclick="headerToggleShowMode()" title="SHOW MODE ON: 再生ロック (5秒) + 画面スリープ防止 / OFF: 編集中の制約なし">
       <span class="lamp"></span>
       <span class="label" id="headerShowModeLabel">SHOW MODE</span>
     </button>
@@ -3630,7 +3630,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.2.2';
+const APP_VERSION = 'v12.2.3';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -5470,26 +5470,10 @@ document.addEventListener('keydown', e => {
   if (e.code === state.controlAssign.fadeout.key) { fadeOutAll(); e.preventDefault(); return; }
   // ESC = パニックストップ。即停止ではなく 2 秒 (= state.fadeTime) フェードアウト。
   // → ボタン連打のクリック音や手元の事故を防ぎながら確実に止める。
-  // v8.4.0: 本番モード ON 時は長押し 1 秒で発火 (誤押し防止)
+  // v12.2.3: 本番モードでも ESC は即発火 (緊急停止用)。誤押しよりも緊急性を優先。
   if (e.code === state.controlAssign.stop.key) {
-    console.log('[ESC] pressed, repeat=' + e.repeat + ', showMode=' + (mtFs && mtFs.showMode) + ', mtPlaying=' + state.multitrack.isPlaying + ', playbackMode=' + state.multitrack.playbackMode);
-    if (typeof mtFs !== 'undefined' && mtFs.showMode) {
-      // 本番モード: 長押し必須。e.repeat が連続して 12 回 (= 約 1 秒) で発火
-      if (e.repeat) {
-        if (!window._mtEscRepeatCnt) window._mtEscRepeatCnt = 0;
-        window._mtEscRepeatCnt++;
-        if (window._mtEscRepeatCnt >= 12) {
-          window._mtEscRepeatCnt = 0;
-          console.log('[ESC] long press fired → fadeOutAll');
-          fadeOutAll(); e.preventDefault(); return;
-        }
-      } else {
-        window._mtEscRepeatCnt = 0;
-        try { showToast('本番モード中：ESC は長押しで停止'); } catch(_) {}
-      }
-      e.preventDefault(); return;
-    }
-    console.log('[ESC] normal mode → fadeOutAll');
+    if (e.repeat) { e.preventDefault(); return; } // 押しっぱなしは無視 (1回だけ発火)
+    console.log('[ESC] pressed, showMode=' + (mtFs && mtFs.showMode) + ', mtPlaying=' + state.multitrack.isPlaying + ', playbackMode=' + state.multitrack.playbackMode);
     fadeOutAll(); e.preventDefault(); return;
   }
   if (e.code === state.controlAssign.pause.key)   { pauseAll();   e.preventDefault(); return; }
@@ -11794,7 +11778,7 @@ const mtFs = {
   _abortPending: false,
   // v8.3.0: 失敗した sampleId を記録 (リトライ抑制)
   _failed: new Set(),
-  // v8.4.0: 本番モード (true で wakeLock + ESC 長押し化)
+  // v8.4.0: 本番モード (true で wakeLock + 5秒再生ロック)。v12.2.3 で ESC 長押し撤廃。
   showMode: false,
   _wakeLock: null,
   // v11.7.0: errorLog 撤去 (UI も停止)。互換のため空配列を維持。
