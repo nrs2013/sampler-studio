@@ -3702,7 +3702,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.4.2';
+const APP_VERSION = 'v12.4.3';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -6063,11 +6063,14 @@ function renderPads() {
     const cell = document.createElement('div');
     cell.className = 'pad';
 
-    // v12.4.0: パッド色 (CSS 変数 --pad-c で全要素に反映)
+    // v12.4.3: パッド色 — CSS 変数 --pad-c を「cell (.pad)」に設定。
+    // pad-body と pad-fader-card は兄弟なので、共通の親 (cell) に置かないと
+    // 変数が両方に届かない。
     const colorHex = padColorHex(pad);
     const colorCls = colorHex ? ' has-color' : '';
-    const colorStyle = colorHex ? ` style="--pad-c:${colorHex};"` : '';
-    const dotStyle = colorHex ? ` style="--pad-c:${colorHex};"` : '';
+    if (colorHex) cell.style.setProperty('--pad-c', colorHex);
+    const colorStyle = ''; // 旧 (pad-body へ inline 適用) を空にして互換維持
+    const dotStyle = '';
     const playArrowColor = colorHex || '#3DB5A6';
 
     if (pad.audioBuffer) {
