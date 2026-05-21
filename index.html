@@ -2400,8 +2400,10 @@
     border: 0.5px solid #1A1A1E;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
   }
-  /* v11.8.1: mono メーターは 1 本だけ → 視覚バランスのため少し太く */
-  .mt-strip-meter.mono .mt-strip-meter-bar { width: 4px; }
+  /* v11.8.2: mono メーターは L のみ表示、視覚バランスのため少し太く */
+  /*          (DOM は常に L/R 両方作る → mono 切替時の再生中事故を防止) */
+  .mt-strip-meter.mono .mt-strip-meter-bar:first-child { width: 4px; }
+  .mt-strip-meter.mono .mt-strip-meter-bar:nth-child(2) { display: none; }
   .mt-strip-meter-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
     background: linear-gradient(to top,
@@ -3422,7 +3424,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.8.1';
+const APP_VERSION = 'v11.8.2';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10512,10 +10514,16 @@ function _mtUpdateChSelects() {
 }
 
 // v11.8.0: グループの MONO/STEREO を切替
+// v11.8.2: 本番安全化 — 本番モード中は拒否、再生中は DOM 全再構築せず軽量更新のみ
 function mtToggleMono(group) {
   if (!MT_GROUPS.includes(group)) return;
   const cm = state.multitrack.channelMap[group];
   if (!cm) return;
+  // v11.8.2: 本番モード中の MONO/STEREO 切替は禁止 (音飛び事故防止)
+  if (typeof mtFs !== 'undefined' && mtFs.showMode) {
+    try { showToast('🎭 本番モード中は MONO/STEREO 切替できません — 本番モードを OFF にしてから操作してください'); } catch(_) {}
+    return;
+  }
   mtPushUndo();
   const wasMono = cm.mono === true;
   if (wasMono) {
@@ -10533,8 +10541,8 @@ function mtToggleMono(group) {
   }
   mtSave();
   _mtUpdateChSelects();
-  // ストリップ側の MONO/ST バッジを更新
-  try { if (typeof mtRenderAll === 'function') mtRenderAll(); } catch(_) {}
+  // v11.8.2: DOM 全再構築 (mtRenderAll) は再生中の音飛び事故源 → 軽量更新に変更
+  try { _mtUpdateStripModeUI(group); } catch(_) {}
   if (mtCtx) {
     mtRebuildRouting().catch(e => {
       console.error('[mtToggleMono] rebuild failed', e);
@@ -10542,6 +10550,34 @@ function mtToggleMono(group) {
   }
 }
 try { window.mtToggleMono = mtToggleMono; } catch(_) {}
+
+// v11.8.2: ストリップの MONO/STEREO 見た目だけ軽量更新 (DOM 再構築なし)
+// mtToggleMono から呼ぶ。再生中でも安全。
+function _mtUpdateStripModeUI(group) {
+  if (!group) {
+    // 全グループまとめて
+    for (const g of MT_GROUPS) _mtUpdateStripModeUI(g);
+    return;
+  }
+  const cm = state.multitrack.channelMap[group];
+  if (!cm) return;
+  const isMono = cm.mono === true;
+  // ストリップ自体 (バッジとメーター)
+  const strip = document.querySelector(`[data-mt-strip="${group}"]`);
+  if (!strip) return;
+  // MONO/ST バッジの更新
+  const badge = strip.querySelector('.mt-strip-mode');
+  if (badge) {
+    badge.textContent = isMono ? 'MONO' : 'ST';
+    badge.classList.toggle('mono', isMono);
+    badge.title = isMono
+      ? `MONO (ch ${cm.L} のみ) — STEREO ファイルは自動で mono ダウンミックス`
+      : `STEREO (L=ch${cm.L} / R=ch${cm.R})`;
+  }
+  // メーターの mono クラスをトグル (R バーは CSS で出し分け)
+  const meterWrap = strip.querySelector('.mt-strip-meter');
+  if (meterWrap) meterWrap.classList.toggle('mono', isMono);
+}
 
 // v11.3.2: 起動時 / デバイス切替後の channelMap 範囲チェック
 //          現在の destination.maxChannelCount を超えるアサインがあれば一括警告
@@ -11797,6 +11833,8 @@ function mtBindPageLifecycle() {
     console.log(`[mtFs] page resumed after ${frozenMs}ms`);
     try { mtFsLogError('info', `タブ復帰 (凍結 ${(frozenMs/1000).toFixed(1)}秒)`); } catch(_) {}
     // AudioContext が suspended になっていたら resume
+    // v11.8.2: resume 失敗時にユーザーに強警告 (無音事故防止)
+    let resumeFailed = false;
     if (mtCtx && mtCtx.state === 'suspended') {
       try {
         await mtCtx.resume();
@@ -11804,13 +11842,16 @@ function mtBindPageLifecycle() {
       } catch(err) {
         console.warn('[mtFs] ctx resume failed', err);
         mtFsLogError('error', 'AudioContext resume 失敗: ' + (err.message || err));
+        resumeFailed = true;
       }
     }
-    // 診断パネル更新
     try { _mtDiagPanelUpdate(); } catch(_) {}
-    // 凍結時間が長かったら toast で知らせる
-    if (frozenMs > 1000) {
-      try { showToast(`▶ タブ復帰 (${(frozenMs/1000).toFixed(1)}秒 凍結) — 念のため診断パネル確認`); } catch(_) {}
+    // v11.8.2: 復帰後の状況別 toast
+    if (resumeFailed) {
+      // 無音事故レベル — ユーザーに強通知
+      try { showToast('⚠️ 音声再開失敗 — タブを再読み込み (Cmd+R) してください'); } catch(_) {}
+    } else if (frozenMs > 1000) {
+      try { showToast(`▶ タブ復帰 (${(frozenMs/1000).toFixed(1)}秒 凍結)`); } catch(_) {}
     }
   });
   // visibilitychange も併用 (freeze 来ないブラウザ用の保険)
@@ -13352,11 +13393,14 @@ function mtRenderMixer() {
     const fill = document.createElement('div'); fill.className = 'mt-strip-fader-fill'; fader.appendChild(fill);
     const thumb = document.createElement('div'); thumb.className = 'mt-strip-fader-thumb'; fader.appendChild(thumb);
     wrap.appendChild(fader);
-    // v11.8.1: ルーティングに合わせてメーター本数を変える (mono=1本 / stereo=2本)
+    // v11.8.2: メーターは常に L/R 両方の DOM を作る。
+    //          mono の時は CSS で R を隠す → DOM 再構築なしで mono/stereo を切替可能。
+    //          (再生中に DOM 再構築すると音が止まる事故を防ぐ)
     const _cmMeter = state.multitrack.channelMap[g];
     const _meterIsMono = _cmMeter && _cmMeter.mono === true;
     const meter = document.createElement('div');
     meter.className = 'mt-strip-meter' + (_meterIsMono ? ' mono' : '');
+    meter.dataset.mtMeterWrap = g;
     // L バー (常に表示)
     const barL = document.createElement('div'); barL.className = 'mt-strip-meter-bar';
     const fillL = document.createElement('div'); fillL.className = 'mt-strip-meter-fill';
@@ -13366,17 +13410,15 @@ function mtRenderMixer() {
     peakL.dataset.mtPeak = g; peakL.dataset.mtCh = 'L';
     barL.appendChild(peakL);
     meter.appendChild(barL);
-    // R バー (stereo の時だけ追加)
-    if (!_meterIsMono) {
-      const barR = document.createElement('div'); barR.className = 'mt-strip-meter-bar';
-      const fillR = document.createElement('div'); fillR.className = 'mt-strip-meter-fill';
-      fillR.dataset.mtMeter = g; fillR.dataset.mtCh = 'R';
-      barR.appendChild(fillR);
-      const peakR = document.createElement('div'); peakR.className = 'mt-strip-peak';
-      peakR.dataset.mtPeak = g; peakR.dataset.mtCh = 'R';
-      barR.appendChild(peakR);
-      meter.appendChild(barR);
-    }
+    // R バー — 常に DOM 作成 (mono の時は CSS で hidden)
+    const barR = document.createElement('div'); barR.className = 'mt-strip-meter-bar';
+    const fillR = document.createElement('div'); fillR.className = 'mt-strip-meter-fill';
+    fillR.dataset.mtMeter = g; fillR.dataset.mtCh = 'R';
+    barR.appendChild(fillR);
+    const peakR = document.createElement('div'); peakR.className = 'mt-strip-peak';
+    peakR.dataset.mtPeak = g; peakR.dataset.mtCh = 'R';
+    barR.appendChild(peakR);
+    meter.appendChild(barR);
     wrap.appendChild(meter);
     strip.appendChild(wrap);
 
