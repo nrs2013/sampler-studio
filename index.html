@@ -2651,6 +2651,55 @@
   .mt-ch-select option { background: #06060A; color: #FFFFFF; padding: 2px; }
   .mt-ch-select option:disabled { color: #FF6464; }
 
+  /* v11.8.0: MONO/STEREO トグルボタン (チャンネルピル内) */
+  .mt-ch-mode {
+    flex-shrink: 0;
+    width: 22px; height: 18px; padding: 0;
+    background: rgba(0,0,0,0.4);
+    border: 0.5px solid rgba(255,255,255,0.15);
+    color: #88D6C2;
+    font-family: 'SF Mono', monospace;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.5px;
+    border-radius: 3px;
+    cursor: pointer;
+    line-height: 16px;
+    text-align: center;
+    transition: all 0.12s;
+  }
+  .mt-ch-mode:hover {
+    background: rgba(61,181,166,0.18);
+    border-color: #3DB5A6;
+    color: #FFFFFF;
+  }
+  .mt-ch-mode.mono {
+    background: rgba(255,184,28,0.15);
+    border-color: rgba(255,184,28,0.4);
+    color: #FFCB5A;
+  }
+  .mt-ch-mode.mono:hover {
+    background: rgba(255,184,28,0.28);
+    border-color: #FFB81C;
+    color: #FFFFFF;
+  }
+  /* フェーダーストリップ上の MONO/ST バッジ */
+  .mt-strip-mode {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 5px;
+    font-family: 'SF Mono', monospace;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.8px;
+    border-radius: 2px;
+    border: 0.5px solid rgba(255,255,255,0.18);
+    background: rgba(0,0,0,0.4);
+    color: rgba(200,216,208,0.65);
+    vertical-align: middle;
+  }
+  .mt-strip-mode.mono {
+    color: #FFCB5A;
+    border-color: rgba(255,184,28,0.4);
+    background: rgba(255,184,28,0.12);
+  }
+
   /* SCHEDULE */
   .do-sched-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .do-sched-list { display: flex; flex-direction: column; }
@@ -3282,51 +3331,53 @@
         </div>
         <!-- ROUTING を AUDIO IFACE に統合（インライン、コンパクト） -->
         <div class="mt-routing-inline-label" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">ROUTING · PARA-OUT</div>
+        <!-- v11.8.0: 全グループに MONO/STEREO トグル追加 (チャンネル節約) -->
         <div class="mt-ch-strip" id="mtChMatrix">
-          <div class="mt-ch-pill" style="--c:#4FA3FF" title="CLICK は mono 固定 (1ch のみ)">
+          <div class="mt-ch-pill" style="--c:#4FA3FF" data-group="click">
             <span class="mt-ch-glabel">CL</span>
             <div class="mt-ch-row">
-              <select class="mt-ch-select" id="mtChClickL" onchange="mtSetCh('click','L',this.value)" title="CLICK (mono)"><option value="1">1</option></select>
-              <span class="mt-ch-sep" style="font-size:8px;opacity:0.6;">mono</span>
+              <select class="mt-ch-select" id="mtChClickL" onchange="mtSetCh('click','L',this.value)" title="CLICK L"><option value="1">1</option></select>
+              <button class="mt-ch-mode" id="mtChClickMode" onclick="mtToggleMono('click')" title="MONO/STEREO 切替 (mono=R を L と同期、チャンネル節約)">M</button>
+              <select class="mt-ch-select" id="mtChClickR" onchange="mtSetCh('click','R',this.value)" title="CLICK R" style="display:none;"><option value="1">1</option></select>
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#FFB81C">
+          <div class="mt-ch-pill" style="--c:#FFB81C" data-group="vocal">
             <span class="mt-ch-glabel">VO</span>
             <div class="mt-ch-row">
               <select class="mt-ch-select" id="mtChVocalL" onchange="mtSetCh('vocal','L',this.value)" title="VOCAL L"><option value="3">3</option></select>
-              <span class="mt-ch-sep">·</span>
+              <button class="mt-ch-mode" id="mtChVocalMode" onclick="mtToggleMono('vocal')" title="MONO/STEREO 切替">ST</button>
               <select class="mt-ch-select" id="mtChVocalR" onchange="mtSetCh('vocal','R',this.value)" title="VOCAL R"><option value="4">4</option></select>
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#6BC724">
+          <div class="mt-ch-pill" style="--c:#6BC724" data-group="chorus">
             <span class="mt-ch-glabel">CH</span>
             <div class="mt-ch-row">
               <select class="mt-ch-select" id="mtChChorusL" onchange="mtSetCh('chorus','L',this.value)" title="CHORUS L"><option value="5">5</option></select>
-              <span class="mt-ch-sep">·</span>
+              <button class="mt-ch-mode" id="mtChChorusMode" onclick="mtToggleMono('chorus')" title="MONO/STEREO 切替">ST</button>
               <select class="mt-ch-select" id="mtChChorusR" onchange="mtSetCh('chorus','R',this.value)" title="CHORUS R"><option value="6">6</option></select>
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#FF8A0F">
+          <div class="mt-ch-pill" style="--c:#FF8A0F" data-group="other">
             <span class="mt-ch-glabel">OT</span>
             <div class="mt-ch-row">
               <select class="mt-ch-select" id="mtChOtherL" onchange="mtSetCh('other','L',this.value)" title="OTHER L"><option value="7">7</option></select>
-              <span class="mt-ch-sep">·</span>
+              <button class="mt-ch-mode" id="mtChOtherMode" onclick="mtToggleMono('other')" title="MONO/STEREO 切替">ST</button>
               <select class="mt-ch-select" id="mtChOtherR" onchange="mtSetCh('other','R',this.value)" title="OTHER R"><option value="8">8</option></select>
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#2E7AFF">
+          <div class="mt-ch-pill" style="--c:#2E7AFF" data-group="bass">
             <span class="mt-ch-glabel">BA</span>
             <div class="mt-ch-row">
               <select class="mt-ch-select" id="mtChBassL" onchange="mtSetCh('bass','L',this.value)" title="BASS L"><option value="9">9</option></select>
-              <span class="mt-ch-sep">·</span>
+              <button class="mt-ch-mode" id="mtChBassMode" onclick="mtToggleMono('bass')" title="MONO/STEREO 切替">ST</button>
               <select class="mt-ch-select" id="mtChBassR" onchange="mtSetCh('bass','R',this.value)" title="BASS R"><option value="10">10</option></select>
             </div>
           </div>
-          <div class="mt-ch-pill" style="--c:#FF4A8F">
+          <div class="mt-ch-pill" style="--c:#FF4A8F" data-group="drums">
             <span class="mt-ch-glabel">DR</span>
             <div class="mt-ch-row">
               <select class="mt-ch-select" id="mtChDrumsL" onchange="mtSetCh('drums','L',this.value)" title="DRUMS L"><option value="11">11</option></select>
-              <span class="mt-ch-sep">·</span>
+              <button class="mt-ch-mode" id="mtChDrumsMode" onclick="mtToggleMono('drums')" title="MONO/STEREO 切替">ST</button>
               <select class="mt-ch-select" id="mtChDrumsR" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R"><option value="12">12</option></select>
             </div>
           </div>
@@ -3369,7 +3420,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.7.1';
+const APP_VERSION = 'v11.8.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -9775,14 +9826,8 @@ function mtRestore(saved) {
       };
     }
   }
-  // v11.4.0: CLICK は必ず mono に強制 (旧 stereo 設定 L=1/R=2 を上書き)
-  if (m.channelMap.click) {
-    if (!m.channelMap.click.mono) {
-      const lCh = m.channelMap.click.L || 1;
-      m.channelMap.click = { L: lCh, R: lCh, mono: true };
-      console.log('[mtRestore] CLICK を mono に固定:', m.channelMap.click);
-    }
-  }
+  // v11.8.0: CLICK の mono 強制を撤去 — 全グループの mono/stereo はユーザーが切替可能に
+  // 既存プリセットの mono フラグは保持。L=R なら自動で mono 扱い (mtMediaSetupGroupRouting 側で吸収)
   if (saved.groupGains) m.groupGains = { ...m.groupGains, ...saved.groupGains };
   if (saved.groupMute) m.groupMute = { ...m.groupMute, ...saved.groupMute };
   if (saved.groupSolo) m.groupSolo = { ...m.groupSolo, ...saved.groupSolo };
@@ -10416,9 +10461,9 @@ function _mtFindChannelConflicts(currentGroup, currentSide, currentVal) {
 // v11.3.3: チャンネルアサイン <select> の option を動的生成
 //          (デバイスの maxChannelCount に応じて選択肢が変わる、業界 DAW 標準パターン)
 //          範囲外の保存値があれば "N (範囲外)" として disabled option で表示 (履歴可視化)
+// v11.8.0: 全 6 グループとも L/R 両方の select を持つ (mono 時は R を隠す)
 const _MT_CH_SELECTS = [
-  // v11.4.0: CLICK は mono 固定 (L のみ、R は L と同期される)
-  ['mtChClickL',  'click',  'L'],
+  ['mtChClickL',  'click',  'L'], ['mtChClickR',  'click',  'R'],
   ['mtChVocalL',  'vocal',  'L'], ['mtChVocalR',  'vocal',  'R'],
   ['mtChChorusL', 'chorus', 'L'], ['mtChChorusR', 'chorus', 'R'],
   ['mtChOtherL',  'other',  'L'], ['mtChOtherR',  'other',  'R'],
@@ -10445,7 +10490,56 @@ function _mtUpdateChSelects() {
     }
     sel.innerHTML = html;
   }
+  // v11.8.0: mono/stereo の UI 同期 (R select の表示 + モードボタンのラベル/見た目)
+  const _capit = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  for (const g of MT_GROUPS) {
+    const cm = state.multitrack.channelMap[g];
+    if (!cm) continue;
+    const isMono = cm.mono === true;
+    const rSel = document.getElementById(`mtCh${_capit(g)}R`);
+    const modeBtn = document.getElementById(`mtCh${_capit(g)}Mode`);
+    if (rSel) rSel.style.display = isMono ? 'none' : '';
+    if (modeBtn) {
+      modeBtn.textContent = isMono ? 'M' : 'ST';
+      modeBtn.classList.toggle('mono', isMono);
+      modeBtn.title = isMono
+        ? 'MONO 中 (1 ch のみ使用) — クリックで STEREO に切替'
+        : 'STEREO 中 (L/R で 2 ch 使用) — クリックで MONO に切替 (チャンネル節約)';
+    }
+  }
 }
+
+// v11.8.0: グループの MONO/STEREO を切替
+function mtToggleMono(group) {
+  if (!MT_GROUPS.includes(group)) return;
+  const cm = state.multitrack.channelMap[group];
+  if (!cm) return;
+  mtPushUndo();
+  const wasMono = cm.mono === true;
+  if (wasMono) {
+    // mono → stereo: R を L+1 に置く (デバイス上限超えるなら L のまま)
+    cm.mono = false;
+    const maxCh = mtCtx && mtCtx.destination ? (mtCtx.destination.maxChannelCount || 2) : 2;
+    const newR = Math.min(maxCh, (cm.L || 1) + 1);
+    cm.R = newR;
+    try { showToast(`${MT_GROUP_LABELS[group]} → STEREO (L=${cm.L} / R=${cm.R})`); } catch(_) {}
+  } else {
+    // stereo → mono: R を L に揃える
+    cm.mono = true;
+    cm.R = cm.L;
+    try { showToast(`${MT_GROUP_LABELS[group]} → MONO (ch ${cm.L} のみ使用)`); } catch(_) {}
+  }
+  mtSave();
+  _mtUpdateChSelects();
+  // ストリップ側の MONO/ST バッジを更新
+  try { if (typeof mtRenderAll === 'function') mtRenderAll(); } catch(_) {}
+  if (mtCtx) {
+    mtRebuildRouting().catch(e => {
+      console.error('[mtToggleMono] rebuild failed', e);
+    });
+  }
+}
+try { window.mtToggleMono = mtToggleMono; } catch(_) {}
 
 // v11.3.2: 起動時 / デバイス切替後の channelMap 範囲チェック
 //          現在の destination.maxChannelCount を超えるアサインがあれば一括警告
@@ -13202,6 +13296,20 @@ function mtRenderMixer() {
     lbl.className = 'mt-strip-label ' + g;
     lbl.textContent = MT_GROUP_LABELS[g];
     labelRow.appendChild(lbl);
+    // v11.8.0: MONO/STEREO バッジ — ルーティングに合わせてフェーダーが何 ch 流すかを明示
+    try {
+      const _cmBadge = state.multitrack.channelMap[g];
+      if (_cmBadge) {
+        const modeBadge = document.createElement('span');
+        const _isMono = _cmBadge.mono === true;
+        modeBadge.className = 'mt-strip-mode' + (_isMono ? ' mono' : '');
+        modeBadge.textContent = _isMono ? 'MONO' : 'ST';
+        modeBadge.title = _isMono
+          ? `MONO (ch ${_cmBadge.L} のみ) — STEREO ファイルは自動で mono ダウンミックス`
+          : `STEREO (L=ch${_cmBadge.L} / R=ch${_cmBadge.R})`;
+        labelRow.appendChild(modeBadge);
+      }
+    } catch(_) {}
     // ファイル数（このフェーダーに何ファイル割当てられているか）
     // 0 → グレー、>0 で緑（or pending オレンジ）。数字だけシンプルに。
     const fcount = document.createElement('span');
