@@ -1273,10 +1273,10 @@
     min-width: 76px; text-transform: uppercase;
   }
   /* DEVICE select + ⟳ ボタン を 1 つのコンテナに見せる */
-  /* v11.9.8: 右端ギリギリまで伸ばさず、適度な余白を確保 */
+  /* v11.9.9: flex-grow を完全に止めて固定幅に — 右側に確実に余白ができる */
   .mt-row > .mt-select {
-    flex: 1;
-    max-width: 320px;
+    flex: 0 0 auto;
+    width: 280px;
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
     border: 1px solid #25252A;
     color: #E6E6EA;
@@ -3516,7 +3516,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.8';
+const APP_VERSION = 'v11.9.9';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10692,17 +10692,29 @@ function _mtUpdateStripModeUI(group) {
 function _mtCheckChannelMapBounds() {
   if (!mtCtx) return;
   const maxCh = mtCtx.destination.maxChannelCount || 2;
-  const violations = [];
+  // v11.9.9: 範囲外の保存値は 1ch に自動再アサイン (サイレントずれ防止)。
+  // 旧挙動は「警告のみ・内部 state は範囲外のまま」だったが、UI 上は v11.9.5 で
+  // 1ch が選ばれているように見えるためユーザーが状態を誤認する事故源となっていた。
+  const reassigned = [];
   for (const g of MT_GROUPS) {
     const cm = state.multitrack.channelMap[g];
     if (!cm) continue;
-    if (cm.L > maxCh) violations.push(`${g}.L=${cm.L}`);
-    if (cm.R > maxCh) violations.push(`${g}.R=${cm.R}`);
+    if (cm.L > maxCh) {
+      reassigned.push(`${g.toUpperCase()}.L (${cm.L}→1)`);
+      cm.L = 1;
+    }
+    if (cm.R > maxCh) {
+      reassigned.push(`${g.toUpperCase()}.R (${cm.R}→1)`);
+      cm.R = 1;
+    }
+    // mono グループは L/R 同値が不変条件 (mtSetChannel と同じ)
+    if (cm.mono) { cm.R = cm.L; }
   }
-  if (violations.length > 0) {
-    try { showToast(`⚠️ デバイス最大 ${maxCh} ch を超えるアサイン ${violations.length} 個 — ステレオ fallback で動作`); } catch(_) {}
-    try { mtFsLogError('warn', `範囲外アサイン検出: ${violations.join(', ')} (max=${maxCh})`); } catch(_) {}
-    console.warn('[mtCheckBounds] out-of-range assignments:', violations, 'maxCh=', maxCh);
+  if (reassigned.length > 0) {
+    try { showToast(`⚠️ デバイス最大 ${maxCh}ch を超える保存値を 1ch に自動再アサイン: ${reassigned.join(', ')}`); } catch(_) {}
+    try { mtFsLogError('warn', `範囲外アサイン自動修正: ${reassigned.join(', ')} (max=${maxCh})`); } catch(_) {}
+    console.warn('[mtCheckBounds] auto-reassigned to 1ch:', reassigned, 'maxCh=', maxCh);
+    try { mtSave(); } catch(_) {}
   }
 }
 
