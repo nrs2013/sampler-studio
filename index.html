@@ -2183,147 +2183,7 @@
   }
   .mt-preload-banner.mt-preload-error .mt-preload-label { color: #F5B8B8; }
 
-  /* ============================================================ */
-  /* v8.4.0: 診断パネル (右下常駐)                                 */
-  /* ============================================================ */
-  .mt-diag-panel {
-    position: fixed; right: 12px; bottom: 12px; z-index: 9000;
-    background: linear-gradient(180deg, rgba(15,18,22,0.92), rgba(10,12,15,0.92));
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    border: 0.5px solid rgba(61,181,166,0.3); border-radius: 8px;
-    color: #C8D8D0; font-family: 'SF Mono', 'Menlo', monospace;
-    font-size: 10px; line-height: 1.5; letter-spacing: 0.3px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(61,181,166,0.1);
-    padding: 8px 10px; min-width: 200px; max-width: 280px;
-    cursor: pointer; user-select: none;
-    transition: all 0.2s;
-  }
-  .mt-diag-panel:hover {
-    border-color: rgba(61,181,166,0.6);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 12px rgba(61,181,166,0.2);
-  }
-  .mt-diag-panel.show-mode {
-    border-color: rgba(255,184,28,0.6);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6), 0 0 16px rgba(255,184,28,0.3);
-    font-size: 11px; min-width: 260px;
-  }
-  .mt-diag-row { display: flex; justify-content: space-between; gap: 12px; }
-  .mt-diag-label { color: rgba(200,216,208,0.6); font-size: 9px; letter-spacing: 0.8px; text-transform: uppercase; }
-  .mt-diag-value { color: #3DB5A6; font-weight: 600; }
-  .mt-diag-value.warn { color: #FFB81C; }
-  .mt-diag-value.error { color: #E24B4A; }
-  .mt-diag-panel.show-mode .mt-diag-value { color: #FFB81C; }
-  .mt-diag-bar {
-    height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px;
-    margin: 4px 0 2px; overflow: hidden;
-  }
-  .mt-diag-bar-fill {
-    height: 100%; background: linear-gradient(90deg, #3DB5A6, #88D6C2);
-    transition: width 0.3s;
-  }
-  .mt-diag-bar-fill.warn { background: linear-gradient(90deg, #FFB81C, #FFCB5A); }
-  .mt-diag-bar-fill.error { background: linear-gradient(90deg, #E24B4A, #FF8A8A); }
-  .mt-diag-header {
-    display: flex; align-items: center; gap: 6px;
-    margin-bottom: 6px;
-  }
-  .mt-diag-title {
-    font-size: 9px; letter-spacing: 1.5px; color: #88D6C2;
-    text-transform: uppercase; font-weight: 700;
-  }
-  .mt-diag-panel.show-mode .mt-diag-title { color: #FFCB5A; }
-  .mt-diag-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: #3DB5A6; box-shadow: 0 0 6px #3DB5A6;
-  }
-  .mt-diag-dot.warn { background: #FFB81C; box-shadow: 0 0 6px #FFB81C; }
-  .mt-diag-dot.error { background: #E24B4A; box-shadow: 0 0 6px #E24B4A; }
-  /* 詳細パネル (クリックで展開) */
-  .mt-diag-detail {
-    position: fixed; right: 12px; bottom: 12px; z-index: 9001;
-    background: linear-gradient(180deg, #15181F, #0E1115);
-    border: 0.5px solid rgba(61,181,166,0.5); border-radius: 8px;
-    color: #C8D8D0; font-family: 'SF Mono', 'Menlo', monospace;
-    font-size: 10px; line-height: 1.5; letter-spacing: 0.3px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(61,181,166,0.15);
-    padding: 16px 18px; width: 420px; max-height: 540px; overflow: auto;
-  }
-  .mt-diag-detail h3 {
-    font-size: 11px; letter-spacing: 2px; color: #88D6C2; margin: 0 0 12px;
-    text-transform: uppercase; font-weight: 700;
-  }
-  .mt-diag-detail h4 {
-    font-size: 10px; letter-spacing: 1.5px; color: rgba(136,214,194,0.7);
-    margin: 14px 0 6px; text-transform: uppercase; font-weight: 600;
-    border-top: 0.5px solid rgba(61,181,166,0.15); padding-top: 10px;
-  }
-  .mt-diag-detail-row {
-    display: flex; justify-content: space-between; gap: 12px;
-    padding: 2px 0;
-  }
-  .mt-diag-detail-row .mt-diag-label { font-size: 10px; }
-  .mt-diag-detail-row .mt-diag-value { font-size: 11px; }
-  .mt-diag-mem-select {
-    width: 100%; padding: 4px 6px; background: #0A0B0E;
-    border: 0.5px solid rgba(61,181,166,0.4); border-radius: 4px;
-    color: #C8D8D0; font-family: inherit; font-size: 10px; margin-top: 4px;
-  }
-  .mt-diag-btn {
-    flex: 1; padding: 6px 10px;
-    background: linear-gradient(180deg, rgba(61,181,166,0.12), rgba(61,181,166,0.04));
-    border: 0.5px solid rgba(61,181,166,0.4); color: #88D6C2;
-    border-radius: 4px; font-family: inherit; font-size: 10px;
-    letter-spacing: 1.2px; font-weight: 700; cursor: pointer;
-    transition: all 0.15s; text-transform: uppercase;
-  }
-  .mt-diag-btn:hover {
-    background: linear-gradient(180deg, rgba(61,181,166,0.22), rgba(61,181,166,0.1));
-    border-color: #3DB5A6;
-  }
-  .mt-diag-btn.warn {
-    border-color: rgba(255,184,28,0.4); color: #FFCB5A;
-    background: linear-gradient(180deg, rgba(255,184,28,0.10), rgba(255,184,28,0.04));
-  }
-  .mt-diag-btn.warn:hover {
-    background: linear-gradient(180deg, rgba(255,184,28,0.22), rgba(255,184,28,0.10));
-    border-color: #FFB81C;
-  }
-  .mt-diag-btn.show-mode-active {
-    background: linear-gradient(180deg, #FFB81C, #FFA000);
-    color: #1A1300; border-color: #FFD580;
-    box-shadow: 0 0 12px rgba(255,184,28,0.4);
-  }
-  .mt-diag-btn-row { display: flex; gap: 6px; margin-top: 8px; }
-  .mt-diag-close {
-    position: absolute; top: 8px; right: 10px;
-    background: none; border: none; color: rgba(200,216,208,0.5);
-    font-size: 14px; cursor: pointer; padding: 0; line-height: 1;
-  }
-  .mt-diag-close:hover { color: #E24B4A; }
-  .mt-diag-err-list {
-    max-height: 200px; overflow-y: auto; padding-right: 4px;
-    border: 0.5px solid rgba(61,181,166,0.15); border-radius: 4px;
-    background: #08090C; padding: 6px 8px;
-  }
-  .mt-diag-err-item {
-    padding: 3px 0; border-bottom: 0.5px solid rgba(255,255,255,0.04);
-    font-size: 9px; line-height: 1.5;
-  }
-  .mt-diag-err-item:last-child { border-bottom: none; }
-  .mt-diag-err-time { color: rgba(200,216,208,0.4); font-size: 8px; }
-  .mt-diag-err-kind { color: #FFB81C; font-weight: 600; }
-  .mt-diag-err-kind.warn { color: #FFB81C; }
-  .mt-diag-err-kind.decode { color: #E24B4A; }
-  .mt-diag-err-kind.error { color: #E24B4A; }
-  .mt-diag-err-msg { color: #C8D8D0; }
-  .mt-diag-progress-bar {
-    height: 4px; background: rgba(255,255,255,0.08);
-    border-radius: 2px; overflow: hidden; margin-top: 4px;
-  }
-  .mt-diag-progress-fill {
-    height: 100%; background: linear-gradient(90deg, #3DB5A6, #88D6C2);
-    transition: width 0.2s;
-  }
+  /* v11.7.0: 診断パネル系 CSS は撤去 (UI ノイズ削除) */
 
   /* MIXER FADE OUT ボタン (パニックストップ) */
   .mt-fadeout-btn {
@@ -3318,15 +3178,7 @@
       </div>
       <div class="mt-preload-hint">本番前にロード完了するまでお待ちください</div>
     </div>
-    <!-- 診断パネル (右下常駐) — JS で生成 -->
-    <div class="mt-diag-panel" id="mtDiagPanel" onclick="mtDiagPanelToggleDetail()" title="クリックで詳細・本番モード切替">
-      <div class="mt-diag-header">
-        <span class="mt-diag-dot" id="mtDiagDot"></span>
-        <span class="mt-diag-title" id="mtDiagTitle">MT-FS</span>
-      </div>
-      <div class="mt-diag-row"><span class="mt-diag-label">STEMS</span><span class="mt-diag-value" id="mtDiagStemsVal">—</span></div>
-      <div class="mt-diag-row"><span class="mt-diag-label">ERRORS</span><span class="mt-diag-value" id="mtDiagErrVal">0</span></div>
-    </div>
+    <!-- v11.7.0: 診断パネル撤去 (UI ノイズ削除) -->
     <!-- 1. NOW PLAYING — compact hero -->
     <div class="mt-hero compact" id="mtHero">
       <div class="mt-hero-bg" id="mtHeroBg"></div>
@@ -3517,7 +3369,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.6.1';
+const APP_VERSION = 'v11.7.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -11345,7 +11197,7 @@ const mtFs = {
   // v8.4.0: 本番モード (true で wakeLock + ESC 長押し化)
   showMode: false,
   _wakeLock: null,
-  // v8.4.0: エラー履歴 (最新 50 件、新しいものが先頭)
+  // v11.7.0: errorLog 撤去 (UI も停止)。互換のため空配列を維持。
   errorLog: [],
   // v8.4.0: watchdog 用 interval id
   _watchdogTimer: null,
@@ -11356,18 +11208,10 @@ const mtFs = {
   _lastResumedAt: 0,
 };
 
-// v8.4.0: エラー履歴に追加 (showToast から呼ぶ + watchdog からも)
-function mtFsLogError(kind, msg, extra) {
-  const entry = {
-    ts: Date.now(),
-    kind: kind || 'error',
-    msg: String(msg || ''),
-    extra: extra || null,
-  };
-  mtFs.errorLog.unshift(entry);
-  if (mtFs.errorLog.length > 50) mtFs.errorLog.length = 50;
-  try { _mtDiagPanelUpdate(); } catch(_) {}
-}
+// v11.7.0: エラー履歴 UI 撤去に伴い、ログ蓄積も停止。
+// 呼び出し箇所は全部 try/catch 包みのため、no-op stub で吸収する。
+// 必要なら console.warn が裏で生きてるので開発時はそちらを見る。
+function mtFsLogError() { /* no-op */ }
 
 // v9.1.0: LRU / メモリプロファイルは MediaElement 専用化により撤去
 
@@ -12747,131 +12591,14 @@ async function mtReconnectFiles() { return mtFsReconnect(); }
 function mtRenderReconnectUI() { mtFsRender(); }
 
 // ============================================================================
-// v8.4.0: 診断パネル UI
+// v11.7.0: 診断パネル UI を撤去 (本番運用には不要のため)
+// 旧呼び出し箇所 (try/catch 包み) は no-op stub で吸収して破壊変更を避ける
 // ============================================================================
-function _mtDiagPanelUpdate() {
-  const panel = document.getElementById('mtDiagPanel');
-  if (!panel) return;
-  // multiPage 以外では非表示
-  if (state.appMode !== 'multi') { panel.style.display = 'none'; return; }
-  panel.style.display = 'block';
-  panel.classList.toggle('show-mode', mtFs.showMode);
-  const dot = document.getElementById('mtDiagDot');
-  const title = document.getElementById('mtDiagTitle');
-  const stemsVal = document.getElementById('mtDiagStemsVal');
-  const errVal = document.getElementById('mtDiagErrVal');
-  // 鳴ってる STEM 数 / 読込済 STEM 数
-  const playing = state.multitrack.isPlaying;
-  const activeCnt = (state.multitrack.activeMedia || []).length;
-  const loadedCnt = Object.keys(mtMediaCache).length;
-  if (stemsVal) {
-    if (playing) stemsVal.textContent = `${activeCnt} 再生中`;
-    else stemsVal.textContent = `${loadedCnt} 読込済`;
-  }
-  // エラー
-  if (errVal) {
-    errVal.textContent = String(mtFs.errorLog.length);
-    errVal.classList.remove('warn', 'error');
-    if (mtFs.errorLog.length > 5) errVal.classList.add('error');
-    else if (mtFs.errorLog.length > 0) errVal.classList.add('warn');
-  }
-  // 状態ドット
-  if (dot && title) {
-    dot.classList.remove('warn', 'error');
-    if (mtFs.state === 'error') {
-      dot.classList.add('error');
-      title.textContent = 'ERROR';
-    } else if (mtFs.state === 'needs_reconnect') {
-      dot.classList.add('warn');
-      title.textContent = 'RECONNECT';
-    } else if (mtFs.state === 'loading') {
-      dot.classList.add('warn');
-      title.textContent = 'LOADING';
-    } else if (mtFs.showMode) {
-      title.textContent = '本番モード';
-    } else {
-      title.textContent = 'MT-FS READY';
-    }
-  }
-}
-
-let _mtDiagPanelUpdateTimer = null;
-function _mtDiagPanelStartLoop() {
-  if (_mtDiagPanelUpdateTimer) return;
-  _mtDiagPanelUpdateTimer = setInterval(_mtDiagPanelUpdate, 1000);
-}
-
-// クリックで詳細展開
-function mtDiagPanelToggleDetail() {
-  let detail = document.getElementById('mtDiagDetail');
-  if (detail) { detail.remove(); return; }
-  detail = document.createElement('div');
-  detail.id = 'mtDiagDetail';
-  detail.className = 'mt-diag-detail';
-  detail.onclick = (e) => e.stopPropagation();
-  document.body.appendChild(detail);
-  _mtDiagDetailRender();
-}
-
-async function _mtDiagDetailRender() {
-  const detail = document.getElementById('mtDiagDetail');
-  if (!detail) return;
-  const failedCount = mtFs._failed.size;
-  const totalIds = _mtFsCollectAllIds().length;
-  const mediaLoaded = Object.keys(mtMediaCache).length;
-  // v10.0.0: OPFS 使用量
-  let opfsMB = 0;
-  try { opfsMB = await getOPFSUsageMB(); } catch(_) {}
-  let opfsCount = 0;
-  try { opfsCount = (await listSamplesInOPFS()).length; } catch(_) {}
-  // v10.1.0: プロジェクトフォルダ情報
-  let folderInfo = '未設定';
-  try {
-    const pid = projGetActiveId();
-    if (pid) {
-      const rec = await getProjectFolderHandle(pid);
-      if (rec && rec.name) folderInfo = rec.name;
-      const dirHandle = await ensureProjectFolderPermission(pid);
-      if (!dirHandle && rec) folderInfo += ' (許可待ち)';
-    }
-  } catch(_) {}
-  const errors = mtFs.errorLog.slice(0, 20);
-  const errHTML = errors.length === 0
-    ? '<div class="mt-diag-err-item" style="text-align:center;opacity:0.5;">エラー履歴なし</div>'
-    : errors.map(e => {
-        const t = new Date(e.ts);
-        const tStr = t.toLocaleTimeString();
-        return `<div class="mt-diag-err-item">
-          <span class="mt-diag-err-time">${tStr}</span>
-          <span class="mt-diag-err-kind ${e.kind}">[${e.kind}]</span>
-          <span class="mt-diag-err-msg">${e.msg.replace(/</g,'&lt;').slice(0,140)}</span>
-        </div>`;
-      }).join('');
-  detail.innerHTML = `
-    <button class="mt-diag-close" onclick="mtDiagPanelToggleDetail()" title="閉じる">×</button>
-    <h3>📊 MULTI-TRACK 診断</h3>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">状態</span><span class="mt-diag-value">${mtFs.state}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">登録 STEM 総数</span><span class="mt-diag-value">${totalIds}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">読込済 STEM</span><span class="mt-diag-value">${mediaLoaded}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">読込失敗</span><span class="mt-diag-value ${failedCount>0?'error':''}">${failedCount}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">プロジェクトフォルダ</span><span class="mt-diag-value" style="font-size:10px;">${folderInfo}</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">アプリ内保存 (OPFS)</span><span class="mt-diag-value">${opfsCount} 件 ${opfsMB.toFixed(0)} MB</span></div>
-    <div class="mt-diag-detail-row"><span class="mt-diag-label">AudioContext</span><span class="mt-diag-value">${mtCtx ? mtCtx.state : '未生成'}</span></div>
-
-    <h4>操作</h4>
-    <div class="mt-diag-btn-row">
-      <button class="mt-diag-btn ${mtFs.showMode?'show-mode-active':''}" onclick="mtFsSetShowMode(!mtFs.showMode).then(_mtDiagDetailRender)">${mtFs.showMode?'🎭 本番モード OFF':'🎭 本番モード ON'}</button>
-    </div>
-    <div class="mt-diag-btn-row">
-      <button class="mt-diag-btn warn" onclick="mtFsClearErrors(); _mtDiagDetailRender();">エラー履歴クリア</button>
-    </div>
-
-    <h4>エラー履歴 (新しい順 / 最新 20 件)</h4>
-    <div class="mt-diag-err-list">${errHTML}</div>
-  `;
-}
-
-function mtFsClearErrors() { mtFs.errorLog = []; _mtDiagPanelUpdate(); }
+function _mtDiagPanelUpdate() { /* no-op */ }
+function _mtDiagPanelStartLoop() { /* no-op */ }
+function mtDiagPanelToggleDetail() { /* no-op */ }
+async function _mtDiagDetailRender() { /* no-op */ }
+function mtFsClearErrors() { /* no-op */ }
 
 // v9.1.0: mtSetPlaybackMode / mtFsForceEvict は撤去
 // (再生方式は MediaElement 固定、キャッシュクリアは UI 廃止)
