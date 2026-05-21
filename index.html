@@ -2451,26 +2451,30 @@
      - 1+ ロード済: 緑
      - 1+ 一部未ロード: オレンジ警告
      dB ラベル (+3 等) とは別物、はっきり色分け */
+  /* v12.2.1: ファイル数バッジを dB 行に小さく並べる */
   .mt-strip-fcount {
     display: inline-flex; align-items: center; justify-content: center;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
-    font-size: 12px; font-weight: 800;
-    color: #FFFFFF;
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    padding: 2px 5px;
-    min-width: 18px;     /* 1桁でも見栄え確保 */
-    max-width: 36px;     /* 3桁以上でも崩れない */
+    font-size: 8px; font-weight: 500;
+    color: #5BC4B0;
+    background: rgba(91,196,176,0.10);
+    border: 0.5px solid rgba(91,196,176,0.25);
+    border-radius: 3px;
+    padding: 1px 4px;
+    min-width: 22px;
     flex-shrink: 0;
-    letter-spacing: -0.3px;
-    overflow: hidden;
+    letter-spacing: 0.2px;
+    line-height: 1.3;
   }
   .mt-strip-fcount.empty {
-    color: #5A5A65;
+    color: #4A4A50;
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.06);
   }
   .mt-strip-fcount.pending {
     color: #F5C470;
+    background: rgba(245,196,112,0.10);
+    border-color: rgba(245,196,112,0.30);
   }
   /* フェーダー横の dB ラベル (0 / +3 / -3 / -6 / -12) — 白に統一 */
   .mt-strip-fader-lab {
@@ -2582,6 +2586,13 @@
     opacity: 0;
   }
 
+  /* v12.2.1: dB と FILE 数を 1 行に並べる */
+  .mt-strip-dbrow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 3px;
+    align-items: center;
+  }
   /* dB readout LCD-style (入力可能) */
   .mt-strip-db {
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 9px; color: #FFFFFF;
@@ -3619,7 +3630,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.2.0';
+const APP_VERSION = 'v12.2.1';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -13770,19 +13781,7 @@ function mtRenderMixer() {
       _mtStartRenameGroup(g, lbl);
     });
     labelRow.appendChild(lbl);
-    // v11.9.6: MONO/ST バッジは撤去 — メーター本数 (1本=mono / 2本=stereo) と
-    // ROUTING カードの M/ST ボタンで情報は十分。トラック名の表示領域を優先。
-    // ファイル数（このフェーダーに何ファイル割当てられているか）
-    // 0 → グレー、>0 で緑（or pending オレンジ）。数字だけシンプルに。
-    const fcount = document.createElement('span');
-    const n = layers.length;
-    fcount.className = 'mt-strip-fcount' +
-      (n === 0 ? ' empty' : (allLoaded ? '' : ' pending'));
-    fcount.textContent = String(n);
-    fcount.title = n === 0
-      ? 'ファイルなし'
-      : `${n} ファイル割当 (${allLoaded ? 'ロード済' : '一部未ロード'})`;
-    labelRow.appendChild(fcount);
+    // v12.2.1: ファイル数バッジは dB readout 行へ移動 (リネームでラベル名が省略されないように)
     header.appendChild(labelRow);
     strip.appendChild(header);
 
@@ -13842,6 +13841,8 @@ function mtRenderMixer() {
     strip.appendChild(wrap);
 
     // dB readout — 入力可能（"−2" や "-2.0" で 2dB 下げる、空欄リセット）
+    // v12.2.1: dB 入力の右にファイル数バッジを並べる (dB row として grid 化)
+    const dbRow = document.createElement('div'); dbRow.className = 'mt-strip-dbrow';
     const db = document.createElement('input');
     db.type = 'text';
     db.className = 'mt-strip-db';
@@ -13854,7 +13855,18 @@ function mtRenderMixer() {
       else if (e.key === 'Escape') { e.preventDefault(); mtRenderFaderPos(g); db.blur(); }
     };
     db.onchange = () => mtApplyDbInput(g, db.value);
-    strip.appendChild(db);
+    dbRow.appendChild(db);
+    // ファイル数バッジ (n=0 グレー、ロード済=緑、一部 pending=オレンジ)
+    const fcount = document.createElement('span');
+    const n = layers.length;
+    fcount.className = 'mt-strip-fcount' +
+      (n === 0 ? ' empty' : (allLoaded ? '' : ' pending'));
+    fcount.textContent = n + 'F';
+    fcount.title = n === 0
+      ? 'ファイルなし'
+      : `${n} ファイル割当 (${allLoaded ? 'ロード済' : '一部未ロード'})`;
+    dbRow.appendChild(fcount);
+    strip.appendChild(dbRow);
 
     // MUTE / SOLO ボタン
     const btns = document.createElement('div'); btns.className = 'mt-strip-btns';
