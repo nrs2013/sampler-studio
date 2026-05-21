@@ -785,9 +785,11 @@
   /* LEARN OVERLAY */
   .learn-banner {
     display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-    background: #3DB5A6; color: #0E1A14; padding: 8px 18px; border-radius: 6px;
-    font-size: 12px; font-weight: 500; z-index: 999; box-shadow: 0 4px 16px rgba(93,202,165,0.4);
+    background: #3DB5A6; color: #0E1A14; padding: 10px 22px; border-radius: 6px;
+    font-size: 13px; font-weight: 500; z-index: 999; box-shadow: 0 4px 16px rgba(93,202,165,0.4);
+    cursor: pointer;
   }
+  .learn-banner:hover { background: #5BC4B0; }
   .learn-banner.show { display: block; animation: pulse 1s infinite; }
 
   /* TOAST — 画面上部に表示（下のボタンと被らないよう） */
@@ -3684,7 +3686,7 @@
   <input type="file" id="doFileInput" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.oga,.flac,.opus" style="display:none;">
 
   <!-- LEARN banner -->
-  <div class="learn-banner" id="learnBanner">LEARN: 割り当てたいキーまたはMIDIを入力してください（Escでキャンセル）</div>
+  <div class="learn-banner" id="learnBanner" onclick="cancelLearn()" title="クリックでキャンセル">🎯 学習中 — ESC またはこのバーをクリックでキャンセル</div>
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
@@ -3703,7 +3705,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.4.0';
+const APP_VERSION = 'v12.4.1';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -5527,12 +5529,14 @@ document.addEventListener('keydown', e => {
   // This protects Cmd+R (reload), Cmd+T (new tab), Cmd+W (close), Cmd+F (find), etc.
   if (e.metaKey || e.ctrlKey || e.altKey) return;
 
+  // v12.4.1: LEARN 中は ESC を常に「キャンセル」として扱う (midi/key どちらでも)
+  // v12.2.3 で ESC = 即 fadeOutAll にしたので、これより先に処理しないと LEARN が抜けられない
+  if (state.isLearning && e.code === 'Escape') {
+    cancelLearn();
+    e.preventDefault();
+    return;
+  }
   if (state.isLearning && state.isLearning.type === 'key') {
-    if (e.code === 'Escape') {
-      cancelLearn();
-      e.preventDefault();
-      return;
-    }
     assignLearn({ kind: 'key', value: e.code });
     e.preventDefault();
     return;
@@ -5593,10 +5597,29 @@ document.addEventListener('keydown', e => {
 // ===========================
 // LEARN
 // ===========================
+// v12.4.1: target の内部名 → 分かりやすい日本語ラベル
+function _learnTargetLabel(target) {
+  const map = {
+    master:   'マスター音量',
+    fadeout:  'FADE OUT',
+    stop:     'STOP',
+    pause:    'PAUSE',
+    bankPrev: '前のバンク (←)',
+    bankNext: '次のバンク (→)',
+  };
+  if (map[target]) return map[target];
+  if (target.startsWith('pad-')) {
+    const n = parseInt(target.split('-')[1]) + 1;
+    return `PAD ${n}`;
+  }
+  return target;
+}
 function startLearn(target, type) {
   state.isLearning = { target, type };
+  const label = _learnTargetLabel(target);
+  const what = (type === 'key') ? 'キーボードのキーを押してください' : 'MIDI ノートを押してください';
   document.getElementById('learnBanner').textContent =
-    `LEARN: 「${target}」に割り当てたい${type === 'key' ? 'キー' : 'MIDIノートまたはCC'}を入力（Escでキャンセル）`;
+    `🎯 「${label}」を学習中 — ${what}（ESC でキャンセル）`;
   document.getElementById('learnBanner').classList.add('show');
   renderLearnBadges();
 }
