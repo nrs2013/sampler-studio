@@ -106,6 +106,59 @@
   /* mode-tabs 行の status は SHOW MODE トグルの右に普通の gap で並ぶ */
   .app-mode-tabs .show-mode-toggle-big + .status { margin-left: 12px; }
 
+  /* v12.1.0 Phase B: 「+ ADD GROUP」ボタン (ROUTING ストリップの末尾) */
+  .mt-ch-add-btn {
+    flex-shrink: 0;
+    min-width: 56px;
+    background: rgba(61,181,166,0.06);
+    border: 1px dashed rgba(61,181,166,0.35);
+    color: rgba(91,196,176,0.85);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    font-weight: 500;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 8px 6px;
+    line-height: 1.2;
+  }
+  .mt-ch-add-btn:hover {
+    background: rgba(61,181,166,0.15);
+    border-color: #3DB5A6;
+    border-style: solid;
+    color: #FFFFFF;
+  }
+  .mt-ch-add-btn .mt-ch-add-plus {
+    font-size: 18px;
+    font-weight: 400;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+  /* extras ピル右上の × ボタン (隠す) */
+  .mt-ch-close {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 14px; height: 14px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(226,75,74,0.12);
+    border: 0.5px solid rgba(226,75,74,0.35);
+    color: rgba(226,75,74,0.85);
+    font-size: 10px; line-height: 1;
+    cursor: pointer;
+    z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .mt-ch-close:hover {
+    background: #E24B4A;
+    color: #FFFFFF;
+    border-color: #E24B4A;
+  }
+
   /* STATUS BAR (replaces old tab bar) */
   .tabbar {
     display: flex; gap: 4px; align-items: center; justify-content: flex-end;
@@ -3480,8 +3533,9 @@
               <select class="mt-ch-select" id="mtChDrumsR" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R"><option value="12">12</option></select>
             </div>
           </div>
-          <!-- v12.0: extras (デフォルト非表示、Phase B で「+ ADD GROUP」UI 追加予定) -->
+          <!-- v12.0: extras (デフォルト非表示) / v12.1: × ボタン追加 (Phase B) -->
           <div class="mt-ch-pill" style="--c:#9B5DE5; display:none;" data-group="extra1" id="mtChPill_extra1">
+            <button class="mt-ch-close" onclick="mtHideGroup('extra1')" title="このグループを隠す">×</button>
             <span class="mt-ch-glabel">E1</span>
             <div class="mt-ch-row">
               <select class="mt-ch-select" id="mtChExtra1L" onchange="mtSetCh('extra1','L',this.value)" title="EXTRA 1 L"><option value="12">12</option></select>
@@ -3490,6 +3544,7 @@
             </div>
           </div>
           <div class="mt-ch-pill" style="--c:#00BBC9; display:none;" data-group="extra2" id="mtChPill_extra2">
+            <button class="mt-ch-close" onclick="mtHideGroup('extra2')" title="このグループを隠す">×</button>
             <span class="mt-ch-glabel">E2</span>
             <div class="mt-ch-row">
               <select class="mt-ch-select" id="mtChExtra2L" onchange="mtSetCh('extra2','L',this.value)" title="EXTRA 2 L"><option value="13">13</option></select>
@@ -3497,6 +3552,11 @@
               <select class="mt-ch-select" id="mtChExtra2R" onchange="mtSetCh('extra2','R',this.value)" title="EXTRA 2 R" style="display:none;"><option value="13">13</option></select>
             </div>
           </div>
+          <!-- v12.1: 「+ ADD GROUP」ボタン (グループ追加) — 全表示時は非表示 -->
+          <button class="mt-ch-add-btn" id="mtChAddBtn" onclick="mtShowNextHiddenGroup()" title="グループを追加 (最大 8 まで)">
+            <span class="mt-ch-add-plus">+</span>
+            <span>ADD</span>
+          </button>
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
@@ -3536,7 +3596,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.0.3';
+const APP_VERSION = 'v12.1.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10720,8 +10780,92 @@ function _mtUpdateGroupVisibility() {
       pill.style.display = mtIsGroupVisible(g) ? '' : 'none';
     }
   }
+  // v12.1: 「+ ADD GROUP」ボタンの表示状態も同期 (全グループ表示済なら非表示)
+  try { _mtUpdateAddGroupBtnState(); } catch(_) {}
 }
 try { window._mtUpdateGroupVisibility = _mtUpdateGroupVisibility; } catch(_) {}
+
+// v12.1: 「+ ADD GROUP」ボタンの表示状態を更新
+function _mtUpdateAddGroupBtnState() {
+  const btn = document.getElementById('mtChAddBtn');
+  if (!btn) return;
+  const hasHidden = MT_GROUPS.some(g => !mtIsGroupVisible(g));
+  btn.style.display = hasHidden ? '' : 'none';
+}
+
+// v12.1: 次の非表示 extras を 1 つ表示する
+function mtShowNextHiddenGroup() {
+  // 本番モード中は禁止 (audio graph 変更で音が一瞬詰まるリスク回避)
+  if (typeof mtFs !== 'undefined' && mtFs.showMode) {
+    try { showToast('🎭 本番モード中はグループ追加できません — 本番モードを OFF にしてから操作してください'); } catch(_) {}
+    return;
+  }
+  const hidden = MT_GROUPS.find(g => !mtIsGroupVisible(g));
+  if (!hidden) {
+    try { showToast('これ以上グループを追加できません (最大 8)'); } catch(_) {}
+    return;
+  }
+  mtPushUndo();
+  if (!state.multitrack.groupVisible) state.multitrack.groupVisible = {};
+  state.multitrack.groupVisible[hidden] = true;
+  mtSave();
+  _mtUpdateGroupVisibility();
+  try { mtRenderMixer(); } catch(_) {}
+  if (mtCtx) {
+    mtRebuildRouting().catch(e => {
+      console.error('[mtShowNextHiddenGroup] rebuild failed', e);
+    });
+  }
+  try { showToast(`グループ追加: ${MT_GROUP_LABELS[hidden] || hidden}`); } catch(_) {}
+}
+try { window.mtShowNextHiddenGroup = mtShowNextHiddenGroup; } catch(_) {}
+
+// v12.1: 指定 extras を非表示に戻す
+function mtHideGroup(g) {
+  if (!MT_GROUPS.includes(g)) return;
+  if (MT_GROUPS_DEFAULT_VISIBLE.includes(g)) {
+    try { showToast('デフォルトの 6 グループは隠せません'); } catch(_) {}
+    return;
+  }
+  // 本番モード中は禁止
+  if (typeof mtFs !== 'undefined' && mtFs.showMode) {
+    try { showToast('🎭 本番モード中はグループを隠せません — 本番モードを OFF にしてから操作してください'); } catch(_) {}
+    return;
+  }
+  // 確認 — アサインされたファイルがあるか調べる
+  const hasLayers = state.multitrack.songs.some(s => mtGetLayers(s, g).length > 0);
+  const label = MT_GROUP_LABELS[g] || g;
+  const msg = hasLayers
+    ? `${label} を隠しますか？\n（アサインされたファイルは内部に残ります。再度表示すれば元に戻ります）`
+    : `${label} を隠しますか？`;
+  if (!confirm(msg)) return;
+
+  mtPushUndo();
+  if (!state.multitrack.groupVisible) state.multitrack.groupVisible = {};
+  state.multitrack.groupVisible[g] = false;
+  // zombie 防止: 非表示にする時に mute/solo もリセット
+  state.multitrack.groupMute[g] = false;
+  state.multitrack.groupSolo[g] = false;
+  mtSave();
+  _mtUpdateGroupVisibility();
+  try { mtRenderMixer(); } catch(_) {}
+  if (mtCtx) {
+    // gain を 0 にして消音 → mtRebuildRouting で disconnect される
+    try {
+      const gain = mtGroupGainNodes[g];
+      if (gain) {
+        const t = mtCtx.currentTime;
+        gain.gain.cancelScheduledValues(t);
+        gain.gain.setTargetAtTime(0, t, 0.008);
+      }
+    } catch(_) {}
+    mtRebuildRouting().catch(e => {
+      console.error('[mtHideGroup] rebuild failed', e);
+    });
+  }
+  try { showToast(`${label} を隠しました`); } catch(_) {}
+}
+try { window.mtHideGroup = mtHideGroup; } catch(_) {}
 
 // v11.8.0: グループの MONO/STEREO を切替
 // v11.8.2: 本番安全化 — 本番モード中は拒否、再生中は DOM 全再構築せず軽量更新のみ
