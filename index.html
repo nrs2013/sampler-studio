@@ -2039,10 +2039,10 @@
   }
   /* さらに狭い: フェーダー幅を縮めて全部 1 行に収める */
   @media (max-width: 1100px) {
-    .mt-mixer-strips { grid-template-columns: repeat(6, 76px) !important; }
+    .mt-mixer-strips { width: 500px !important; }
   }
   @media (max-width: 980px) {
-    .mt-mixer-strips { grid-template-columns: repeat(6, 64px) !important; gap: 5px !important; }
+    .mt-mixer-strips { width: 420px !important; gap: 5px !important; }
   }
   /* 極狭: MIXER と AUDIO IFACE を上下に分け、SELECTED SONG をさらに下 */
   @media (max-width: 860px) {
@@ -2355,7 +2355,11 @@
     position: absolute; top: 8px; right: 10px; z-index: 2;
   }
   .mt-mixer-strips {
-    display: grid; grid-template-columns: repeat(6, 90px); gap: 7px;
+    display: grid;
+    /* v12.1.1: 表示中のグループ数に応じて列数を変える。--strip-count は JS で設定 (既定 6) */
+    grid-template-columns: repeat(var(--strip-count, 6), minmax(0, 1fr));
+    width: 580px;   /* 全体幅は固定 → strips がグループ数に応じて細くなる */
+    gap: 7px;
     padding: 0;
     justify-content: start;
     flex: 1;     /* カードの残り高さを全部使う */
@@ -2717,9 +2721,10 @@
 
   /* CHANNEL ROUTING - フェーダーストリップと同じカードデザイン */
   /* v11.9.1: 6 列 × 1 行のまま、各ピル内を縦積み (L → mode → R) に */
+  /* v12.1.1: --visible-count で列数を動的調整、末尾 auto は「+ ADD」ボタン用 */
   .mt-ch-strip {
     display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--visible-count, 6), minmax(0, 1fr)) auto;
     gap: 6px;
     align-items: stretch;
   }
@@ -3596,7 +3601,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.1.0';
+const APP_VERSION = 'v12.1.1';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10780,6 +10785,11 @@ function _mtUpdateGroupVisibility() {
       pill.style.display = mtIsGroupVisible(g) ? '' : 'none';
     }
   }
+  // v12.1.1: ROUTING strip の grid 列数を可視グループ数に同期 → ピルがグループ追加で細くなる
+  try {
+    const strip = document.getElementById('mtChMatrix');
+    if (strip) strip.style.setProperty('--visible-count', String(mtVisibleGroups().length));
+  } catch(_) {}
   // v12.1: 「+ ADD GROUP」ボタンの表示状態も同期 (全グループ表示済なら非表示)
   try { _mtUpdateAddGroupBtnState(); } catch(_) {}
 }
@@ -13624,6 +13634,8 @@ function mtRenderMixer() {
   host.innerHTML = '';
   // v12.0: 非表示グループはストリップを描画しない
   const visibleGroups = mtVisibleGroups();
+  // v12.1.1: フェーダー幅をグループ数に応じて自動調整 (8 グループでも横並び維持)
+  try { host.style.setProperty('--strip-count', String(visibleGroups.length || 6)); } catch(_) {}
   const anySolo = visibleGroups.some(g => state.multitrack.groupSolo[g]);
   // 選択中の曲のうち、空のグループ = drop target としてパルスさせる
   const selSong = state.multitrack.songs[state.multitrack.selectedIdx];
