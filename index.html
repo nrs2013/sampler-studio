@@ -3516,7 +3516,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.9';
+const APP_VERSION = 'v11.9.10';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -12244,9 +12244,18 @@ function mtMediaSetupGroupRouting() {
     const isMono = cm.mono === true || chL === chR;
     if (mtMerger && mtMerger.numberOfInputs > Math.max(chL, chR)) {
       if (isMono) {
-        // mono: gain (stereo) → merger 単一 input (mono) で自動ダウンミックス
-        gain.connect(mtMerger, 0, chL);
-        multiChGroups.push(`${g}→${chL+1}(mono)`);
+        // v11.9.10 (案 B): 2ch デバイスの時は MONO 信号を L/R 両方にコピー
+        // → 内蔵スピーカー等で「片チャンに音が寄る」事故を防止
+        // multi-ch I/F (3ch 以上) の時は従来通り指定 1ch のみ
+        const is2chDevice = mtMerger.numberOfInputs <= 2;
+        if (is2chDevice) {
+          gain.connect(mtMerger, 0, 0);
+          gain.connect(mtMerger, 0, 1);
+          multiChGroups.push(`${g}→1+2(mono dup, 2ch dev)`);
+        } else {
+          gain.connect(mtMerger, 0, chL);
+          multiChGroups.push(`${g}→${chL+1}(mono)`);
+        }
       } else {
         const splitter = mtCtx.createChannelSplitter(2);
         gain.connect(splitter);
@@ -12959,8 +12968,15 @@ async function mtPlaySong(idx, offset, options) {
           splitter.connect(mtMerger, 0, chL);
           splitter.connect(mtMerger, 1, chR);
         } else if (buf.numberOfChannels === 1 && mtMerger.numberOfInputs > chL) {
-          gain.connect(mtMerger, 0, chL);
-          if (chL !== chR && mtMerger.numberOfInputs > chR) gain.connect(mtMerger, 0, chR);
+          // v11.9.10 (案 B): 2ch device で mono buffer → L/R 両方にコピー (片チャン寄り防止)
+          const is2chDevice = mtMerger.numberOfInputs <= 2;
+          if (is2chDevice) {
+            gain.connect(mtMerger, 0, 0);
+            gain.connect(mtMerger, 0, 1);
+          } else {
+            gain.connect(mtMerger, 0, chL);
+            if (chL !== chR && mtMerger.numberOfInputs > chR) gain.connect(mtMerger, 0, chR);
+          }
         } else {
           gain.connect(mtMasterGain);
         }
