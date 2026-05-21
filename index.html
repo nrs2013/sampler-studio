@@ -464,6 +464,49 @@
   .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
   .pad.empty .pad-grip { display: none; }
 
+  /* v12.4.0: パッドに色 (任意プリセット) を反映 */
+  .pad-body.has-color {
+    border-color: var(--pad-c) !important;
+    border-width: 1.5px !important;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--pad-c) 18%, #14141A) 0%, #14141A 50%);
+  }
+  .pad-body.has-color:hover {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--pad-c) 28%, #14141A) 0%, #1A1A20 50%);
+  }
+  .pad-body.has-color .pad-num { color: var(--pad-c); }
+  .pad-body.has-color.playing { box-shadow: 0 0 10px color-mix(in srgb, var(--pad-c) 60%, transparent); }
+  .pad-body.has-color + .pad-fader-card { border-color: var(--pad-c); }
+  .pad-body.has-color + .pad-fader-card .pad-fader-fill { background: var(--pad-c); }
+  .pad-body.has-color + .pad-fader-card .pad-fader-db { color: var(--pad-c); }
+
+  /* パッド色変更ボタン (色ドット) — pad-head 内、pad-num の右隣 */
+  .pad-color-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--pad-c, #3A3A40);
+    border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer; padding: 0;
+    flex-shrink: 0;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .pad-color-dot:hover { transform: scale(1.25); box-shadow: 0 0 6px var(--pad-c, #5A5A60); }
+
+  /* 色選択ポップオーバー (画面に fixed で表示) */
+  .pad-color-popover {
+    position: fixed; z-index: 9000;
+    background: #16161B; border: 0.5px solid #2A2A30; border-radius: 8px;
+    padding: 8px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+  }
+  .pcp-swatch {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1.5px solid transparent;
+    cursor: pointer; padding: 0;
+    transition: transform 0.08s, border-color 0.08s;
+  }
+  .pcp-swatch:hover { transform: scale(1.1); border-color: rgba(255,255,255,0.4); }
+  .pcp-swatch.sel { border-color: #FFFFFF; }
+
   /* Edit (trim) button — top-RIGHT (grip 移動に伴い、右端ぴったりへ) */
   .pad-edit-btn {
     position: absolute; top: 3px; right: 3px;
@@ -3660,7 +3703,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.3.0';
+const APP_VERSION = 'v12.4.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -4112,6 +4155,22 @@ const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
 const KEY_LABELS = ['Q','W','E','R','A','S','D','F','Z','X','C','V','1','2','3','4'];
 const DEFAULT_NOTES = [36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51];
+// v12.4.0: パッド色プリセット (8色)。id='default' は色なし扱い
+const PAD_COLOR_PALETTE = [
+  { id: 'default', name: 'デフォルト', hex: '#3DB5A6' },
+  { id: 'blue',    name: 'ブルー',     hex: '#5DA7E0' },
+  { id: 'purple',  name: 'パープル',   hex: '#A06EFF' },
+  { id: 'pink',    name: 'ピンク',     hex: '#FF5F8F' },
+  { id: 'red',     name: 'レッド',     hex: '#E24B4A' },
+  { id: 'orange',  name: 'オレンジ',   hex: '#FF8C42' },
+  { id: 'yellow',  name: 'イエロー',   hex: '#F5D547' },
+  { id: 'cyan',    name: 'シアン',     hex: '#4DE4D4' },
+];
+function padColorHex(pad) {
+  if (!pad || !pad.color || pad.color === 'default') return null;
+  const c = PAD_COLOR_PALETTE.find(c => c.id === pad.color);
+  return c ? c.hex : null;
+}
 
 // ===========================
 // STATE
@@ -4249,6 +4308,7 @@ function makePad(idx) {
     trimEnd: null,  // seconds (null = end of sample)
     key: DEFAULT_KEYS[idx],
     midiNote: DEFAULT_NOTES[idx],
+    color: null,    // v12.4.0: ユーザー任意の色 (id from PAD_COLOR_PALETTE、null=デフォルト)
     isPlaying: false,
     activeSources: [], // [{source, gain, startedAt, trimStart, trimDuration}]
   };
@@ -5598,6 +5658,7 @@ async function savePreset() {
         sampleName: p.sampleName, sampleId: p.sampleId,
         level: p.level, key: p.key, midiNote: p.midiNote,
         trimStart: p.trimStart || 0, trimEnd: p.trimEnd,
+        color: p.color || null,
       })),
     })),
   };
@@ -5646,6 +5707,7 @@ async function loadPresetByName(name) {
           pad.midiNote = sd.midiNote;
           pad.trimStart = sd.trimStart || 0;
           pad.trimEnd = (sd.trimEnd != null) ? sd.trimEnd : null;
+          pad.color = sd.color || null;
           if (sd.sampleId) {
             const rec = await getSampleFromDB(sd.sampleId);
             if (rec) {
@@ -5744,6 +5806,7 @@ function saveStateLocal() {
           sampleName: p.sampleName, sampleId: p.sampleId,
           level: p.level, key: p.key, midiNote: p.midiNote,
           trimStart: p.trimStart || 0, trimEnd: p.trimEnd ?? null,
+          color: p.color || null,
         })),
       })),
       hold: state.hold.map(h => h ? ({
@@ -5752,6 +5815,7 @@ function saveStateLocal() {
           sampleName: h.padData.sampleName, sampleId: h.padData.sampleId,
           level: h.padData.level, key: h.padData.key, midiNote: h.padData.midiNote,
           trimStart: h.padData.trimStart || 0, trimEnd: h.padData.trimEnd ?? null,
+          color: h.padData.color || null,
         } : null,
       }) : null),
     }));
@@ -5792,6 +5856,7 @@ function loadStateLocal() {
           if (sd.midiNote != null) pad.midiNote = sd.midiNote;
           pad.trimStart = sd.trimStart || 0;
           pad.trimEnd = sd.trimEnd;
+          pad.color = sd.color || null;
         }
       }
     }
@@ -5845,6 +5910,58 @@ function render() {
   renderRight();
   renderLearnBadges();
   document.getElementById('bankInfo').textContent = `BANK ${String(state.currentBank+1).padStart(2,'0')} / 16`;
+}
+
+// v12.4.0: パッド色選択ポップオーバー
+function openPadColorPicker(bankIdx, padIdx, anchorEl) {
+  closePadColorPicker();
+  const pad = state.banks[bankIdx]?.pads[padIdx];
+  if (!pad) return;
+  const pop = document.createElement('div');
+  pop.className = 'pad-color-popover';
+  pop.innerHTML = PAD_COLOR_PALETTE.map(c => {
+    const isSel = (pad.color === c.id) || (!pad.color && c.id === 'default');
+    return `<button class="pcp-swatch${isSel ? ' sel' : ''}" style="background:${c.hex};" title="${c.name}" data-color-id="${c.id}"></button>`;
+  }).join('');
+  document.body.appendChild(pop);
+  // 位置：anchor の下に出す。画面端に当たったら左へずらす
+  const r = anchorEl.getBoundingClientRect();
+  let left = r.left;
+  let top = r.bottom + 6;
+  // viewport clamp
+  const pr = pop.getBoundingClientRect();
+  if (left + pr.width > window.innerWidth - 8) left = window.innerWidth - pr.width - 8;
+  if (top + pr.height > window.innerHeight - 8) top = r.top - pr.height - 6;
+  pop.style.left = Math.max(8, left) + 'px';
+  pop.style.top = Math.max(8, top) + 'px';
+  // クリックハンドラ
+  pop.querySelectorAll('.pcp-swatch').forEach(btn => {
+    btn.onclick = (ev) => {
+      ev.stopPropagation();
+      const id = btn.dataset.colorId;
+      setPadColor(bankIdx, padIdx, id);
+    };
+  });
+  // 外側クリックで閉じる
+  setTimeout(() => {
+    document.addEventListener('click', closePadColorPicker, { once: true });
+    document.addEventListener('keydown', _padColorEscClose);
+  }, 0);
+}
+function _padColorEscClose(e) {
+  if (e.key === 'Escape') closePadColorPicker();
+}
+function closePadColorPicker() {
+  document.querySelectorAll('.pad-color-popover').forEach(p => p.remove());
+  document.removeEventListener('keydown', _padColorEscClose);
+}
+function setPadColor(bankIdx, padIdx, colorId) {
+  const pad = state.banks[bankIdx]?.pads[padIdx];
+  if (!pad) return;
+  pad.color = (colorId === 'default') ? null : colorId;
+  saveStateLocal();
+  closePadColorPicker();
+  render();
 }
 
 // v12.3.0: BANK 切替ショートカット用ヘルパー (相対移動 + ラップアラウンド)
@@ -5926,6 +6043,13 @@ function renderPads() {
     const cell = document.createElement('div');
     cell.className = 'pad';
 
+    // v12.4.0: パッド色 (CSS 変数 --pad-c で全要素に反映)
+    const colorHex = padColorHex(pad);
+    const colorCls = colorHex ? ' has-color' : '';
+    const colorStyle = colorHex ? ` style="--pad-c:${colorHex};"` : '';
+    const dotStyle = colorHex ? ` style="--pad-c:${colorHex};"` : '';
+    const playArrowColor = colorHex || '#3DB5A6';
+
     if (pad.audioBuffer) {
       const hasTrim = (pad.trimStart||0) > 0 || (pad.trimEnd != null && pad.trimEnd < pad.audioBuffer.duration);
       const dispDur = ((pad.trimEnd != null) ? pad.trimEnd : pad.audioBuffer.duration) - (pad.trimStart || 0);
@@ -5933,12 +6057,15 @@ function renderPads() {
       const db = linToDb(pad.level);
       const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
       cell.innerHTML = `
-        <div class="pad-body${pad.isPlaying ? ' playing' : ''}">
+        <div class="pad-body${pad.isPlaying ? ' playing' : ''}${colorCls}"${colorStyle}>
           <span class="pad-grip" draggable="true" title="掴んで移動">⋮⋮</span>
           <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">EDIT</button>
           <div class="pad-head">
-            <span class="pad-num">${idx+1}</span>
-            ${pad.isPlaying ? '<span style="color:#3DB5A6;">▶</span>' : '<span></span>'}
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="pad-num">${idx+1}</span>
+              <button class="pad-color-dot" title="色を変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);"${dotStyle}></button>
+            </div>
+            ${pad.isPlaying ? `<span style="color:${playArrowColor};">▶</span>` : '<span></span>'}
           </div>
           <div class="pad-name">${escapeHtml(pad.sampleName || '')}</div>
           <div class="pad-footer">
@@ -5961,8 +6088,11 @@ function renderPads() {
       `;
     } else {
       cell.innerHTML = `
-        <div class="pad-body empty">
-          <div style="font-size:9px; color:#5A5A60;">PAD ${idx+1}</div>
+        <div class="pad-body empty${colorCls}"${colorStyle}>
+          <div style="font-size:9px; color:#5A5A60; display:flex; align-items:center; gap:6px;">
+            <span>PAD ${idx+1}</span>
+            <button class="pad-color-dot" title="色を変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);"${dotStyle}></button>
+          </div>
           <div class="upload-icon">↓</div>
           <div style="font-size:8px; color:#5A5A60; letter-spacing:1px;">DROP AUDIO</div>
           <div class="pad-shortcuts" style="position:absolute; bottom:6px; left:8px; right:8px;">
@@ -5978,6 +6108,7 @@ function renderPads() {
     body.onclick = (e) => {
       if (e.target.closest('.pad-grip')) return;
       if (e.target.closest('.pad-edit-btn')) return;
+      if (e.target.closest('.pad-color-dot')) return;
       if (e.target.closest('.badge')) return;
       if (pad.audioBuffer) playPad(state.currentBank, idx);
     };
