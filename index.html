@@ -3482,7 +3482,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.5';
+const APP_VERSION = 'v11.9.6';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10646,19 +10646,9 @@ function _mtUpdateStripModeUI(group) {
   const cm = state.multitrack.channelMap[group];
   if (!cm) return;
   const isMono = cm.mono === true;
-  // ストリップ自体 (バッジとメーター)
   const strip = document.querySelector(`[data-mt-strip="${group}"]`);
   if (!strip) return;
-  // MONO/ST バッジの更新
-  const badge = strip.querySelector('.mt-strip-mode');
-  if (badge) {
-    badge.textContent = isMono ? 'MONO' : 'ST';
-    badge.classList.toggle('mono', isMono);
-    badge.title = isMono
-      ? `MONO (ch ${cm.L} のみ) — STEREO ファイルは自動で mono ダウンミックス`
-      : `STEREO (L=ch${cm.L} / R=ch${cm.R})`;
-  }
-  // メーターの mono クラスをトグル (R バーは CSS で出し分け)
+  // v11.9.6: バッジは撤去。メーターの mono クラスだけ切替 (R バーを CSS で出し分け)
   const meterWrap = strip.querySelector('.mt-strip-meter');
   if (meterWrap) meterWrap.classList.toggle('mono', isMono);
 }
@@ -13361,20 +13351,8 @@ function mtRenderMixer() {
     lbl.className = 'mt-strip-label ' + g;
     lbl.textContent = MT_GROUP_LABELS[g];
     labelRow.appendChild(lbl);
-    // v11.8.0: MONO/STEREO バッジ — ルーティングに合わせてフェーダーが何 ch 流すかを明示
-    try {
-      const _cmBadge = state.multitrack.channelMap[g];
-      if (_cmBadge) {
-        const modeBadge = document.createElement('span');
-        const _isMono = _cmBadge.mono === true;
-        modeBadge.className = 'mt-strip-mode' + (_isMono ? ' mono' : '');
-        modeBadge.textContent = _isMono ? 'MONO' : 'ST';
-        modeBadge.title = _isMono
-          ? `MONO (ch ${_cmBadge.L} のみ) — STEREO ファイルは自動で mono ダウンミックス`
-          : `STEREO (L=ch${_cmBadge.L} / R=ch${_cmBadge.R})`;
-        labelRow.appendChild(modeBadge);
-      }
-    } catch(_) {}
+    // v11.9.6: MONO/ST バッジは撤去 — メーター本数 (1本=mono / 2本=stereo) と
+    // ROUTING カードの M/ST ボタンで情報は十分。トラック名の表示領域を優先。
     // ファイル数（このフェーダーに何ファイル割当てられているか）
     // 0 → グレー、>0 で緑（or pending オレンジ）。数字だけシンプルに。
     const fcount = document.createElement('span');
