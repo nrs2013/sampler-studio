@@ -3424,7 +3424,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.8.2';
+const APP_VERSION = 'v11.8.3';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -3489,6 +3489,28 @@ const APP_VERSION = 'v11.8.2';
 //   <pid>:samplerStudioDoor   = per-project door open state
 // IndexedDB samples: 共有（projectId プレフィックス無し）。各プロジェクトの参照は state JSON 内
 // の sample ID で決まる。EXPORT 時に参照 ID を抽出してその分だけ書き出す。
+
+// v11.8.3: localStorage 容量オーバー (QuotaExceededError) を吸収して state 消失を防ぐ
+// 失敗時は false を返す。一度警告を出したら同セッション中は重複 toast 抑制。
+let _lsQuotaWarned = false;
+function safeLocalStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (e) {
+    // 容量オーバー or プライベートモード等での書き込み拒否
+    const isQuota = e && (e.name === 'QuotaExceededError'
+      || e.code === 22 || e.code === 1014 || /quota/i.test(e.message || ''));
+    if (isQuota && !_lsQuotaWarned) {
+      _lsQuotaWarned = true;
+      try { showToast('⚠️ ブラウザ保存容量が満杯です — 旧プロジェクトを削除してください'); } catch(_) {}
+    } else if (!isQuota) {
+      console.warn('[safeLocalStorageSet] failed', key, e);
+    }
+    return false;
+  }
+}
+
 function projGetActiveId() {
   return localStorage.getItem('samplerActiveProject') || null;
 }
@@ -3539,11 +3561,31 @@ function projSwitchTo(pid) {
   location.reload();
 }
 function projGoTop() {
+  // v11.8.3: 再生中の誤操作ガード — PROJECTS へ戻る = reload するので音が止まる
+  if (_isAnyPlaying()) {
+    if (!confirm('再生中です。プロジェクト一覧へ戻ると音が止まります。続けますか？')) return;
+  }
   try { if (typeof saveStateLocal === 'function') saveStateLocal(); } catch(_){}
   try { if (typeof doSave === 'function') doSave(); } catch(_){}
   projTouchActive();
   projSetActiveId(null);
   location.reload();
+}
+
+// v11.8.3: 全モードで「何か鳴ってるか」を一括判定するヘルパー
+function _isAnyPlaying() {
+  try {
+    // MULTI-TRACK
+    if (state.multitrack && state.multitrack.isPlaying) return true;
+    // DOOR OPEN BGM (door / workout)
+    const bgms = (state.door && state.door.bgm) || {};
+    for (const k in bgms) { if (bgms[k] && bgms[k].isPlaying) return true; }
+    // DOOR 影アナチェーン
+    if (state.door && state.door.activeRowId) return true;
+    // SAMPLER パッド (鳴ってる pad があれば voices に source が残る)
+    if (Array.isArray(window.voices) && window.voices.length > 0) return true;
+  } catch(_) {}
+  return false;
 }
 // v10.2.0: 既存のプロジェクトフォルダから project.json を読み込んで開く
 async function projOpenFromFolder() {
@@ -5411,7 +5453,12 @@ async function deletePreset(name) {
 }
 
 async function newPreset() {
-  if (!confirm('全パッドを空にして新規プリセットを作成しますか？（現在の編集は保存されません）')) return;
+  // v11.8.3: 再生中の誤操作ガード — newPreset は state を全消しするので本番中は事故
+  if (_isAnyPlaying()) {
+    if (!confirm('⚠️ 再生中です。新規プリセット作成すると音が止まり state が消えます。続けますか？')) return;
+  } else {
+    if (!confirm('全パッドを空にして新規プリセットを作成しますか？（現在の編集は保存されません）')) return;
+  }
   // Anti-click: fade out any active pad playback before wiping state
   try { stopAll(); } catch(_){}
   await new Promise(r => setTimeout(r, 80));
@@ -5433,8 +5480,9 @@ function closeModal() {
 // LOCAL STATE (auto-save assignments)
 // ===========================
 function saveStateLocal() {
+  // v11.8.3: 容量オーバー対応
   try {
-    localStorage.setItem(projKey('samplerStudioState'), JSON.stringify({
+    safeLocalStorageSet(projKey('samplerStudioState'), JSON.stringify({
       playMode: state.playMode,
       fadeTime: state.fadeTime,
       fadeCurve: state.fadeCurve,
@@ -9209,8 +9257,9 @@ function _doRenderBgmFaderOnly(slot) {
 
 // ---- PERSISTENCE ----
 function doSave() {
+  // v11.8.3: 容量オーバー対応
   try {
-    localStorage.setItem(projKey('samplerStudioDoor'), JSON.stringify({
+    safeLocalStorageSet(projKey('samplerStudioDoor'), JSON.stringify({
       appMode: state.appMode,
       bgm: {
         door: {
@@ -9847,9 +9896,10 @@ function mtRestore(saved) {
   if (typeof saved.currentSongIdx === 'number') m.currentSongIdx = saved.currentSongIdx;
 }
 function mtSave() {
+  // v11.8.3: 容量オーバー対応 — safeLocalStorageSet で吸収 + toast 通知
   try {
     const key = projKey('samplerMultitrack');
-    localStorage.setItem(key, JSON.stringify(mtSerialize()));
+    safeLocalStorageSet(key, JSON.stringify(mtSerialize()));
   } catch(e) { console.warn('mtSave failed', e); }
   // v10.2.0: プロジェクトフォルダにも project.json を自動保存 (デバウンス)
   try { if (typeof scheduleSaveProjectJSON === 'function') scheduleSaveProjectJSON(); } catch(_) {}
@@ -13059,9 +13109,14 @@ function mtFadeOut() {
   showToast(`MULTI-TRACK FADE OUT (${dur.toFixed(1)}s)`);
   // auto-advance を止める
   if (state.multitrack.advanceTimer) { clearTimeout(state.multitrack.advanceTimer); state.multitrack.advanceTimer = null; }
+  // v11.8.3: FADE OUT 世代カウンタ — フェード中に新しい再生が走ったら、
+  // 古い fadeOut の timeout で gain を 1.0 に戻して新再生の ramp を上書きしないように
+  const myGen = (state.multitrack._fadeOutGen = (state.multitrack._fadeOutGen || 0) + 1);
   setTimeout(() => {
+    // 別の fadeOut / play が後から走ってたら、こちらの復帰処理はスキップ
+    if (state.multitrack._fadeOutGen !== myGen) return;
+    if (state.multitrack.isPlaying) return; // 新しい再生がもう走ってる
     mtStop();
-    // master gain をグランドマスターの値に戻す（次回再生のため）
     if (mtCtx && mtMasterGain) {
       const t2 = mtCtx.currentTime;
       mtMasterGain.gain.cancelScheduledValues(t2);
@@ -13688,6 +13743,12 @@ function mtRenderSetlist() {
     grip.title = '長押しで並べ替え';
     grip.draggable = true;
     grip.addEventListener('dragstart', (e) => {
+      // v11.8.3: 再生中の並べ替えは currentSongIdx が狂って次曲がズレる → 禁止
+      if (state.multitrack.isPlaying) {
+        e.preventDefault();
+        try { showToast('⚠️ 再生中はセットリストの並べ替えはできません'); } catch(_) {}
+        return;
+      }
       e.dataTransfer.setData('application/x-mt-song-reorder', String(idx));
       e.dataTransfer.effectAllowed = 'move';
       row.classList.add('reorder-dragging');
