@@ -464,17 +464,25 @@
   .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
   .pad.empty .pad-grip { display: none; }
 
-  /* v12.4.2: パッドに色 (任意プリセット)。グロー/グラデを廃止しクリーンな枠線だけに */
-  .pad-body.has-color {
-    border-color: var(--pad-c) !important;
-    border-width: 1.5px !important;
-    /* 背景は通常パッドと同じ単色、box-shadow なし — Brutalist Vivid 路線 */
+  /* v12.4.4: パッド色 — pad-body + fader-card を一つの枠で囲う (B 案) */
+  .pad.has-color {
+    background: #14141A;
+    border: 1.5px solid var(--pad-c);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
   }
-  .pad-body.has-color:hover { background: #25252D; }
-  .pad-body.has-color .pad-num { color: var(--pad-c); }
-  .pad-body.has-color + .pad-fader-card { border-color: var(--pad-c); }
-  .pad-body.has-color + .pad-fader-card .pad-fader-fill { background: var(--pad-c); }
-  .pad-body.has-color + .pad-fader-card .pad-fader-db { color: var(--pad-c); }
+  .pad.has-color .pad-body {
+    border: none !important;
+    border-radius: 7px;
+  }
+  .pad.has-color .pad-fader-card {
+    border: none !important;
+    border-radius: 7px;
+  }
+  .pad.has-color .pad-num { color: var(--pad-c); }
+  .pad.has-color .pad-fader-fill { background: var(--pad-c); }
+  .pad.has-color .pad-fader-db { color: var(--pad-c); }
 
   /* パッド色変更ボタン (色ドット) — pad-head 内、pad-num の右隣 */
   .pad-color-dot {
@@ -3702,7 +3710,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.4.3';
+const APP_VERSION = 'v12.4.4';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -6063,13 +6071,16 @@ function renderPads() {
     const cell = document.createElement('div');
     cell.className = 'pad';
 
-    // v12.4.3: パッド色 — CSS 変数 --pad-c を「cell (.pad)」に設定。
-    // pad-body と pad-fader-card は兄弟なので、共通の親 (cell) に置かないと
-    // 変数が両方に届かない。
+    // v12.4.4: パッド色 — has-color クラスを cell (.pad) に付与し、
+    // 一つの枠で pad-body + fader-card を囲む (B 案)。
+    // CSS 変数 --pad-c も cell に設定して descendant 全部に届くように。
     const colorHex = padColorHex(pad);
-    const colorCls = colorHex ? ' has-color' : '';
-    if (colorHex) cell.style.setProperty('--pad-c', colorHex);
-    const colorStyle = ''; // 旧 (pad-body へ inline 適用) を空にして互換維持
+    if (colorHex) {
+      cell.classList.add('has-color');
+      cell.style.setProperty('--pad-c', colorHex);
+    }
+    const colorCls = ''; // pad-body には has-color を付けない (cell 側に移行)
+    const colorStyle = '';
     const dotStyle = '';
     const playArrowColor = colorHex || '#3DB5A6';
 
