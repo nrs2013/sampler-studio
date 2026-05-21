@@ -3520,7 +3520,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.11';
+const APP_VERSION = 'v11.9.12';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -9956,7 +9956,7 @@ function mtRestore(saved) {
   if (saved.groupSolo) m.groupSolo = { ...m.groupSolo, ...saved.groupSolo };
   if (Array.isArray(saved.songs)) m.songs = saved.songs.map(s => ({
     id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
-    name: s.name || '無題',
+    name: s.name || 'Untitled',
     tracks: s.tracks || {},
     unassigned: Array.isArray(s.unassigned) ? s.unassigned : [],
     autoNext: s.autoNext === 'stop' ? 'stop' : 'auto',
@@ -10745,7 +10745,7 @@ function mtAddSong() {
   const id = 'mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   state.multitrack.songs.push({
     id,
-    name: `曲 ${state.multitrack.songs.length + 1}`,
+    name: `Song ${state.multitrack.songs.length + 1}`,
     tracks: {},                           // {drums: {sampleId, name}, ...} — 各グループに割り当て済み
     unassigned: [],                       // [{sampleId, name}] — 読み込み済みだがまだ未割り当てのファイル
     autoNext: 'auto',
@@ -10773,7 +10773,7 @@ function mtDeleteSong(idx) {
 function mtRenameSong(idx, name) {
   if (idx < 0 || idx >= state.multitrack.songs.length) return;
   mtPushUndo();
-  state.multitrack.songs[idx].name = name || '無題';
+  state.multitrack.songs[idx].name = name || 'Untitled';
   mtSave();
   mtRenderNow();
 }
@@ -14065,7 +14065,7 @@ function mtRenderNow() {
   if (nextChipName) {
     const baseIdx = (m.selectedIdx >= 0) ? m.selectedIdx : m.currentSongIdx;
     if (baseIdx >= 0 && baseIdx + 1 < m.songs.length) {
-      nextChipName.textContent = m.songs[baseIdx + 1].name || '無題';
+      nextChipName.textContent = m.songs[baseIdx + 1].name || 'Untitled';
     } else {
       nextChipName.textContent = '— NONE —';
     }
