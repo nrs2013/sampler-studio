@@ -438,6 +438,12 @@
     width: 6px; flex: 1; background: #14141A; border-radius: 3px;
     position: relative; margin: 4px 0; pointer-events: none;
   }
+  /* v12.4.6: 0dB スナップ位置 (1/1.4 = 71.4% from bottom = 28.6% from top) に細い目印線 */
+  .pad-fader-track::before {
+    content: ''; position: absolute;
+    top: 28.6%; left: -3px; right: -3px; height: 1px;
+    background: #4D4D55; pointer-events: none;
+  }
   .pad-fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
     background: #3DB5A6; border-radius: 3px;
@@ -3722,7 +3728,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.4.5';
+const APP_VERSION = 'v12.4.6';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -6244,6 +6250,10 @@ function bindPadFaderCard(card, padIdx, pad) {
     const y = clientY - rect.top;
     let pct = 1 - (y / rect.height);
     pct = Math.max(0, Math.min(1, pct));
+    // v12.4.6: 0dB (level=1.0, pct=1/1.4) で吸着 (±5px の範囲)
+    const ZERO_DB_PCT = 1 / 1.4;
+    const zeroDbY = rect.height * (1 - ZERO_DB_PCT);
+    if (Math.abs(y - zeroDbY) < 5) pct = ZERO_DB_PCT;
     pad.level = pct * 1.4;
     if (fill) fill.style.height = (pct * 100) + '%';
     if (dbDisp) {
