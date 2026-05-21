@@ -3482,7 +3482,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.3';
+const APP_VERSION = 'v11.9.4';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -6910,33 +6910,7 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-async function checkForUpdate() {
-  const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  if (isLocal) return;
-  try {
-    const res = await fetch(location.origin + location.pathname + '?_cv=' + Date.now());
-    const text = await res.text();
-    const m = text.match(/const APP_VERSION = '([^']+)'/);
-    if (m && m[1] !== APP_VERSION) showUpdateBanner(m[1]);
-  } catch(e) {}
-}
-
-function showUpdateBanner(newVer) {
-  if (document.getElementById('update-banner')) return;
-  const b = document.createElement('div');
-  b.id = 'update-banner';
-  b.style.cssText = [
-    'position:fixed', 'bottom:16px', 'left:50%', 'transform:translateX(-50%)',
-    'background:#0C1A14', 'border:1px solid #3DB5A6', 'border-radius:6px',
-    'color:#A8C9B6', 'font-size:12px', 'padding:10px 16px',
-    'display:flex', 'align-items:center', 'gap:10px',
-    'z-index:9999', 'box-shadow:0 4px 16px rgba(0,0,0,0.6)', 'white-space:nowrap'
-  ].join(';');
-  b.innerHTML = `<span>🔄 新バージョン <strong style="color:#5BC4B0">${newVer}</strong> が利用可能</span>`
-    + `<button onclick="location.reload()" style="background:#3DB5A6;color:#0E1A14;border:none;border-radius:4px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer;">更新</button>`
-    + `<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#5A5A60;font-size:14px;cursor:pointer;padding:0 2px;">✕</button>`;
-  document.body.appendChild(b);
-}
+// v11.9.4: checkForUpdate / showUpdateBanner 撤去 — ユーザー自身がデプロイ管理しているため不要
 
 // ===========================
 // INIT
@@ -11852,75 +11826,9 @@ function mtBindDeviceChange() {
   console.log('[mtDevice] devicechange listener bound');
 }
 
-// v11.3.1: 診断スナップショット (互換のため残置、UI からは呼ばれない)
-function mtDiagSnapshot() {
-  const safe = (fn, fallback) => { try { return fn(); } catch(_) { return fallback; } };
-  return {
-    appVersion: typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'n/a',
-    timestamp: new Date().toISOString(),
-    userAgent: navigator.userAgent,
-    audioContext: mtCtx ? {
-      state: mtCtx.state,
-      sampleRate: mtCtx.sampleRate,
-      baseLatency: safe(() => mtCtx.baseLatency, null),
-      outputLatency: safe(() => mtCtx.outputLatency, null),
-      sinkId: safe(() => (mtCtx.sinkId !== undefined ? (mtCtx.sinkId || '(default)') : 'n/a'), 'n/a'),
-    } : null,
-    destination: mtCtx ? {
-      channelCount: mtCtx.destination.channelCount,
-      channelCountMode: mtCtx.destination.channelCountMode,
-      channelInterpretation: mtCtx.destination.channelInterpretation,
-      maxChannelCount: mtCtx.destination.maxChannelCount,
-      numberOfInputs: mtCtx.destination.numberOfInputs,
-    } : null,
-    selectedDevice: {
-      id: state.multitrack.outputDeviceId,
-      label: state.multitrack.outputDeviceLabel,
-    },
-    outputChannelCount: state.multitrack.outputChannelCount,
-    merger: mtMerger ? { numberOfInputs: mtMerger.numberOfInputs } : null,
-    masterGain: mtMasterGain ? { value: mtMasterGain.gain.value } : null,
-    channelMap: { ...state.multitrack.channelMap },
-    playback: {
-      isPlaying: state.multitrack.isPlaying,
-      currentSongIdx: state.multitrack.currentSongIdx,
-      activeMediaCount: state.multitrack.activeMedia ? state.multitrack.activeMedia.length : 0,
-      songsCount: state.multitrack.songs ? state.multitrack.songs.length : 0,
-      playbackMode: state.multitrack.playbackMode,
-    },
-    groups: Object.fromEntries(MT_GROUPS.map(g => [g, {
-      gainNodeValue: mtGroupGainNodes[g] ? mtGroupGainNodes[g].gain.value : null,
-      stateGain: state.multitrack.groupGains[g],
-      mute: state.multitrack.groupMute[g],
-      solo: state.multitrack.groupSolo[g],
-      ch: state.multitrack.channelMap[g],
-    }])),
-    flags: {
-      mediaMasterRoutingDone: typeof mtFs !== 'undefined' && !!mtFs._mediaMasterRoutingDone,
-      setDeviceInFlight: typeof _mtSetDeviceInFlight !== 'undefined' ? _mtSetDeviceInFlight : null,
-      rebuildInFlight: typeof _mtRebuildInFlight !== 'undefined' ? _mtRebuildInFlight : null,
-      devicechangeBound: _mtDevicechangeBound,
-    },
-    recentErrors: (typeof mtFs !== 'undefined' && mtFs._errors) ? mtFs._errors.slice(-10) : null,
-  };
-}
-
-async function mtCopyDiagnostic() {
-  const data = mtDiagSnapshot();
-  const text = JSON.stringify(data, null, 2);
-  console.log('=== MULTI-TRACK DIAG ===\n' + text);
-  try {
-    await navigator.clipboard.writeText(text);
-    try { showToast('✓ 診断情報をクリップボードにコピーしました — チャットに貼れます'); } catch(_) {}
-  } catch(e) {
-    console.warn('[mtCopyDiag] clipboard failed', e);
-    try { showToast('⚠️ コピー失敗 — Chrome DevTools コンソールの [MULTI-TRACK DIAG] を参照'); } catch(_) {}
-  }
-}
-if (typeof window !== 'undefined') {
-  window.mtDiagSnapshot = mtDiagSnapshot;
-  window.mtCopyDiagnostic = mtCopyDiagnostic;
-}
+// v11.9.4: mtDiagSnapshot / mtCopyDiagnostic を完全撤去
+// 診断パネル削除 (v11.7.0) + 診断ボタン削除 (v11.9.2) で呼び出し元がなくなったため。
+// 不具合解析が必要な時は Chrome DevTools のコンソールから state 直接参照する。
 
 let _mtPageLifecycleBound = false;
 function mtBindPageLifecycle() {
@@ -14776,8 +14684,7 @@ async function init() {
   const vb = document.getElementById('version-badge');
   if (vb) vb.textContent = APP_VERSION;
 
-  // 本番URLで新バージョンが出ていたらバナーで通知（強制リロードはしない）
-  setTimeout(checkForUpdate, 5000);
+  // v11.9.4: 更新バナーは撤去 (ユーザーが自分でデプロイ管理しているため不要)
 
   // DOOR OPEN MODE init
   doInit();
