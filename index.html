@@ -3537,7 +3537,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.0.1';
+const APP_VERSION = 'v12.0.2';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -6113,6 +6113,8 @@ function openTrimEditor(bankIdx, padIdx) {
         </div>
       </div>
       <div class="modal-buttons">
+        <!-- v12.0.2: パッドのファイル削除ボタン (赤い destructive) -->
+        <button class="btn-small" onclick="deletePadFromTrim()" title="このパッドの音源ファイル参照をクリア" style="border-color:rgba(226,75,74,0.5); color:#E24B4A;">🗑 DELETE</button>
         <button class="btn-small" onclick="resetTrim()" style="margin-right:auto;">RESET</button>
         <button class="btn-small" onclick="previewTrim()">▶ PREVIEW</button>
         <button class="btn-small" onclick="closeTrimEditor()">CANCEL</button>
@@ -6326,6 +6328,24 @@ function applyTrim() {
   closeTrimEditor();
   showToast('トリム適用');
 }
+
+// v12.0.2: パッドのファイル参照をクリア (トリムエディタから)
+function deletePadFromTrim() {
+  if (!state.trimEditor) return;
+  const pad = state.banks[state.trimEditor.bankIdx].pads[state.trimEditor.padIdx];
+  if (!pad || !pad.sampleId) {
+    closeTrimEditor();
+    return;
+  }
+  const name = pad.sampleName || `PAD ${state.trimEditor.padIdx + 1}`;
+  if (!confirm(`「${name}」をこのパッドから削除しますか？\n(音源データ自体は他のパッドや HOLD で使われている可能性があるため、ライブラリには残ります)`)) return;
+  // 再生中なら止める + パッドのデータをクリア
+  try { clearPadData(pad); } catch(_) {}
+  saveStateLocal();
+  closeTrimEditor();
+  try { showToast(`PAD ${state.trimEditor && state.trimEditor.padIdx != null ? (state.trimEditor.padIdx + 1) : ''}「${name}」を削除`); } catch(_) {}
+}
+try { window.deletePadFromTrim = deletePadFromTrim; } catch(_) {}
 
 function drawWaveform() {
   if (!state.trimEditor) return;
