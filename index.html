@@ -184,6 +184,21 @@
   .bank-btn.active { background: #3DB5A6; color: #0E1A14; font-weight: 500; }
   .bank-btn.has-content { color: #E6E6EA; }
   .bank-btn.active.has-content { color: #0E1A14; }
+  /* v12.3.0: BANK 切替ショートカット (← / →) のバッジ群 */
+  .bank-nav {
+    display: flex; align-items: center; gap: 4px;
+    padding: 0 6px;
+  }
+  .bank-nav-arrow {
+    font-size: 13px; color: #6A6A70; cursor: pointer;
+    background: #14141A; border: 0.5px solid #1F1F22; border-radius: 3px;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit; padding: 0;
+  }
+  .bank-nav-arrow:hover { background: #25252A; color: #E6E6EA; }
+  .bank-nav-arrow:active { background: #3DB5A6; color: #0E1A14; }
+  .bank-nav .badge-row { display: flex; gap: 2px; }
 
   /* MAIN */
   .main {
@@ -434,9 +449,9 @@
   .pad.empty .pad-fader-card { display: none; }
   .pad.empty .pad-body { flex: 1; }
 
-  /* Grip handle — drag-only zone in top-right corner of pad body */
+  /* v12.3.0: Grip handle を top-LEFT に移動 (押し間違いで再生されにくい位置へ) */
   .pad-grip {
-    position: absolute; top: 3px; right: 3px;
+    position: absolute; top: 3px; left: 3px;
     width: 22px; height: 22px;
     background: rgba(93,202,165,0.12); border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
@@ -449,9 +464,9 @@
   .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
   .pad.empty .pad-grip { display: none; }
 
-  /* Edit (trim) button — next to grip, opens waveform trim modal */
+  /* Edit (trim) button — top-RIGHT (grip 移動に伴い、右端ぴったりへ) */
   .pad-edit-btn {
-    position: absolute; top: 3px; right: 28px;
+    position: absolute; top: 3px; right: 3px;
     height: 22px; padding: 0 7px;
     background: rgba(93,202,165,0.12); border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
@@ -492,7 +507,8 @@
     background: #2A3A35 !important; border-color: #3DB5A6 !important; border-width: 2px !important;
     box-shadow: 0 0 0 2px rgba(93,202,165,0.4) !important;
   }
-  .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; padding-right: 26px; }
+  /* v12.3.0: grip が top-left に移ったので padding-left に変更、右側は EDIT 用に確保 */
+  .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; padding-left: 26px; padding-right: 44px; }
   .pad-num { color: #5A5A60; letter-spacing: 0.5px; }
   .pad.playing .pad-num { color: #3DB5A6; }
   .pad-name { font-size: 14px; font-weight: 500; color: #E6E6EA; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3070,7 +3086,21 @@
 
   <div class="banks" id="banksRow">
     <span class="banks-label">BANK</span>
+    <div class="bank-nav" title="前のバンク">
+      <button class="bank-nav-arrow" onclick="switchBankRel(-1)">←</button>
+      <div class="badge-row">
+        <button class="badge midi" id="bankPrevMidiBadge" onclick="startLearn('bankPrev','midi')">N-</button>
+        <button class="badge key" id="bankPrevKeyBadge" onclick="startLearn('bankPrev','key')">[</button>
+      </div>
+    </div>
     <div class="banks-grid" id="banksGrid"></div>
+    <div class="bank-nav" title="次のバンク">
+      <div class="badge-row">
+        <button class="badge midi" id="bankNextMidiBadge" onclick="startLearn('bankNext','midi')">N-</button>
+        <button class="badge key" id="bankNextKeyBadge" onclick="startLearn('bankNext','key')">]</button>
+      </div>
+      <button class="bank-nav-arrow" onclick="switchBankRel(+1)">→</button>
+    </div>
   </div>
 
   <div class="main">
@@ -3630,7 +3660,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.2.3';
+const APP_VERSION = 'v12.3.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -4113,6 +4143,9 @@ const state = {
     fadeout: { midiNote: 60, key: 'KeyF' },
     stop:    { midiNote: 62, key: 'Escape' },
     pause:   { midiNote: 63, key: 'Space' },
+    // v12.3.0: BANK 切替ショートカット ([ / ] がデフォルト)
+    bankPrev: { midiNote: null, key: 'BracketLeft' },
+    bankNext: { midiNote: null, key: 'BracketRight' },
   },
   // DOOR OPEN MODE
   appMode: 'sampler', // 'sampler' | 'door' | 'multi'
@@ -5395,6 +5428,9 @@ function handleMIDI(e) {
     if (state.controlAssign.fadeout.midiNote === data1) fadeOutAll();
     if (state.controlAssign.stop.midiNote === data1) stopAll();
     if (state.controlAssign.pause.midiNote === data1) pauseAll();
+    // v12.3.0: BANK 切替 MIDI
+    if (state.controlAssign.bankPrev.midiNote === data1) switchBankRel(-1);
+    if (state.controlAssign.bankNext.midiNote === data1) switchBankRel(+1);
   }
   // CC
   if (type === 0xB0) {
@@ -5477,6 +5513,11 @@ document.addEventListener('keydown', e => {
     fadeOutAll(); e.preventDefault(); return;
   }
   if (e.code === state.controlAssign.pause.key)   { pauseAll();   e.preventDefault(); return; }
+  // v12.3.0: BANK 切替 (SAMPLER モード時のみ有効。MULTI-TRACK/DOOR では無視)
+  if (state.appMode === 'sampler') {
+    if (state.controlAssign.bankPrev.key && e.code === state.controlAssign.bankPrev.key) { switchBankRel(-1); e.preventDefault(); return; }
+    if (state.controlAssign.bankNext.key && e.code === state.controlAssign.bankNext.key) { switchBankRel(+1); e.preventDefault(); return; }
+  }
   if (e.code === 'ArrowUp')    { setMasterVol(state.masterVol + 0.03); e.preventDefault(); return; }
   if (e.code === 'ArrowDown')  { setMasterVol(state.masterVol - 0.03); e.preventDefault(); return; }
 
@@ -5585,6 +5626,9 @@ async function loadPresetByName(name) {
       state.fadeCurve = p.fadeCurve || 'linear';
       state.fadeBezier = p.fadeBezier || { ...PRESET_BEZIER[state.fadeCurve] || PRESET_BEZIER.linear };
       state.controlAssign = p.controlAssign || state.controlAssign;
+      // v12.3.0: 旧バージョンには bankPrev/bankNext が無いので補完
+      if (!state.controlAssign.bankPrev) state.controlAssign.bankPrev = { midiNote: null, key: 'BracketLeft' };
+      if (!state.controlAssign.bankNext) state.controlAssign.bankNext = { midiNote: null, key: 'BracketRight' };
       setMasterVol(p.masterVol);
       document.getElementById('presetName').value = name;
       for (let b = 0; b < NUM_BANKS; b++) {
@@ -5726,6 +5770,9 @@ function loadStateLocal() {
     state.fadeBezier = s.fadeBezier || { ...PRESET_BEZIER[state.fadeCurve] || PRESET_BEZIER.linear };
     state.masterVol = s.masterVol ?? 0.71;
     if (s.controlAssign) state.controlAssign = s.controlAssign;
+    // v12.3.0: 旧バージョンには bankPrev/bankNext が無いので補完
+    if (!state.controlAssign.bankPrev) state.controlAssign.bankPrev = { midiNote: null, key: 'BracketLeft' };
+    if (!state.controlAssign.bankNext) state.controlAssign.bankNext = { midiNote: null, key: 'BracketRight' };
     state.currentBank = s.currentBank || 0;
 
     // Restore pad metadata (sampleId references; audioBuffers loaded async in init)
@@ -5798,6 +5845,15 @@ function render() {
   renderRight();
   renderLearnBadges();
   document.getElementById('bankInfo').textContent = `BANK ${String(state.currentBank+1).padStart(2,'0')} / 16`;
+}
+
+// v12.3.0: BANK 切替ショートカット用ヘルパー (相対移動 + ラップアラウンド)
+function switchBankRel(delta) {
+  const next = (state.currentBank + delta + NUM_BANKS) % NUM_BANKS;
+  state.currentBank = next;
+  saveStateLocal();
+  render();
+  try { showToast(`BANK ${String(next+1).padStart(2,'0')}`); } catch(_) {}
 }
 
 function renderBanks() {
@@ -6870,7 +6926,14 @@ function renderLearnBadges() {
   setBadgeText('stopKeyBadge', cm.stop.key ? keyLabel(cm.stop.key) : '-');
   setBadgeText('pauseMidiBadge', `N${cm.pause.midiNote ?? '-'}`);
   setBadgeText('pauseKeyBadge', cm.pause.key ? keyLabel(cm.pause.key) : '-');
-  const all = ['masterMidiBadge','masterKeyBadge','fadeoutMidiBadge','fadeoutKeyBadge','stopMidiBadge','stopKeyBadge','pauseMidiBadge','pauseKeyBadge'];
+  // v12.3.0: BANK 切替バッジ
+  if (cm.bankPrev) {
+    setBadgeText('bankPrevMidiBadge', `N${cm.bankPrev.midiNote ?? '-'}`);
+    setBadgeText('bankPrevKeyBadge', cm.bankPrev.key ? keyLabel(cm.bankPrev.key) : '-');
+    setBadgeText('bankNextMidiBadge', `N${cm.bankNext.midiNote ?? '-'}`);
+    setBadgeText('bankNextKeyBadge', cm.bankNext.key ? keyLabel(cm.bankNext.key) : '-');
+  }
+  const all = ['masterMidiBadge','masterKeyBadge','fadeoutMidiBadge','fadeoutKeyBadge','stopMidiBadge','stopKeyBadge','pauseMidiBadge','pauseKeyBadge','bankPrevMidiBadge','bankPrevKeyBadge','bankNextMidiBadge','bankNextKeyBadge'];
   all.forEach(id => { const el = document.getElementById(id); if (el) el.classList.remove('learning'); });
   if (lr) {
     const id = `${lr.target}${lr.type === 'midi' ? 'Midi' : 'Key'}Badge`;
