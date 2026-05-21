@@ -3273,7 +3273,7 @@
           </select>
           <!-- v11.3.1: 診断コピー + デバイス再検出ボタン -->
           <button class="mt-btn ghost subtle" onclick="mtCopyDiagnostic()" title="出力デバイス・チャンネル設定の診断情報をクリップボードにコピー (本番トラブル時に Claude に貼って報告)" style="margin-left:4px; padding:3px 8px; font-size:9px;">📋 診断</button>
-          <button class="mt-btn ghost subtle" onclick="mtRefreshDevices(true)" title="デバイス一覧を再検出 (USB 接続後など)" style="margin-left:4px; padding:3px 8px; font-size:9px;">⟳</button>
+          <button class="mt-btn ghost subtle" onclick="mtRefreshDevices()" title="デバイス一覧を再検出 (USB 接続後など) — マイク権限は要求しません" style="margin-left:4px; padding:3px 8px; font-size:9px;">⟳</button>
         </div>
         <div class="mt-row">
           <span class="mt-label">CHANNELS</span>
@@ -3369,7 +3369,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.7.0';
+const APP_VERSION = 'v11.7.1';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10198,18 +10198,14 @@ function mtUpdateChStatus() {
 }
 
 // ---- デバイス一覧 / 選択 ----
-// askPermission=true のときだけ getUserMedia でマイク権限を要求
-// (iOS/Safari でカメラ・マイクのインジケータが意図せず点灯するのを防ぐため
-//  自動呼び出しは廃止。ユーザーが ⟳ ボタンを明示的に押した時だけ問い合わせる)
-async function mtRefreshDevices(askPermission) {
+// v11.7.1: getUserMedia (マイク権限要求) を完全撤去。
+// 出力デバイスの選択は enumerateDevices() だけで実施。
+// → マイク権限を一切要求しないため、Mac のマイクインジケータも点灯しない。
+// 副作用: デバイス名のラベルが「出力 abc123」のような匿名 ID になる
+//        (USB I/F は接続順や deviceId から判別)
+async function mtRefreshDevices(_askPermission) {
   const sel = document.getElementById('mtDeviceSelect');
   if (!sel) return;
-  if (askPermission === true) {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-      s.getTracks().forEach(t => t.stop());
-    } catch(_) {}
-  }
   const devices = await navigator.mediaDevices.enumerateDevices();
   const outs = devices.filter(d => d.kind === 'audiooutput');
   sel.innerHTML = '';
