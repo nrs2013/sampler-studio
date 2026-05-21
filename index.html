@@ -54,6 +54,33 @@
     cursor: pointer; transition: all 0.15s;
   }
   .btn-small:hover { border-color: #4D4D55; background: #14141A; }
+  /* v11.5.0: ヘッダー右の本番モードトグル */
+  .show-mode-toggle {
+    background: transparent; border: 0.5px solid #25252A; color: #888890;
+    padding: 5px 10px; border-radius: 4px; font-size: 10px; letter-spacing: 1px;
+    cursor: pointer; transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .show-mode-toggle:hover { border-color: #4D4D55; background: #14141A; color: #E6E6EA; }
+  .show-mode-toggle .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #3A3A42; box-shadow: none;
+    transition: all 0.15s;
+  }
+  .show-mode-toggle.on {
+    background: linear-gradient(180deg, #FFB81C, #FFA000);
+    color: #1A1300; border-color: #FFD580;
+    box-shadow: 0 0 10px rgba(255,184,28,0.4);
+    font-weight: 600;
+  }
+  .show-mode-toggle.on .dot {
+    background: #FF3B30; box-shadow: 0 0 6px rgba(255,59,48,0.8);
+    animation: showModeDotPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes showModeDotPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.85); }
+  }
 
   /* STATUS BAR (replaces old tab bar) */
   .tabbar {
@@ -2906,6 +2933,12 @@
       </div>
     </div>
     <div class="header-right">
+      <!-- v11.5.0: 本番モード (SHOW MODE) ヘッダートグル — ON 時のみ playback lock & ESC 長押し有効 -->
+      <button class="show-mode-toggle" id="headerShowModeBtn" onclick="headerToggleShowMode()" title="本番モード ON: 再生ロック (5秒) & ESC 長押し停止 / OFF: 編集中の制約なし">
+        <span class="dot"></span>
+        <span id="headerShowModeLabel">本番モード OFF</span>
+      </button>
+      <span style="width:1px;height:14px;background:#1F1F22;margin:0 4px;"></span>
       <span id="version-badge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3A3A42;letter-spacing:0.05em;user-select:none;"></span>
       <span style="width:1px;height:14px;background:#1F1F22;margin:0 4px;"></span>
       <button class="btn-small" onclick="savePreset()">SAVE</button>
@@ -3472,7 +3505,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.4.0';
+const APP_VERSION = 'v11.5.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -12432,9 +12465,9 @@ async function mtMediaPlaySong(idx, offset, options) {
     state.multitrack.currentSongIdx = idx;
     state.multitrack.selectedIdx = idx;
     state.multitrack.isPlaying = true;
-    // 再生ロック (10秒)
+    // 再生ロック (5秒) — v11.5.0: 本番モード ON 時のみ発動 (編集中は鬱陶しいので OFF 時はスキップ)
     const noLock = options && options.noLock === true;
-    if (!noLock) {
+    if (!noLock && mtFs.showMode) {
       try { requestAnimationFrame(() => { try { mtStartPlaybackLock(song.name); } catch(_) {} }); } catch(_) {}
     }
     // auto-advance (既存ロジックと同じ)
@@ -12831,8 +12864,35 @@ function mtFsClearErrors() { mtFs.errorLog = []; _mtDiagPanelUpdate(); }
 // v9.1.0: mtSetPlaybackMode / mtFsForceEvict は撤去
 // (再生方式は MediaElement 固定、キャッシュクリアは UI 廃止)
 
-// ヘッダー右側の本番モードバッジ更新 (将来 mark on header — placeholder)
-function _mtRenderShowModeBadge() { _mtDiagPanelUpdate(); }
+// v11.5.0: ヘッダー右側の本番モードトグルの見た目を同期
+function _mtRenderShowModeBadge() {
+  _mtDiagPanelUpdate();
+  try {
+    const btn = document.getElementById('headerShowModeBtn');
+    const label = document.getElementById('headerShowModeLabel');
+    if (btn) {
+      const on = !!(typeof mtFs !== 'undefined' && mtFs.showMode);
+      btn.classList.toggle('on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (label) label.textContent = on ? '本番モード ON' : '本番モード OFF';
+    }
+  } catch(_) {}
+}
+
+// v11.5.0: ヘッダーのトグルから呼ぶラッパ
+function headerToggleShowMode() {
+  try {
+    const next = !(typeof mtFs !== 'undefined' && mtFs.showMode);
+    mtFsSetShowMode(next).then(() => {
+      try { _mtRenderShowModeBadge(); } catch(_) {}
+    }).catch(() => {
+      try { _mtRenderShowModeBadge(); } catch(_) {}
+    });
+  } catch(e) {
+    console.warn('[headerToggleShowMode] failed', e);
+  }
+}
+try { window.headerToggleShowMode = headerToggleShowMode; } catch(_) {}
 
 // ---- 再生エンジン ----
 // options.keepPrevious=true で前曲の source を止めない（オーバーラップ）
@@ -13008,7 +13068,8 @@ async function mtPlaySong(idx, offset, options) {
   // 再生開始 → 10 秒ロック + 画面いっぱい「PLAYBACK STARTED」表示
   // ただし内部呼び出し (seek / auto-advance) は noLock を付けてロック発動しない
   const noLock = options && options.noLock === true;
-  if (!noLock) {
+  // v11.5.0: 本番モード ON 時のみ playback lock を発動 (AudioBuffer 旧経路も同様)
+  if (!noLock && mtFs.showMode) {
     try {
       requestAnimationFrame(() => {
         try { mtStartPlaybackLock(song.name); } catch(_) {}
