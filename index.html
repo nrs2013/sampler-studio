@@ -2400,6 +2400,8 @@
     border: 0.5px solid #1A1A1E;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
   }
+  /* v11.8.1: mono メーターは 1 本だけ → 視覚バランスのため少し太く */
+  .mt-strip-meter.mono .mt-strip-meter-bar { width: 4px; }
   .mt-strip-meter-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
     background: linear-gradient(to top,
@@ -3420,7 +3422,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.8.0';
+const APP_VERSION = 'v11.8.1';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -13350,8 +13352,12 @@ function mtRenderMixer() {
     const fill = document.createElement('div'); fill.className = 'mt-strip-fader-fill'; fader.appendChild(fill);
     const thumb = document.createElement('div'); thumb.className = 'mt-strip-fader-thumb'; fader.appendChild(thumb);
     wrap.appendChild(fader);
-    // ステレオメーター: L / R を 2 本の細いバーで表示
-    const meter = document.createElement('div'); meter.className = 'mt-strip-meter';
+    // v11.8.1: ルーティングに合わせてメーター本数を変える (mono=1本 / stereo=2本)
+    const _cmMeter = state.multitrack.channelMap[g];
+    const _meterIsMono = _cmMeter && _cmMeter.mono === true;
+    const meter = document.createElement('div');
+    meter.className = 'mt-strip-meter' + (_meterIsMono ? ' mono' : '');
+    // L バー (常に表示)
     const barL = document.createElement('div'); barL.className = 'mt-strip-meter-bar';
     const fillL = document.createElement('div'); fillL.className = 'mt-strip-meter-fill';
     fillL.dataset.mtMeter = g; fillL.dataset.mtCh = 'L';
@@ -13359,14 +13365,18 @@ function mtRenderMixer() {
     const peakL = document.createElement('div'); peakL.className = 'mt-strip-peak';
     peakL.dataset.mtPeak = g; peakL.dataset.mtCh = 'L';
     barL.appendChild(peakL);
-    const barR = document.createElement('div'); barR.className = 'mt-strip-meter-bar';
-    const fillR = document.createElement('div'); fillR.className = 'mt-strip-meter-fill';
-    fillR.dataset.mtMeter = g; fillR.dataset.mtCh = 'R';
-    barR.appendChild(fillR);
-    const peakR = document.createElement('div'); peakR.className = 'mt-strip-peak';
-    peakR.dataset.mtPeak = g; peakR.dataset.mtCh = 'R';
-    barR.appendChild(peakR);
-    meter.appendChild(barL); meter.appendChild(barR);
+    meter.appendChild(barL);
+    // R バー (stereo の時だけ追加)
+    if (!_meterIsMono) {
+      const barR = document.createElement('div'); barR.className = 'mt-strip-meter-bar';
+      const fillR = document.createElement('div'); fillR.className = 'mt-strip-meter-fill';
+      fillR.dataset.mtMeter = g; fillR.dataset.mtCh = 'R';
+      barR.appendChild(fillR);
+      const peakR = document.createElement('div'); peakR.className = 'mt-strip-peak';
+      peakR.dataset.mtPeak = g; peakR.dataset.mtCh = 'R';
+      barR.appendChild(peakR);
+      meter.appendChild(barR);
+    }
     wrap.appendChild(meter);
     strip.appendChild(wrap);
 
