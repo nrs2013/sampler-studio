@@ -464,17 +464,14 @@
   .pad-grip:active { cursor: grabbing; background: rgba(93,202,165,0.5); }
   .pad.empty .pad-grip { display: none; }
 
-  /* v12.4.0: パッドに色 (任意プリセット) を反映 */
+  /* v12.4.2: パッドに色 (任意プリセット)。グロー/グラデを廃止しクリーンな枠線だけに */
   .pad-body.has-color {
     border-color: var(--pad-c) !important;
     border-width: 1.5px !important;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--pad-c) 18%, #14141A) 0%, #14141A 50%);
+    /* 背景は通常パッドと同じ単色、box-shadow なし — Brutalist Vivid 路線 */
   }
-  .pad-body.has-color:hover {
-    background: linear-gradient(180deg, color-mix(in srgb, var(--pad-c) 28%, #14141A) 0%, #1A1A20 50%);
-  }
+  .pad-body.has-color:hover { background: #25252D; }
   .pad-body.has-color .pad-num { color: var(--pad-c); }
-  .pad-body.has-color.playing { box-shadow: 0 0 10px color-mix(in srgb, var(--pad-c) 60%, transparent); }
   .pad-body.has-color + .pad-fader-card { border-color: var(--pad-c); }
   .pad-body.has-color + .pad-fader-card .pad-fader-fill { background: var(--pad-c); }
   .pad-body.has-color + .pad-fader-card .pad-fader-db { color: var(--pad-c); }
@@ -3705,7 +3702,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.4.1';
+const APP_VERSION = 'v12.4.2';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -7016,10 +7013,14 @@ function handleMoveDrop(from, to) {
   render();
 }
 
+// v12.4.2: 色 (color) と TRIM 設定 (trimStart/trimEnd) もファイル付随として運ぶ。
+//          → 色付きパッドを移動／スワップしたら色も一緒に動く。
 function clonePadData(p) {
   return {
     sampleName: p.sampleName, audioBuffer: p.audioBuffer, sampleId: p.sampleId,
     level: p.level, key: p.key, midiNote: p.midiNote,
+    color: p.color || null,
+    trimStart: p.trimStart || 0, trimEnd: p.trimEnd ?? null,
   };
 }
 function assignPadData(target, src) {
@@ -7029,10 +7030,15 @@ function assignPadData(target, src) {
   target.level = src.level;
   target.key = src.key;
   target.midiNote = src.midiNote;
+  target.color = src.color || null;
+  target.trimStart = src.trimStart || 0;
+  target.trimEnd = src.trimEnd ?? null;
   stopPad(target);
 }
 function clearPadData(p) {
   p.sampleName = null; p.audioBuffer = null; p.sampleId = null;
+  p.color = null;
+  p.trimStart = 0; p.trimEnd = null;
   stopPad(p);
 }
 
