@@ -3482,7 +3482,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.4';
+const APP_VERSION = 'v11.9.5';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10072,8 +10072,8 @@ async function mtInitCtx(options) {
         // v11.3.2: setSinkId 失敗時、実態は default device で動作中 → state を同期
         //          (state が古いデバイス ID のままだと UI と実態が乖離する)
         state.multitrack.outputDeviceId = '';
-        state.multitrack.outputDeviceLabel = 'システムデフォルト (フォールバック)';
-        try { showToast('⚠️ 選択デバイスが使えず、システムデフォルトにフォールバック'); } catch(_) {}
+        state.multitrack.outputDeviceLabel = 'SYSTEM DEFAULT (fallback)';
+        try { showToast('⚠️ 選択デバイスが使えず、SYSTEM DEFAULT にフォールバック'); } catch(_) {}
       }
     }
   }
@@ -10349,7 +10349,7 @@ async function mtRefreshDevices(_askPermission) {
   }
   // デフォルト＋検出済み
   const opt0 = document.createElement('option');
-  opt0.value = ''; opt0.textContent = '— システムデフォルト —';
+  opt0.value = ''; opt0.textContent = '— SYSTEM DEFAULT —';
   sel.appendChild(opt0);
   outs.forEach(d => {
     const o = document.createElement('option');
@@ -10390,7 +10390,7 @@ async function mtSetDevice(deviceId) {
     if (sel && sel.selectedOptions[0]) {
       state.multitrack.outputDeviceLabel = sel.selectedOptions[0].textContent;
     } else if (!deviceId) {
-      state.multitrack.outputDeviceLabel = 'システムデフォルト';
+      state.multitrack.outputDeviceLabel = 'SYSTEM DEFAULT';
     }
 
     // 1) 再生中ならアンチクリック付き停止
@@ -10573,10 +10573,9 @@ function _mtUpdateChSelects() {
     for (let i = 1; i <= maxCh; i++) {
       html += `<option value="${i}"${i === current ? ' selected' : ''}>${i}</option>`;
     }
-    // 範囲外の保存値: disabled で表示 (赤色) → ユーザーが「保存値はあるが今のデバイスでは使えない」と気付ける
-    if (current > maxCh) {
-      html += `<option value="${current}" selected disabled>${current} (範囲外)</option>`;
-    }
+    // v11.9.5: 範囲外オプション表示は撤去 (ユーザー希望)。
+    // 保存値が範囲外なら何も selected されない (= 最初の選択肢が見える状態)。
+    // 元デバイスに戻したら、内部 state の cm[side] は保持されているので正しく復元される。
     sel.innerHTML = html;
   }
   // v11.8.0: mono/stereo の UI 同期 (R select の表示 + モードボタンのラベル/見た目)
