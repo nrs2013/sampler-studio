@@ -1571,18 +1571,6 @@
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,184,28,0.5);
     background: rgba(255,184,28,0.08);
   }
-  /* v11.6.0: マスター波形 — タイムライン下のスリム表示 (薄い緑、薄背景) */
-  .mt-hero-waveform-wrap {
-    padding-right: 34px; /* mt-locate-drop (26) + gap (8) と幅を合わせる */
-    margin-top: -2px;
-  }
-  .mt-hero-waveform {
-    display: block; width: 100%;
-    height: 22px;
-    background: rgba(0,0,0,0.20);
-    border-radius: 3px;
-    pointer-events: none; /* スクラブはタイムライン側のみで */
-  }
   .mt-hero-meta-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; text-transform: uppercase; }
   /* status の色変化も廃止 */
@@ -3373,10 +3361,6 @@
               <span class="mt-locate-glyph"></span>
             </button>
           </div>
-          <!-- v11.6.0: マスター波形 — 全 STEM 合計 (フェーダー無視) の地形図 -->
-          <div class="mt-hero-waveform-wrap">
-            <canvas class="mt-hero-waveform" id="mtHeroWaveform" title="マスター波形 (全 STEM 合計)"></canvas>
-          </div>
           <div class="mt-hero-meta-bottom">
             <span class="mt-hero-status" id="mtNowStatus">READY · SPACE 再生 / ESC 停止 / ↑↓ 選択</span>
             <span class="mt-hero-times">
@@ -3533,7 +3517,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.6.0';
+const APP_VERSION = 'v11.5.5';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -10923,192 +10907,6 @@ async function mtRobustDecode(arrayBuffer, file) {
   }
 }
 
-// ============================================================================
-// v11.6.0: マスター波形 (全 STEM 合計、フェーダー無視) — タイムライン下に表示
-// ============================================================================
-const MT_WAVEFORM_BUCKETS_MAX = 1400;  // 描画用バケット数の上限 (横幅 ≒ 1400px 想定)
-const MT_WAVEFORM_HEIGHT_PX = 22;      // CSS height と一致
-const mtPeaksComputing = {};           // songId -> Promise (重複起動防止)
-
-// 曲の全 STEM を decode → 合計してピーク列を生成。song.peaks に保存
-async function mtComputePeaksForSong(songIdx) {
-  const song = state.multitrack.songs[songIdx];
-  if (!song) return null;
-  if (mtPeaksComputing[song.id]) return mtPeaksComputing[song.id];
-
-  const runner = (async () => {
-    // STEM 収集 (sampleId 持ちのレイヤーのみ)
-    const layers = [];
-    for (const g of MT_GROUPS) {
-      for (const l of mtGetLayers(song, g)) {
-        if (l && l.sampleId) layers.push(l);
-      }
-    }
-    if (layers.length === 0) { song.peaks = null; mtRenderWaveform(); return null; }
-
-    try { await mtEnsureContext(); } catch(_) {}
-
-    // 各 STEM を decode (キャッシュがあれば再利用)
-    const buffers = await Promise.all(layers.map(async (l) => {
-      try {
-        if (mtDecodedCache[l.sampleId]) return mtDecodedCache[l.sampleId];
-        const rec = await getSampleFromDB(l.sampleId);
-        if (!rec || !rec.data) return null;
-        const arrBuf = rec.data instanceof ArrayBuffer ? rec.data : await rec.data.arrayBuffer();
-        return await mtRobustDecode(arrBuf, { name: l.name });
-      } catch (e) {
-        console.warn('[mt-peaks] decode failed', l && l.name, e && e.message);
-        return null;
-      }
-    }));
-
-    const valid = buffers.filter(b => b);
-    if (valid.length === 0) { song.peaks = null; mtRenderWaveform(); return null; }
-
-    const maxFrames = Math.max(...valid.map(b => b.length));
-    const sr = valid[0].sampleRate;
-    const duration = maxFrames / sr;
-
-    // バケット数: 短い曲は粗く、長い曲は上限まで細かく
-    const buckets = Math.max(200, Math.min(MT_WAVEFORM_BUCKETS_MAX, Math.floor(duration * 25)));
-    const samplesPerBucket = Math.max(1, Math.floor(maxFrames / buckets));
-    const peaks = new Float32Array(buckets);
-
-    // 各 STEM の channel data を事前取得 (毎サンプル getChannelData は遅い)
-    const channels = valid.map(buf => {
-      const ch0 = buf.getChannelData(0);
-      const ch1 = buf.numberOfChannels > 1 ? buf.getChannelData(1) : ch0;
-      return { ch0, ch1, len: buf.length };
-    });
-
-    for (let bi = 0; bi < buckets; bi++) {
-      const start = bi * samplesPerBucket;
-      const end = Math.min(maxFrames, start + samplesPerBucket);
-      let bucketMax = 0;
-      for (let i = start; i < end; i++) {
-        let mix = 0;
-        for (let k = 0; k < channels.length; k++) {
-          const c = channels[k];
-          if (i >= c.len) continue;
-          mix += (c.ch0[i] + c.ch1[i]) * 0.5;
-        }
-        const a = mix < 0 ? -mix : mix;
-        if (a > bucketMax) bucketMax = a;
-      }
-      peaks[bi] = bucketMax;
-    }
-
-    // 正規化 (合計したら 1 を超えうるので 0..1 に圧縮)
-    let peakMax = 0;
-    for (let i = 0; i < peaks.length; i++) if (peaks[i] > peakMax) peakMax = peaks[i];
-    if (peakMax > 0) for (let i = 0; i < peaks.length; i++) peaks[i] /= peakMax;
-
-    song.peaks = { v: 1, data: peaks, duration, computedAt: Date.now() };
-    mtRenderWaveform();
-    return song.peaks;
-  })().catch(e => {
-    console.warn('[mt-peaks] computation error', e);
-    return null;
-  }).finally(() => { delete mtPeaksComputing[song.id]; });
-
-  mtPeaksComputing[song.id] = runner;
-  return runner;
-}
-
-// 波形 canvas を描画 (現在の選択 / 再生中の曲)
-function mtRenderWaveform(songIdx) {
-  const canvas = document.getElementById('mtHeroWaveform');
-  if (!canvas) return;
-  const ctx2d = canvas.getContext('2d');
-  if (!ctx2d) return;
-
-  // devicePixelRatio 対応で canvas のピクセル数を決める
-  const rect = canvas.getBoundingClientRect();
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-  const W = Math.max(50, Math.floor(rect.width * dpr));
-  const H = Math.max(10, Math.floor(rect.height * dpr));
-  if (canvas.width !== W) canvas.width = W;
-  if (canvas.height !== H) canvas.height = H;
-  ctx2d.clearRect(0, 0, W, H);
-
-  // 対象曲の決定
-  if (songIdx === undefined) {
-    const m = state.multitrack;
-    songIdx = m.selectedIdx >= 0 ? m.selectedIdx : m.currentSongIdx;
-  }
-  if (songIdx < 0 || songIdx >= state.multitrack.songs.length) return;
-  const song = state.multitrack.songs[songIdx];
-  if (!song) return;
-
-  // 中央線 (薄)
-  ctx2d.fillStyle = 'rgba(255,255,255,0.05)';
-  ctx2d.fillRect(0, Math.floor(H / 2), W, 1);
-
-  if (!song.peaks || !song.peaks.data || song.peaks.data.length === 0) {
-    if (mtPeaksComputing[song.id]) {
-      ctx2d.fillStyle = 'rgba(200,216,208,0.42)';
-      ctx2d.font = `${10 * dpr}px "SF Mono","Menlo",monospace`;
-      ctx2d.textBaseline = 'middle';
-      ctx2d.fillText('計算中…', 6 * dpr, H / 2);
-    }
-    return;
-  }
-
-  const peaks = song.peaks.data;
-  const n = peaks.length;
-  const mid = H / 2;
-  const halfH = H * 0.46; // 中央線から上下 46%
-
-  // 1px ごとに該当バケットの最大値で縦バー
-  ctx2d.fillStyle = 'rgba(61,181,166,0.62)'; // テーマ緑
-  for (let x = 0; x < W; x++) {
-    // 1px 当たり複数バケットをまとめる (W < n の時)
-    const a = Math.floor((x / W) * n);
-    const b = Math.max(a + 1, Math.floor(((x + 1) / W) * n));
-    let v = 0;
-    for (let i = a; i < b && i < n; i++) { if (peaks[i] > v) v = peaks[i]; }
-    const h = v * halfH * 2;
-    if (h < 1) continue;
-    ctx2d.fillRect(x, mid - h / 2, 1, h);
-  }
-}
-
-// 選択 / 読込状態が変わった時に peaks が無ければ計算をキックする
-function mtMaybeKickPeaksCompute() {
-  const m = state.multitrack;
-  const idx = m.selectedIdx >= 0 ? m.selectedIdx : m.currentSongIdx;
-  if (idx < 0 || idx >= m.songs.length) return;
-  const song = m.songs[idx];
-  if (!song) return;
-  if (song.peaks && song.peaks.data) return;
-  if (mtPeaksComputing[song.id]) return;
-  const hasAny = MT_GROUPS.some(g => mtGetLayers(song, g).some(l => l && l.sampleId));
-  if (!hasAny) return;
-  mtComputePeaksForSong(idx);
-}
-
-// 波形 canvas のリサイズ監視 (1 回だけセット)
-let _mtWaveformResizeObs = null;
-function mtSetupWaveformResize() {
-  if (_mtWaveformResizeObs) return;
-  const canvas = document.getElementById('mtHeroWaveform');
-  if (!canvas) return;
-  if (typeof ResizeObserver === 'undefined') return;
-  _mtWaveformResizeObs = new ResizeObserver(() => { try { mtRenderWaveform(); } catch(_) {} });
-  _mtWaveformResizeObs.observe(canvas);
-}
-
-// 曲の STEM 構成が変わった時 (追加/削除/再アサイン) に peaks を無効化
-function mtInvalidatePeaks(songIdx) {
-  if (songIdx === undefined) {
-    for (const s of state.multitrack.songs) { if (s) s.peaks = null; }
-  } else {
-    const s = state.multitrack.songs[songIdx];
-    if (s) s.peaks = null;
-  }
-  try { mtRenderWaveform(); } catch(_) {}
-}
-
 // ファイルを読み込んで対象グループに割当（targetGroup=null なら unassigned プールに）
 // v10.0.0: 取り込み時に OPFS にコピー保存 (アプリ内に閉じる、原本を動かしても安全)
 async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
@@ -11170,8 +10968,6 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     }
     mtSave();
     mtRecomputeSongDuration();
-    // v11.6.0: STEM 構成が変わったので波形を無効化 (mtRenderNow が遅延計算をキック)
-    try { mtInvalidatePeaks(songIdx); } catch(_) {}
     mtRenderSetlist();
     mtRenderNow();
     const where = savedToProjectFolder ? 'プロジェクトフォルダ'
@@ -14352,10 +14148,6 @@ function mtRenderNow() {
   mtUpdateProgress();
   mtRenderLocates();
   mtRenderSongInfo();
-  // v11.6.0: マスター波形 (タイムライン下)
-  try { mtSetupWaveformResize(); } catch(_) {}
-  try { mtRenderWaveform(); } catch(_) {}
-  try { mtMaybeKickPeaksCompute(); } catch(_) {}
 }
 
 // 右下の "SELECTED SONG":
