@@ -3481,6 +3481,23 @@
               <select class="mt-ch-select" id="mtChDrumsR" onchange="mtSetCh('drums','R',this.value)" title="DRUMS R"><option value="12">12</option></select>
             </div>
           </div>
+          <!-- v12.0: extras (デフォルト非表示、Phase B で「+ ADD GROUP」UI 追加予定) -->
+          <div class="mt-ch-pill" style="--c:#9B5DE5; display:none;" data-group="extra1" id="mtChPill_extra1">
+            <span class="mt-ch-glabel">E1</span>
+            <div class="mt-ch-row">
+              <select class="mt-ch-select" id="mtChExtra1L" onchange="mtSetCh('extra1','L',this.value)" title="EXTRA 1 L"><option value="12">12</option></select>
+              <button class="mt-ch-mode" id="mtChExtra1Mode" onclick="mtToggleMono('extra1')" title="MONO/STEREO 切替">M</button>
+              <select class="mt-ch-select" id="mtChExtra1R" onchange="mtSetCh('extra1','R',this.value)" title="EXTRA 1 R" style="display:none;"><option value="12">12</option></select>
+            </div>
+          </div>
+          <div class="mt-ch-pill" style="--c:#00BBC9; display:none;" data-group="extra2" id="mtChPill_extra2">
+            <span class="mt-ch-glabel">E2</span>
+            <div class="mt-ch-row">
+              <select class="mt-ch-select" id="mtChExtra2L" onchange="mtSetCh('extra2','L',this.value)" title="EXTRA 2 L"><option value="13">13</option></select>
+              <button class="mt-ch-mode" id="mtChExtra2Mode" onclick="mtToggleMono('extra2')" title="MONO/STEREO 切替">M</button>
+              <select class="mt-ch-select" id="mtChExtra2R" onchange="mtSetCh('extra2','R',this.value)" title="EXTRA 2 R" style="display:none;"><option value="13">13</option></select>
+            </div>
+          </div>
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
@@ -3520,7 +3537,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v11.9.12';
+const APP_VERSION = 'v12.0.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -4021,15 +4038,26 @@ const state = {
       other:  { L: 6, R: 7 },
       bass:   { L: 8, R: 9 },
       drums:  { L: 10, R: 11 },
+      // v12.0: extras はデフォルト非表示。表示された時に使われる
+      extra1: { L: 12, R: 12, mono: true },
+      extra2: { L: 13, R: 13, mono: true },
+    },
+    // v12.0: グループの表示状態。extras はデフォルト非表示
+    groupVisible: {
+      click: true, vocal: true, chorus: true, other: true, bass: true, drums: true,
+      extra1: false, extra2: false,
     },
     groupGains: {
       click: 1.0, vocal: 1.0, chorus: 1.0, other: 1.0, bass: 1.0, drums: 1.0,
+      extra1: 1.0, extra2: 1.0,
     },
     groupMute: {
       click: false, vocal: false, chorus: false, other: false, bass: false, drums: false,
+      extra1: false, extra2: false,
     },
     groupSolo: {
       click: false, vocal: false, chorus: false, other: false, bass: false, drums: false,
+      extra1: false, extra2: false,
     },
     songs: [],                    // [{ id, name, tracks: {drums:{sampleId,name}|null, bass:..., ...} }]
     currentSongIdx: -1,            // 再生中の曲
@@ -9832,12 +9860,17 @@ function initOutputMode() {
 //  - 曲の終わり -> gapSec 待機 -> 次曲を auto-advance（trigger は setTimeout で堅牢に）
 
 // 表示順: CLICK → VOCAL → CHORUS → OTHER → BASS → DRUMS
-const MT_GROUPS = ['click', 'vocal', 'chorus', 'other', 'bass', 'drums'];
+// v12.0 (Phase A): MT_GROUPS を 8 個に拡張。extra1 / extra2 はデフォルト非表示。
+// ユーザーが「+ ADD GROUP」で表示し、ラベルもリネーム可能 (Phase B/C で UI 追加)。
+const MT_GROUPS = ['click', 'vocal', 'chorus', 'other', 'bass', 'drums', 'extra1', 'extra2'];
+const MT_GROUPS_DEFAULT_VISIBLE = ['click', 'vocal', 'chorus', 'other', 'bass', 'drums']; // デフォルトで常に見えるグループ
 const MT_GROUP_LABELS = {
-  click:'CLICK', vocal:'VOCAL', chorus:'CHORUS', other:'OTHER', bass:'BASS', drums:'RHYTHM'
+  click:'CLICK', vocal:'VOCAL', chorus:'CHORUS', other:'OTHER', bass:'BASS', drums:'RHYTHM',
+  extra1:'EXTRA 1', extra2:'EXTRA 2'
 };
 const MT_GROUP_LABELS_JP = {
-  click:'クリック', vocal:'ボーカル', chorus:'コーラス', other:'OTHER', bass:'ベース', drums:'リズム'
+  click:'クリック', vocal:'ボーカル', chorus:'コーラス', other:'OTHER', bass:'ベース', drums:'リズム',
+  extra1:'EXTRA 1', extra2:'EXTRA 2'
 };
 const MT_GROUP_COLORS = {
   click:'#4FA3FF',   // light blue (click track convention)
@@ -9845,8 +9878,20 @@ const MT_GROUP_COLORS = {
   chorus:'#6BC724',  // lime
   other:'#FF8A0F',   // orange
   bass:'#2E7AFF',    // blue
-  drums:'#FF4A8F'    // pink
+  drums:'#FF4A8F',   // pink
+  extra1:'#9B5DE5',  // purple
+  extra2:'#00BBC9'   // teal
 };
+// v12.0: グループが可視か判定 (デフォルト 6 つは常に true、extra1/2 は state 依存)
+function mtIsGroupVisible(g) {
+  if (MT_GROUPS_DEFAULT_VISIBLE.includes(g)) return true;
+  const vis = state.multitrack && state.multitrack.groupVisible;
+  return !!(vis && vis[g] === true);
+}
+// 現在可視のグループだけを返す
+function mtVisibleGroups() {
+  return MT_GROUPS.filter(mtIsGroupVisible);
+}
 // hex (#RRGGBB) → rgba(r, g, b, a) 文字列
 function hexToRgba(hex, alpha = 1) {
   if (!hex || hex[0] !== '#') return hex;
@@ -9885,6 +9930,7 @@ function mtSerialize() {
     autoAdvance: m.autoAdvance,
     playbackMode: m.playbackMode, // v9.0.0
     channelMap: m.channelMap,
+    groupVisible: m.groupVisible, // v12.0
     groupGains: m.groupGains,
     groupMute: m.groupMute,
     groupSolo: m.groupSolo,
@@ -9951,9 +9997,15 @@ function mtRestore(saved) {
   }
   // v11.8.0: CLICK の mono 強制を撤去 — 全グループの mono/stereo はユーザーが切替可能に
   // 既存プリセットの mono フラグは保持。L=R なら自動で mono 扱い (mtMediaSetupGroupRouting 側で吸収)
+  // v12.0: 旧プリセットに extras がなくても基底値が残るようにスプレッドマージ
   if (saved.groupGains) m.groupGains = { ...m.groupGains, ...saved.groupGains };
   if (saved.groupMute) m.groupMute = { ...m.groupMute, ...saved.groupMute };
   if (saved.groupSolo) m.groupSolo = { ...m.groupSolo, ...saved.groupSolo };
+  // v12.0: groupVisible (旧プリセットには無いので、無ければデフォルトを維持)
+  if (saved.groupVisible) m.groupVisible = { ...m.groupVisible, ...saved.groupVisible };
+  // v12.0: extras が channelMap に欠けてたら追加 (旧プリセット用フォールバック)
+  if (!m.channelMap.extra1) m.channelMap.extra1 = { L: 12, R: 12, mono: true };
+  if (!m.channelMap.extra2) m.channelMap.extra2 = { L: 13, R: 13, mono: true };
   if (Array.isArray(saved.songs)) m.songs = saved.songs.map(s => ({
     id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
     name: s.name || 'Untitled',
@@ -10348,7 +10400,9 @@ async function _mtRebuildRoutingInner() {
 
 function mtMaxAssignedChannel() {
   let max = 2;
+  // v12.0: 非表示の extras は ch 計算から除外 (隠れてる時にデバイスを無駄に拡張しない)
   for (const g of MT_GROUPS) {
+    if (!mtIsGroupVisible(g)) continue;
     const cm = state.multitrack.channelMap[g];
     if (!cm) continue;
     max = Math.max(max, cm.L|0, cm.R|0);
@@ -10588,7 +10642,7 @@ function _mtFindChannelConflicts(currentGroup, currentSide, currentVal) {
 // v11.3.3: チャンネルアサイン <select> の option を動的生成
 //          (デバイスの maxChannelCount に応じて選択肢が変わる、業界 DAW 標準パターン)
 //          範囲外の保存値があれば "N (範囲外)" として disabled option で表示 (履歴可視化)
-// v11.8.0: 全 6 グループとも L/R 両方の select を持つ (mono 時は R を隠す)
+// v11.8.0 / v12.0: 全 8 グループとも L/R 両方の select を持つ (mono 時は R を隠す)
 const _MT_CH_SELECTS = [
   ['mtChClickL',  'click',  'L'], ['mtChClickR',  'click',  'R'],
   ['mtChVocalL',  'vocal',  'L'], ['mtChVocalR',  'vocal',  'R'],
@@ -10596,6 +10650,8 @@ const _MT_CH_SELECTS = [
   ['mtChOtherL',  'other',  'L'], ['mtChOtherR',  'other',  'R'],
   ['mtChBassL',   'bass',   'L'], ['mtChBassR',   'bass',   'R'],
   ['mtChDrumsL',  'drums',  'L'], ['mtChDrumsR',  'drums',  'R'],
+  ['mtChExtra1L', 'extra1', 'L'], ['mtChExtra1R', 'extra1', 'R'],
+  ['mtChExtra2L', 'extra2', 'L'], ['mtChExtra2R', 'extra2', 'R'],
 ];
 function _mtUpdateChSelects() {
   // ctx 未初期化なら state の outputChannelCount を fallback として使う (デフォルト 2)
@@ -10634,6 +10690,17 @@ function _mtUpdateChSelects() {
     }
   }
 }
+
+// v12.0: ROUTING ピルの表示/非表示を groupVisible に同期
+function _mtUpdateGroupVisibility() {
+  for (const g of MT_GROUPS) {
+    const pill = document.getElementById(`mtChPill_${g}`);
+    if (pill) {
+      pill.style.display = mtIsGroupVisible(g) ? '' : 'none';
+    }
+  }
+}
+try { window._mtUpdateGroupVisibility = _mtUpdateGroupVisibility; } catch(_) {}
 
 // v11.8.0: グループの MONO/STEREO を切替
 // v11.8.2: 本番安全化 — 本番モード中は拒否、再生中は DOM 全再構築せず軽量更新のみ
@@ -12232,6 +12299,11 @@ function mtMediaSetupGroupRouting() {
   for (const g of MT_GROUPS) {
     const gain = mtGroupGainNodes[g];
     if (!gain) continue;
+    // v12.0: 非表示グループは routing スキップ (gain は arrange 上で disconnect → 無音)
+    if (!mtIsGroupVisible(g)) {
+      try { gain.disconnect(); } catch(_) {}
+      continue;
+    }
     // 既存の下流を切る (analyser 含む)
     try { gain.disconnect(); } catch(_) {}
     // analyser 再接続 (メーター用、sink-only で出力には影響しない)
@@ -13351,6 +13423,8 @@ function mtRecomputeSongDuration() {
 
 // ---- 表示更新 ----
 function mtRenderAll() {
+  // v12.0: ROUTING ピルの表示/非表示を同期 (extras はデフォルト非表示)
+  try { _mtUpdateGroupVisibility(); } catch(_) {}
   mtRefreshDevices();
   mtUpdateChStatus();
   mtBindTimeline();
@@ -13383,10 +13457,12 @@ function mtRenderMixer() {
   const host = document.getElementById('mtMixerStrips');
   if (!host) return;
   host.innerHTML = '';
-  const anySolo = MT_GROUPS.some(g => state.multitrack.groupSolo[g]);
+  // v12.0: 非表示グループはストリップを描画しない
+  const visibleGroups = mtVisibleGroups();
+  const anySolo = visibleGroups.some(g => state.multitrack.groupSolo[g]);
   // 選択中の曲のうち、空のグループ = drop target としてパルスさせる
   const selSong = state.multitrack.songs[state.multitrack.selectedIdx];
-  for (const g of MT_GROUPS) {
+  for (const g of visibleGroups) {
     const strip = document.createElement('div');
     strip.className = 'mt-strip';
     if (state.multitrack.groupMute[g]) strip.classList.add('muted');
