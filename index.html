@@ -586,7 +586,14 @@
   }
   /* v12.3.0: grip が top-left に移ったので padding-left に変更、右側は EDIT 用に確保 */
   .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; padding-left: 26px; padding-right: 44px; }
-  .pad-num { color: #5A5A60; letter-spacing: 0.5px; }
+  /* v12.5.5: pad-num 自体をクリック可能に (色変更ボタン兼任) */
+  .pad-num {
+    color: #5A5A60; letter-spacing: 0.5px;
+    cursor: pointer; padding: 0 4px; border-radius: 3px;
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .pad-num:hover { background: rgba(255,255,255,0.08); }
   .pad.playing .pad-num { color: #3DB5A6; }
   .pad-name { font-size: 14px; font-weight: 500; color: #E6E6EA; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pad-footer { display: flex; flex-direction: column; gap: 2px; }
@@ -3745,7 +3752,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.4';
+const APP_VERSION = 'v12.5.5';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -6181,7 +6188,7 @@ function renderPads() {
           <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">EDIT</button>
           <div class="pad-head">
             <div style="display:flex; align-items:center; gap:6px;">
-              <span class="pad-num">${idx+1}</span>
+              <span class="pad-num" title="クリックで色変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);">${idx+1}</span>
               <button class="pad-color-dot" title="色を変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);"${dotStyle}></button>
             </div>
             ${pad.isPlaying ? `<span style="color:${playArrowColor};">▶</span>` : '<span></span>'}
@@ -6228,6 +6235,7 @@ function renderPads() {
       if (e.target.closest('.pad-grip')) return;
       if (e.target.closest('.pad-edit-btn')) return;
       if (e.target.closest('.pad-color-dot')) return;
+      if (e.target.closest('.pad-num')) return; // v12.5.5: 色変更ボタン兼任
       if (e.target.closest('.badge')) return;
       if (pad.audioBuffer) playPad(state.currentBank, idx);
     };
