@@ -3073,15 +3073,25 @@
   }
   .do-chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px; padding: 2px; border-radius: 4px; transition: background 0.15s; }
   .do-chain.drop-over { background: rgba(93,202,165,0.06); outline: 0.5px dashed #3DB5A6; }
-  /* 白基調のピル＋色バッジ */
+  /* 白基調のピル＋色バッジ — v12.5.10: ドラッグ可能を見た目で示す */
   .do-chip {
     display: inline-flex; align-items: center; gap: 6px;
     background: #14141A; border: 0.5px solid #25252A; border-radius: 4px;
     padding: 5px 10px; font-size: 11px; color: #E6E6EA; cursor: grab;
-    transition: all 0.15s;
+    transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    user-select: none;
   }
-  .do-chip:hover { border-color: rgba(230,230,234,0.5); }
-  .do-chip.dragging { opacity: 0.4; }
+  .do-chip:hover {
+    border-color: rgba(93,202,165,0.6);
+    background: #1A1A20;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .do-chip:active { cursor: grabbing; transform: translateY(0); }
+  .do-chip.dragging { opacity: 0.4; cursor: grabbing; }
+  /* チップ内の子要素にもポインタ系を継承 — テキスト選択で誤動作しない */
+  .do-chip * { pointer-events: none; }
+  .do-chip .do-chip-x { pointer-events: auto; } /* × ボタンだけはクリック可能 */
   /* 再生中：囲み線なしで背景の濃さだけで示す（パステル緑塗り） */
   .do-chip.playing { background: rgba(93,202,165,0.22); border-color: transparent; }
   .do-chip.playing .do-chip-label { font-weight: 500; }
@@ -3775,7 +3785,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.9';
+const APP_VERSION = 'v12.5.10';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
