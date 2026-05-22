@@ -499,6 +499,13 @@
   .pad.has-color .pad-time { color: var(--pad-c); }
   .pad.has-color .pad-body:hover .pad-shortcuts .badge.midi { color: var(--pad-c); }
   .pad.has-color .pad-body:hover .pad-shortcuts .badge.key { color: var(--pad-c); }
+  /* v12.5.4: バッジの背景四角も選んだ色で薄くチントして統一感を出す */
+  .pad.has-color .pad-shortcuts .badge {
+    background: color-mix(in srgb, var(--pad-c) 18%, #14141A);
+  }
+  .pad.has-color .pad-shortcuts .badge:hover {
+    background: color-mix(in srgb, var(--pad-c) 32%, #14141A);
+  }
 
   /* v12.4.5: 色ドット — デフォルト (色なし) では中空の○、色付きパッドでは非表示 */
   .pad-color-dot {
@@ -3738,7 +3745,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.3';
+const APP_VERSION = 'v12.5.4';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
