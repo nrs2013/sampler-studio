@@ -3728,7 +3728,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.1';
+const APP_VERSION = 'v12.5.2';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -12420,6 +12420,15 @@ function mtFsNotifyPlaybackStop()  { mtFs.isPlaybackActive = false; }
 async function mtFsSetShowMode(on) {
   mtFs.showMode = !!on;
   if (on) {
+    // v12.5.2: フルスクリーンを最初に同期的に発火させる (await 前に request)
+    // → ユーザージェスチャ文脈が生きてる間に呼ばないとブラウザが拒否する
+    let fsPromise = null;
+    try {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        fsPromise = document.documentElement.requestFullscreen();
+      }
+    } catch(_) { /* ignore */ }
+
     // 画面スリープ防止 (wakeLock)
     if ('wakeLock' in navigator) {
       try {
@@ -12438,14 +12447,12 @@ async function mtFsSetShowMode(on) {
     } else {
       showToast('🎭 本番モード ON (wakeLock 非対応ブラウザ)');
     }
-    // v12.5.1: フルスクリーン突入 (ユーザージェスチャ由来なので拒否されにくい)
-    try {
-      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
+    // フルスクリーン完了を最後に確認 (失敗してもログだけ、致命的ではない)
+    if (fsPromise) {
+      try { await fsPromise; } catch(e) {
+        mtFsLogError('warn', 'fullscreen 失敗: ' + (e.message || e));
+        showToast('⚠️ フルスクリーン失敗 — F11 で手動切替してください');
       }
-    } catch(e) {
-      // 失敗しても致命的ではない (ユーザーが手動で F11 すれば良い)
-      mtFsLogError('warn', 'fullscreen 失敗: ' + (e.message || e));
     }
   } else {
     if (mtFs._wakeLock) {
