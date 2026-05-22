@@ -3728,7 +3728,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.4.6';
+const APP_VERSION = 'v12.5.0';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -5126,14 +5126,54 @@ function scheduleSaveProjectJSON() {
   }, 2000); // 2秒デバウンス
 }
 
-async function saveSampleToDB(id, arrayBuffer, name) {
+// v12.5.0: data は Blob / File / ArrayBuffer のいずれでも OK。
+// 大容量ファイルでも arrayBuffer() で全量メモリ展開せず、Blob/File を直接 IDB に put する。
+// IDB は Blob/File を直接保存できる (Chrome/Safari/Firefox 全対応)。
+async function saveSampleToDB(id, data, name) {
   if (!db) await openDB();
+  // mime 推測 (Blob/File の場合は type を、なければ name から)
+  const mime = (data && data.type) ? data.type
+             : (typeof guessAudioMime === 'function' ? guessAudioMime(name || '') : 'audio/mpeg');
   return new Promise((resolve, reject) => {
     const tx = db.transaction('samples', 'readwrite');
-    tx.objectStore('samples').put({ id, data: arrayBuffer, name });
+    tx.objectStore('samples').put({ id, data, name, mime });
     tx.oncomplete = () => resolve();
     tx.onerror = e => reject(e);
   });
+}
+
+// v12.5.0: IDB から取り出した rec.data を Blob として取得 (旧 ArrayBuffer データとの下位互換)。
+// 旧バージョンで保存された ArrayBuffer は Blob に詰め替えて返す。
+function _recDataAsBlob(rec, fallbackName) {
+  if (!rec || rec.data == null) return null;
+  if (rec.data instanceof Blob) return rec.data;
+  const mime = rec.mime || (typeof guessAudioMime === 'function' ? guessAudioMime(rec.name || fallbackName || '') : 'audio/mpeg');
+  return new Blob([rec.data], { type: mime });
+}
+
+// v12.5.0: IDB から取り出した rec.data を ArrayBuffer として取得 (decodeAudioData 用)。
+// Blob でも ArrayBuffer でも対応。decodeAudioData は ArrayBuffer を要求するため、Blob なら展開する。
+async function _recDataAsArrayBuffer(rec) {
+  if (!rec || rec.data == null) return null;
+  if (rec.data instanceof Blob) return await rec.data.arrayBuffer();
+  // 旧データ: 既に ArrayBuffer
+  return rec.data;
+}
+
+// v12.5.0: 大容量音源の誤投入ガード — サンプラーパッド/影アナは短い音源用。
+// 30MB 超えで confirm() 警告。OK で続行、Cancel で false を返す。
+function _warnIfLargeAudio(file) {
+  if (!file) return true;
+  const SIZE_LIMIT = 30 * 1024 * 1024; // 30MB
+  if (file.size <= SIZE_LIMIT) return true;
+  const mb = (file.size / (1024 * 1024)).toFixed(0);
+  return confirm(
+    `「${file.name}」は ${mb}MB あります。\n\n` +
+    `サンプラーパッドや影アナは短い音源用です。\n` +
+    `大きすぎる音源を入れると、アプリが不安定になったり、\n` +
+    `他のパッドが止まる可能性があります。\n\n` +
+    `本当に読み込みますか？`
+  );
 }
 
 async function getSampleFromDB(id) {
@@ -5445,12 +5485,16 @@ async function importProject(file) {
 }
 
 async function loadSampleToPad(bankIdx, padIdx, file) {
+  // v12.5.0: 大容量音源の誤投入ガード
+  if (!_warnIfLargeAudio(file)) return;
   initAudio();
   try {
+    // decode 用に ArrayBuffer は必要 (decodeAudioData は ArrayBuffer 要)
+    // ただし IDB には File を直接渡して二重保持を避ける
     const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
     const id = `b${bankIdx}-p${padIdx}-${Date.now()}`;
-    await saveSampleToDB(id, arrayBuffer, file.name);
+    await saveSampleToDB(id, file, file.name);
     const pad = state.banks[bankIdx].pads[padIdx];
     pad.audioBuffer = audioBuffer;
     pad.sampleName = file.name.replace(/\.[^.]+$/, '');
@@ -5757,7 +5801,11 @@ async function loadPresetByName(name) {
           if (sd.sampleId) {
             const rec = await getSampleFromDB(sd.sampleId);
             if (rec) {
-              try { pad.audioBuffer = await ctx.decodeAudioData(rec.data.slice(0)); } catch(e){}
+              // v12.5.0: rec.data が Blob/File でも ArrayBuffer でも対応
+              try {
+                const arr = await _recDataAsArrayBuffer(rec);
+                if (arr) pad.audioBuffer = await ctx.decodeAudioData(arr);
+              } catch(e){}
             }
           }
         }
@@ -5933,7 +5981,9 @@ async function restoreAudioBuffers() {
     try {
       const rec = await getSampleFromDB(target.sampleId);
       if (rec && rec.data) {
-        target.audioBuffer = await ctx.decodeAudioData(rec.data.slice(0));
+        // v12.5.0: rec.data が Blob/File でも ArrayBuffer でも対応
+        const arr = await _recDataAsArrayBuffer(rec);
+        target.audioBuffer = await ctx.decodeAudioData(arr);
       } else {
         // Sample data missing in DB — clear the reference so pad shows as empty
         target.sampleId = null;
@@ -7385,13 +7435,14 @@ async function doBgmLoadFile(slot, f) {
   try {
     if (!ctx) initAudio();
     if (ctx.state === 'suspended') await ctx.resume();
-    const arrBuf = await f.arrayBuffer();
+    // v12.5.0: BGM は MediaElementSource 経由で再生するため、デコード不要。
+    // arrayBuffer() で全量メモリ展開せず、File を直接 IDB に保存し、object URL は File から作る。
     const id = `door-bgm-${slot}-${Date.now()}`;
-    try { await saveSampleToDB(id, arrBuf, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); showToast('⚠️ BGM 永続保存失敗（EXPORT に含まれない可能性）: ' + (e.message || e)); }
+    try { await saveSampleToDB(id, f, f.name); } catch(e) { console.warn('saveSampleToDB failed:', e); showToast('⚠️ BGM 永続保存失敗（EXPORT に含まれない可能性）: ' + (e.message || e)); }
     // Anti-click: fade current BGM (if playing) before replacing audio nodes
     await _doBgmDetachAsync(slot);
-    const blob = new Blob([arrBuf], { type: guessAudioMime(f.name, f.type) });
-    const url = URL.createObjectURL(blob);
+    // File は Blob のサブクラスなので、そのまま createObjectURL に渡せる
+    const url = URL.createObjectURL(f);
     const audio = new Audio();
     audio.src = url;
     const b = _bgmObj(slot);
@@ -7407,7 +7458,7 @@ async function doBgmLoadFile(slot, f) {
     b.mediaSource = ms;
     doRenderBgm(slot);
     doSave();
-    showToast(`${slot === 'workout' ? 'WORKOUT' : 'DOOR OPEN'} BGM 読込: ${f.name}（${(arrBuf.byteLength/1024/1024).toFixed(1)} MB）`);
+    showToast(`${slot === 'workout' ? 'WORKOUT' : 'DOOR OPEN'} BGM 読込: ${f.name}（${(f.size/1024/1024).toFixed(1)} MB）`);
   } catch (err) {
     console.error('BGM 読込失敗', err);
     showToast('BGM 読込失敗: ' + (err && err.message || err));
@@ -7846,11 +7897,14 @@ function doLibLoad(slotIdx) {
   inp.onchange = async (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    // v12.5.0: 大容量音源の誤投入ガード
+    if (!_warnIfLargeAudio(f)) { inp.value = ''; return; }
     try {
       const arrBuf = await f.arrayBuffer();
-      const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+      const audBuf = await ctx.decodeAudioData(arrBuf);
       const id = `door-lib-${slotIdx}-${Date.now()}`;
-      await saveSampleToDB(id, arrBuf, f.name);
+      // IDB には File を直接保存 (arrBuf は decode 用に既に展開済みなので破棄)
+      await saveSampleToDB(id, f, f.name);
       // Keep existing level if replacing, else default 1.0
       const prevLevel = state.door.library[slotIdx]?.level;
       state.door.library[slotIdx] = {
@@ -7874,6 +7928,8 @@ function doLibLoad(slotIdx) {
 // LIBRARY のエリア全体にファイルがドロップされた時：空きスロットに入れる。なければ末尾に追加
 async function doLibAppendFile(f) {
   if (!f) return;
+  // v12.5.0: 大容量音源の誤投入ガード
+  if (!_warnIfLargeAudio(f)) return;
   try {
     if (!ctx) initAudio();
     if (ctx.state === 'suspended') await ctx.resume();
@@ -7884,9 +7940,10 @@ async function doLibAppendFile(f) {
       idx = state.door.library.length - 1;
     }
     const arrBuf = await f.arrayBuffer();
-    const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+    const audBuf = await ctx.decodeAudioData(arrBuf);
     const id = `door-lib-${idx}-${Date.now()}`;
-    await saveSampleToDB(id, arrBuf, f.name);
+    // IDB には File を直接保存
+    await saveSampleToDB(id, f, f.name);
     state.door.library[idx] = {
       sampleId: id, sampleName: f.name, audioBuffer: audBuf, level: 1.0,
     };
@@ -9011,11 +9068,13 @@ function doRenderLibrary() {
         if (!f) return;
         e.preventDefault();
         e.stopPropagation(); // 親 LIBRARY card の drop は走らせない
+        // v12.5.0: 大容量音源の誤投入ガード
+        if (!_warnIfLargeAudio(f)) return;
         try {
           const arrBuf = await f.arrayBuffer();
-          const audBuf = await ctx.decodeAudioData(arrBuf.slice(0));
+          const audBuf = await ctx.decodeAudioData(arrBuf);
           const id = `door-lib-${i}-${Date.now()}`;
-          await saveSampleToDB(id, arrBuf, f.name);
+          await saveSampleToDB(id, f, f.name);
           state.door.library[i] = { sampleId: id, sampleName: f.name, audioBuffer: audBuf, level: 1.0 };
           doRenderLibrary();
           doRenderSchedule();
@@ -9845,8 +9904,8 @@ async function doRestoreAudioBuffers() {
       const rec = await getSampleFromDB(b.sampleId);
       if (rec && rec.data) {
         _doBgmDetach(slot);
-        const mime = guessAudioMime(rec.name || b.sampleName, rec.type);
-        const blob = new Blob([rec.data], { type: mime });
+        // v12.5.0: rec.data が Blob/File ならそのまま、旧 ArrayBuffer なら Blob 化
+        const blob = _recDataAsBlob(rec, b.sampleName);
         const url = URL.createObjectURL(blob);
         const audio = new Audio();
         audio.src = url;
@@ -9870,8 +9929,12 @@ async function doRestoreAudioBuffers() {
       try {
         const rec = await getSampleFromDB(it.sampleId);
         if (rec) {
-          const buf = await ctx.decodeAudioData(rec.data.slice(0));
-          it.audioBuffer = buf;
+          // v12.5.0: rec.data が Blob/File でも ArrayBuffer でも対応
+          const arr = await _recDataAsArrayBuffer(rec);
+          if (arr) {
+            const buf = await ctx.decodeAudioData(arr);
+            it.audioBuffer = buf;
+          }
         }
       } catch(e) {}
     }
@@ -11611,7 +11674,9 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
   try {
     await mtInitCtx();
     if (mtCtx.state === 'suspended') await mtCtx.resume();
-    const arrBuf = await file.arrayBuffer();
+    // v12.5.0: arrayBuffer() で全量メモリ展開しない。
+    //   File は Blob のサブクラスなので、saveSampleToProjectFolder/saveSampleToOPFS/saveSampleToDB
+    //   いずれも File をそのまま受け付ける (FileSystemWritableFileStream.write も IDB の put も対応)。
     const sampleId = `mt-${state.multitrack.songs[songIdx].id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
     const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(file.name, file.type) : (file.type || 'audio/wav');
     // === v10.1.0: プロジェクトフォルダにコピー保存 (これがメイン、Finder で見える) ===
@@ -11619,14 +11684,14 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     const activeProjectId = projGetActiveId();
     if (activeProjectId) {
       try {
-        savedToProjectFolder = await saveSampleToProjectFolder(activeProjectId, file.name, arrBuf);
+        savedToProjectFolder = await saveSampleToProjectFolder(activeProjectId, file.name, file);
       } catch(e) { console.warn('[projFolder] save failed', e); }
     }
     // フォールバック1: OPFS (Phase 1 から残置、プロジェクトフォルダ未設定 or 書込み失敗時)
     let savedToOPFS = false;
     if (!savedToProjectFolder) {
       try {
-        savedToOPFS = await saveSampleToOPFS(sampleId, arrBuf, file.name, mime);
+        savedToOPFS = await saveSampleToOPFS(sampleId, file, file.name, mime);
       } catch(e) { console.warn('[OPFS] save failed', e); }
     }
     // フォールバック2: handle 参照
@@ -11639,7 +11704,7 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     }
     // フォールバック3: IndexedDB blob (最終手段)
     if (!savedToProjectFolder && !savedToOPFS && !usingHandle) {
-      try { await saveSampleToDB(sampleId, arrBuf, file.name); } catch(e) {
+      try { await saveSampleToDB(sampleId, file, file.name); } catch(e) {
         console.warn('mt saveSampleToDB failed', e);
         showToast('⚠️ ファイル永続保存失敗: ' + (e.message || e));
       }
@@ -11668,7 +11733,7 @@ async function mtLoadTrackFile(songIdx, file, handle, targetGroup = null) {
     const where = savedToProjectFolder ? 'プロジェクトフォルダ'
                 : (savedToOPFS ? 'アプリ内保存'
                 : (usingHandle ? 'ローカル参照' : 'ブラウザ保存'));
-    const sizeMB = (arrBuf.byteLength / 1024 / 1024).toFixed(1);
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
     showToast(`📂 読込: ${file.name} (${sizeMB} MB・${where})`);
   } catch(e) {
     console.error('mtLoadTrackFile failed', e);
@@ -11944,6 +12009,9 @@ async function saveSampleToOPFS(sampleId, data, name, mime) {
 
 // 音源を OPFS から読み出し
 // returns: { blob: Blob, name: string, mime: string } | null
+// v12.5.0: File (= Blob のサブクラス) をそのまま返す。
+//   旧実装は arrayBuffer() で全量メモリ展開してから Blob に詰め替えていたため、
+//   600MB WAV で 1.2GB のメモリスパイクが発生していた。File は遅延読み込み可能。
 async function loadSampleFromOPFS(sampleId) {
   try {
     const dir = await _opfsGetSamplesDir(false);
@@ -11958,8 +12026,8 @@ async function loadSampleFromOPFS(sampleId) {
       const allMeta = JSON.parse(await metaFile.text());
       if (allMeta[sampleId]) meta = allMeta[sampleId];
     } catch(_) {}
-    const blob = new Blob([await file.arrayBuffer()], { type: meta.mime || 'audio/wav' });
-    return { blob, name: meta.name, mime: meta.mime };
+    // File は Blob のサブクラスなので、呼び出し側 (createObjectURL / arrayBuffer) はそのまま動く
+    return { blob: file, name: meta.name, mime: meta.mime };
   } catch(e) {
     // NotFoundError は正常 (まだ OPFS に無い)
     if (e && e.name === 'NotFoundError') return null;
@@ -12160,7 +12228,9 @@ async function _mtFsLoadOne(sampleId, askPermission) {
       const r = await getSampleFromDB(sampleId);
       if (r && r.data) {
         try {
-          const buf = await mtRobustDecode(r.data, { name: r.name || sampleId });
+          // v12.5.0: r.data が Blob/File でも ArrayBuffer でも対応
+          const arr = await _recDataAsArrayBuffer(r);
+          const buf = await mtRobustDecode(arr, { name: r.name || sampleId });
           mtDecodedCache[sampleId] = buf;
           _mtTouchSampleId(sampleId);
           mtFs._failed.delete(sampleId);
@@ -12707,11 +12777,13 @@ async function mtMediaLoadOne(sampleId) {
       try {
         const r = await getSampleFromDB(sampleId);
         if (r && r.data) {
-          const mime = (typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav';
-          blob = new Blob([r.data], { type: mime });
+          // v12.5.0: r.data が Blob/File でも ArrayBuffer でも対応
+          blob = _recDataAsBlob(r, sampleId);
           name = r.name || sampleId;
           // v10.0.0: IDB blob 経由で読めた → 自動的に OPFS にも移行
-          saveSampleToOPFS(sampleId, r.data, name, mime).catch(_ => {});
+          // (saveSampleToOPFS は Blob/ArrayBuffer 両対応 — Writable に直接渡せる)
+          const mime = blob.type || ((typeof guessAudioMime === 'function') ? guessAudioMime(r.name || sampleId) : 'audio/wav');
+          saveSampleToOPFS(sampleId, blob, name, mime).catch(_ => {});
         }
       } catch(_) {}
     }
