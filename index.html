@@ -489,20 +489,17 @@
   .pad.has-color .pad-num { color: var(--pad-c); }
   .pad.has-color .pad-fader-fill { background: var(--pad-c); }
   .pad.has-color .pad-fader-db { color: var(--pad-c); }
-  /* v12.5.3 + v12.5.6 + v12.5.7: 色付きパッドの再生中ハイライト
-     pad-body + .pad の隙間 + pad-fader-card まで全部チントして一体化 */
+  /* v12.5.9: 色付きパッドの再生中ハイライト — 内側 1px 枠を撤去、3要素を同じ色値で完全統一 */
   .pad.has-color .pad-body.playing {
-    background: color-mix(in srgb, var(--pad-c) 14%, #1F1F25) !important;
+    background: color-mix(in srgb, var(--pad-c) 18%, #14141A) !important;
     border-color: transparent !important;
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pad-c) 35%, transparent) !important;
+    box-shadow: none !important; /* 内側 1px の「もう一個のレイヤー」を撤去 */
   }
-  /* 再生中は .pad コンテナの背景もチント (gap 部分も色で塗る) */
   .pad.has-color:has(.pad-body.playing) {
-    background: color-mix(in srgb, var(--pad-c) 14%, #14141A);
+    background: color-mix(in srgb, var(--pad-c) 18%, #14141A);
   }
-  /* 再生中は隣のフェーダーカードもチント (タッチ機能は cursor:ns-resize で生きてる) */
   .pad.has-color:has(.pad-body.playing) .pad-fader-card {
-    background: color-mix(in srgb, var(--pad-c) 14%, #131316);
+    background: color-mix(in srgb, var(--pad-c) 18%, #14141A);
   }
   /* フェーダーカード hover の元の緑チントを撤去 (色付きパッドのみ) */
   .pad.has-color .pad-fader-card:hover {
@@ -3778,7 +3775,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.8';
+const APP_VERSION = 'v12.5.9';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
