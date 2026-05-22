@@ -489,6 +489,16 @@
   .pad.has-color .pad-num { color: var(--pad-c); }
   .pad.has-color .pad-fader-fill { background: var(--pad-c); }
   .pad.has-color .pad-fader-db { color: var(--pad-c); }
+  /* v12.5.3: 色付きパッドの中の元テーマ色を全部 --pad-c に統一 (混色防止) */
+  .pad.has-color .pad-body.playing {
+    background: #1F1F25 !important;  /* 緑成分なし */
+    border-color: transparent !important; /* 内側 border は外側の枠が担う */
+    box-shadow: none !important;
+  }
+  .pad.has-color .pad-progress-fill { background: var(--pad-c); }
+  .pad.has-color .pad-time { color: var(--pad-c); }
+  .pad.has-color .pad-body:hover .pad-shortcuts .badge.midi { color: var(--pad-c); }
+  .pad.has-color .pad-body:hover .pad-shortcuts .badge.key { color: var(--pad-c); }
 
   /* v12.4.5: 色ドット — デフォルト (色なし) では中空の○、色付きパッドでは非表示 */
   .pad-color-dot {
@@ -3728,7 +3738,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.2';
+const APP_VERSION = 'v12.5.3';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
