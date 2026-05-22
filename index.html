@@ -3142,7 +3142,7 @@
     <button class="mode-tab active" id="modeTabSampler" onclick="setAppMode('sampler')">SAMPLER</button>
     <button class="mode-tab" id="modeTabMulti" onclick="setAppMode('multi')">MULTI-TRACK</button>
     <!-- v11.5.4: SHOW MODE トグル — ラベルは英語固定 (色とランプで ON/OFF を示す) -->
-    <button class="show-mode-toggle-big" id="headerShowModeBtn" onclick="headerToggleShowMode()" title="SHOW MODE ON: 再生ロック (5秒) + 画面スリープ防止 / OFF: 編集中の制約なし">
+    <button class="show-mode-toggle-big" id="headerShowModeBtn" onclick="headerToggleShowMode()" title="SHOW MODE ON: フルスクリーン + 再生ロック (5秒) + 画面スリープ防止 / OFF: 編集中の制約なし">
       <span class="lamp"></span>
       <span class="label" id="headerShowModeLabel">SHOW MODE</span>
     </button>
@@ -3728,7 +3728,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.0';
+const APP_VERSION = 'v12.5.1';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -12438,11 +12438,26 @@ async function mtFsSetShowMode(on) {
     } else {
       showToast('🎭 本番モード ON (wakeLock 非対応ブラウザ)');
     }
+    // v12.5.1: フルスクリーン突入 (ユーザージェスチャ由来なので拒否されにくい)
+    try {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch(e) {
+      // 失敗しても致命的ではない (ユーザーが手動で F11 すれば良い)
+      mtFsLogError('warn', 'fullscreen 失敗: ' + (e.message || e));
+    }
   } else {
     if (mtFs._wakeLock) {
       try { await mtFs._wakeLock.release(); } catch(_) {}
       mtFs._wakeLock = null;
     }
+    // v12.5.1: フルスクリーン解除 (現在 FS 中の時だけ)
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+    } catch(_) {}
     showToast('🎭 本番モード OFF');
   }
   try { _mtDiagPanelUpdate(); } catch(_) {}
