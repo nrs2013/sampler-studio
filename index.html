@@ -489,11 +489,26 @@
   .pad.has-color .pad-num { color: var(--pad-c); }
   .pad.has-color .pad-fader-fill { background: var(--pad-c); }
   .pad.has-color .pad-fader-db { color: var(--pad-c); }
-  /* v12.5.3: 色付きパッドの中の元テーマ色を全部 --pad-c に統一 (混色防止) */
+  /* v12.5.3 + v12.5.6: 色付きパッドの再生中ハイライトと flash を選んだ色で */
   .pad.has-color .pad-body.playing {
-    background: #1F1F25 !important;  /* 緑成分なし */
-    border-color: transparent !important; /* 内側 border は外側の枠が担う */
-    box-shadow: none !important;
+    /* 再生中はパッド全体が選んだ色で軽くチントされる (12% の薄いオーバーレイ) */
+    background: color-mix(in srgb, var(--pad-c) 14%, #1F1F25) !important;
+    border-color: transparent !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pad-c) 35%, transparent) !important;
+  }
+  /* MIDI/キーで叩いた瞬間の 180ms ドカン (パッドの色でフラッシュ) */
+  .pad.has-color .pad-body.flash {
+    background: var(--pad-c) !important;
+    border-color: var(--pad-c) !important;
+    box-shadow:
+      0 0 16px color-mix(in srgb, var(--pad-c) 80%, transparent),
+      inset 0 0 8px rgba(255,255,255,0.25) !important;
+  }
+  .pad.has-color .pad-body.flash .pad-num,
+  .pad.has-color .pad-body.flash .pad-name,
+  .pad.has-color .pad-body.flash .pad-time,
+  .pad.has-color .pad-body.flash .pad-shortcuts .badge {
+    color: rgba(0,0,0,0.85) !important;
   }
   .pad.has-color .pad-progress-fill { background: var(--pad-c); }
   .pad.has-color .pad-time { color: var(--pad-c); }
@@ -3752,7 +3767,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.5.5';
+const APP_VERSION = 'v12.5.6';
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
