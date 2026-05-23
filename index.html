@@ -2779,10 +2779,10 @@
   }
 
   /* SELECTED SONG カード — ヘッダー無し、ファイル一覧最大化 */
-  /* v12.0.3: 元の height:250px 固定に戻す (bottom-row も固定高) */
+  /* v12.6.1: 高さを 250 → 200 に圧縮し、上の SETLIST の表示曲数を増やす */
   .mt-songinfo-card {
     padding: 8px 10px; display: flex; flex-direction: column; min-width: 0;
-    height: 250px;
+    height: 200px;
     flex-shrink: 0;
   }
   .mt-songinfo-list {
@@ -2968,7 +2968,43 @@
   .mt-ch-select option { background: #06060A; color: #FFFFFF; padding: 2px; }
   .mt-ch-select option:disabled { color: #FF6464; }
 
-  /* v12.6.0: TIMECODE OUT (LTC) セクション — AUDIO IFACE カード内、ROUTING の下に表示 */
+  /* v12.6.1: TIMECODE OUT を 1 行コンパクトな bar に — SELECTED SONG カードのフッタに配置 */
+  .mt-tc-bar {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 4px;
+    padding: 5px 6px;
+    background: #0F0F14;
+    border: 0.5px solid #1F1F22; border-radius: 4px;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .mt-tc-bar .mt-tc-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 9px; color: #C8C8CE; cursor: pointer;
+    letter-spacing: 1px; font-weight: 600;
+  }
+  .mt-tc-bar .mt-tc-toggle input[type="checkbox"] {
+    width: 12px; height: 12px; margin: 0;
+    accent-color: #3DB5A6; cursor: pointer;
+  }
+  .mt-tc-mini-label {
+    font-size: 9px; color: #6A6A70; letter-spacing: 1px; margin-left: 4px;
+  }
+  .mt-tc-mini-unit { font-size: 9px; color: #6A6A70; }
+  .mt-tc-input.mini {
+    width: 38px;
+    background: #06060A; border: 0.5px solid #1A1A1E; color: #FFFFFF;
+    padding: 2px 4px; border-radius: 3px;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px;
+    text-align: center; font-weight: 500;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .mt-tc-input.mini:focus {
+    outline: none; color: #FFFFFF;
+    background: rgba(61,181,166,0.12); border-color: #3DB5A6;
+  }
+
+  /* v12.6.0: TIMECODE OUT (LTC) セクション — レガシー (使用箇所消去済み、残し) */
   .mt-tc-section {
     margin-top: 10px;
     padding: 10px 10px 8px 10px;
@@ -3711,26 +3747,15 @@
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
 
-      <!-- AUDIO IFACE (ROUTING も内包) -->
+      <!-- AUDIO IFACE (ROUTING も内包) — v12.6.1: ヘッダー撤去、行をコンパクト化 -->
       <div class="mt-card mt-config-card">
-        <div class="mt-section-head compact">
-          <div class="mt-section-head-l">
-            <span class="mt-section-num">04</span>
-            <span class="mt-section-title">AUDIO IFACE</span>
-          </div>
-        </div>
-        <div class="mt-row">
-          <span class="mt-label">DEVICE</span>
-          <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
+        <div class="mt-row compact">
+          <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)" title="出力デバイス">
             <option value="">— 検出中… —</option>
           </select>
-          <!-- v11.9.2: 「📋 診断」ボタン撤去 (本番運用には不要) -->
-          <button class="mt-btn ghost subtle" onclick="mtRefreshDevices()" title="デバイス一覧を再検出 (USB 接続後など) — マイク権限は要求しません" style="margin-left:4px; padding:3px 8px; font-size:9px;">⟳</button>
-        </div>
-        <div class="mt-row">
-          <span class="mt-label">CHANNELS</span>
-          <span id="mtChCount" class="mt-num-readout">—</span>
-          <span class="mt-row-note" id="mtChStatus">未検出</span>
+          <button class="mt-btn ghost subtle" onclick="mtRefreshDevices()" title="デバイス一覧を再検出 (USB 接続後など)" style="margin-left:4px; padding:3px 8px; font-size:9px;">⟳</button>
+          <span id="mtChCount" class="mt-num-readout" title="検出されたチャンネル数" style="margin-left:8px;">—</span>
+          <span class="mt-row-note" id="mtChStatus" style="font-size:9px;">未検出</span>
         </div>
         <!-- ROUTING を AUDIO IFACE に統合（インライン、コンパクト） -->
         <div class="mt-routing-inline-label" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">ROUTING · PARA-OUT</div>
@@ -3809,35 +3834,25 @@
             <span>ADD</span>
           </button>
         </div>
-        <!-- v12.6.0: TIMECODE OUT (LTC) — Digital Performer 同期用 -->
-        <div class="mt-tc-section" id="mtTimecodeSection">
-          <div class="mt-tc-head">
-            <span class="mt-tc-title">TIMECODE OUT (LTC)</span>
-            <label class="mt-tc-toggle">
-              <input type="checkbox" id="mtTcEnable" onchange="mtTcSetEnabled(this.checked)" />
-              <span>送出</span>
-            </label>
-          </div>
-          <div class="mt-tc-row">
-            <span class="mt-tc-label">出力 ch</span>
-            <input type="number" id="mtTcChannel" class="mt-tc-input" min="1" max="64" value="14"
-                   onchange="mtTcSetChannel(this.value)" title="LTC を送出する出力 ch (STEM と被らない番号を選ぶ)" />
-          </div>
-          <div class="mt-tc-row">
-            <span class="mt-tc-label">曲ごとの間隔</span>
-            <input type="number" id="mtTcSpacing" class="mt-tc-input" min="1" max="120" value="15"
-                   onchange="mtTcSetSpacing(this.value)" title="N 曲目の LTC 開始時刻 = (N-1) × この間隔" />
-            <span class="mt-tc-unit">分</span>
-          </div>
-          <div class="mt-tc-hint">
-            30fps non-drop · 1曲目 = 00:00:00 · 2曲目 = 00:15:00 ... (DP 側を LTC chase に設定)
-          </div>
-        </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
       <!-- SELECTED SONG: 選択中の曲のファイル一覧（最小ヘッダー、ドロップは不要） -->
       <div class="mt-card mt-songinfo-card">
         <div class="mt-songinfo-list" id="mtSongInfoList"></div>
+        <!-- v12.6.1: TIMECODE OUT を右下フッタへ移動 — 1行コンパクト -->
+        <div class="mt-tc-bar" id="mtTimecodeSection">
+          <label class="mt-tc-toggle" title="LTC タイムコード送出 ON/OFF">
+            <input type="checkbox" id="mtTcEnable" onchange="mtTcSetEnabled(this.checked)" />
+            <span>LTC</span>
+          </label>
+          <span class="mt-tc-mini-label">ch</span>
+          <input type="number" id="mtTcChannel" class="mt-tc-input mini" min="1" max="64" value="14"
+                 onchange="mtTcSetChannel(this.value)" title="LTC 出力 ch (STEM と被らない番号)" />
+          <span class="mt-tc-mini-label">間隔</span>
+          <input type="number" id="mtTcSpacing" class="mt-tc-input mini" min="1" max="120" value="15"
+                 onchange="mtTcSetSpacing(this.value)" title="N 曲目の TC 開始時刻 = (N-1) × この間隔 (分)" />
+          <span class="mt-tc-mini-unit">分</span>
+        </div>
       </div>
     </div><!-- /.mt-bottom-row -->
   </div>
@@ -3871,7 +3886,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.6.0';
+const APP_VERSION = 'v12.6.1';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
