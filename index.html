@@ -3833,6 +3833,10 @@
             <span class="mt-tc-label" id="mtTcInTime" style="font-family:monospace;color:#3DB5A6;min-width:90px;">00:00:00.00</span>
             <span id="mtTcInStatus" title="信号レベル / sync 状態" style="font-size:14px;color:#888;">○</span>
           </div>
+          <!-- v12.8.1 Fix#7: 本番運用ガイドを常時表示 (IN 側は本番運用ルールが重要なので例外として復活) -->
+          <div class="mt-tc-hint">
+            スレーブ運用 · 物理結線必須 · マスターと「間隔」一致 · 同 Mac で OUT/IN 同時 ON 禁止
+          </div>
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
@@ -3872,7 +3876,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.8.0';
+const APP_VERSION = 'v12.8.1';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -4956,6 +4960,8 @@ function pauseAll() {
 
 // FADE OUT = パニックストップ：パッド／BGM／影アナ／プレビュー、全部フェードアウトして止める
 function fadeOutAll() {
+  // v12.8.1 Fix#5: スレーブ側で 5 秒間 chase 抑制 (パニックストップ → 次 TC で復活する事故を防ぐ)
+  try { if (typeof _ltcRxArmIgnore === 'function') _ltcRxArmIgnore(); } catch(_) {}
   initAudio();
   const sec = Math.max(0.05, state.fadeTime || 2.0);
   // 0) MULTI-TRACK：再生中なら master gain でフェードして停止
@@ -10747,6 +10753,19 @@ function _mtTeardownCtxResources(reason) {
   console.warn('[mtFs] tearing down ctx resources, reason:', reason);
   // v12.6.0: LTC 出力を真っ先に止める (古い mtCtx に紐づく source を切る)
   try { _ltcMaybeStop(); } catch(_) {}
+  // v12.8.1 Fix#10: LTC 受信側も古い ctx に紐づく worklet/stream を切る
+  let _ltcRxWasEnabled = false;
+  let _ltcRxSavedDevice = '';
+  try {
+    const ti = state.multitrack && state.multitrack.timecodeIn;
+    if (ti) {
+      _ltcRxWasEnabled = !!ti.enabled;
+      _ltcRxSavedDevice = ti.inputDeviceId || '';
+      ti._moduleLoaded = false; // v12.8.1 Fix#9: 新 ctx 用に再登録が必要
+    }
+    _ltcRx._moduleLoadedCtx = null;
+    _ltcRxStop();
+  } catch(_) {}
   try { mtStopSources(); } catch(_) {}
   // v9.0.3 Fix1: MediaElement モードの audio/source/blob URL も完全クリア
   // (古い ctx に紐づく MediaElementSource は新 ctx で使えない)
@@ -10778,6 +10797,18 @@ function _mtTeardownCtxResources(reason) {
   mtFs._mediaMasterRoutingDone = false;
   try { showToast('⚠️ AudioContext がリセットされました。SPACE でもう一度再生してください。'); } catch(_) {}
   try { mtRenderNow(); mtRenderSetlist(); } catch(_) {}
+  // v12.8.1 Fix#10: 受信が ON だったら新 ctx で再起動を試みる (await できないので非同期で投げる)
+  if (_ltcRxWasEnabled) {
+    setTimeout(async () => {
+      try {
+        const ok = await _ltcRxStart(_ltcRxSavedDevice);
+        if (!ok) {
+          const ti = state.multitrack && state.multitrack.timecodeIn;
+          if (ti) { ti.enabled = false; mtTcInSyncUI(); }
+        }
+      } catch(e) { console.warn('[ltcRx] post-teardown restart failed', e); }
+    }, 200);
+  }
 }
 
 async function mtInitCtx(options) {
@@ -11125,7 +11156,9 @@ function _ltcEncodeFrame(timeSec, fps) {
 
 // startTimeSec から durationSec ぶんの LTC PCM (mono) を AudioBuffer で返す
 // biphase mark: 各 bit 境界で必ず遷移、bit=1 ならその中間でも遷移
-function generateLTCAudioBuffer(audioCtx, startTimeSec, durationSec, fps) {
+// v12.8.1 Fix#1: initialPolarity を引数で受け取り、最終 polarity を返す
+//   → チャンク境界で polarity がリセットされて biphase 連続性が崩れる事故を防止
+function generateLTCAudioBuffer(audioCtx, startTimeSec, durationSec, fps, initialPolarity) {
   fps = fps || 30;
   const sampleRate = audioCtx.sampleRate;
   const totalSamples = Math.max(1, Math.floor(durationSec * sampleRate));
@@ -11139,7 +11172,7 @@ function generateLTCAudioBuffer(audioCtx, startTimeSec, durationSec, fps) {
   // フレーム境界へスナップ
   let frameTime = Math.floor(startTimeSec * fps) / fps;
   let sampleCursor = 0; // 浮動小数の理論サンプル位置 (累積誤差ゼロ)
-  let polarity = 1;
+  let polarity = (initialPolarity === -1 || initialPolarity === 1) ? initialPolarity : 1;
 
   while (sampleCursor < totalSamples) {
     const bits = _ltcEncodeFrame(frameTime, fps);
@@ -11166,7 +11199,7 @@ function generateLTCAudioBuffer(audioCtx, startTimeSec, durationSec, fps) {
     }
     frameTime += 1 / fps;
   }
-  return buf;
+  return { buf, finalPolarity: polarity };
 }
 
 // LTC 出力エンジンの状態
@@ -11178,6 +11211,7 @@ const _ltc = {
   channelIdx: 13,      // 0始まり (ユーザー設定の channel - 1)
   sources: [],         // 再生中の AudioBufferSourceNode
   scheduleTimer: null,
+  polarity: 1,         // v12.8.1 Fix#1: biphase mark polarity をチャンク間で carry-over
 };
 
 function _ltcStop() {
@@ -11195,13 +11229,30 @@ function _ltcStop() {
   }
 }
 
-// 引数: songIdx (0始まり), songPositionSec (再生開始位置)
-function _ltcStart(songIdx, songPositionSec) {
+// 引数: songIdx (0始まり), songPositionSec (再生開始位置), anchorAudioTime (任意)
+// v12.8.1 Fix#2: anchorAudioTime に state.multitrack.startTime を渡して曲開始と完全同期
+// v12.8.1 Fix#3: STEM channelMap と被る ch を物理ループ防止で拒否
+function _ltcStart(songIdx, songPositionSec, anchorAudioTime) {
   const tc = state.multitrack && state.multitrack.timecodeOut;
   if (!tc || !tc.enabled) return;
   if (!mtCtx || !mtMerger) return;        // AudioContext / merger 未初期化
   if (typeof songIdx !== 'number' || songIdx < 0) return;
   if (typeof songPositionSec !== 'number' || !isFinite(songPositionSec) || songPositionSec < 0) songPositionSec = 0;
+
+  // v12.8.1 Fix#3: STEM channelMap と被る ch を拒否 (物理ループ防止)
+  try {
+    const stemChs = new Set();
+    const cm = (state.multitrack && state.multitrack.channelMap) || {};
+    for (const g in cm) {
+      if (!cm[g]) continue;
+      if (cm[g].L) stemChs.add(cm[g].L);
+      if (cm[g].R) stemChs.add(cm[g].R);
+    }
+    if (stemChs.has(tc.channel | 0)) {
+      try { showToast(`⚠️ LTC ch ${tc.channel} は STEM と被ってます。別の ch にしてください。`); } catch(_) {}
+      return;
+    }
+  } catch(_) {}
 
   const channelIdx = Math.max(0, (tc.channel | 0) - 1);
   if (channelIdx >= mtMerger.numberOfInputs) {
@@ -11214,9 +11265,13 @@ function _ltcStart(songIdx, songPositionSec) {
 
   const spacing = (typeof tc.spacingSec === 'number' && tc.spacingSec > 0) ? tc.spacingSec : (15 * 60);
   _ltc.baseTimeSec = (songIdx * spacing) + songPositionSec;
-  _ltc.startedAudioTime = mtCtx.currentTime;
+  // v12.8.1 Fix#2: アンカーは曲再生開始 (state.multitrack.startTime) と揃える
+  _ltc.startedAudioTime = (typeof anchorAudioTime === 'number' && isFinite(anchorAudioTime))
+    ? anchorAudioTime
+    : mtCtx.currentTime;
   _ltc.nextScheduleSec = 0; // baseTimeSec からのオフセット (0 = 開始時刻ぴったり)
   _ltc.channelIdx = channelIdx;
+  _ltc.polarity = 1;        // v12.8.1 Fix#1: polarity を初期化
   _ltc.running = true;
 
   try { _ltcScheduleNext(); } catch(e) { console.warn('[ltc] scheduleNext failed', e); }
@@ -11241,7 +11296,10 @@ function _ltcScheduleNext() {
     const ltcTime = _ltc.baseTimeSec + _ltc.nextScheduleSec;
     let buf;
     try {
-      buf = generateLTCAudioBuffer(mtCtx, ltcTime, chunkDur, fps);
+      // v12.8.1 Fix#1: polarity を carry-over (biphase 連続性確保)
+      const result = generateLTCAudioBuffer(mtCtx, ltcTime, chunkDur, fps, _ltc.polarity);
+      buf = result.buf;
+      _ltc.polarity = result.finalPolarity;
     } catch(e) {
       console.warn('[ltc] generateLTCAudioBuffer failed', e);
       _ltcStop();
@@ -11272,10 +11330,13 @@ function _ltcScheduleNext() {
 
 // 公開ラッパー: 再生フローからは _ltcMaybeStart / _ltcMaybeStop を呼ぶ
 // (常に try-catch で囲まれた安全なエントリポイント)
+// v12.8.1 Fix#2: state.multitrack.startTime をアンカーとして渡す (曲開始と完全同期)
 function _ltcMaybeStart(songIdx, songPositionSec) {
   try {
     if (!state.multitrack || !state.multitrack.timecodeOut || !state.multitrack.timecodeOut.enabled) return;
-    _ltcStart(songIdx, songPositionSec);
+    const m = state.multitrack;
+    const anchor = (typeof m.startTime === 'number' && isFinite(m.startTime)) ? m.startTime : undefined;
+    _ltcStart(songIdx, songPositionSec, anchor);
   } catch(e) { console.warn('[ltc] start wrapper failed', e); }
 }
 function _ltcMaybeStop() {
@@ -11461,11 +11522,12 @@ class LTCDecoderProcessor extends AudioWorkletProcessor {
 
     // 期待する bit cell サンプル数 (30fps, 80bit → 2400 bit/sec → bit cell = sampleRate/2400)
     const expectedBitCell = sampleRate / 2400;
-    // 許容範囲は ±40% (リサンプルやジッターを吸収)
-    const minCell = expectedBitCell * 0.6;
-    const maxCell = expectedBitCell * 1.4;
-    const halfMin = minCell * 0.4;
-    const halfMax = maxCell * 0.6;
+    // v12.8.1 Fix#4: 半 cell / 全 cell の判定域重複を解消 — 単純な境界式に変更
+    //   半 cell ≈ 0.5、全 cell ≈ 1.0 の中間 0.75 を境界に、full の上限は 1.4
+    //   これ以上の gap はノイズ扱いで halfPending リセット
+    const halfThreshold = expectedBitCell * 0.75;
+    const fullThreshold = expectedBitCell * 1.4;
+    const minTransition = expectedBitCell * 0.25; // これ未満は明らかなチャタリング → 無視
 
     let prevSign = this._prevSign;
     let since = this._sinceTransition;
@@ -11489,8 +11551,10 @@ class LTCDecoderProcessor extends AudioWorkletProcessor {
       if (isTransition) {
         const gap = since;
         since = 0;
-        if (gap > halfMin && gap < halfMax) {
-          // 半分 cell の transition
+        if (gap < minTransition) {
+          // チャタリング (信号反転が早すぎ) → 無視。halfPending は維持
+        } else if (gap < halfThreshold) {
+          // 半 cell の transition (bit=1 の前半 / 後半)
           if (halfPending) {
             // 2 回連続 → bit = 1 完成
             this._bitBuffer.push(1);
@@ -11500,17 +11564,14 @@ class LTCDecoderProcessor extends AudioWorkletProcessor {
             // 1 回目 (bit=1 の前半)
             halfPending = true;
           }
-        } else if (gap > minCell && gap < maxCell) {
-          // 全長 cell の transition → bit = 0
-          // ただし halfPending が立っていたら不整合 (リセット)
-          if (halfPending) {
-            // ノイズで半端な transition を拾った可能性 → halfPending を捨ててこれを bit=0 とする
-            halfPending = false;
-          }
+        } else if (gap < fullThreshold) {
+          // 全 cell の transition → bit = 0
+          // halfPending が立っていたら不整合 → これを bit=0 として halfPending リセット
+          if (halfPending) halfPending = false;
           this._bitBuffer.push(0);
           lastFullCell = gap;
         } else {
-          // 範囲外 → ノイズ。halfPending リセット
+          // 範囲外 (gap が大きすぎ) → ノイズ or 信号断。halfPending リセット
           halfPending = false;
         }
         // bitBuffer 上限
@@ -11554,12 +11615,18 @@ const _ltcRx = {
   _signalRMS: 0,
   _statusTimer: null,
   _moduleBlobUrl: null,
+  // v12.8.1 Fix#8: feedback 警告は 1 度だけ
+  _fbWarnedOnce: false,
+  // v12.8.1 Fix#9: addModule した時の ctx 参照 (ctx 再構築検知用)
+  _moduleLoadedCtx: null,
 };
 
 async function _ltcRxLoadModule() {
   const ti = state.multitrack && state.multitrack.timecodeIn;
   if (!ti) return false;
-  if (ti._moduleLoaded) return true;
+  // v12.8.1 Fix#9: ctx 再構築で worklet が新 ctx に未登録 → _moduleLoaded だけでは判定不十分
+  //                _moduleLoadedCtx に「登録したときの ctx 参照」を持って同一 ctx か検査する
+  if (ti._moduleLoaded && _ltcRx._moduleLoadedCtx === mtCtx && mtCtx) return true;
   if (!mtCtx) {
     try { await mtInitCtx(); } catch(e) { console.warn('[ltcRx] mtInitCtx failed', e); return false; }
   }
@@ -11569,16 +11636,25 @@ async function _ltcRxLoadModule() {
     return false;
   }
   try {
-    if (!_ltcRx._moduleBlobUrl) {
-      const blob = new Blob([_LTC_WORKLET_SRC], { type: 'application/javascript' });
-      _ltcRx._moduleBlobUrl = URL.createObjectURL(blob);
+    // 毎回 Blob URL を作って addModule、成功後に即 revoke (リーク防止)
+    const blob = new Blob([_LTC_WORKLET_SRC], { type: 'application/javascript' });
+    const blobUrl = URL.createObjectURL(blob);
+    _ltcRx._moduleBlobUrl = blobUrl;
+    try {
+      await mtCtx.audioWorklet.addModule(blobUrl);
+    } finally {
+      // v12.8.1 Fix#9: addModule 成功/失敗どちらでも BlobURL を revoke
+      try { URL.revokeObjectURL(blobUrl); } catch(_) {}
+      _ltcRx._moduleBlobUrl = null;
     }
-    await mtCtx.audioWorklet.addModule(_ltcRx._moduleBlobUrl);
     ti._moduleLoaded = true;
+    _ltcRx._moduleLoadedCtx = mtCtx;
     return true;
   } catch(e) {
     console.warn('[ltcRx] addModule failed', e);
     try { showToast('⚠️ LTC デコーダの読み込みに失敗しました'); } catch(_) {}
+    ti._moduleLoaded = false;
+    _ltcRx._moduleLoadedCtx = null;
     return false;
   }
 }
@@ -11586,11 +11662,17 @@ async function _ltcRxLoadModule() {
 async function _ltcRxStart(deviceId) {
   const ti = state.multitrack.timecodeIn;
   if (!ti) return false;
-  // フィードバック警告 (送出と同 Mac で同時 ON)
+  // v12.8.1 Fix#8: feedback 警告は 1 度だけ + 行動指示に変更 (toggle 毎に連発しない)
   try {
     const tcOut = state.multitrack.timecodeOut;
     if (tcOut && tcOut.enabled) {
-      showToast('⚠️ LTC OUT と IN を同じ Mac で同時 ON するとループする可能性があります');
+      if (!_ltcRx._fbWarnedOnce) {
+        _ltcRx._fbWarnedOnce = true;
+        showToast('⚠️ LTC OUT と IN が同 Mac で同時 ON です — 同 Mac で OUT を OFF にしてください');
+      }
+    } else {
+      // OUT が OFF なら警告フラグをリセット (次回 OUT→IN 順で ON にしたとき再警告できるように)
+      _ltcRx._fbWarnedOnce = false;
     }
   } catch(_) {}
   // mtCtx を確保 (出力側と共有)
@@ -11625,6 +11707,19 @@ async function _ltcRxStart(deviceId) {
     return false;
   }
   ti._stream = stream;
+  // v12.8.1 Fix#11: track.onended で USB I/F 抜けを即検知
+  try {
+    const tracks = stream.getTracks();
+    for (const t of tracks) {
+      t.onended = () => {
+        try { showToast('⚠️ LTC IN 入力ストリーム終了 — デバイスが切断された可能性。再選択してください'); } catch(_) {}
+        try { _ltcRxStop(); } catch(_) {}
+        const tiNow = state.multitrack && state.multitrack.timecodeIn;
+        if (tiNow) { tiNow.enabled = false; }
+        try { mtTcInSyncUI(); } catch(_) {}
+      };
+    }
+  } catch(_) {}
   // 取得後はデバイス名が enumerateDevices に反映されるので一度 refresh
   try { mtRefreshInputDevices(); } catch(_) {}
   // ソース → worklet → (出力には繋がない)
@@ -11676,6 +11771,8 @@ function _ltcRxStopStream() {
   ti._locked = false;
   ti._signal = 0;
   ti._lastT = null;
+  // v12.8.1 Fix#6: rollover 警告フラグもリセット (OFF→ON で復活)
+  ti._rolloverWarned = false;
 }
 
 function _ltcRxStop() {
@@ -11736,10 +11833,39 @@ function _ltcRxOnFrame(decodedT) {
   const tc = m.timecodeIn;
   if (!tc || !tc.enabled) return;
   if (typeof decodedT !== 'number' || !isFinite(decodedT) || decodedT < 0) return;
+
+  // v12.8.1 Fix#5: スレーブ STOP/FADE 後 5 秒は chase 抑制
+  //   (スレーブで STOP/FADE/ESC 押しても次 TC で即復活する致命傷を防ぐ)
+  try {
+    const ig = m._ltcRxIgnoreUntil || 0;
+    if (ig && performance.now() < ig) return;
+  } catch(_) {}
+
+  // v12.8.1 Fix#8: feedback (OUT と IN を同 Mac で同時 ON) 検出時は chase 完全無効化
+  try {
+    const tcOut = state.multitrack.timecodeOut;
+    if (tcOut && tcOut.enabled) return;
+  } catch(_) {}
+
   const spacing = (tc.spacingSec > 0) ? tc.spacingSec : (15 * 60);
   const songIdx = Math.floor(decodedT / spacing);
   const posInSong = decodedT - (songIdx * spacing);
   if (songIdx < 0 || songIdx >= m.songs.length) return;
+
+  // v12.8.1 Fix#6: 24h ロールオーバーガード (1h 以上の逆行は jump 抑止)
+  try {
+    if (typeof tc._lastT === 'number' && isFinite(tc._lastT)) {
+      if (decodedT < tc._lastT - 3600) {
+        // 1h 以上戻った → 24h wrap か誤受信。jump 抑止し、IN を OFF→ON で復活する旨を通知
+        if (!tc._rolloverWarned) {
+          tc._rolloverWarned = true;
+          try { showToast('⚠️ LTC が大きく逆行 (24h wrap?) — chase 抑止中。復活には LTC IN を OFF → ON してください'); } catch(_) {}
+        }
+        return;
+      }
+    }
+    tc._lastT = decodedT;
+  } catch(_) {}
 
   // 別の曲を再生中 / 停止中 → jump
   const needJump = (m.currentSongIdx !== songIdx) || !m.isPlaying;
@@ -11753,6 +11879,16 @@ function _ltcRxOnFrame(decodedT) {
   if (Math.abs(currentPos - posInSong) > 0.5) {
     _ltcRxJump(songIdx, posInSong);
   }
+}
+
+// v12.8.1 Fix#5: 5 秒間 chase を抑制 (mtStop / mtMediaStopAll / mtFadeOut / fadeOutAll 系から呼ぶ)
+function _ltcRxArmIgnore() {
+  try {
+    const m = state.multitrack;
+    if (!m) return;
+    m._ltcRxIgnoreUntil = performance.now() + 5000;
+    try { _ltcRxUpdateStatus(); } catch(_) {}
+  } catch(_) {}
 }
 
 let _ltcRxJumpInFlight = false;
@@ -11794,21 +11930,33 @@ function _ltcRxUpdateStatus() {
   if (!ti || !ti.enabled) {
     el.textContent = '○';
     el.style.color = '#888';
+    el.title = 'LTC IN: OFF';
     return;
   }
   const now = performance.now();
+  // v12.8.1 Fix#5: chase 抑制中の表示
+  const ig = (state.multitrack && state.multitrack._ltcRxIgnoreUntil) || 0;
+  if (ig && now < ig) {
+    const sec = Math.max(0, Math.ceil((ig - now) / 1000));
+    el.textContent = '⏸';
+    el.style.color = '#888';
+    el.title = `LTC chase 一時無視中 (残り ${sec} 秒)`;
+    return;
+  }
   const sinceFrame = now - (_ltcRx._lastFrameAt || 0);
   const sig = ti._signal || 0;
   // 1.5 秒以上 TC が来ていない or 信号が弱い
   if (sinceFrame > 1500 || sig < 0.01 || !ti._locked) {
     el.textContent = '⚠';
     el.style.color = '#E0B040';
+    el.title = 'LTC 信号 弱 / unlock';
     return;
   }
   // OK: 緑、500ms ごとに blink
   const blink = (Math.floor(now / 500) % 2) === 0;
   el.textContent = '●';
   el.style.color = blink ? '#3DB5A6' : '#1F7068';
+  el.title = 'LTC chase OK';
 }
 
 // 入力デバイス一覧の取得 (出力と独立)。マイク権限が無くてもラベル無しで一覧は出る。
@@ -11956,6 +12104,19 @@ async function mtSetDevice(deviceId) {
   const prevDeviceId = state.multitrack.outputDeviceId;
   const prevLabel = state.multitrack.outputDeviceLabel;
   const wasPlaying = !!state.multitrack.isPlaying;
+  // v12.8.1 Fix#10: LTC 受信を一旦停止 (古い ctx 紐付き worklet を破棄)、後で復帰
+  let _ltcRxWasEnabled = false;
+  let _ltcRxSavedDevice = '';
+  try {
+    const tiSave = state.multitrack && state.multitrack.timecodeIn;
+    if (tiSave) {
+      _ltcRxWasEnabled = !!tiSave.enabled;
+      _ltcRxSavedDevice = tiSave.inputDeviceId || '';
+      tiSave._moduleLoaded = false;
+    }
+    _ltcRx._moduleLoadedCtx = null;
+    _ltcRxStop();
+  } catch(_) {}
   try {
     state.multitrack.outputDeviceId = deviceId || '';
     const sel = document.getElementById('mtDeviceSelect');
@@ -12058,6 +12219,16 @@ async function mtSetDevice(deviceId) {
     try { mtSave(); } catch(_) {}
     try { if (typeof mtUpdateChStatus === 'function') mtUpdateChStatus(); } catch(_) {}
     try { mtRenderNow(); mtRenderSetlist(); } catch(_) {}
+    // v12.8.1 Fix#10: LTC 受信が有効だったら新 ctx で再起動
+    if (_ltcRxWasEnabled) {
+      try {
+        const ok = await _ltcRxStart(_ltcRxSavedDevice);
+        if (!ok) {
+          const ti = state.multitrack && state.multitrack.timecodeIn;
+          if (ti) { ti.enabled = false; mtTcInSyncUI(); }
+        }
+      } catch(e) { console.warn('[ltcRx] post-setDevice restart failed', e); }
+    }
   }
 }
 
@@ -13569,6 +13740,23 @@ function mtBindDeviceChange() {
   navigator.mediaDevices.addEventListener('devicechange', async () => {
     console.log('[mtDevice] devicechange event fired');
     try { await mtRefreshDevices(false); } catch(_) {}
+    // v12.8.1 Fix#11: LTC IN 用入力デバイスの切断検知
+    try {
+      const ti = state.multitrack && state.multitrack.timecodeIn;
+      if (ti && ti.enabled && ti.inputDeviceId) {
+        const devs = await navigator.mediaDevices.enumerateDevices();
+        const foundIn = devs.find(d => d.kind === 'audioinput' && d.deviceId === ti.inputDeviceId);
+        if (!foundIn) {
+          try { showToast('⚠️ LTC IN デバイス切断 — 入力を再選択してください'); } catch(_) {}
+          try { mtFsLogError('warn', 'LTC IN デバイス切断: ' + (ti.inputDeviceId || '').slice(0, 8)); } catch(_) {}
+          try { _ltcRxStop(); } catch(_) {}
+          ti.enabled = false;
+          try { mtTcInSyncUI(); } catch(_) {}
+        }
+      }
+    } catch(e) {
+      console.warn('[mtDevice] LTC IN devicechange check failed', e);
+    }
     const curId = state.multitrack.outputDeviceId;
     if (!curId) return; // システムデフォルト使用中は監視対象外
     try {
@@ -14024,6 +14212,8 @@ function mtMediaSetupGroupRouting() {
 function mtMediaStopAll() {
   // v12.6.0: LTC 出力も停止 (新曲開始の _ltcMaybeStart で再開される)
   try { _ltcMaybeStop(); } catch(_) {}
+  // v12.8.1 Fix#5: スレーブ側で 5 秒間 chase 抑制 (次 TC で即復活する事故を防ぐ)
+  try { _ltcRxArmIgnore(); } catch(_) {}
   for (const id in mtMediaCache) {
     const e = mtMediaCache[id];
     if (!e) continue;
@@ -14391,6 +14581,8 @@ function mtMediaSeekTo(seekSec) {
 //   段4: さらに 50ms 待って master を masterVol に復帰 + audio の volume/muted を元に戻す
 // → audio が完全停止する前に master が大きくなる事故を防ぐ
 function mtMediaFadeOut() {
+  // v12.8.1 Fix#5: スレーブ側で 5 秒間 chase 抑制
+  try { _ltcRxArmIgnore(); } catch(_) {}
   console.log('[mtMediaFadeOut] called, isPlaying=' + state.multitrack.isPlaying + ', mtCtx=' + (mtCtx ? mtCtx.state : 'null') + ', masterGain=' + (mtMasterGain ? mtMasterGain.gain.value : 'null'));
   if (!mtCtx || !mtMasterGain) { console.warn('[mtMediaFadeOut] no ctx/gain, calling mtStop'); mtStop(); return; }
   if (!state.multitrack.isPlaying) { console.warn('[mtMediaFadeOut] not playing, calling mtStop'); mtStop(); return; }
@@ -14848,6 +15040,8 @@ function mtSeekTo(seekSec) {
 
 // ---- FADE OUT (パニックストップ) ----
 function mtFadeOut() {
+  // v12.8.1 Fix#5: スレーブ側で 5 秒間 chase 抑制
+  try { _ltcRxArmIgnore(); } catch(_) {}
   // v9.0.0: MediaElement モードの分岐
   if (state.multitrack.playbackMode === 'mediaelement') {
     return mtMediaFadeOut();
@@ -14917,6 +15111,8 @@ function mtScrollSelectedIntoView() {
 function mtStopSources() {
   // v12.6.0: LTC 出力も停止 (再生切替時は直後の _ltcMaybeStart で再開)
   try { _ltcMaybeStop(); } catch(_) {}
+  // v12.8.1 Fix#5: スレーブ側で 5 秒間 chase 抑制
+  try { _ltcRxArmIgnore(); } catch(_) {}
   for (const src of state.multitrack.activeSources) {
     try { src.stop(0); } catch(_) {}
     try { src.disconnect(); } catch(_) {}
@@ -14937,6 +15133,8 @@ function mtStopSources() {
 }
 
 function mtStop() {
+  // v12.8.1 Fix#5: スレーブ側で 5 秒間 chase 抑制 (STOP 押した直後に TC で即復活する事故を防ぐ)
+  try { _ltcRxArmIgnore(); } catch(_) {}
   // v9.0.0/v9.0.5: MediaElement モードはアンチクリック付き stop
   if (state.multitrack.playbackMode === 'mediaelement') {
     try {
