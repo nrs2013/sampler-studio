@@ -2770,7 +2770,34 @@
   .mt-strip.dimmed { opacity: 0.45; }
 
   /* AUDIO IFACE / ROUTING (in bottom row) */
-  .mt-config-card { padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+  /* v12.6.2: AUDIO IFACE カードを縦に詰めて高さを稼がない */
+  .mt-config-card { padding: 6px 10px; display: flex; flex-direction: column; min-width: 0; gap: 6px; }
+  .mt-iface-bar {
+    display: flex; align-items: center; gap: 6px;
+    min-width: 0;
+  }
+  .mt-iface-bar > .mt-select {
+    flex: 1; min-width: 0;
+    height: 26px;
+    background: #0F0F14; border: 0.5px solid #2A2A30; color: #E6E6EA;
+    padding: 0 8px; border-radius: 4px;
+    font-size: 10px; font-family: inherit;
+  }
+  .mt-iface-bar > .mt-select:focus { outline: none; border-color: #3DB5A6; }
+  .mt-iface-refresh {
+    width: 26px; height: 26px; flex-shrink: 0;
+    background: #14141A; border: 0.5px solid #2A2A30; color: #8A8A90;
+    border-radius: 4px; cursor: pointer; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .mt-iface-refresh:hover { color: #3DB5A6; border-color: #3DB5A6; }
+  .mt-iface-bar > .mt-num-readout {
+    font-family: 'JetBrains Mono', 'SF Mono', monospace; font-size: 11px;
+    color: #5BC4B0; padding: 3px 8px; border: 0.5px solid #1F2A26;
+    border-radius: 3px; background: #0A0F0D; flex-shrink: 0; letter-spacing: 0.5px;
+  }
+  .mt-iface-bar > .mt-row-note { font-size: 9px; color: #6A6A70; flex-shrink: 0; }
   /* ROUTING を AUDIO IFACE 内に統合した時の見出し */
   .mt-routing-inline-label {
     font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 500;
@@ -2779,10 +2806,10 @@
   }
 
   /* SELECTED SONG カード — ヘッダー無し、ファイル一覧最大化 */
-  /* v12.6.1: 高さを 250 → 200 に圧縮し、上の SETLIST の表示曲数を増やす */
+  /* v12.6.2: 高さをさらに 200 → 145 に圧縮 (mixer/config も連動して縮む) */
   .mt-songinfo-card {
-    padding: 8px 10px; display: flex; flex-direction: column; min-width: 0;
-    height: 200px;
+    padding: 6px 10px; display: flex; flex-direction: column; min-width: 0;
+    height: 145px;
     flex-shrink: 0;
   }
   .mt-songinfo-list {
@@ -3747,15 +3774,15 @@
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
 
-      <!-- AUDIO IFACE (ROUTING も内包) — v12.6.1: ヘッダー撤去、行をコンパクト化 -->
+      <!-- AUDIO IFACE (ROUTING も内包) — v12.6.2: 1行コンパクト化 -->
       <div class="mt-card mt-config-card">
-        <div class="mt-row compact">
+        <div class="mt-iface-bar">
           <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)" title="出力デバイス">
             <option value="">— 検出中… —</option>
           </select>
-          <button class="mt-btn ghost subtle" onclick="mtRefreshDevices()" title="デバイス一覧を再検出 (USB 接続後など)" style="margin-left:4px; padding:3px 8px; font-size:9px;">⟳</button>
-          <span id="mtChCount" class="mt-num-readout" title="検出されたチャンネル数" style="margin-left:8px;">—</span>
-          <span class="mt-row-note" id="mtChStatus" style="font-size:9px;">未検出</span>
+          <button class="mt-iface-refresh" onclick="mtRefreshDevices()" title="デバイス一覧を再検出">⟳</button>
+          <span id="mtChCount" class="mt-num-readout" title="検出されたチャンネル数">—</span>
+          <span class="mt-row-note" id="mtChStatus">未検出</span>
         </div>
         <!-- ROUTING を AUDIO IFACE に統合（インライン、コンパクト） -->
         <div class="mt-routing-inline-label" title="10ch対応I/Fでパラ送り。未満ならステレオMIX">ROUTING · PARA-OUT</div>
@@ -3886,7 +3913,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.6.1';
+const APP_VERSION = 'v12.6.2';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
