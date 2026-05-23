@@ -3906,7 +3906,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.6.3';
+const APP_VERSION = 'v12.6.4';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -15322,7 +15322,7 @@ function mtRenderSongInfo() {
   if (idx < 0 || idx >= state.multitrack.songs.length) {
     const empty = document.createElement('div');
     empty.className = 'mt-songinfo-empty';
-    empty.textContent = '— 曲を選択 —';
+    empty.textContent = '— SELECT TRACK —';
     list.appendChild(empty);
     return;
   }
