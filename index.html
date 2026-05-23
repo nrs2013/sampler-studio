@@ -2968,6 +2968,64 @@
   .mt-ch-select option { background: #06060A; color: #FFFFFF; padding: 2px; }
   .mt-ch-select option:disabled { color: #FF6464; }
 
+  /* v12.7.1: LTC セクション — タイトル削除、1 行集約レイアウト */
+  .mt-tc-section {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: linear-gradient(180deg, #14141A 0%, #0A0A10 100%);
+    border: 0.5px solid #2A2A30;
+    border-radius: 6px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .mt-tc-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px;
+  }
+  .mt-tc-row.mt-tc-row-main {
+    flex-wrap: wrap; gap: 6px;
+  }
+  .mt-tc-toggle {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; color: #E6E6EA; cursor: pointer;
+    letter-spacing: 1.5px; font-weight: 600;
+    padding-right: 4px;
+    border-right: 0.5px solid #1F1F25;
+    margin-right: 2px;
+  }
+  .mt-tc-toggle input[type="checkbox"] {
+    width: 14px; height: 14px; margin: 0;
+    accent-color: #3DB5A6;
+    cursor: pointer;
+  }
+  .mt-tc-label {
+    color: #8A8A90; letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .mt-tc-input {
+    width: 46px;
+    background: #06060A; border: 0.5px solid #1A1A1E; color: #FFFFFF;
+    padding: 3px 5px; border-radius: 3px;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px;
+    text-align: center; font-weight: 500;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .mt-tc-input:focus {
+    outline: none; color: #FFFFFF;
+    background: rgba(61,181,166,0.12); border-color: #3DB5A6;
+  }
+  .mt-tc-input::-webkit-inner-spin-button,
+  .mt-tc-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .mt-tc-unit {
+    font-size: 10px; color: #8A8A90; letter-spacing: 0.5px;
+  }
+  .mt-tc-hint {
+    font-size: 9px; color: #5A5A60; line-height: 1.4;
+    letter-spacing: 0.3px;
+    padding-top: 4px;
+    border-top: 0.5px solid #1F1F25;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+  }
+
   /* v11.8.0: MONO/STEREO トグルボタン (チャンネルピル内) */
   /* v11.9.1: 縦積みレイアウト用に少し大きく */
   .mt-ch-mode {
@@ -3649,14 +3707,8 @@
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
 
-      <!-- AUDIO IFACE (ROUTING も内包) -->
+      <!-- AUDIO IFACE (ROUTING も内包) — v12.7.1: ヘッダーラベル撤去 -->
       <div class="mt-card mt-config-card">
-        <div class="mt-section-head compact">
-          <div class="mt-section-head-l">
-            <span class="mt-section-num">04</span>
-            <span class="mt-section-title">AUDIO IFACE</span>
-          </div>
-        </div>
         <div class="mt-row">
           <span class="mt-label">DEVICE</span>
           <select class="mt-select" id="mtDeviceSelect" onchange="mtSetDevice(this.value)">
@@ -3747,6 +3799,25 @@
             <span>ADD</span>
           </button>
         </div>
+        <!-- v12.7.1: LTC — タイトル削除、ch + 間隔 を 1 行に圧縮 -->
+        <div class="mt-tc-section" id="mtTimecodeSection">
+          <div class="mt-tc-row mt-tc-row-main">
+            <label class="mt-tc-toggle" title="LTC タイムコード送出 ON/OFF">
+              <input type="checkbox" id="mtTcEnable" onchange="mtTcSetEnabled(this.checked)" />
+              <span>LTC</span>
+            </label>
+            <span class="mt-tc-label">ch</span>
+            <input type="number" id="mtTcChannel" class="mt-tc-input" min="1" max="64" value="14"
+                   onchange="mtTcSetChannel(this.value)" title="LTC を送出する出力 ch (STEM と被らない番号)" />
+            <span class="mt-tc-label">間隔</span>
+            <input type="number" id="mtTcSpacing" class="mt-tc-input" min="1" max="120" value="15"
+                   onchange="mtTcSetSpacing(this.value)" title="N 曲目の LTC 開始時刻 = (N-1) × この間隔" />
+            <span class="mt-tc-unit">分</span>
+          </div>
+          <div class="mt-tc-hint">
+            30fps · 1曲目 = 00:00 · 2曲目 = 00:15 ... (DP 側を LTC chase に)
+          </div>
+        </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
       <!-- SELECTED SONG: 選択中の曲のファイル一覧（最小ヘッダー、ドロップは不要） -->
@@ -3785,7 +3856,12 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.7.0';
+const APP_VERSION = 'v12.7.1';
+// v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
+//          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
+//          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
+//          mtMerger の指定 ch (デフォルト 14) にルーティング、STEM と別系統。
+//          state.multitrack.timecodeOut で ON/OFF, ch, 間隔を持ち永続化。
 // v11.4.0: CLICK を mono 固定 (1ch のみ) — channelMap.click={L:1,R:1,mono:true}、UI も「mono」表示、routing は merger 単一 input へダウンミックス
 // v11.3.4: SAMPLER タブ MIDI/キーボード バッジの font-size 拡大 (可読性向上 — pad 7px→10px、左パネル 8px→11px)
 // v11.3.3: チャンネルアサイン UI を <input type=number> から <select> に変更 (業界標準 = DAW と同じ)
@@ -4330,6 +4406,13 @@ const state = {
       extra1: false, extra2: false,
     },
     songs: [],                    // [{ id, name, tracks: {drums:{sampleId,name}|null, bass:..., ...} }]
+    // v12.6.0: LTC タイムコード出力 (Digital Performer 同期用)
+    timecodeOut: {
+      enabled: false,
+      channel: 14,        // 出力 ch 番号 (1始まり)。STEM とかぶらないデフォルト
+      spacingSec: 15 * 60,  // 曲ごとの間隔 (デフォルト 15分 = 900秒)
+      fps: 30,            // 30fps non-drop 固定
+    },
     currentSongIdx: -1,            // 再生中の曲
     selectedIdx: 0,                // 矢印キーで動かすハイライト
     seekOffset: 0,                 // シーク位置（停止中も保持、次の play で適用）
@@ -7453,6 +7536,10 @@ function showToast(msg) {
 // ===========================
 
 function setAppMode(m) {
+  // v12.6.0: MULTI-TRACK モードから離れる時は LTC 出力も止める
+  if (state.appMode === 'multi' && m !== 'multi') {
+    try { if (typeof _ltcMaybeStop === 'function') _ltcMaybeStop(); } catch(_) {}
+  }
   state.appMode = m;
   // SAMPLER 専用要素：BANK バー＋パッド一覧
   document.getElementById('banksRow').style.display = (m === 'sampler') ? 'flex' : 'none';
@@ -10425,6 +10512,13 @@ function mtSerialize() {
     groupGains: m.groupGains,
     groupMute: m.groupMute,
     groupSolo: m.groupSolo,
+    // v12.6.0: LTC タイムコード設定 (ON/OFF, 出力 ch, 間隔)
+    timecodeOut: m.timecodeOut ? {
+      enabled: !!m.timecodeOut.enabled,
+      channel: m.timecodeOut.channel | 0,
+      spacingSec: +m.timecodeOut.spacingSec || (15 * 60),
+      fps: m.timecodeOut.fps | 0 || 30,
+    } : undefined,
     songs: m.songs.map(s => ({
       id: s.id, name: s.name,
       autoNext: s.autoNext || 'auto',
@@ -10499,6 +10593,14 @@ function mtRestore(saved) {
   // v12.0: extras が channelMap に欠けてたら追加 (旧プリセット用フォールバック)
   if (!m.channelMap.extra1) m.channelMap.extra1 = { L: 12, R: 12, mono: true };
   if (!m.channelMap.extra2) m.channelMap.extra2 = { L: 13, R: 13, mono: true };
+  // v12.6.0: LTC タイムコード設定の復元
+  if (saved.timecodeOut && typeof saved.timecodeOut === 'object') {
+    const tc = m.timecodeOut || (m.timecodeOut = { enabled: false, channel: 14, spacingSec: 15*60, fps: 30 });
+    if (typeof saved.timecodeOut.enabled === 'boolean') tc.enabled = saved.timecodeOut.enabled;
+    if (typeof saved.timecodeOut.channel === 'number' && saved.timecodeOut.channel >= 1) tc.channel = saved.timecodeOut.channel | 0;
+    if (typeof saved.timecodeOut.spacingSec === 'number' && saved.timecodeOut.spacingSec >= 1) tc.spacingSec = +saved.timecodeOut.spacingSec;
+    tc.fps = 30; // 30fps 固定
+  }
   if (Array.isArray(saved.songs)) m.songs = saved.songs.map(s => ({
     id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
     name: s.name || 'Untitled',
@@ -10595,6 +10697,8 @@ function mtUndo() {
 // AudioContext が死んでも自動復旧。
 function _mtTeardownCtxResources(reason) {
   console.warn('[mtFs] tearing down ctx resources, reason:', reason);
+  // v12.6.0: LTC 出力を真っ先に止める (古い mtCtx に紐づく source を切る)
+  try { _ltcMaybeStop(); } catch(_) {}
   try { mtStopSources(); } catch(_) {}
   // v9.0.3 Fix1: MediaElement モードの audio/source/blob URL も完全クリア
   // (古い ctx に紐づく MediaElementSource は新 ctx で使えない)
@@ -10917,6 +11021,284 @@ function mtUpdateChStatus() {
     // v11.9.3: 不足時は warn クラスを付ける (CSS で色が橙に)
     cs.textContent = `デバイス最大 ${max} ch ／ 必要 ${need} ch`;
     cs.classList.toggle('warn', need > max);
+  }
+}
+
+// ============================================================
+// v12.6.0: LTC (SMPTE Linear Time Code) 出力エンジン
+// ----------------------------------------------------
+// MULTI-TRACK モード専用。30fps non-drop / biphase mark 符号化 / 80 bits per frame。
+// 各曲の頭で baseTimeSec = songIndex * spacingSec をオフセットし、
+// 連続した LTC を mtMerger の指定 ch に出力 → Digital Performer 側で LTC chase。
+// 既存の MULTI-TRACK 再生フローには enabled=false のとき完全に影響しない。
+// ============================================================
+
+// 指定した時刻 (timeSec, 整数フレーム境界にスナップ) の 80-bit LTC フレームを返す
+function _ltcEncodeFrame(timeSec, fps) {
+  const bits = new Uint8Array(80);
+  const totalFrames = Math.floor(timeSec * fps);
+  const frame = totalFrames % fps;
+  const totalSec = Math.floor(totalFrames / fps);
+  const sec = totalSec % 60;
+  const min = Math.floor(totalSec / 60) % 60;
+  const hr = Math.floor(totalSec / 3600) % 24;
+
+  // Frame units (0-3) & tens (8-9)
+  const frU = frame % 10, frT = Math.floor(frame / 10);
+  for (let i = 0; i < 4; i++) bits[i] = (frU >> i) & 1;
+  for (let i = 0; i < 2; i++) bits[8 + i] = (frT >> i) & 1;
+  // 10: drop frame flag = 0 / 11: color frame flag = 0
+  // 12-15: user bits 2 = 0
+
+  // Sec units (16-19) & tens (24-26)
+  const scU = sec % 10, scT = Math.floor(sec / 10);
+  for (let i = 0; i < 4; i++) bits[16 + i] = (scU >> i) & 1;
+  for (let i = 0; i < 3; i++) bits[24 + i] = (scT >> i) & 1;
+  // 27: BG flag 0 = 0 / 28-31: user bits 3 = 0
+
+  // Min units (32-35) & tens (40-42)
+  const mnU = min % 10, mnT = Math.floor(min / 10);
+  for (let i = 0; i < 4; i++) bits[32 + i] = (mnU >> i) & 1;
+  for (let i = 0; i < 3; i++) bits[40 + i] = (mnT >> i) & 1;
+  // 43: BG flag 1 = 0 / 44-47: user bits 5 = 0
+
+  // Hr units (48-51) & tens (56-57)
+  const hrU = hr % 10, hrT = Math.floor(hr / 10);
+  for (let i = 0; i < 4; i++) bits[48 + i] = (hrU >> i) & 1;
+  for (let i = 0; i < 2; i++) bits[56 + i] = (hrT >> i) & 1;
+  // 58: reserved = 0 / 59: BG flag 2 = 0 / 60-63: user bits 8 = 0
+
+  // Sync word (64-79): 0011111111111101 (LSB first ordering)
+  const sync = [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1];
+  for (let i = 0; i < 16; i++) bits[64 + i] = sync[i];
+
+  return bits;
+}
+
+// startTimeSec から durationSec ぶんの LTC PCM (mono) を AudioBuffer で返す
+// biphase mark: 各 bit 境界で必ず遷移、bit=1 ならその中間でも遷移
+function generateLTCAudioBuffer(audioCtx, startTimeSec, durationSec, fps) {
+  fps = fps || 30;
+  const sampleRate = audioCtx.sampleRate;
+  const totalSamples = Math.max(1, Math.floor(durationSec * sampleRate));
+  const buf = audioCtx.createBuffer(1, totalSamples, sampleRate);
+  const data = buf.getChannelData(0);
+
+  const samplesPerFrame = sampleRate / fps;
+  const samplesPerBit = samplesPerFrame / 80;
+  const amplitude = 0.25; // 約 -12 dBFS
+
+  // フレーム境界へスナップ
+  let frameTime = Math.floor(startTimeSec * fps) / fps;
+  let sampleCursor = 0; // 浮動小数の理論サンプル位置 (累積誤差ゼロ)
+  let polarity = 1;
+
+  while (sampleCursor < totalSamples) {
+    const bits = _ltcEncodeFrame(frameTime, fps);
+    for (let b = 0; b < 80 && sampleCursor < totalSamples; b++) {
+      const bit = bits[b];
+      // bit 境界で必ず遷移
+      polarity = -polarity;
+      const halfPoint = sampleCursor + samplesPerBit / 2;
+      const endPoint = sampleCursor + samplesPerBit;
+      const startInt = Math.floor(sampleCursor);
+      const halfInt = Math.floor(halfPoint);
+      const endInt = Math.floor(endPoint);
+      // 前半 (sampleCursor 〜 halfPoint)
+      for (let s = startInt; s < halfInt && s < totalSamples; s++) {
+        if (s >= 0) data[s] = polarity * amplitude;
+      }
+      // bit=1 なら中間で再度遷移
+      if (bit === 1) polarity = -polarity;
+      // 後半 (halfPoint 〜 endPoint)
+      for (let s = halfInt; s < endInt && s < totalSamples; s++) {
+        if (s >= 0) data[s] = polarity * amplitude;
+      }
+      sampleCursor = endPoint;
+    }
+    frameTime += 1 / fps;
+  }
+  return buf;
+}
+
+// LTC 出力エンジンの状態
+const _ltc = {
+  running: false,
+  baseTimeSec: 0,      // 出力する LTC の論理開始時刻
+  startedAudioTime: 0, // mtCtx.currentTime での再生開始時刻
+  nextScheduleSec: 0,  // 次にスケジュールする LTC 時刻 (baseTimeSec からの累積)
+  channelIdx: 13,      // 0始まり (ユーザー設定の channel - 1)
+  sources: [],         // 再生中の AudioBufferSourceNode
+  scheduleTimer: null,
+};
+
+function _ltcStop() {
+  _ltc.running = false;
+  if (_ltc.scheduleTimer) {
+    try { clearInterval(_ltc.scheduleTimer); } catch(_) {}
+    _ltc.scheduleTimer = null;
+  }
+  const list = _ltc.sources.slice();
+  _ltc.sources = [];
+  for (const s of list) {
+    try { s.onended = null; } catch(_) {}
+    try { s.stop(); } catch(_) {}
+    try { s.disconnect(); } catch(_) {}
+  }
+}
+
+// 引数: songIdx (0始まり), songPositionSec (再生開始位置)
+function _ltcStart(songIdx, songPositionSec) {
+  const tc = state.multitrack && state.multitrack.timecodeOut;
+  if (!tc || !tc.enabled) return;
+  if (!mtCtx || !mtMerger) return;        // AudioContext / merger 未初期化
+  if (typeof songIdx !== 'number' || songIdx < 0) return;
+  if (typeof songPositionSec !== 'number' || !isFinite(songPositionSec) || songPositionSec < 0) songPositionSec = 0;
+
+  const channelIdx = Math.max(0, (tc.channel | 0) - 1);
+  if (channelIdx >= mtMerger.numberOfInputs) {
+    try { showToast(`⚠️ LTC: 出力 ch ${tc.channel} は範囲外 (デバイス ${mtMerger.numberOfInputs}ch)`); } catch(_) {}
+    return;
+  }
+
+  // 既存出力中なら停止
+  if (_ltc.running) _ltcStop();
+
+  const spacing = (typeof tc.spacingSec === 'number' && tc.spacingSec > 0) ? tc.spacingSec : (15 * 60);
+  _ltc.baseTimeSec = (songIdx * spacing) + songPositionSec;
+  _ltc.startedAudioTime = mtCtx.currentTime;
+  _ltc.nextScheduleSec = 0; // baseTimeSec からのオフセット (0 = 開始時刻ぴったり)
+  _ltc.channelIdx = channelIdx;
+  _ltc.running = true;
+
+  try { _ltcScheduleNext(); } catch(e) { console.warn('[ltc] scheduleNext failed', e); }
+  _ltc.scheduleTimer = setInterval(() => {
+    try { _ltcScheduleNext(); } catch(e) { console.warn('[ltc] scheduleNext failed', e); }
+  }, 500);
+}
+
+function _ltcScheduleNext() {
+  if (!_ltc.running) return;
+  if (!mtCtx || !mtMerger) { _ltcStop(); return; }
+  const fps = (state.multitrack.timecodeOut && state.multitrack.timecodeOut.fps) || 30;
+  const ahead = 1.0;        // 1 秒先まで先読み
+  const chunkDur = 0.5;     // 0.5 秒ずつ生成
+  const audioNow = mtCtx.currentTime;
+  const elapsed = audioNow - _ltc.startedAudioTime; // 経過時間
+  // _ltc.nextScheduleSec は「baseTimeSec からのオフセット」
+  // 必要なオフセット = 経過時間 + 1 秒 先まで
+  const wantOffset = elapsed + ahead;
+
+  while (_ltc.nextScheduleSec < wantOffset) {
+    const ltcTime = _ltc.baseTimeSec + _ltc.nextScheduleSec;
+    let buf;
+    try {
+      buf = generateLTCAudioBuffer(mtCtx, ltcTime, chunkDur, fps);
+    } catch(e) {
+      console.warn('[ltc] generateLTCAudioBuffer failed', e);
+      _ltcStop();
+      return;
+    }
+    let src;
+    try {
+      src = mtCtx.createBufferSource();
+      src.buffer = buf;
+      // 指定 ch にルーティング (mtMerger は ChannelMerger なので 0 番出力)
+      src.connect(mtMerger, 0, _ltc.channelIdx);
+    } catch(e) {
+      console.warn('[ltc] connect failed', e);
+      _ltcStop();
+      return;
+    }
+    const playAt = _ltc.startedAudioTime + _ltc.nextScheduleSec;
+    try { src.start(playAt); } catch(e) { console.warn('[ltc] start failed', e); }
+    _ltc.sources.push(src);
+    src.onended = () => {
+      try { src.disconnect(); } catch(_) {}
+      const i = _ltc.sources.indexOf(src);
+      if (i >= 0) _ltc.sources.splice(i, 1);
+    };
+    _ltc.nextScheduleSec += chunkDur;
+  }
+}
+
+// 公開ラッパー: 再生フローからは _ltcMaybeStart / _ltcMaybeStop を呼ぶ
+// (常に try-catch で囲まれた安全なエントリポイント)
+function _ltcMaybeStart(songIdx, songPositionSec) {
+  try {
+    if (!state.multitrack || !state.multitrack.timecodeOut || !state.multitrack.timecodeOut.enabled) return;
+    _ltcStart(songIdx, songPositionSec);
+  } catch(e) { console.warn('[ltc] start wrapper failed', e); }
+}
+function _ltcMaybeStop() {
+  try { _ltcStop(); } catch(_) {}
+}
+
+// ---- UI ハンドラ (TIMECODE OUT セクション) ----
+function mtTcSetEnabled(on) {
+  const tc = state.multitrack.timecodeOut;
+  if (!tc) return;
+  tc.enabled = !!on;
+  mtSave();
+  if (on) {
+    // 再生中なら即時 LTC 出力開始 (現在の曲とシーク位置から)
+    if (state.multitrack.isPlaying && state.multitrack.currentSongIdx >= 0) {
+      const m = state.multitrack;
+      // 現在位置 = ctx.currentTime - startTime
+      const elapsed = (mtCtx ? mtCtx.currentTime - m.startTime : (m.seekOffset || 0));
+      _ltcMaybeStart(m.currentSongIdx, Math.max(0, elapsed));
+    }
+    try { showToast(`LTC 送出 ON (出力 ch ${tc.channel})`); } catch(_) {}
+  } else {
+    _ltcMaybeStop();
+    try { showToast('LTC 送出 OFF'); } catch(_) {}
+  }
+  mtTcSyncUI();
+}
+function mtTcSetChannel(v) {
+  const tc = state.multitrack.timecodeOut;
+  if (!tc) return;
+  const n = Math.max(1, Math.min(64, parseInt(v, 10) || 1));
+  tc.channel = n;
+  mtSave();
+  // 再生中で enabled なら restart して新 ch にすぐ反映
+  if (tc.enabled && state.multitrack.isPlaying && state.multitrack.currentSongIdx >= 0) {
+    const m = state.multitrack;
+    const elapsed = (mtCtx ? mtCtx.currentTime - m.startTime : (m.seekOffset || 0));
+    _ltcMaybeStop();
+    _ltcMaybeStart(m.currentSongIdx, Math.max(0, elapsed));
+  }
+  mtTcSyncUI();
+}
+function mtTcSetSpacing(v) {
+  const tc = state.multitrack.timecodeOut;
+  if (!tc) return;
+  const minutes = Math.max(1, Math.min(120, parseInt(v, 10) || 15));
+  tc.spacingSec = minutes * 60;
+  mtSave();
+  // 再生中で enabled なら restart して新オフセットに反映
+  if (tc.enabled && state.multitrack.isPlaying && state.multitrack.currentSongIdx >= 0) {
+    const m = state.multitrack;
+    const elapsed = (mtCtx ? mtCtx.currentTime - m.startTime : (m.seekOffset || 0));
+    _ltcMaybeStop();
+    _ltcMaybeStart(m.currentSongIdx, Math.max(0, elapsed));
+  }
+  mtTcSyncUI();
+}
+function mtTcSyncUI() {
+  const tc = state.multitrack.timecodeOut;
+  if (!tc) return;
+  const en = document.getElementById('mtTcEnable');
+  const ch = document.getElementById('mtTcChannel');
+  const sp = document.getElementById('mtTcSpacing');
+  if (en && en.checked !== !!tc.enabled) en.checked = !!tc.enabled;
+  if (ch) {
+    const v = String(tc.channel | 0);
+    if (ch.value !== v) ch.value = v;
+  }
+  if (sp) {
+    const v = String(Math.round((tc.spacingSec || (15 * 60)) / 60));
+    if (sp.value !== v) sp.value = v;
   }
 }
 
@@ -13041,6 +13423,8 @@ function mtMediaSetupGroupRouting() {
 //   3) connectedTo を null にして、次回再生時に mtMediaConnectToGroup で再接続される
 // この順序で「audio.pause() の過渡応答ノイズ」が master に届かなくなる
 function mtMediaStopAll() {
+  // v12.6.0: LTC 出力も停止 (新曲開始の _ltcMaybeStart で再開される)
+  try { _ltcMaybeStop(); } catch(_) {}
   for (const id in mtMediaCache) {
     const e = mtMediaCache[id];
     if (!e) continue;
@@ -13268,6 +13652,8 @@ async function mtMediaPlaySong(idx, offset, options) {
     state.multitrack.currentSongIdx = idx;
     state.multitrack.selectedIdx = idx;
     state.multitrack.isPlaying = true;
+    // v12.6.0: LTC 出力 (enabled のとき) — keepPrevious (オーバーラップ) でも新曲の TC に切替
+    try { _ltcMaybeStop(); _ltcMaybeStart(idx, offset); } catch(e) { console.warn('[ltc] play hook failed', e); }
     // 再生ロック (5秒) — v11.5.0: 本番モード ON 時のみ発動 (編集中は鬱陶しいので OFF 時はスキップ)
     const noLock = options && options.noLock === true;
     if (!noLock && mtFs.showMode) {
@@ -13758,6 +14144,8 @@ async function mtPlaySong(idx, offset, options) {
   state.multitrack.currentSongIdx = idx;
   state.multitrack.selectedIdx = idx;
   state.multitrack.isPlaying = true;
+  // v12.6.0: LTC 出力 (AudioBuffer モード経路) — 通常はこちらは使われないが念のため
+  try { _ltcMaybeStop(); _ltcMaybeStart(idx, offset); } catch(e) { console.warn('[ltc] play hook failed', e); }
   // 再生開始 → 10 秒ロック + 画面いっぱい「PLAYBACK STARTED」表示
   // ただし内部呼び出し (seek / auto-advance) は noLock を付けてロック発動しない
   const noLock = options && options.noLock === true;
@@ -13928,6 +14316,8 @@ function mtScrollSelectedIntoView() {
 }
 
 function mtStopSources() {
+  // v12.6.0: LTC 出力も停止 (再生切替時は直後の _ltcMaybeStart で再開)
+  try { _ltcMaybeStop(); } catch(_) {}
   for (const src of state.multitrack.activeSources) {
     try { src.stop(0); } catch(_) {}
     try { src.disconnect(); } catch(_) {}
@@ -15383,6 +15773,9 @@ async function mtInit() {
   requestAnimationFrame(() => safeRender('rAF'));
   setTimeout(() => safeRender('t+200ms'), 200);
   setTimeout(() => safeRender('t+1000ms'), 1000);
+  // v12.6.0: LTC UI を localStorage の値で同期
+  try { if (typeof mtTcSyncUI === 'function') mtTcSyncUI(); } catch(_) {}
+  setTimeout(() => { try { mtTcSyncUI(); } catch(_) {} }, 50);
 
   // タブ切替でも必ず再描画されるよう、visibilitychange/focus でも保険
   if (!window._mtInitBoundVisibility) {
@@ -15506,6 +15899,8 @@ async function init() {
   window.addEventListener('beforeunload', () => {
     try { doSave(); } catch(e) {}
     try { saveStateLocal(); } catch(e) {}
+    // v12.6.0: LTC 出力 cleanup (ページ離脱時に source を残さない)
+    try { if (typeof _ltcMaybeStop === 'function') _ltcMaybeStop(); } catch(e) {}
   });
 
   // Unlock audio on first interaction (mobile Safari)
