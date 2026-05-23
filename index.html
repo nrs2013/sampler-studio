@@ -3799,10 +3799,10 @@
             <span>ADD</span>
           </button>
         </div>
-        <!-- v12.7.1: LTC — タイトル削除、ch + 間隔 を 1 行に圧縮 -->
+        <!-- v12.7.2: LTC — ヒント文も削除して 1 行のみに -->
         <div class="mt-tc-section" id="mtTimecodeSection">
           <div class="mt-tc-row mt-tc-row-main">
-            <label class="mt-tc-toggle" title="LTC タイムコード送出 ON/OFF">
+            <label class="mt-tc-toggle" title="LTC タイムコード送出 ON/OFF (30fps, DP の LTC chase で受信)">
               <input type="checkbox" id="mtTcEnable" onchange="mtTcSetEnabled(this.checked)" />
               <span>LTC</span>
             </label>
@@ -3813,9 +3813,6 @@
             <input type="number" id="mtTcSpacing" class="mt-tc-input" min="1" max="120" value="15"
                    onchange="mtTcSetSpacing(this.value)" title="N 曲目の LTC 開始時刻 = (N-1) × この間隔" />
             <span class="mt-tc-unit">分</span>
-          </div>
-          <div class="mt-tc-hint">
-            30fps · 1曲目 = 00:00 · 2曲目 = 00:15 ... (DP 側を LTC chase に)
           </div>
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
@@ -3856,7 +3853,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.7.1';
+const APP_VERSION = 'v12.7.2';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
