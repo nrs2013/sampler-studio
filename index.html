@@ -3815,6 +3815,25 @@
             <span class="mt-tc-unit">分</span>
           </div>
         </div>
+        <!-- v12.8.0: LTC IN — スレーブ Mac で別 Mac から LTC を受信して chase 再生 -->
+        <div class="mt-tc-section" id="mtTimecodeInSection">
+          <div class="mt-tc-row mt-tc-row-main">
+            <label class="mt-tc-toggle" title="LTC タイムコード受信 (スレーブ運用、別 Mac のマスターから追従)">
+              <input type="checkbox" id="mtTcInEnable" onchange="mtTcInSetEnabled(this.checked)" />
+              <span>LTC IN</span>
+            </label>
+            <span class="mt-tc-label">入力</span>
+            <select id="mtTcInDevice" class="mt-tc-input" style="width:auto;min-width:80px;" onchange="mtTcInSetDevice(this.value)" title="LTC が入力されているオーディオデバイス">
+              <option value="">— 検出中… —</option>
+            </select>
+            <span class="mt-tc-label">間隔</span>
+            <input type="number" id="mtTcInSpacing" class="mt-tc-input" min="1" max="120" value="15"
+                   onchange="mtTcInSetSpacing(this.value)" title="送出側と同じ間隔 (分) — N曲目 = (N-1) × この値" />
+            <span class="mt-tc-unit">分</span>
+            <span class="mt-tc-label" id="mtTcInTime" style="font-family:monospace;color:#3DB5A6;min-width:90px;">00:00:00.00</span>
+            <span id="mtTcInStatus" title="信号レベル / sync 状態" style="font-size:14px;color:#888;">○</span>
+          </div>
+        </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
       <!-- SELECTED SONG: 選択中の曲のファイル一覧（最小ヘッダー、ドロップは不要） -->
@@ -3853,7 +3872,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.7.2';
+const APP_VERSION = 'v12.8.0';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -4409,6 +4428,22 @@ const state = {
       channel: 14,        // 出力 ch 番号 (1始まり)。STEM とかぶらないデフォルト
       spacingSec: 15 * 60,  // 曲ごとの間隔 (デフォルト 15分 = 900秒)
       fps: 30,            // 30fps non-drop 固定
+    },
+    // v12.8.0: LTC タイムコード入力 (スレーブ Mac で別 Mac の LTC を chase 受信)
+    timecodeIn: {
+      enabled: false,
+      inputDeviceId: '',          // 選択した音声入力デバイス deviceId
+      spacingSec: 15 * 60,        // 送出側と同じ間隔 (秒)
+      fps: 30,                    // 30fps non-drop 固定 (送出側と一致)
+      // 以下 runtime (永続化しない、mtSerialize で除外)
+      _lastT: null,               // 直近で復号した TC 秒
+      _lastAt: 0,                 // 受信した mtCtx.currentTime
+      _signal: 0,                 // 信号レベル RMS (0-1)
+      _locked: false,             // sync word 検出済みか
+      _stream: null,              // MediaStream
+      _sourceNode: null,          // MediaStreamAudioSourceNode
+      _worklet: null,             // AudioWorkletNode
+      _moduleLoaded: false,       // worklet モジュール登録済みフラグ
     },
     currentSongIdx: -1,            // 再生中の曲
     selectedIdx: 0,                // 矢印キーで動かすハイライト
@@ -10516,6 +10551,13 @@ function mtSerialize() {
       spacingSec: +m.timecodeOut.spacingSec || (15 * 60),
       fps: m.timecodeOut.fps | 0 || 30,
     } : undefined,
+    // v12.8.0: LTC 受信設定 (ON/OFF, 入力デバイス, 間隔) — runtime フィールドは除外
+    timecodeIn: m.timecodeIn ? {
+      enabled: !!m.timecodeIn.enabled,
+      inputDeviceId: m.timecodeIn.inputDeviceId || '',
+      spacingSec: +m.timecodeIn.spacingSec || (15 * 60),
+      fps: m.timecodeIn.fps | 0 || 30,
+    } : undefined,
     songs: m.songs.map(s => ({
       id: s.id, name: s.name,
       autoNext: s.autoNext || 'auto',
@@ -10597,6 +10639,15 @@ function mtRestore(saved) {
     if (typeof saved.timecodeOut.channel === 'number' && saved.timecodeOut.channel >= 1) tc.channel = saved.timecodeOut.channel | 0;
     if (typeof saved.timecodeOut.spacingSec === 'number' && saved.timecodeOut.spacingSec >= 1) tc.spacingSec = +saved.timecodeOut.spacingSec;
     tc.fps = 30; // 30fps 固定
+  }
+  // v12.8.0: LTC 受信設定の復元 (enabled は復元時は false にリセット — 自動でマイク許可ダイアログを出さないため)
+  if (saved.timecodeIn && typeof saved.timecodeIn === 'object') {
+    const ti = m.timecodeIn || (m.timecodeIn = { enabled: false, inputDeviceId: '', spacingSec: 15*60, fps: 30 });
+    // enabled は永続化しているが、ロード直後に getUserMedia は呼ばない (ユーザー再操作を待つ)
+    ti.enabled = false;
+    if (typeof saved.timecodeIn.inputDeviceId === 'string') ti.inputDeviceId = saved.timecodeIn.inputDeviceId;
+    if (typeof saved.timecodeIn.spacingSec === 'number' && saved.timecodeIn.spacingSec >= 1) ti.spacingSec = +saved.timecodeIn.spacingSec;
+    ti.fps = 30;
   }
   if (Array.isArray(saved.songs)) m.songs = saved.songs.map(s => ({
     id: s.id || ('mt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)),
@@ -11299,6 +11350,555 @@ function mtTcSyncUI() {
   }
 }
 
+// ============================================================
+// v12.8.0: LTC タイムコード入力 (受信 / スレーブ追従)
+// ============================================================
+// 別 Mac の LTC マスター送出を、こちらの Mac のオーディオ I/F 入力 ch で受け、
+// biphase mark 復号 → BCD → 絶対 TC 秒 → 曲インデックス・曲内位置 に逆算して
+// MULTI-TRACK MediaElement を chase 再生する。
+//
+// アーキテクチャ:
+//   getUserMedia → MediaStreamAudioSourceNode → AudioWorkletNode (LTC decoder)
+//     → main thread: postMessage で復号 TC を受信 → _ltcRxOnFrame(T) で sync 判定
+//
+// 既知の落とし穴:
+//   - getUserMedia は HTTPS 必須 (GitHub Pages は OK)
+//   - echoCancellation/noiseSuppression/autoGainControl は必ず OFF (信号が歪む)
+//   - 送出と受信を同 Mac で同時 ON すると feedback loop の危険 → toast で警告
+//   - AudioContext sampleRate と入力 sampleRate が違うときは自動リサンプル
+
+// AudioWorklet プロセッサ本体 (文字列リテラル → Blob → addModule)
+// biphase mark (Manchester) 復号 + 80-bit SMPTE LTC フレーム解析
+const _LTC_WORKLET_SRC = `
+class LTCDecoderProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this._prevSign = 0;
+    this._sinceTransition = 0;
+    this._bitCellSamples = 0;   // 推定 bit cell 全長 (samples)
+    this._halfPending = false;  // bit=1 の前半 transition を見た直後フラグ
+    this._bitBuffer = [];       // 直近 bit (LSB-first にも MSB-first にも対応する 80bit ring)
+    this._maxBitBuffer = 200;   // 80bit の sync 検索のためゆとり
+    this._rmsAcc = 0;
+    this._rmsCount = 0;
+    this._rmsReportEvery = sampleRate; // 1 秒に 1 回 RMS 報告
+    this._rmsTimer = 0;
+    this._lockedReportedAt = 0;
+  }
+
+  // 80-bit LTC フレームから時/分/秒/フレーム を取り出す
+  // SMPTE LTC bit layout (LSB first transmission, frame is sent bits 0..79):
+  //   bits  0-3   frame units (BCD)
+  //   bits  4-7   user bits 1
+  //   bits  8-9   frame tens (BCD, 2 bits)
+  //   bit  10     drop frame flag
+  //   bit  11     color frame flag
+  //   bits 12-15  user bits 2
+  //   bits 16-19  seconds units
+  //   bits 20-23  user bits 3
+  //   bits 24-26  seconds tens
+  //   bit  27     parity bit (BGF0)
+  //   bits 28-31  user bits 4
+  //   bits 32-35  minutes units
+  //   bits 36-39  user bits 5
+  //   bits 40-42  minutes tens
+  //   bit  43     BGF0/BGF2
+  //   bits 44-47  user bits 6
+  //   bits 48-51  hours units
+  //   bits 52-55  user bits 7
+  //   bits 56-57  hours tens
+  //   bits 58-59  BGF1/BGF2
+  //   bits 60-63  user bits 8
+  //   bits 64-79  sync word 0011111111111101  (16 bits, LSB first = 1011111111111100)
+  _decodeFrame(bits) {
+    // bits: 配列 (length=80)。LSB から送られてくる順。
+    const get = (start, len) => {
+      let v = 0;
+      for (let i = 0; i < len; i++) v |= (bits[start + i] & 1) << i;
+      return v;
+    };
+    const frameUnits = get(0, 4);
+    const frameTens  = get(8, 2);
+    const secUnits   = get(16, 4);
+    const secTens    = get(24, 3);
+    const minUnits   = get(32, 4);
+    const minTens    = get(40, 3);
+    const hrUnits    = get(48, 4);
+    const hrTens     = get(56, 2);
+    const frame = frameTens * 10 + frameUnits;
+    const sec   = secTens * 10 + secUnits;
+    const min   = minTens * 10 + minUnits;
+    const hr    = hrTens * 10 + hrUnits;
+    // BCD レンジ外なら無効
+    if (frame > 39 || sec > 59 || min > 59 || hr > 23) return null;
+    // 30fps non-drop 固定 (送出側と一致)
+    const fps = 30;
+    const T = hr * 3600 + min * 60 + sec + (frame / fps);
+    return { hr, min, sec, frame, T };
+  }
+
+  // sync word を bitBuffer 末尾から探す。LSB first 送信の場合、
+  // 末尾 16bit (= bits[64..79]) が 0011111111111101 (MSB first 表記) になる。
+  // LSB first で並べると 1011111111111100。
+  // つまり bitBuffer の末尾 16bit (古い → 新しい順) が [1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0]
+  _hasSyncAtEnd() {
+    const b = this._bitBuffer;
+    if (b.length < 80) return false;
+    // 送信順 (LSB first) で末尾 16bit
+    const syncLSB = [1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0];
+    const off = b.length - 16;
+    for (let i = 0; i < 16; i++) {
+      if (b[off + i] !== syncLSB[i]) return false;
+    }
+    return true;
+  }
+
+  process(inputs, outputs, parameters) {
+    const input = inputs[0];
+    if (!input || input.length === 0) return true;
+    const ch = input[0];
+    if (!ch || ch.length === 0) return true;
+
+    // 期待する bit cell サンプル数 (30fps, 80bit → 2400 bit/sec → bit cell = sampleRate/2400)
+    const expectedBitCell = sampleRate / 2400;
+    // 許容範囲は ±40% (リサンプルやジッターを吸収)
+    const minCell = expectedBitCell * 0.6;
+    const maxCell = expectedBitCell * 1.4;
+    const halfMin = minCell * 0.4;
+    const halfMax = maxCell * 0.6;
+
+    let prevSign = this._prevSign;
+    let since = this._sinceTransition;
+    let halfPending = this._halfPending;
+    let lastFullCell = this._bitCellSamples || expectedBitCell;
+
+    for (let i = 0; i < ch.length; i++) {
+      const s = ch[i];
+      this._rmsAcc += s * s;
+      this._rmsCount++;
+
+      const sign = (s > 0.02) ? 1 : (s < -0.02 ? -1 : 0);
+      since++;
+
+      // zero crossing / transition 検出 (ヒステリシス付き)
+      let isTransition = false;
+      if (sign !== 0 && prevSign !== 0 && sign !== prevSign) {
+        isTransition = true;
+      }
+
+      if (isTransition) {
+        const gap = since;
+        since = 0;
+        if (gap > halfMin && gap < halfMax) {
+          // 半分 cell の transition
+          if (halfPending) {
+            // 2 回連続 → bit = 1 完成
+            this._bitBuffer.push(1);
+            halfPending = false;
+            lastFullCell = gap * 2;
+          } else {
+            // 1 回目 (bit=1 の前半)
+            halfPending = true;
+          }
+        } else if (gap > minCell && gap < maxCell) {
+          // 全長 cell の transition → bit = 0
+          // ただし halfPending が立っていたら不整合 (リセット)
+          if (halfPending) {
+            // ノイズで半端な transition を拾った可能性 → halfPending を捨ててこれを bit=0 とする
+            halfPending = false;
+          }
+          this._bitBuffer.push(0);
+          lastFullCell = gap;
+        } else {
+          // 範囲外 → ノイズ。halfPending リセット
+          halfPending = false;
+        }
+        // bitBuffer 上限
+        if (this._bitBuffer.length > this._maxBitBuffer) {
+          this._bitBuffer.splice(0, this._bitBuffer.length - this._maxBitBuffer);
+        }
+        // sync word 検出?
+        if (this._hasSyncAtEnd() && this._bitBuffer.length >= 80) {
+          const start = this._bitBuffer.length - 80;
+          const frame80 = this._bitBuffer.slice(start, start + 80);
+          const dec = this._decodeFrame(frame80);
+          if (dec) {
+            this.port.postMessage({ type: 'tc', T: dec.T, hr: dec.hr, min: dec.min, sec: dec.sec, frame: dec.frame });
+          }
+        }
+      }
+      if (sign !== 0) prevSign = sign;
+    }
+    this._bitCellSamples = lastFullCell;
+    this._prevSign = prevSign;
+    this._sinceTransition = since;
+    this._halfPending = halfPending;
+
+    // RMS を 1 秒ごとに報告
+    this._rmsTimer += ch.length;
+    if (this._rmsTimer >= this._rmsReportEvery) {
+      const rms = this._rmsCount > 0 ? Math.sqrt(this._rmsAcc / this._rmsCount) : 0;
+      this.port.postMessage({ type: 'rms', rms });
+      this._rmsAcc = 0; this._rmsCount = 0; this._rmsTimer = 0;
+    }
+    return true;
+  }
+}
+registerProcessor('ltc-decoder', LTCDecoderProcessor);
+`;
+
+// runtime ハンドル
+const _ltcRx = {
+  _lastFrameAt: 0,
+  _lastFrameT: 0,
+  _signalRMS: 0,
+  _statusTimer: null,
+  _moduleBlobUrl: null,
+};
+
+async function _ltcRxLoadModule() {
+  const ti = state.multitrack && state.multitrack.timecodeIn;
+  if (!ti) return false;
+  if (ti._moduleLoaded) return true;
+  if (!mtCtx) {
+    try { await mtInitCtx(); } catch(e) { console.warn('[ltcRx] mtInitCtx failed', e); return false; }
+  }
+  if (!mtCtx || !mtCtx.audioWorklet) {
+    console.warn('[ltcRx] AudioWorklet 非対応');
+    try { showToast('⚠️ このブラウザは AudioWorklet 非対応です'); } catch(_) {}
+    return false;
+  }
+  try {
+    if (!_ltcRx._moduleBlobUrl) {
+      const blob = new Blob([_LTC_WORKLET_SRC], { type: 'application/javascript' });
+      _ltcRx._moduleBlobUrl = URL.createObjectURL(blob);
+    }
+    await mtCtx.audioWorklet.addModule(_ltcRx._moduleBlobUrl);
+    ti._moduleLoaded = true;
+    return true;
+  } catch(e) {
+    console.warn('[ltcRx] addModule failed', e);
+    try { showToast('⚠️ LTC デコーダの読み込みに失敗しました'); } catch(_) {}
+    return false;
+  }
+}
+
+async function _ltcRxStart(deviceId) {
+  const ti = state.multitrack.timecodeIn;
+  if (!ti) return false;
+  // フィードバック警告 (送出と同 Mac で同時 ON)
+  try {
+    const tcOut = state.multitrack.timecodeOut;
+    if (tcOut && tcOut.enabled) {
+      showToast('⚠️ LTC OUT と IN を同じ Mac で同時 ON するとループする可能性があります');
+    }
+  } catch(_) {}
+  // mtCtx を確保 (出力側と共有)
+  if (!mtCtx) {
+    try { await mtInitCtx(); } catch(e) { console.warn('[ltcRx] mtInitCtx failed', e); return false; }
+  }
+  if (!mtCtx) return false;
+  if (mtCtx.state === 'suspended') {
+    try { await mtCtx.resume(); } catch(_) {}
+  }
+  // worklet モジュール
+  const ok = await _ltcRxLoadModule();
+  if (!ok) return false;
+  // 既存 stream を止める
+  _ltcRxStopStream();
+  // getUserMedia (ノイズ抑制系を全 OFF — LTC は方形波なので歪み厳禁)
+  const audioConstraints = {
+    echoCancellation: false,
+    noiseSuppression: false,
+    autoGainControl: false,
+    channelCount: 1,
+  };
+  if (deviceId) audioConstraints.deviceId = { exact: deviceId };
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+  } catch(e) {
+    console.warn('[ltcRx] getUserMedia failed', e);
+    try { showToast('⚠️ LTC 受信にはオーディオ入力の許可が必要です'); } catch(_) {}
+    ti.enabled = false;
+    mtTcInSyncUI();
+    return false;
+  }
+  ti._stream = stream;
+  // 取得後はデバイス名が enumerateDevices に反映されるので一度 refresh
+  try { mtRefreshInputDevices(); } catch(_) {}
+  // ソース → worklet → (出力には繋がない)
+  let source, worklet;
+  try {
+    source = mtCtx.createMediaStreamSource(stream);
+    worklet = new AudioWorkletNode(mtCtx, 'ltc-decoder', {
+      numberOfInputs: 1,
+      numberOfOutputs: 0,
+      channelCount: 1,
+      channelCountMode: 'explicit',
+      channelInterpretation: 'discrete',
+    });
+    source.connect(worklet);
+    worklet.port.onmessage = _ltcRxOnWorkletMessage;
+  } catch(e) {
+    console.warn('[ltcRx] worklet setup failed', e);
+    try { showToast('⚠️ LTC 受信ノードの構築に失敗しました'); } catch(_) {}
+    _ltcRxStopStream();
+    ti.enabled = false;
+    mtTcInSyncUI();
+    return false;
+  }
+  ti._sourceNode = source;
+  ti._worklet = worklet;
+  ti._locked = false;
+  ti._signal = 0;
+  // ステータスインジケータの更新ループ開始
+  _ltcRxStartStatusLoop();
+  return true;
+}
+
+function _ltcRxStopStream() {
+  const ti = state.multitrack.timecodeIn;
+  if (!ti) return;
+  if (ti._worklet) {
+    try { ti._worklet.port.onmessage = null; } catch(_) {}
+    try { ti._worklet.disconnect(); } catch(_) {}
+    ti._worklet = null;
+  }
+  if (ti._sourceNode) {
+    try { ti._sourceNode.disconnect(); } catch(_) {}
+    ti._sourceNode = null;
+  }
+  if (ti._stream) {
+    try { ti._stream.getTracks().forEach(t => { try { t.stop(); } catch(_) {} }); } catch(_) {}
+    ti._stream = null;
+  }
+  ti._locked = false;
+  ti._signal = 0;
+  ti._lastT = null;
+}
+
+function _ltcRxStop() {
+  _ltcRxStopStream();
+  if (_ltcRx._statusTimer) {
+    try { clearInterval(_ltcRx._statusTimer); } catch(_) {}
+    _ltcRx._statusTimer = null;
+  }
+  _ltcRxUpdateStatus();
+}
+
+function _ltcRxOnWorkletMessage(ev) {
+  const ti = state.multitrack.timecodeIn;
+  if (!ti || !ti.enabled) return;
+  const d = ev.data;
+  if (!d) return;
+  if (d.type === 'tc') {
+    ti._locked = true;
+    ti._lastT = d.T;
+    ti._lastAt = mtCtx ? mtCtx.currentTime : 0;
+    _ltcRx._lastFrameAt = performance.now();
+    _ltcRx._lastFrameT = d.T;
+    // UI の TC 文字列を即更新
+    try {
+      const el = document.getElementById('mtTcInTime');
+      if (el) el.textContent = _ltcRxFormatTC(d.hr, d.min, d.sec, d.frame);
+    } catch(_) {}
+    // sync エンジン
+    try { _ltcRxOnFrame(d.T); } catch(e) { console.warn('[ltcRx] onFrame failed', e); }
+  } else if (d.type === 'rms') {
+    ti._signal = +d.rms || 0;
+    _ltcRx._signalRMS = ti._signal;
+  }
+}
+
+function _ltcRxFormatTC(hr, min, sec, frame) {
+  const pad = (n, w) => String(n | 0).padStart(w, '0');
+  // 既存 UI は 00:00:00.00 (frame を 2 桁) で表示
+  return pad(hr, 2) + ':' + pad(min, 2) + ':' + pad(sec, 2) + '.' + pad(frame, 2);
+}
+
+// 現在再生中の曲内の位置 (秒) を取得
+function _ltcRxCurrentSongPosition() {
+  const m = state.multitrack;
+  if (!m || !m.isPlaying || m.currentSongIdx < 0) return -1;
+  // MediaElement モード: activeMedia[0].currentTime を信頼
+  const list = m.activeMedia || [];
+  for (const a of list) {
+    if (a && isFinite(a.currentTime)) return a.currentTime;
+  }
+  if (mtCtx && isFinite(m.startTime)) return Math.max(0, mtCtx.currentTime - m.startTime);
+  return m.seekOffset || 0;
+}
+
+// sync エンジン: 復号 TC → 曲インデックス + 曲内位置 に逆算
+function _ltcRxOnFrame(decodedT) {
+  const m = state.multitrack;
+  const tc = m.timecodeIn;
+  if (!tc || !tc.enabled) return;
+  if (typeof decodedT !== 'number' || !isFinite(decodedT) || decodedT < 0) return;
+  const spacing = (tc.spacingSec > 0) ? tc.spacingSec : (15 * 60);
+  const songIdx = Math.floor(decodedT / spacing);
+  const posInSong = decodedT - (songIdx * spacing);
+  if (songIdx < 0 || songIdx >= m.songs.length) return;
+
+  // 別の曲を再生中 / 停止中 → jump
+  const needJump = (m.currentSongIdx !== songIdx) || !m.isPlaying;
+  if (needJump) {
+    _ltcRxJump(songIdx, posInSong);
+    return;
+  }
+  // 同曲再生中: 位置ドリフトを比較 (500ms 以上ズレたら再 sync)
+  const currentPos = _ltcRxCurrentSongPosition();
+  if (currentPos < 0) return;
+  if (Math.abs(currentPos - posInSong) > 0.5) {
+    _ltcRxJump(songIdx, posInSong);
+  }
+}
+
+let _ltcRxJumpInFlight = false;
+async function _ltcRxJump(songIdx, posInSong) {
+  if (_ltcRxJumpInFlight) return;
+  _ltcRxJumpInFlight = true;
+  try {
+    const m = state.multitrack;
+    if (songIdx < 0 || songIdx >= m.songs.length) return;
+    // 既に同曲再生中で位置ドリフトだけの場合は seek (jump より低コスト)
+    if (m.isPlaying && m.currentSongIdx === songIdx) {
+      try { mtMediaSeekTo(Math.max(0, posInSong)); } catch(e) { console.warn('[ltcRx] seek failed', e); }
+      return;
+    }
+    // 別曲 or 停止中: MediaElement で曲頭から jump 再生 (既存の mtPlaySong 経路、noLock=true で本番ロック無効)
+    try {
+      if (typeof mtPlaySong === 'function') {
+        await mtPlaySong(songIdx, Math.max(0, posInSong), { noLock: true });
+      } else if (typeof mtMediaPlaySong === 'function') {
+        await mtMediaPlaySong(songIdx, Math.max(0, posInSong), { noLock: true });
+      }
+    } catch(e) {
+      console.warn('[ltcRx] jump play failed', e);
+    }
+  } finally {
+    _ltcRxJumpInFlight = false;
+  }
+}
+
+// ステータスインジケータ更新 (○=未起動 / ⚠=信号弱・unlock / ●=OK 点滅)
+function _ltcRxStartStatusLoop() {
+  if (_ltcRx._statusTimer) return;
+  _ltcRx._statusTimer = setInterval(_ltcRxUpdateStatus, 250);
+}
+function _ltcRxUpdateStatus() {
+  const el = document.getElementById('mtTcInStatus');
+  if (!el) return;
+  const ti = state.multitrack && state.multitrack.timecodeIn;
+  if (!ti || !ti.enabled) {
+    el.textContent = '○';
+    el.style.color = '#888';
+    return;
+  }
+  const now = performance.now();
+  const sinceFrame = now - (_ltcRx._lastFrameAt || 0);
+  const sig = ti._signal || 0;
+  // 1.5 秒以上 TC が来ていない or 信号が弱い
+  if (sinceFrame > 1500 || sig < 0.01 || !ti._locked) {
+    el.textContent = '⚠';
+    el.style.color = '#E0B040';
+    return;
+  }
+  // OK: 緑、500ms ごとに blink
+  const blink = (Math.floor(now / 500) % 2) === 0;
+  el.textContent = '●';
+  el.style.color = blink ? '#3DB5A6' : '#1F7068';
+}
+
+// 入力デバイス一覧の取得 (出力と独立)。マイク権限が無くてもラベル無しで一覧は出る。
+async function mtRefreshInputDevices() {
+  const sel = document.getElementById('mtTcInDevice');
+  if (!sel) return;
+  let devices = [];
+  try { devices = await navigator.mediaDevices.enumerateDevices(); } catch(e) { console.warn('[ltcRx] enumerateDevices failed', e); }
+  const ins = devices.filter(d => d.kind === 'audioinput');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  if (ins.length === 0) {
+    const o = document.createElement('option');
+    o.value = ''; o.textContent = '(入力デバイスなし)';
+    sel.appendChild(o);
+    return;
+  }
+  const opt0 = document.createElement('option');
+  opt0.value = ''; opt0.textContent = '— SYSTEM DEFAULT —';
+  sel.appendChild(opt0);
+  ins.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d.deviceId;
+    const cleanLabel = (d.label || '').replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '').trim();
+    o.textContent = cleanLabel || `入力 ${d.deviceId.slice(0, 6)}`;
+    sel.appendChild(o);
+  });
+  // 復元 (saved → 現在選択 → 空)
+  const want = (state.multitrack.timecodeIn && state.multitrack.timecodeIn.inputDeviceId) || prev || '';
+  sel.value = want;
+}
+
+// ---- UI ハンドラ (LTC IN セクション) ----
+async function mtTcInSetEnabled(on) {
+  const ti = state.multitrack.timecodeIn;
+  if (!ti) return;
+  ti.enabled = !!on;
+  if (on) {
+    const ok = await _ltcRxStart(ti.inputDeviceId || '');
+    if (!ok) {
+      // _ltcRxStart 側で enabled=false に戻されている
+      return;
+    }
+    try { showToast('LTC 受信 ON — マスター TC を chase 中'); } catch(_) {}
+  } else {
+    _ltcRxStop();
+    try { showToast('LTC 受信 OFF'); } catch(_) {}
+  }
+  mtSave();
+  mtTcInSyncUI();
+}
+async function mtTcInSetDevice(deviceId) {
+  const ti = state.multitrack.timecodeIn;
+  if (!ti) return;
+  ti.inputDeviceId = deviceId || '';
+  mtSave();
+  if (ti.enabled) {
+    // stream を取り直す
+    _ltcRxStopStream();
+    const ok = await _ltcRxStart(deviceId || '');
+    if (!ok) ti.enabled = false;
+  }
+  mtTcInSyncUI();
+}
+function mtTcInSetSpacing(v) {
+  const ti = state.multitrack.timecodeIn;
+  if (!ti) return;
+  const minutes = Math.max(1, Math.min(120, parseInt(v, 10) || 15));
+  ti.spacingSec = minutes * 60;
+  mtSave();
+  mtTcInSyncUI();
+}
+function mtTcInSyncUI() {
+  const ti = state.multitrack.timecodeIn;
+  if (!ti) return;
+  const en = document.getElementById('mtTcInEnable');
+  const sp = document.getElementById('mtTcInSpacing');
+  const dv = document.getElementById('mtTcInDevice');
+  if (en && en.checked !== !!ti.enabled) en.checked = !!ti.enabled;
+  if (sp) {
+    const v = String(Math.round((ti.spacingSec || (15 * 60)) / 60));
+    if (sp.value !== v) sp.value = v;
+  }
+  if (dv && dv.value !== (ti.inputDeviceId || '')) {
+    // option が無いケース (deviceId が enumerateDevices に出てこない、権限拒否中など) もあるので柔軟に
+    try { dv.value = ti.inputDeviceId || ''; } catch(_) {}
+  }
+  _ltcRxUpdateStatus();
+}
+
 // ---- デバイス一覧 / 選択 ----
 // v11.7.1: getUserMedia (マイク権限要求) を完全撤去。
 // 出力デバイスの選択は enumerateDevices() だけで実施。
@@ -11329,6 +11929,8 @@ async function mtRefreshDevices(_askPermission) {
   });
   // 復元
   sel.value = state.multitrack.outputDeviceId || '';
+  // v12.8.0: LTC IN の入力デバイス一覧も並行して更新
+  try { await mtRefreshInputDevices(); } catch(_) {}
 }
 
 // v11.3.1: 出力デバイス切替を全面改修 — 業界標準パターン
@@ -15773,6 +16375,10 @@ async function mtInit() {
   // v12.6.0: LTC UI を localStorage の値で同期
   try { if (typeof mtTcSyncUI === 'function') mtTcSyncUI(); } catch(_) {}
   setTimeout(() => { try { mtTcSyncUI(); } catch(_) {} }, 50);
+  // v12.8.0: LTC IN UI 同期 + 入力デバイス一覧更新
+  try { if (typeof mtTcInSyncUI === 'function') mtTcInSyncUI(); } catch(_) {}
+  try { if (typeof mtRefreshInputDevices === 'function') mtRefreshInputDevices(); } catch(_) {}
+  setTimeout(() => { try { mtTcInSyncUI(); } catch(_) {} }, 50);
 
   // タブ切替でも必ず再描画されるよう、visibilitychange/focus でも保険
   if (!window._mtInitBoundVisibility) {
