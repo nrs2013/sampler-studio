@@ -2992,6 +2992,12 @@
     border-right: 0.5px solid #1F1F25;
     margin-right: 2px;
   }
+  /* v12.8.3 J UX: LTC OUT/IN ラベルを少し大きく + letter-spacing 強化で視認性 UP */
+  .mt-tc-toggle span {
+    font-size: 12px;
+    letter-spacing: 2px;
+    font-weight: 700;
+  }
   .mt-tc-toggle input[type="checkbox"] {
     width: 14px; height: 14px; margin: 0;
     accent-color: #3DB5A6;
@@ -3849,11 +3855,13 @@
                    onchange="mtTcInSetSpacing(this.value)" title="送出側と同じ間隔 (分) — N曲目 = (N-1) × この値" />
             <span class="mt-tc-unit">分</span>
             <span class="mt-tc-label" id="mtTcInTime" style="font-family:monospace;color:#3DB5A6;min-width:90px;">00:00:00.00</span>
-            <span id="mtTcInStatus" title="信号レベル / sync 状態" style="color:#888;">○</span>
+            <!-- v12.8.3 J2/J3: アイコン + ラベル + 背景色で本番卓上でも視認性 UP -->
+            <span id="mtTcInStatus" title="信号レベル / sync 状態" style="color:#888;display:inline-block;min-width:96px;padding:2px 8px;border-radius:4px;font-size:11px;letter-spacing:0.4px;font-weight:600;text-align:center;">○ OFF</span>
           </div>
           <!-- v12.8.1 Fix#7: 本番運用ガイドを常時表示 (IN 側は本番運用ルールが重要なので例外として復活) -->
+          <!-- v12.8.3 J1: SETLIST 一致が必要なことを明記 (違ったら無音事故になる) -->
           <div class="mt-tc-hint">
-            スレーブ運用 · 物理結線必須 · マスターと「間隔」一致 · 同 Mac で OUT/IN 同時 ON 禁止
+            スレーブ運用 · 物理結線必須 · マスターと同じセトリ/間隔が必要 · 同 Mac で OUT/IN 同時 ON 禁止
           </div>
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
@@ -3894,7 +3902,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.8.2';
+const APP_VERSION = 'v12.8.3';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -7595,6 +7603,17 @@ function setAppMode(m) {
   // v12.6.0: MULTI-TRACK モードから離れる時は LTC 出力も止める
   if (state.appMode === 'multi' && m !== 'multi') {
     try { if (typeof _ltcMaybeStop === 'function') _ltcMaybeStop(); } catch(_) {}
+    // v12.8.3 J5: LTC IN も自動 OFF (マイクインジケータが点きっぱなしになって
+    //   不安を煽るので、タブ離脱時に必ず受信ストリームを止める)。enabled は
+    //   localStorage に残しておき、MULTI-TRACK に戻った時に手動で ON にし直す UX。
+    try {
+      const ti = state.multitrack && state.multitrack.timecodeIn;
+      if (ti && ti.enabled) {
+        if (typeof _ltcRxStop === 'function') _ltcRxStop();
+        ti.enabled = false;
+        try { if (typeof mtTcInSyncUI === 'function') mtTcInSyncUI(); } catch(_) {}
+      }
+    } catch(_) {}
   }
   state.appMode = m;
   // SAMPLER 専用要素：BANK バー＋パッド一覧
@@ -10827,6 +10846,26 @@ function _mtTeardownCtxResources(reason) {
       } catch(e) { console.warn('[ltcRx] post-teardown restart failed', e); }
     }, 200);
   }
+  // v12.8.3 H_OUT: LTC OUT 側も ctx teardown 後の自動再開を入れる。
+  //   従来は RX だけ再起動していたが、OUT が止まったままだとマスター側で
+  //   audiocontext 死亡 → 復帰しても本番中ずっと TC が出ない事故。
+  //   再生中 (isPlaying) かつ OUT enabled なら 250ms 後に songIdx + posInSong で再起動。
+  try {
+    const tcOut = state.multitrack && state.multitrack.timecodeOut;
+    const m = state.multitrack;
+    if (tcOut && tcOut.enabled && m && m.isPlaying && m.currentSongIdx >= 0) {
+      const savedIdx = m.currentSongIdx | 0;
+      // teardown 直後は startTime も無効になるので、posInSong は安全側で 0 から再開。
+      const posInSong = 0;
+      setTimeout(() => {
+        try {
+          if (mtCtx && state.multitrack.timecodeOut && state.multitrack.timecodeOut.enabled) {
+            _ltcMaybeStart(savedIdx, posInSong);
+          }
+        } catch(e) { console.warn('[ltc] post-teardown OUT restart failed', e); }
+      }, 250);
+    }
+  } catch(_) {}
 }
 
 async function mtInitCtx(options) {
@@ -11231,6 +11270,8 @@ const _ltc = {
   sources: [],         // 再生中の AudioBufferSourceNode
   scheduleTimer: null,
   polarity: 1,         // v12.8.1 Fix#1: biphase mark polarity をチャンク間で carry-over
+  generation: 0,       // v12.8.3 G4: _ltcStart のたびに +1。古い world の onended が
+                       //   新 world の sources を誤って splice しないように src._ltcGen と照合
 };
 
 function _ltcStop() {
@@ -11245,13 +11286,21 @@ function _ltcStop() {
     try { s.onended = null; } catch(_) {}
     try { s.stop(); } catch(_) {}
     try { s.disconnect(); } catch(_) {}
+    // v12.8.3 I4: AudioBuffer 参照を即解放して GC を早める (長時間運用での
+    //   メモリ膨張対策)。disconnect 後の src は使い回せないので buffer=null で
+    //   安全。stop/disconnect の例外と独立に try-catch で囲む。
+    try { s.buffer = null; } catch(_) {}
   }
 }
 
-// 引数: songIdx (0始まり), songPositionSec (再生開始位置), anchorAudioTime (任意)
+// 引数: songIdx (0始まり), songPositionSec (再生開始位置), anchorAudioTime (任意),
+//       keepPolarity (true で polarity を維持 — re-align 経路で biphase 連続性確保)
 // v12.8.1 Fix#2: anchorAudioTime に state.multitrack.startTime を渡して曲開始と完全同期
 // v12.8.1 Fix#3: STEM channelMap と被る ch を物理ループ防止で拒否
-function _ltcStart(songIdx, songPositionSec, anchorAudioTime) {
+// v12.8.3 I1: 4th 引数 keepPolarity を追加。re-align (_ltcScheduleNext の resume 検知)
+//   経路では true を渡して biphase polarity を維持する。さもないと _ltcStart 内で
+//   polarity=1 にリセットされ、carry-over (v12.8.1 Fix#1) の連続性が崩れる。
+function _ltcStart(songIdx, songPositionSec, anchorAudioTime, keepPolarity) {
   const tc = state.multitrack && state.multitrack.timecodeOut;
   if (!tc || !tc.enabled) return;
   if (!mtCtx || !mtMerger) return;        // AudioContext / merger 未初期化
@@ -11290,7 +11339,13 @@ function _ltcStart(songIdx, songPositionSec, anchorAudioTime) {
     : mtCtx.currentTime;
   _ltc.nextScheduleSec = 0; // baseTimeSec からのオフセット (0 = 開始時刻ぴったり)
   _ltc.channelIdx = channelIdx;
-  _ltc.polarity = 1;        // v12.8.1 Fix#1: polarity を初期化
+  // v12.8.3 I1: re-align 経路 (keepPolarity=true) では polarity を維持
+  if (!keepPolarity) {
+    _ltc.polarity = 1;        // v12.8.1 Fix#1: polarity を初期化
+  }
+  // v12.8.3 G4: 世代カウンタを +1 して、古い world の onended が新 world の
+  //   sources を誤って splice しないようにする。
+  _ltc.generation = (_ltc.generation || 0) + 1;
   _ltc.running = true;
 
   try { _ltcScheduleNext(); } catch(e) { console.warn('[ltc] scheduleNext failed', e); }
@@ -11321,7 +11376,10 @@ function _ltcScheduleNext() {
       const songPos = (m && mtCtx && isFinite(m.startTime)) ? Math.max(0, mtCtx.currentTime - m.startTime) : 0;
       console.warn('[ltc] resume detected, re-aligning');
       _ltcStop();
-      _ltcStart(songIdx, songPos, mtCtx ? mtCtx.currentTime : undefined);
+      // v12.8.3 I1: re-align 経路は polarity を維持 (carry-over の連続性確保)。
+      //   v12.8.1 Fix#1 で導入した carry-over がここだけ抜けていて、長時間放置後の
+      //   復帰で biphase の極性が反転し、受信側 decoder の sync 検出が失敗していた。
+      _ltcStart(songIdx, songPos, mtCtx ? mtCtx.currentTime : undefined, true);
     } catch(e) { console.warn('[ltc] re-align failed', e); }
     return;
   }
@@ -11355,9 +11413,15 @@ function _ltcScheduleNext() {
     }
     const playAt = _ltc.startedAudioTime + _ltc.nextScheduleSec;
     try { src.start(playAt); } catch(e) { console.warn('[ltc] start failed', e); }
+    // v12.8.3 G4: 世代タグを付与。onended は遅延発火しうるため、
+    //   _ltcStop → _ltcStart のあとに「古い src」の onended が「新 sources」を
+    //   spice してしまう事故を _ltcGen 照合で防ぐ。
+    src._ltcGen = _ltc.generation;
     _ltc.sources.push(src);
     src.onended = () => {
       try { src.disconnect(); } catch(_) {}
+      // v12.8.3 G4: 同じ世代の sources でなければ何もしない
+      if (src._ltcGen !== _ltc.generation) return;
       const i = _ltc.sources.indexOf(src);
       if (i >= 0) _ltc.sources.splice(i, 1);
     };
@@ -11549,15 +11613,18 @@ class LTCDecoderProcessor extends AudioWorkletProcessor {
     return { hr, min, sec, frame, T, userBits: ub };
   }
 
-  // sync word を bitBuffer 末尾から探す。LSB first 送信の場合、
-  // 末尾 16bit (= bits[64..79]) が 0011111111111101 (MSB first 表記) になる。
-  // LSB first で並べると 1011111111111100。
-  // つまり bitBuffer の末尾 16bit (古い → 新しい順) が [1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0]
+  // sync word を bitBuffer 末尾から探す。
+  // v12.8.3 F1 (致命修正): encoder 側 (generateLTCAudioBuffer / _ltcEncodeFrame) が
+  //   bits[64..79] に [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1] を入れる (SMPTE 12M 規格通り)。
+  //   decoder 側もこれと同じ並びを期待しないと sync を一切検出できない。
+  //   v12.8.2 以前は位置 0 と 15 が反転した [1,0,1,1,...,1,0,0] になっており、受信
+  //   フレームが「常に sync 未検出」で sync word が一切立たず、TC が main thread に
+  //   1 枚も流れて来なかった (= LTC IN が全く動かなかった真因)。
   _hasSyncAtEnd() {
     const b = this._bitBuffer;
     if (b.length < 80) return false;
-    // 送信順 (LSB first) で末尾 16bit
-    const syncLSB = [1,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0];
+    // v12.8.3 F1: encoder と完全一致させる (送信順 = LSB first で bits[64..79] そのもの)
+    const syncLSB = [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1];
     const off = b.length - 16;
     for (let i = 0; i < 16; i++) {
       if (b[off + i] !== syncLSB[i]) return false;
@@ -11640,7 +11707,12 @@ class LTCDecoderProcessor extends AudioWorkletProcessor {
           const frame80 = this._bitBuffer.slice(start, start + 80);
           const dec = this._decodeFrame(frame80);
           if (dec) {
-            this.port.postMessage({ type: 'tc', T: dec.T, hr: dec.hr, min: dec.min, sec: dec.sec, frame: dec.frame, userBits: dec.userBits });
+            // v12.8.3 I3: worklet 側で AudioWorkletGlobalScope の currentTime を含める。
+            //   main thread の performance.now() は main thread が block すると
+            //   遅れるため、信号断検知 (1500ms 閾値) が誤発火しうる。
+            //   ctxTime は AudioContext と同じタイムラインで動くので main thread の
+            //   負荷に影響されず、より正確に「最後にフレームが届いた瞬間」を測れる。
+            this.port.postMessage({ type: 'tc', T: dec.T, hr: dec.hr, min: dec.min, sec: dec.sec, frame: dec.frame, userBits: dec.userBits, ctxTime: currentTime });
           }
         }
       }
@@ -11667,6 +11739,9 @@ registerProcessor('ltc-decoder', LTCDecoderProcessor);
 // runtime ハンドル
 const _ltcRx = {
   _lastFrameAt: 0,
+  // v12.8.3 I3: worklet 側 currentTime (AudioContext タイムライン) を main thread block
+  //   耐性のために保持。0 のまま = まだ一度も受信していない、の意味。
+  _lastFrameCtxTime: 0,
   _lastFrameT: 0,
   _signalRMS: 0,
   _statusTimer: null,
@@ -11749,6 +11824,8 @@ async function _ltcRxStart(deviceId) {
   // worklet モジュール
   const ok = await _ltcRxLoadModule();
   if (!ok) return false;
+  // v12.8.3 G1: addModule の await を抜ける間にキャンセルされたら即終了
+  if (!ti.enabled) return false;
   // 既存 stream を止める
   _ltcRxStopStream();
   // getUserMedia (ノイズ抑制系を全 OFF — LTC は方形波なので歪み厳禁)
@@ -11769,7 +11846,8 @@ async function _ltcRxStart(deviceId) {
     try {
       const name = e && e.name;
       if (name === 'NotAllowedError') {
-        msg = '⚠️ マイクへのアクセスが許可されていません。Chrome の設定で許可してください。';
+        // v12.8.3 J6: 平易化 — 鍵アイコンの場所を具体的に案内
+        msg = '⚠️ マイクへのアクセスが許可されていません。Chrome のアドレスバー左にある鍵アイコンから「マイク」を「許可」にしてください。';
       } else if (name === 'NotFoundError') {
         msg = '⚠️ 入力デバイスが見つかりません。オーディオ I/F が接続されてますか?';
       } else if (name === 'OverconstrainedError') {
@@ -11779,6 +11857,13 @@ async function _ltcRxStart(deviceId) {
     try { showToast(msg); } catch(_) {}
     ti.enabled = false;
     mtTcInSyncUI();
+    return false;
+  }
+  // v12.8.3 G1: getUserMedia の await を抜ける間に user が LTC IN を OFF に
+  //   していたら、ここで stream を捨てて return。そうしないと ti._stream に
+  //   後段で生 stream が代入され、_ltcRxStop が呼ばれた後の leak になる。
+  if (!ti.enabled) {
+    try { stream.getTracks().forEach(t => { try { t.stop(); } catch(_) {} }); } catch(_) {}
     return false;
   }
   ti._stream = stream;
@@ -11810,6 +11895,21 @@ async function _ltcRxStart(deviceId) {
     });
     source.connect(worklet);
     worklet.port.onmessage = _ltcRxOnWorkletMessage;
+    // v12.8.3 I2: worklet が例外で死んでも気付けるよう onprocessorerror を設定。
+    //   黙って sync が来なくなる事故 (例: bitBuffer 関連の null ref、ctx 突然死) を
+    //   トーストで可視化し、安全側に倒す (enabled=false で再開を要求)。
+    try {
+      worklet.onprocessorerror = (e) => {
+        try { console.error('[ltc-rx] worklet error', e); } catch(_) {}
+        try { showToast('⚠️ LTC decoder 異常停止。LTC IN を OFF→ON してください。'); } catch(_) {}
+        try { _ltcRxStop(); } catch(_) {}
+        try {
+          const tiNow = state.multitrack && state.multitrack.timecodeIn;
+          if (tiNow) { tiNow.enabled = false; }
+          mtTcInSyncUI();
+        } catch(_) {}
+      };
+    } catch(_) {}
   } catch(e) {
     console.warn('[ltcRx] worklet setup failed', e);
     try { showToast('⚠️ LTC 受信ノードの構築に失敗しました'); } catch(_) {}
@@ -11861,6 +11961,12 @@ function _ltcRxStop() {
     try { clearInterval(_ltcRx._statusTimer); } catch(_) {}
     _ltcRx._statusTimer = null;
   }
+  // v12.8.3 J4: 次回 ON 時に「一度も受信してない」状態から始めるためリセット。
+  //   これがないと「過去 ON のときに受信あり」のまま残り、OFF→ON 直後でも
+  //   '信号断 (赤背景)' に飛んでしまう。
+  _ltcRx._lastFrameAt = 0;
+  _ltcRx._lastFrameCtxTime = 0;
+  _ltcRx._lastFrameT = 0;
   _ltcRxUpdateStatus();
 }
 
@@ -11874,6 +11980,12 @@ function _ltcRxOnWorkletMessage(ev) {
     ti._lastT = d.T;
     ti._lastAt = mtCtx ? mtCtx.currentTime : 0;
     _ltcRx._lastFrameAt = performance.now();
+    // v12.8.3 I3: worklet 側の currentTime (AudioContext タイムライン) も保持。
+    //   main thread が固まっても止まらない時計なので、信号断検知 (1500ms 閾値) に
+    //   こちらを優先利用する。
+    if (typeof d.ctxTime === 'number' && isFinite(d.ctxTime)) {
+      _ltcRx._lastFrameCtxTime = d.ctxTime;
+    }
     _ltcRx._lastFrameT = d.T;
     // v12.8.2 L7: user bits ≠ 0 → 警告 log (将来拡張用に保持はする)
     try {
@@ -11960,7 +12072,8 @@ function _ltcRxOnFrame(decodedT) {
         // 1h 以上戻った → 24h wrap か誤受信。jump 抑止し、IN を OFF→ON で復活する旨を通知
         if (!tc._rolloverWarned) {
           tc._rolloverWarned = true;
-          try { showToast('⚠️ LTC が大きく逆行 (24h wrap?) — chase 抑止中。復活には LTC IN を OFF → ON してください'); } catch(_) {}
+          // v12.8.3 J6: 平易な日本語に変更
+          try { showToast('⚠️ タイムコードが大きく戻りました。LTC IN を OFF → ON で再開してください'); } catch(_) {}
         }
         return;
       }
@@ -12123,6 +12236,20 @@ async function _ltcRxJump(songIdx, posInSong) {
   try {
     const m = state.multitrack;
     if (songIdx < 0 || songIdx >= m.songs.length) return;
+    // v12.8.3 J7: songIdx 急変の最初のフレームで旧曲の漏れを防ぐため、
+    //   別曲 jump 前に master gain を即座に 0 へ落とす (10ms ramp)。
+    //   _idxMismatchCount === 1 → 急変の最初を意味するが、ここでは「別曲再生中」=
+    //   即座に旧曲を聞かせない方が安全なので、別曲ジャンプの瞬間にも統一して
+    //   gain=0 ramp を発動 (mtMediaPlaySong 内で復帰させる)。
+    try {
+      if (m.isPlaying && m.currentSongIdx !== songIdx && mtCtx && mtMasterGain) {
+        const t = mtCtx.currentTime;
+        const cur = mtMasterGain.gain.value;
+        mtMasterGain.gain.cancelScheduledValues(t);
+        mtMasterGain.gain.setValueAtTime(cur, t);
+        mtMasterGain.gain.linearRampToValueAtTime(0, t + 0.010);
+      }
+    } catch(_) {}
     // 既に同曲再生中で位置ドリフトだけの場合は seek (jump より低コスト)
     if (m.isPlaying && m.currentSongIdx === songIdx) {
       try { mtMediaSeekTo(Math.max(0, posInSong)); } catch(e) { console.warn('[ltcRx] seek failed', e); }
@@ -12139,7 +12266,10 @@ async function _ltcRxJump(songIdx, posInSong) {
       console.warn('[ltcRx] jump play failed', e);
     }
   } finally {
-    _ltcRxJumpInFlight = false;
+    // v12.8.3 G3: 即時 false に戻すと、jump 完了直後の数フレームで
+    //   mtMediaPlaySong (_mtPlaySongInFlight) と新 jump の 2 段噛みが発生しうる。
+    //   tc._lastJumpAt の 300ms debounce と整合させて、300ms 遅延で解放する。
+    setTimeout(() => { _ltcRxJumpInFlight = false; }, 300);
   }
 }
 
@@ -12148,13 +12278,22 @@ function _ltcRxStartStatusLoop() {
   if (_ltcRx._statusTimer) return;
   _ltcRx._statusTimer = setInterval(_ltcRxUpdateStatus, 250);
 }
+// v12.8.3 J2/J3/J4/I3:
+//   - ステータスを「アイコン + 短いラベル + 背景色」に変更 (本番卓上で視認性 UP)
+//   - 信号待ち (一度も受信してない) と 信号断 (過去に受信あり、今は途切れ) を区別
+//   - sinceFrame の計算に worklet 側 ctxTime (mtCtx.currentTime) を優先利用して
+//     main thread block 時の誤判定を避ける (I3)
+function _ltcRxApplyStatus(el, icon, label, fg, bg) {
+  try { el.textContent = icon + ' ' + label; } catch(_) { el.textContent = icon; }
+  try { el.style.color = fg; } catch(_) {}
+  try { el.style.background = bg || 'transparent'; } catch(_) {}
+}
 function _ltcRxUpdateStatus() {
   const el = document.getElementById('mtTcInStatus');
   if (!el) return;
   const ti = state.multitrack && state.multitrack.timecodeIn;
   if (!ti || !ti.enabled) {
-    el.textContent = '○';
-    el.style.color = '#888';
+    _ltcRxApplyStatus(el, '○', 'OFF', '#888', 'transparent');
     el.title = 'LTC IN: OFF';
     try { el.classList.remove('tc-ok-glow'); } catch(_) {}
     return;
@@ -12164,30 +12303,45 @@ function _ltcRxUpdateStatus() {
   const ig = (state.multitrack && state.multitrack._ltcRxIgnoreUntil) || 0;
   if (ig && now < ig) {
     const sec = Math.max(0, Math.ceil((ig - now) / 1000));
-    el.textContent = '⏸';
-    el.style.color = '#888';
+    _ltcRxApplyStatus(el, '⏸', `残り ${sec}秒`, '#CCC', 'rgba(80,80,90,0.35)');
     el.title = `LTC chase 一時無視中 (残り ${sec} 秒)`;
     try { el.classList.remove('tc-ok-glow'); } catch(_) {}
     return;
   }
-  const sinceFrame = now - (_ltcRx._lastFrameAt || 0);
+  // v12.8.3 I3: worklet 側の ctxTime と mtCtx.currentTime の差分を優先採用
+  let sinceFrame;
+  if (typeof _ltcRx._lastFrameCtxTime === 'number' && _ltcRx._lastFrameCtxTime > 0 && mtCtx) {
+    sinceFrame = Math.max(0, (mtCtx.currentTime - _ltcRx._lastFrameCtxTime) * 1000);
+  } else {
+    sinceFrame = now - (_ltcRx._lastFrameAt || 0);
+  }
   const sig = ti._signal || 0;
-  // 1.5 秒以上 TC が来ていない or 信号が弱い
-  if (sinceFrame > 1500 || sig < 0.01 || !ti._locked) {
-    // v12.8.2 M4: 信号断フラグを立てる (復帰時 _ltcRxOnFrame が seek/jump 判定する)
-    try {
-      if (sinceFrame > 1500) ti._signalLost = true;
-    } catch(_) {}
-    el.textContent = '⚠';
-    el.style.color = '#E0B040';
+  const everReceived = !!(_ltcRx._lastFrameAt && _ltcRx._lastFrameAt > 0);
+  // v12.8.3 J4: 一度も受信してない → マスター待ち (黄色背景), 過去に受信あり = 信号断 (赤背景)
+  if (!everReceived) {
+    _ltcRxApplyStatus(el, '⏳', 'マスター待ち', '#FFE08A', 'rgba(180,140,40,0.30)');
+    el.title = 'LTC マスター待ち — マスター Mac の OUT が ON で、物理結線が正しいか確認してください';
+    try { el.classList.remove('tc-ok-glow'); } catch(_) {}
+    return;
+  }
+  // 1.5 秒以上 TC が来ていない → 信号断
+  if (sinceFrame > 1500) {
+    try { ti._signalLost = true; } catch(_) {}
+    _ltcRxApplyStatus(el, '⚠', '信号断', '#FF9090', 'rgba(180,40,40,0.35)');
+    el.title = 'LTC 信号 断 — マスターからの TC が途切れています';
+    try { el.classList.remove('tc-ok-glow'); } catch(_) {}
+    return;
+  }
+  // 信号弱 / unlock (受信はしてるが locked でない or 信号レベル低)
+  if (sig < 0.01 || !ti._locked) {
+    _ltcRxApplyStatus(el, '⚠', '信号弱', '#E0B040', 'rgba(150,110,30,0.28)');
     el.title = 'LTC 信号 弱 / unlock';
     try { el.classList.remove('tc-ok-glow'); } catch(_) {}
     return;
   }
-  // OK: 緑、500ms ごとに blink
+  // OK: 追従中 (緑背景、500ms ごとに blink)
   const blink = (Math.floor(now / 500) % 2) === 0;
-  el.textContent = '●';
-  el.style.color = blink ? '#3DB5A6' : '#1F7068';
+  _ltcRxApplyStatus(el, '●', '追従中', blink ? '#3DB5A6' : '#1F7068', 'rgba(61,181,166,0.20)');
   el.title = 'LTC chase OK';
   // v12.8.2 L8: グロー強調 (CSS .tc-ok-glow)
   try { el.classList.add('tc-ok-glow'); } catch(_) {}
@@ -16778,16 +16932,11 @@ function mtStopMeter() {
   }
 }
 
-// デバイス変化を監視（USB の抜き差し）
-if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
-  navigator.mediaDevices.addEventListener('devicechange', async () => {
-    if (state.appMode === 'multi') {
-      await mtRefreshDevices();
-      mtUpdateChStatus();
-      showToast('オーディオデバイス変化を検知');
-    }
-  });
-}
+// v12.8.3 G2: devicechange listener の二重登録を廃止。
+//   ここで直接 addEventListener していたが、mtInit() → mtBindDeviceChange() でも
+//   同イベントを登録しており、ハンドラが 2 つ並列実行 → 出力デバイス検査と LTC IN
+//   検査が race を起こしていた。`mtBindDeviceChange` 側だけ残すことで一本化。
+//   この場所では何もしない (mtBindDeviceChange 内で LTC IN + OUT 両方の検査を実行)。
 
 // MULTI-TRACK 初期化（init から呼ぶ）
 async function mtInit() {
