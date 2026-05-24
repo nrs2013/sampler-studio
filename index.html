@@ -2994,11 +2994,12 @@
     border-right: 0.5px solid #1F1F25;
     margin-right: 2px;
   }
-  /* v12.8.3 J UX: LTC OUT/IN ラベルを少し大きく + letter-spacing 強化で視認性 UP */
+  /* v12.9.3: 画面狭い時に「LTC IN」が縦に改行されないよう縮小 + nowrap */
   .mt-tc-toggle span {
-    font-size: 12px;
-    letter-spacing: 2px;
+    font-size: 10px;
+    letter-spacing: 1px;
     font-weight: 700;
+    white-space: nowrap;
   }
   .mt-tc-toggle input[type="checkbox"] {
     width: 14px; height: 14px; margin: 0;
@@ -3907,7 +3908,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.2';
+const APP_VERSION = 'v12.9.3';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
