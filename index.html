@@ -3908,7 +3908,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.3';
+const APP_VERSION = 'v12.9.4';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -6383,12 +6383,12 @@ function renderPads() {
       const db = linToDb(pad.level);
       const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
       cell.innerHTML = `
-        <div class="pad-body${pad.isPlaying ? ' playing' : ''}${colorCls}"${colorStyle}>
+        <div class="pad-body${pad.isPlaying ? ' playing' : ''}${colorCls}"${colorStyle} oncontextmenu="event.preventDefault();event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);return false;" title="右クリックで色変更">
           <span class="pad-grip" draggable="true" title="掴んで移動">⋮⋮</span>
           <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">EDIT</button>
           <div class="pad-head">
             <div style="display:flex; align-items:center; gap:6px;">
-              <span class="pad-num" title="クリックで色変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);">${idx+1}</span>
+              <span class="pad-num" title="クリックで色変更（パッド本体の右クリックでも可）" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);">${idx+1}</span>
               <button class="pad-color-dot" title="色を変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);"${dotStyle}></button>
             </div>
             ${pad.isPlaying ? `<span style="color:${playArrowColor};">▶</span>` : '<span></span>'}
@@ -6414,7 +6414,7 @@ function renderPads() {
       `;
     } else {
       cell.innerHTML = `
-        <div class="pad-body empty${colorCls}"${colorStyle}>
+        <div class="pad-body empty${colorCls}"${colorStyle} oncontextmenu="event.preventDefault();event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);return false;" title="右クリックで色変更">
           <div style="font-size:9px; color:#5A5A60; display:flex; align-items:center; gap:6px;">
             <span>PAD ${idx+1}</span>
             <button class="pad-color-dot" title="色を変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);"${dotStyle}></button>
