@@ -3902,7 +3902,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.8.3';
+const APP_VERSION = 'v12.9.0';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -5365,12 +5365,24 @@ async function _recDataAsArrayBuffer(rec) {
 }
 
 // v12.5.0: 大容量音源の誤投入ガード — サンプラーパッド/影アナは短い音源用。
-// 30MB 超えで confirm() 警告。OK で続行、Cancel で false を返す。
+// v12.9.0: 200MB 超は reject (decodeAudioData で AudioBuffer に展開するため
+//          200MB WAV → 1〜2GB メモリ消費、本番中の OOM クラッシュを物理的に防ぐ)。
+//          30〜200MB は従来どおり confirm() で続行可。
 function _warnIfLargeAudio(file) {
   if (!file) return true;
-  const SIZE_LIMIT = 30 * 1024 * 1024; // 30MB
-  if (file.size <= SIZE_LIMIT) return true;
+  const HARD_LIMIT = 200 * 1024 * 1024; // 200MB: これ以上は受け付けない
+  const SOFT_LIMIT = 30 * 1024 * 1024;  // 30MB: 警告のみ
+  if (file.size <= SOFT_LIMIT) return true;
   const mb = (file.size / (1024 * 1024)).toFixed(0);
+  if (file.size > HARD_LIMIT) {
+    alert(
+      `「${file.name}」は ${mb}MB あります。\n\n` +
+      `サンプラーパッド/影アナは 200MB 以下の音源のみ対応です。\n` +
+      `大容量ファイルは MULTI-TRACK モードをお使いください。\n\n` +
+      `読み込みを中止します。`
+    );
+    return false;
+  }
   return confirm(
     `「${file.name}」は ${mb}MB あります。\n\n` +
     `サンプラーパッドや影アナは短い音源用です。\n` +
@@ -5591,7 +5603,9 @@ async function exportProject() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    // v12.9.0: 即時 revoke (2 秒遅延だと大容量 ssproj.zip がメモリに残る)。
+    // a.click() で download が同期的に開始されるので即解放して問題なし。
+    try { URL.revokeObjectURL(url); } catch(_) {}
 
     const mb = (blob.size / 1024 / 1024).toFixed(1);
     showToast(`✅ 書き出し完了: ${filename} (${mb} MB)`);
@@ -8337,9 +8351,15 @@ let _vidPendingPlay = null;
 function _vidLaunchPlay(slotIdx, file, name) {
   _vidFadeBgm(true);
   _outActiveVideoSlot = slotIdx;
+  // v12.9.0: 前の Blob URL を必ず revoke (差し替え時のメモリリーク防止)。
+  // 受信側 _outBC が新 URL に切り替わるまで少し余裕を持たせる。
+  const prevUrl = _outCurrentBlobUrl;
   const url = URL.createObjectURL(file);
   _outCurrentBlobUrl = url;
   _outBC.postMessage({ cmd: 'play', blobUrl: url, name });
+  if (prevUrl) {
+    setTimeout(() => { try { URL.revokeObjectURL(prevUrl); } catch(_) {} }, 500);
+  }
   doRenderVideoLibrary();
 }
 function doVidStopPreview() {
@@ -14311,6 +14331,34 @@ const mtMediaCache = {};
 // 同じ audio に 2 回呼んで InvalidStateError になる。
 const _mtMediaLoadInFlight = new Map(); // sampleId → Promise<entry|null>
 
+// v12.9.0: MediaElement キャッシュの LRU 上限。これ以上は古いものから自動解放。
+// 24 = 12 STEM × 2 セット (前曲 + 現曲) 分。再生中の audio は対象外。
+const MT_MEDIA_CACHE_MAX = 24;
+function _mtMediaCacheTrim() {
+  const ids = Object.keys(mtMediaCache);
+  if (ids.length <= MT_MEDIA_CACHE_MAX) return;
+  const activeSet = new Set(state.multitrack.activeMedia || []);
+  const candidates = ids
+    .filter(id => {
+      const e = mtMediaCache[id];
+      return e && !activeSet.has(e.audio);
+    })
+    .sort((a, b) => (mtMediaCache[a].lastUsed||0) - (mtMediaCache[b].lastUsed||0));
+  const need = ids.length - MT_MEDIA_CACHE_MAX;
+  const toRemove = candidates.slice(0, need);
+  for (const id of toRemove) {
+    const e = mtMediaCache[id];
+    if (!e) { delete mtMediaCache[id]; continue; }
+    try { if (e.source) e.source.disconnect(); } catch(_) {}
+    try { if (e.audio) { e.audio.pause(); e.audio.src=''; e.audio.removeAttribute('src'); e.audio.load(); } } catch(_) {}
+    try { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); } catch(_) {}
+    delete mtMediaCache[id];
+  }
+  if (toRemove.length > 0) {
+    console.log(`[mtMedia] LRU trim: ${toRemove.length} entries removed (${ids.length} → ${ids.length - toRemove.length})`);
+  }
+}
+
 // MediaElement キャッシュを完全クリア (ctx 自動復活 / 全クリア時用)
 // v9.0.5: アンチクリック化 — source disconnect を pause より先に
 function _mtMediaCacheClear() {
@@ -14338,6 +14386,8 @@ function _mtMediaCacheClear() {
 // v9.0.3: in-flight キャッシュで並行呼び出しを集約
 async function mtMediaLoadOne(sampleId) {
   if (mtMediaCache[sampleId] && mtMediaCache[sampleId].audio) {
+    // v12.9.0: LRU の touch
+    mtMediaCache[sampleId].lastUsed = Date.now();
     return mtMediaCache[sampleId];
   }
   // 既に同じ sampleId へのロードが走っていればそれに相乗りする
@@ -14481,8 +14531,11 @@ async function mtMediaLoadOne(sampleId) {
       duration: audio.duration || 0,
       name,
       connectedTo: null, // 現在繋がってる GainNode (mtMediaConnectToGroup で更新)
+      lastUsed: Date.now(), // v12.9.0: LRU 管理用
     };
     mtMediaCache[sampleId] = entry;
+    // v12.9.0: 上限超過なら古いものから解放
+    try { _mtMediaCacheTrim(); } catch(_) {}
     console.log(`[mtMedia] loaded ${name} (${(audio.duration||0).toFixed(1)}s)`);
     return entry;
   })();
