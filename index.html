@@ -1451,7 +1451,8 @@
   .mt-btn.danger:hover { background: rgba(226,75,74,0.1); }
 
   /* v11.9.3: AUDIO IFACE 行のデザイン刷新 — 統一感のある polished pill 化 */
-  .mt-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+  /* v12.9.2: 上下マージンを詰めて AUDIO IFACE カード全体をコンパクトに */
+  .mt-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
   .mt-label {
     font-size: 10px; letter-spacing: 2px; color: #5A5A60; font-weight: 500;
     min-width: 76px; text-transform: uppercase;
@@ -1464,7 +1465,7 @@
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
     border: 1px solid #25252A;
     color: #E6E6EA;
-    padding: 9px 12px; border-radius: 6px;
+    padding: 5px 12px; border-radius: 6px;
     font-family: inherit; font-size: 12px; cursor: pointer;
     letter-spacing: 0.3px;
     transition: border-color 0.15s, background 0.15s;
@@ -1473,7 +1474,7 @@
   .mt-row > .mt-select:focus { outline: none; border-color: #3DB5A6; }
   /* DEVICE 行の ⟳ ボタンを正方形に + select と高さ揃え */
   .mt-row > .mt-btn.ghost.subtle {
-    width: 32px; height: 32px; padding: 0 !important;
+    width: 26px; height: 26px; padding: 0 !important;
     display: inline-flex; align-items: center; justify-content: center;
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
     border: 1px solid #25252A;
@@ -1493,7 +1494,7 @@
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 13px; font-weight: 500; color: #5BC4B0;
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
-    padding: 7px 14px; border-radius: 6px;
+    padding: 4px 12px; border-radius: 6px;
     border: 1px solid rgba(91,196,176,0.3);
     text-shadow: 0 0 8px rgba(91,196,176,0.4);
     letter-spacing: 0.5px;
@@ -2891,9 +2892,9 @@
   .mt-ch-pill {
     position: relative;
     display: flex; flex-direction: column; align-items: center;
-    gap: 3px;
-    /* v11.9.1: 縦積みレイアウトに合わせて上下 padding を広げる */
-    padding: 11px 4px 8px 4px;
+    gap: 2px;
+    /* v12.9.2: padding を縦に詰めて AUDIO IFACE カード全体を短く */
+    padding: 7px 4px 5px 4px;
     background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
     border: 1px solid #2A2A30;
     border-radius: 7px;
@@ -2953,8 +2954,8 @@
   .mt-ch-select {
     width: 80%; min-width: 0; max-width: 56px;
     background: #06060A; border: 0.5px solid #1A1A1E; color: #FFFFFF;
-    padding: 4px 0; border-radius: 3px;
-    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 14px;
+    padding: 2px 0; border-radius: 3px;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 13px;
     text-align: center; font-weight: 500;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
     -webkit-appearance: none; -moz-appearance: none; appearance: none;
@@ -2969,13 +2970,14 @@
   .mt-ch-select option:disabled { color: #FF6464; }
 
   /* v12.7.1: LTC セクション — タイトル削除、1 行集約レイアウト */
+  /* v12.9.2: padding と margin-top を詰めて縦スペース節約 */
   .mt-tc-section {
-    margin-top: 10px;
-    padding: 8px 10px;
+    margin-top: 4px;
+    padding: 4px 10px;
     background: linear-gradient(180deg, #14141A 0%, #0A0A10 100%);
     border: 0.5px solid #2A2A30;
     border-radius: 6px;
-    display: flex; flex-direction: column; gap: 5px;
+    display: flex; flex-direction: column; gap: 3px;
   }
   .mt-tc-row {
     display: flex; align-items: center; gap: 8px;
@@ -3905,7 +3907,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.1';
+const APP_VERSION = 'v12.9.2';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
