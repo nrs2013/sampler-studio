@@ -1451,8 +1451,7 @@
   .mt-btn.danger:hover { background: rgba(226,75,74,0.1); }
 
   /* v11.9.3: AUDIO IFACE 行のデザイン刷新 — 統一感のある polished pill 化 */
-  /* v12.9.2: 上下マージンを詰めて AUDIO IFACE カード全体をコンパクトに */
-  .mt-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+  .mt-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
   .mt-label {
     font-size: 10px; letter-spacing: 2px; color: #5A5A60; font-weight: 500;
     min-width: 76px; text-transform: uppercase;
@@ -1465,7 +1464,7 @@
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
     border: 1px solid #25252A;
     color: #E6E6EA;
-    padding: 5px 12px; border-radius: 6px;
+    padding: 9px 12px; border-radius: 6px;
     font-family: inherit; font-size: 12px; cursor: pointer;
     letter-spacing: 0.3px;
     transition: border-color 0.15s, background 0.15s;
@@ -1474,7 +1473,7 @@
   .mt-row > .mt-select:focus { outline: none; border-color: #3DB5A6; }
   /* DEVICE 行の ⟳ ボタンを正方形に + select と高さ揃え */
   .mt-row > .mt-btn.ghost.subtle {
-    width: 26px; height: 26px; padding: 0 !important;
+    width: 32px; height: 32px; padding: 0 !important;
     display: inline-flex; align-items: center; justify-content: center;
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
     border: 1px solid #25252A;
@@ -1494,7 +1493,7 @@
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 13px; font-weight: 500; color: #5BC4B0;
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
-    padding: 4px 12px; border-radius: 6px;
+    padding: 7px 14px; border-radius: 6px;
     border: 1px solid rgba(91,196,176,0.3);
     text-shadow: 0 0 8px rgba(91,196,176,0.4);
     letter-spacing: 0.5px;
@@ -2892,9 +2891,9 @@
   .mt-ch-pill {
     position: relative;
     display: flex; flex-direction: column; align-items: center;
-    gap: 2px;
-    /* v12.9.2: padding を縦に詰めて AUDIO IFACE カード全体を短く */
-    padding: 7px 4px 5px 4px;
+    gap: 3px;
+    /* v11.9.1: 縦積みレイアウトに合わせて上下 padding を広げる */
+    padding: 11px 4px 8px 4px;
     background: linear-gradient(180deg, #1A1A20 0%, #0C0C10 100%);
     border: 1px solid #2A2A30;
     border-radius: 7px;
@@ -2954,8 +2953,8 @@
   .mt-ch-select {
     width: 80%; min-width: 0; max-width: 56px;
     background: #06060A; border: 0.5px solid #1A1A1E; color: #FFFFFF;
-    padding: 2px 0; border-radius: 3px;
-    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 13px;
+    padding: 4px 0; border-radius: 3px;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 14px;
     text-align: center; font-weight: 500;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
     -webkit-appearance: none; -moz-appearance: none; appearance: none;
@@ -2970,14 +2969,13 @@
   .mt-ch-select option:disabled { color: #FF6464; }
 
   /* v12.7.1: LTC セクション — タイトル削除、1 行集約レイアウト */
-  /* v12.9.2: padding と margin-top を詰めて縦スペース節約 */
   .mt-tc-section {
-    margin-top: 4px;
-    padding: 4px 10px;
+    margin-top: 10px;
+    padding: 8px 10px;
     background: linear-gradient(180deg, #14141A 0%, #0A0A10 100%);
     border: 0.5px solid #2A2A30;
     border-radius: 6px;
-    display: flex; flex-direction: column; gap: 3px;
+    display: flex; flex-direction: column; gap: 5px;
   }
   .mt-tc-row {
     display: flex; align-items: center; gap: 8px;
@@ -2994,12 +2992,11 @@
     border-right: 0.5px solid #1F1F25;
     margin-right: 2px;
   }
-  /* v12.9.3: 画面狭い時に「LTC IN」が縦に改行されないよう縮小 + nowrap */
+  /* v12.8.3 J UX: LTC OUT/IN ラベルを少し大きく + letter-spacing 強化で視認性 UP */
   .mt-tc-toggle span {
-    font-size: 10px;
-    letter-spacing: 1px;
+    font-size: 12px;
+    letter-spacing: 2px;
     font-weight: 700;
-    white-space: nowrap;
   }
   .mt-tc-toggle input[type="checkbox"] {
     width: 14px; height: 14px; margin: 0;
@@ -3037,24 +3034,21 @@
   /* v12.8.2 M7: OUT/IN を amber/teal で視覚区別 (left-border 2px) */
   #mtTimecodeSection { border-left: 2px solid #3DB5A6; }
   #mtTimecodeInSection { border-left: 2px solid #FFB81C; }
-  /* v12.9.1: LTC IN 行を強制改行させない (曲名表示エリアを圧迫しない) */
+  /* v12.8.2 M6: 狭画面で TC 表示が改行されたら最終行へ確実に */
   #mtTcInTime {
+    flex-basis: 100%;
+    order: 99;
     text-align: left;
     font-size: 11px;
   }
-  /* v12.9.1: ステータスを 12px に戻してコンパクトに (グローは維持) */
+  /* v12.8.2 M6/L8: ステータスインジケータを 18px + グロー強化 */
   #mtTcInStatus {
-    font-size: 12px !important;
+    font-size: 18px !important;
     transition: text-shadow 0.15s, color 0.15s;
-    min-width: 56px !important;
   }
   #mtTcInStatus.tc-ok-glow {
     text-shadow: 0 0 8px rgba(61,181,166,0.8);
   }
-  /* v12.9.1: ヒント常時表示は廃止 — 曲名表示を優先 */
-  .mt-tc-hint { display: none; }
-  /* v12.9.1: row は折り返さず 1 行で */
-  .mt-tc-row.mt-tc-row-main { flex-wrap: nowrap; }
 
   /* v11.8.0: MONO/STEREO トグルボタン (チャンネルピル内) */
   /* v11.9.1: 縦積みレイアウト用に少し大きく */
@@ -3908,7 +3902,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.4';
+const APP_VERSION = 'v12.8.3';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -5371,24 +5365,12 @@ async function _recDataAsArrayBuffer(rec) {
 }
 
 // v12.5.0: 大容量音源の誤投入ガード — サンプラーパッド/影アナは短い音源用。
-// v12.9.0: 200MB 超は reject (decodeAudioData で AudioBuffer に展開するため
-//          200MB WAV → 1〜2GB メモリ消費、本番中の OOM クラッシュを物理的に防ぐ)。
-//          30〜200MB は従来どおり confirm() で続行可。
+// 30MB 超えで confirm() 警告。OK で続行、Cancel で false を返す。
 function _warnIfLargeAudio(file) {
   if (!file) return true;
-  const HARD_LIMIT = 200 * 1024 * 1024; // 200MB: これ以上は受け付けない
-  const SOFT_LIMIT = 30 * 1024 * 1024;  // 30MB: 警告のみ
-  if (file.size <= SOFT_LIMIT) return true;
+  const SIZE_LIMIT = 30 * 1024 * 1024; // 30MB
+  if (file.size <= SIZE_LIMIT) return true;
   const mb = (file.size / (1024 * 1024)).toFixed(0);
-  if (file.size > HARD_LIMIT) {
-    alert(
-      `「${file.name}」は ${mb}MB あります。\n\n` +
-      `サンプラーパッド/影アナは 200MB 以下の音源のみ対応です。\n` +
-      `大容量ファイルは MULTI-TRACK モードをお使いください。\n\n` +
-      `読み込みを中止します。`
-    );
-    return false;
-  }
   return confirm(
     `「${file.name}」は ${mb}MB あります。\n\n` +
     `サンプラーパッドや影アナは短い音源用です。\n` +
@@ -5609,9 +5591,7 @@ async function exportProject() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    // v12.9.0: 即時 revoke (2 秒遅延だと大容量 ssproj.zip がメモリに残る)。
-    // a.click() で download が同期的に開始されるので即解放して問題なし。
-    try { URL.revokeObjectURL(url); } catch(_) {}
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
 
     const mb = (blob.size / 1024 / 1024).toFixed(1);
     showToast(`✅ 書き出し完了: ${filename} (${mb} MB)`);
@@ -6383,12 +6363,12 @@ function renderPads() {
       const db = linToDb(pad.level);
       const dbStr = db === -Infinity ? '-∞' : db.toFixed(1);
       cell.innerHTML = `
-        <div class="pad-body${pad.isPlaying ? ' playing' : ''}${colorCls}"${colorStyle} oncontextmenu="event.preventDefault();event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);return false;" title="右クリックで色変更">
+        <div class="pad-body${pad.isPlaying ? ' playing' : ''}${colorCls}"${colorStyle}>
           <span class="pad-grip" draggable="true" title="掴んで移動">⋮⋮</span>
           <button class="pad-edit-btn" title="トリム編集（波形）" onclick="event.stopPropagation();openTrimEditor(${state.currentBank},${idx});">EDIT</button>
           <div class="pad-head">
             <div style="display:flex; align-items:center; gap:6px;">
-              <span class="pad-num" title="クリックで色変更（パッド本体の右クリックでも可）" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);">${idx+1}</span>
+              <span class="pad-num" title="クリックで色変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);">${idx+1}</span>
               <button class="pad-color-dot" title="色を変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);"${dotStyle}></button>
             </div>
             ${pad.isPlaying ? `<span style="color:${playArrowColor};">▶</span>` : '<span></span>'}
@@ -6414,7 +6394,7 @@ function renderPads() {
       `;
     } else {
       cell.innerHTML = `
-        <div class="pad-body empty${colorCls}"${colorStyle} oncontextmenu="event.preventDefault();event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);return false;" title="右クリックで色変更">
+        <div class="pad-body empty${colorCls}"${colorStyle}>
           <div style="font-size:9px; color:#5A5A60; display:flex; align-items:center; gap:6px;">
             <span>PAD ${idx+1}</span>
             <button class="pad-color-dot" title="色を変更" onclick="event.stopPropagation();openPadColorPicker(${state.currentBank},${idx},this);"${dotStyle}></button>
@@ -8357,15 +8337,9 @@ let _vidPendingPlay = null;
 function _vidLaunchPlay(slotIdx, file, name) {
   _vidFadeBgm(true);
   _outActiveVideoSlot = slotIdx;
-  // v12.9.0: 前の Blob URL を必ず revoke (差し替え時のメモリリーク防止)。
-  // 受信側 _outBC が新 URL に切り替わるまで少し余裕を持たせる。
-  const prevUrl = _outCurrentBlobUrl;
   const url = URL.createObjectURL(file);
   _outCurrentBlobUrl = url;
   _outBC.postMessage({ cmd: 'play', blobUrl: url, name });
-  if (prevUrl) {
-    setTimeout(() => { try { URL.revokeObjectURL(prevUrl); } catch(_) {} }, 500);
-  }
   doRenderVideoLibrary();
 }
 function doVidStopPreview() {
@@ -14337,34 +14311,6 @@ const mtMediaCache = {};
 // 同じ audio に 2 回呼んで InvalidStateError になる。
 const _mtMediaLoadInFlight = new Map(); // sampleId → Promise<entry|null>
 
-// v12.9.0: MediaElement キャッシュの LRU 上限。これ以上は古いものから自動解放。
-// 24 = 12 STEM × 2 セット (前曲 + 現曲) 分。再生中の audio は対象外。
-const MT_MEDIA_CACHE_MAX = 24;
-function _mtMediaCacheTrim() {
-  const ids = Object.keys(mtMediaCache);
-  if (ids.length <= MT_MEDIA_CACHE_MAX) return;
-  const activeSet = new Set(state.multitrack.activeMedia || []);
-  const candidates = ids
-    .filter(id => {
-      const e = mtMediaCache[id];
-      return e && !activeSet.has(e.audio);
-    })
-    .sort((a, b) => (mtMediaCache[a].lastUsed||0) - (mtMediaCache[b].lastUsed||0));
-  const need = ids.length - MT_MEDIA_CACHE_MAX;
-  const toRemove = candidates.slice(0, need);
-  for (const id of toRemove) {
-    const e = mtMediaCache[id];
-    if (!e) { delete mtMediaCache[id]; continue; }
-    try { if (e.source) e.source.disconnect(); } catch(_) {}
-    try { if (e.audio) { e.audio.pause(); e.audio.src=''; e.audio.removeAttribute('src'); e.audio.load(); } } catch(_) {}
-    try { if (e.blobUrl) URL.revokeObjectURL(e.blobUrl); } catch(_) {}
-    delete mtMediaCache[id];
-  }
-  if (toRemove.length > 0) {
-    console.log(`[mtMedia] LRU trim: ${toRemove.length} entries removed (${ids.length} → ${ids.length - toRemove.length})`);
-  }
-}
-
 // MediaElement キャッシュを完全クリア (ctx 自動復活 / 全クリア時用)
 // v9.0.5: アンチクリック化 — source disconnect を pause より先に
 function _mtMediaCacheClear() {
@@ -14392,8 +14338,6 @@ function _mtMediaCacheClear() {
 // v9.0.3: in-flight キャッシュで並行呼び出しを集約
 async function mtMediaLoadOne(sampleId) {
   if (mtMediaCache[sampleId] && mtMediaCache[sampleId].audio) {
-    // v12.9.0: LRU の touch
-    mtMediaCache[sampleId].lastUsed = Date.now();
     return mtMediaCache[sampleId];
   }
   // 既に同じ sampleId へのロードが走っていればそれに相乗りする
@@ -14537,11 +14481,8 @@ async function mtMediaLoadOne(sampleId) {
       duration: audio.duration || 0,
       name,
       connectedTo: null, // 現在繋がってる GainNode (mtMediaConnectToGroup で更新)
-      lastUsed: Date.now(), // v12.9.0: LRU 管理用
     };
     mtMediaCache[sampleId] = entry;
-    // v12.9.0: 上限超過なら古いものから解放
-    try { _mtMediaCacheTrim(); } catch(_) {}
     console.log(`[mtMedia] loaded ${name} (${(audio.duration||0).toFixed(1)}s)`);
     return entry;
   })();
