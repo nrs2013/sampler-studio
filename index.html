@@ -1423,7 +1423,7 @@
     border: 0.5px solid #1F1F22; border-radius: 10px; padding: 14px 16px;
     box-shadow: 0 2px 20px rgba(0,0,0,0.3);
   }
-  .mt-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 12px; }
+  .mt-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; row-gap: 6px; }
   .mt-section-head.compact { margin-bottom: 8px; }
   .mt-section-head-l { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .mt-section-num {
@@ -2148,26 +2148,24 @@
   .mt-song-delay { -moz-appearance: textfield; }
 
   /* ============= 3. BOTTOM ROW: MIXER | IFACE | SELECTED SONG (横3列) ============= */
-  /* MIXER はコンテンツ幅、IFACE は最小幅、SELECTED SONG が残り。
-     align-items はデフォルト stretch → 各カードが行の全高にフィット。
-     SELECTED SONG が height: 250px 固定なので、行全体が 250px+。
-     MIXER/IFACE もその高さまで伸びる → 下段カードの高さが揃う */
+  /* v12.9.7: grid → flex に変更。grid 子要素は inline width が効かないため、
+     リサイズ機能 (v12.9.6) が下段 3 カードで動作しなかったのを修正。
+     flex なら inline style.width が即時反映され、リサイズハンドルが効く。 */
   .mt-bottom-row {
-    display: grid;
-    grid-template-columns: auto minmax(240px, 1fr) minmax(280px, 1.3fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    /* v12.0.3: v11.9.11 を revert — 縦に伸ばすと SETLIST が窮屈になるため固定高に戻す */
     flex-shrink: 0;
+    align-items: stretch;
   }
-  /* 横幅が狭くなったら 2 段組に: 上 = MIXER + AUDIO IFACE / 下 = SELECTED SONG */
+  .mt-bottom-row > .mt-mixer-card   { flex: 0 0 auto; }   /* コンテンツ幅 */
+  .mt-bottom-row > .mt-config-card  { flex: 1 1 280px; min-width: 280px; max-width: 600px; }
+  .mt-bottom-row > .mt-songinfo-card { flex: 1 1 320px; min-width: 240px; }
+  /* リサイズで inline width 指定されたカードは flex-grow を切って固定幅に */
+  .mt-bottom-row > .mt-resizable[style*="width"] { flex: 0 0 auto; }
+  /* 横幅が狭くなったら SELECTED SONG が次の行に折り返す */
   @media (max-width: 1400px) {
-    .mt-bottom-row {
-      grid-template-columns: auto minmax(220px, 1fr);
-      grid-template-rows: auto auto;
-    }
-    .mt-bottom-row > .mt-mixer-card { grid-row: 1 / 2; grid-column: 1 / 2; }
-    .mt-bottom-row > .mt-config-card { grid-row: 1 / 2; grid-column: 2 / 3; }
-    .mt-bottom-row > .mt-songinfo-card { grid-row: 2 / 3; grid-column: 1 / -1; min-height: 140px; }
+    .mt-bottom-row > .mt-songinfo-card { flex-basis: 100%; min-height: 140px; }
   }
   /* さらに狭い: フェーダー幅を縮めて全部 1 行に収める */
   @media (max-width: 1100px) {
@@ -2176,20 +2174,14 @@
   @media (max-width: 980px) {
     .mt-mixer-strips { width: 420px !important; gap: 5px !important; }
   }
-  /* 極狭: MIXER と AUDIO IFACE を上下に分け、SELECTED SONG をさらに下 */
+  /* 極狭: 全カードを縦並びに */
   @media (max-width: 860px) {
-    .mt-bottom-row {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto;
-    }
     .mt-bottom-row > .mt-mixer-card,
     .mt-bottom-row > .mt-config-card,
     .mt-bottom-row > .mt-songinfo-card {
-      grid-column: 1 / -1;
+      flex-basis: 100%;
     }
-    .mt-bottom-row > .mt-mixer-card { grid-row: 1 / 2; }
-    .mt-bottom-row > .mt-config-card { grid-row: 2 / 3; }
-    .mt-bottom-row > .mt-songinfo-card { grid-row: 3 / 4; min-height: 140px; }
+    .mt-bottom-row > .mt-songinfo-card { min-height: 140px; }
   }
 
   /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
@@ -2306,6 +2298,15 @@
   /* 直接 width/height 指定したカードが flex/grid の中で正しく振る舞うように */
   .mt-resizable[style*="width"] {
     flex: 0 0 auto;
+  }
+  /* v12.9.7: #mtHero は overflow: hidden があるので、ハンドルを内側に寄せる
+     (-3px 外周配置だとクリップされて見えなくなるため) */
+  #mtHero.mt-resizable > .mt-resize-e { right: 0; }
+  #mtHero.mt-resizable > .mt-resize-s { bottom: 0; }
+  #mtHero.mt-resizable > .mt-resize-se { right: 0; bottom: 0; }
+  /* LAYOUT RESET ボタンも resize-e ハンドルと衝突しないよう右に余白 */
+  #mtHero .mt-layout-reset {
+    right: 16px;
   }
 
   /* PRELOAD BANNER — ファイル準備中の大きな視認バナー */
@@ -2588,12 +2589,24 @@
     display: grid;
     /* v12.1.1: 表示中のグループ数に応じて列数を変える。--strip-count は JS で設定 (既定 6) */
     grid-template-columns: repeat(var(--strip-count, 6), minmax(0, 1fr));
-    width: 580px;   /* 全体幅は固定 → strips がグループ数に応じて細くなる */
+    /* v12.9.7: width: 580px 固定を撤廃。親カード幅に追従させる
+       (MIXER カードリサイズ時、内側 strips がカード外にはみ出す問題を修正) */
+    width: 100%;
+    min-width: 0;
+    max-width: 580px; /* デフォルト時の上限 */
     gap: 7px;
     padding: 0;
     justify-content: start;
     flex: 1;     /* カードの残り高さを全部使う */
     min-height: 0;
+  }
+  /* リサイズで MIXER カード幅を変えた時、内側 strips も追従 */
+  .mt-mixer-card.mt-resizable[style*="width"] .mt-mixer-strips {
+    max-width: none;
+  }
+  /* MIXER カード自体がはみ出さないように */
+  .mt-mixer-card {
+    overflow: hidden;
   }
   /* 各フェーダーを「個別カード」として囲む — 非アクティブはモヤなしのクリーンな箱 */
   .mt-strip {
@@ -2869,7 +2882,14 @@
   .mt-strip.dimmed { opacity: 0.45; }
 
   /* AUDIO IFACE / ROUTING (in bottom row) */
-  .mt-config-card { padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+  /* v12.9.7: overflow: hidden で内側 LTC 行や CH pill のはみ出しをカード内に閉じ込める */
+  .mt-config-card {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
   /* ROUTING を AUDIO IFACE 内に統合した時の見出し */
   .mt-routing-inline-label {
     font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 500;
@@ -2879,10 +2899,17 @@
 
   /* SELECTED SONG カード — ヘッダー無し、ファイル一覧最大化 */
   /* v12.0.3: 元の height:250px 固定に戻す (bottom-row も固定高) */
+  /* v12.9.7: flex 化に伴い flex-shrink: 0 + min-height: 250px に変更
+     (高さリサイズ機能で inline height が指定された時はそれが優先される) */
   .mt-songinfo-card {
     padding: 8px 10px; display: flex; flex-direction: column; min-width: 0;
-    height: 250px;
+    min-height: 250px;
     flex-shrink: 0;
+    overflow: hidden;
+  }
+  /* リサイズで inline height 指定されたら min-height を解除して縮められるように */
+  .mt-songinfo-card.mt-resizable[style*="height"] {
+    min-height: 100px;
   }
   .mt-songinfo-list {
     display: flex; flex-direction: column; gap: 2px;
@@ -3152,7 +3179,9 @@
   /* v12.9.1: ヒント常時表示は廃止 — 曲名表示を優先 */
   .mt-tc-hint { display: none; }
   /* v12.9.1: row は折り返さず 1 行で */
-  .mt-tc-row.mt-tc-row-main { flex-wrap: nowrap; }
+  /* v12.9.7: ただしリサイズ機能で AUDIO IFACE カードが狭くなった時は折り返す必要あり。
+     カードが基準幅以下なら wrap に切り替え (LTC OUT/IN がはみ出すのを防ぐ) */
+  .mt-tc-row.mt-tc-row-main { flex-wrap: wrap; row-gap: 4px; }
 
   /* v11.8.0: MONO/STEREO トグルボタン (チャンネルピル内) */
   /* v11.9.1: 縦積みレイアウト用に少し大きく */
@@ -4008,7 +4037,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.6';
+const APP_VERSION = 'v12.9.7';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -15220,24 +15249,32 @@ function mtMediaFadeOut() {
 // 5 主要カードに「右辺・下辺・右下角」のドラッグハンドルを追加。
 // localStorage 自動保存 (mtResizable:<key>) で次回起動時に復元。
 // =====================================================
+// v12.9.7: min 幅を CSS の min-width と揃える。CH pill 6 個や LTC 行が
+//          潰れて読めなくならない下限を設定。
 const MT_RESIZE_CARDS = [
-  { selector: '#mtHero',                 key: 'hero',     minW: 360, minH: 80  },
-  { selector: '.mt-setlist-card',        key: 'setlist',  minW: 320, minH: 120 },
-  { selector: '.mt-mixer-card',          key: 'mixer',    minW: 180, minH: 160 },
-  { selector: '.mt-config-card',         key: 'config',   minW: 240, minH: 160 },
-  { selector: '.mt-songinfo-card',       key: 'songinfo', minW: 200, minH: 100 },
+  { selector: '#mtHero',                 key: 'hero',     minW: 400, minH: 80  },
+  { selector: '.mt-setlist-card',        key: 'setlist',  minW: 360, minH: 120 },
+  { selector: '.mt-mixer-card',          key: 'mixer',    minW: 220, minH: 200 },
+  { selector: '.mt-config-card',         key: 'config',   minW: 280, minH: 200 },
+  { selector: '.mt-songinfo-card',       key: 'songinfo', minW: 240, minH: 120 },
 ];
 
 function _mtMakeResizable(card, spec) {
   if (!card || card.dataset.mtResizableBound === '1') return;
   card.dataset.mtResizableBound = '1';
   card.classList.add('mt-resizable');
-  // localStorage 復元
+  // localStorage 復元 — v12.9.7: 画面サイズより大きい復元値を clamp
   try {
     const saved = JSON.parse(localStorage.getItem('mtResizable:' + spec.key) || 'null');
     if (saved) {
-      if (saved.w && saved.w >= spec.minW) card.style.width = saved.w + 'px';
-      if (saved.h && saved.h >= spec.minH) card.style.height = saved.h + 'px';
+      const maxW = Math.max(spec.minW, window.innerWidth - 80);
+      const maxH = Math.max(spec.minH, window.innerHeight - 80);
+      if (saved.w && saved.w >= spec.minW) {
+        card.style.width = Math.min(saved.w, maxW) + 'px';
+      }
+      if (saved.h && saved.h >= spec.minH) {
+        card.style.height = Math.min(saved.h, maxH) + 'px';
+      }
     }
   } catch(_) {}
   // ハンドル 3 個 (右辺・下辺・右下角)
@@ -15286,6 +15323,10 @@ function _mtStartResize(ev, card, dir, spec) {
     } catch(_) {}
     // 内部要素 (メーター等) の reflow ヒント — ResizeObserver で拾ってる箇所もあるが念のため
     try { window.dispatchEvent(new Event('resize')); } catch(_) {}
+    // v12.9.7: MULTI-TRACK 内部要素の明示的再描画 (リサイズ後の表示崩れ予防)
+    try { if (typeof mtRenderNow === 'function') mtRenderNow(); } catch(_) {}
+    try { if (typeof mtRenderSetlist === 'function') mtRenderSetlist(); } catch(_) {}
+    try { if (typeof mtRenderMixer === 'function') mtRenderMixer(); } catch(_) {}
   };
   handle.addEventListener('pointermove', onMove);
   handle.addEventListener('pointerup', onEnd);
