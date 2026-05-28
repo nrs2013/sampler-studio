@@ -2221,13 +2221,26 @@
     max-width: 95vw;
     max-height: 90vh;
   }
-  /* #mtHero は背景画像クリップのため overflow: hidden を維持 (resize グリップは効く) */
-  #mtHero.mt-resizable { overflow: hidden; }
+  /* v12.9.11: resize グリップを出すには overflow: auto が必須。
+     各カード固有の overflow: hidden (v12.9.8 で追加) が .mt-resizable の auto に
+     後勝ちしてグリップが出なくなっていた。高い詳細度で overflow: auto を強制。
+     #mtHero も hidden → auto に (背景は absolute inset:0 で親追従、はみ出さない)。 */
+  #mtHero.mt-resizable,
+  .mt-setlist-card.mt-resizable,
+  .mt-mixer-card.mt-resizable,
+  .mt-config-card.mt-resizable,
+  .mt-songinfo-card.mt-resizable {
+    overflow: auto;
+  }
   /* flex の中でも固定サイズとして効くように (リサイズ後 inline width/height が付く) */
   .mt-bottom-row > .mt-resizable { flex: 0 1 auto; }
-  /* 右下のリサイズグリップを控えめに (Brutalist Vivid 調・ハイライトなし) */
+  /* setlist は flex: 1 なので、リサイズされたら固定化して効くように */
+  .mt-setlist-card.mt-resizable[style*="width"],
+  .mt-setlist-card.mt-resizable[style*="height"] { flex: 0 0 auto; }
+  /* v12.9.11: リサイズグリップを薄く見えるように (transparent だと掴む場所が
+     分からず「つまめない」状態だった)。右下に控えめな斜線。 */
   .mt-resizable::-webkit-resizer {
-    background: transparent;
+    background: linear-gradient(135deg, transparent 45%, rgba(255,255,255,0.28) 45%, rgba(255,255,255,0.28) 60%, transparent 60%);
   }
   /* LAYOUT RESET ボタン — NOW PLAYING カードの右上角 */
   .mt-layout-reset {
@@ -3976,7 +3989,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.10';
+const APP_VERSION = 'v12.9.11';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
