@@ -2167,6 +2167,13 @@
   .mt-bottom-row > .mt-config-card {
     min-height: 250px;
   }
+  /* v12.9.9: リサイズで height を inline 指定した時は min-height を spec.minH (200) に
+     緩和して縮められるようにする (songinfo と同じ解除パターン)。
+     これが無いと min-height: 250px が勝って 200-249px のデッドゾーンが生じる。 */
+  .mt-bottom-row > .mt-mixer-card.mt-resizable[style*="height"],
+  .mt-bottom-row > .mt-config-card.mt-resizable[style*="height"] {
+    min-height: 200px;
+  }
   /* リサイズで inline width 指定されたカードは flex-grow を切って固定幅に */
   .mt-bottom-row > .mt-resizable[style*="width"] { flex: 0 0 auto; }
   /* 横幅が狭くなったら SELECTED SONG が次の行に折り返す */
@@ -4047,7 +4054,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.8';
+const APP_VERSION = 'v12.9.9';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
