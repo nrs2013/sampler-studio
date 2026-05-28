@@ -2158,9 +2158,15 @@
     flex-shrink: 0;
     align-items: stretch;
   }
-  .mt-bottom-row > .mt-mixer-card   { flex: 0 0 auto; }   /* コンテンツ幅 */
+  .mt-bottom-row > .mt-mixer-card   { flex: 0 1 auto; }   /* コンテンツ幅、必要なら縮む */
   .mt-bottom-row > .mt-config-card  { flex: 1 1 280px; min-width: 280px; max-width: 600px; }
   .mt-bottom-row > .mt-songinfo-card { flex: 1 1 320px; min-width: 240px; }
+  /* v12.9.8: flex 化で songinfo が折り返した時に上段カードの高さがバラつくのを防ぐ。
+     全カードに共通の min-height を与えて高さを揃える (旧 grid の stretch 相当)。 */
+  .mt-bottom-row > .mt-mixer-card,
+  .mt-bottom-row > .mt-config-card {
+    min-height: 250px;
+  }
   /* リサイズで inline width 指定されたカードは flex-grow を切って固定幅に */
   .mt-bottom-row > .mt-resizable[style*="width"] { flex: 0 0 auto; }
   /* 横幅が狭くなったら SELECTED SONG が次の行に折り返す */
@@ -2304,6 +2310,8 @@
   #mtHero.mt-resizable > .mt-resize-e { right: 0; }
   #mtHero.mt-resizable > .mt-resize-s { bottom: 0; }
   #mtHero.mt-resizable > .mt-resize-se { right: 0; bottom: 0; }
+  /* v12.9.8: hero の角丸 (border-radius) とコーナーマークが被って削れて見えるのを防ぐ */
+  #mtHero.mt-resizable > .mt-resize-se::after { border-radius: 0; bottom: 5px; right: 5px; }
   /* LAYOUT RESET ボタンも resize-e ハンドルと衝突しないよう右に余白 */
   #mtHero .mt-layout-reset {
     right: 16px;
@@ -2589,19 +2597,21 @@
     display: grid;
     /* v12.1.1: 表示中のグループ数に応じて列数を変える。--strip-count は JS で設定 (既定 6) */
     grid-template-columns: repeat(var(--strip-count, 6), minmax(0, 1fr));
-    /* v12.9.7: width: 580px 固定を撤廃。親カード幅に追従させる
-       (MIXER カードリサイズ時、内側 strips がカード外にはみ出す問題を修正) */
-    width: 100%;
+    /* v12.9.8: 元の 580px 固定に戻す (v12.9.7 の width: 100% は親未確定で
+       grid 列幅計算が崩れる問題があった)。max-width: 100% で親より大きくは
+       ならないので、MIXER カードを縮めた時にはみ出さない。 */
+    width: 580px;
+    max-width: 100%;
     min-width: 0;
-    max-width: 580px; /* デフォルト時の上限 */
     gap: 7px;
     padding: 0;
     justify-content: start;
     flex: 1;     /* カードの残り高さを全部使う */
     min-height: 0;
   }
-  /* リサイズで MIXER カード幅を変えた時、内側 strips も追従 */
+  /* リサイズで MIXER カード幅を変えた時は、内側 strips も親に追従 */
   .mt-mixer-card.mt-resizable[style*="width"] .mt-mixer-strips {
+    width: 100%;
     max-width: none;
   }
   /* MIXER カード自体がはみ出さないように */
@@ -4037,7 +4047,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.7';
+const APP_VERSION = 'v12.9.8';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -15304,15 +15314,23 @@ function _mtStartResize(ev, card, dir, spec) {
     let w = startW, h = startH;
     if (dir === 'e' || dir === 'se') w = Math.max(spec.minW, startW + dx);
     if (dir === 's' || dir === 'se') h = Math.max(spec.minH, startH + dy);
+    // v12.9.8: ドラッグ中も画面サイズで上限 clamp (init 時の復元と同じ上限)。
+    //          画面外まで伸ばして保存 → 別画面で開いた時にズレるのを防ぐ。
+    const maxW = Math.max(spec.minW, window.innerWidth - 80);
+    const maxH = Math.max(spec.minH, window.innerHeight - 80);
+    w = Math.min(w, maxW);
+    h = Math.min(h, maxH);
     if (dir === 'e' || dir === 'se') card.style.width = Math.round(w) + 'px';
     if (dir === 's' || dir === 'se') card.style.height = Math.round(h) + 'px';
   };
   const onEnd = () => {
     handle.classList.remove('dragging');
     try { handle.releasePointerCapture(ev.pointerId); } catch(_) {}
-    handle.removeEventListener('pointermove', onMove);
-    handle.removeEventListener('pointerup', onEnd);
-    handle.removeEventListener('pointercancel', onEnd);
+    // v12.9.8: 既存ドラッグ実装と統一して window に bind (pointer capture が
+    //          一部環境で失敗してもドラッグが完了するように)
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onEnd);
+    window.removeEventListener('pointercancel', onEnd);
     // localStorage に保存
     try {
       const r2 = card.getBoundingClientRect();
@@ -15328,9 +15346,10 @@ function _mtStartResize(ev, card, dir, spec) {
     try { if (typeof mtRenderSetlist === 'function') mtRenderSetlist(); } catch(_) {}
     try { if (typeof mtRenderMixer === 'function') mtRenderMixer(); } catch(_) {}
   };
-  handle.addEventListener('pointermove', onMove);
-  handle.addEventListener('pointerup', onEnd);
-  handle.addEventListener('pointercancel', onEnd);
+  // v12.9.8: window に bind (setPointerCapture は保険として残す)
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onEnd);
+  window.addEventListener('pointercancel', onEnd);
 }
 
 function _mtResetLayout() {
@@ -15346,6 +15365,10 @@ function _mtResetLayout() {
   }
   try { showToast('レイアウトを初期サイズに戻しました (' + cleared + ' 件)'); } catch(_) {}
   try { window.dispatchEvent(new Event('resize')); } catch(_) {}
+  // v12.9.8: リサイズ確定パスと対称的に再描画も呼ぶ
+  try { if (typeof mtRenderNow === 'function') mtRenderNow(); } catch(_) {}
+  try { if (typeof mtRenderSetlist === 'function') mtRenderSetlist(); } catch(_) {}
+  try { if (typeof mtRenderMixer === 'function') mtRenderMixer(); } catch(_) {}
 }
 
 function _mtInitResizable() {
