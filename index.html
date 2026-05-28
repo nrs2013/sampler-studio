@@ -2237,10 +2237,15 @@
   /* setlist は flex: 1 なので、リサイズされたら固定化して効くように */
   .mt-setlist-card.mt-resizable[style*="width"],
   .mt-setlist-card.mt-resizable[style*="height"] { flex: 0 0 auto; }
-  /* v12.9.11: リサイズグリップを薄く見えるように (transparent だと掴む場所が
-     分からず「つまめない」状態だった)。右下に控えめな斜線。 */
+  /* v12.9.12: リサイズグリップをはっきり見えるように (v12.9.11 の斜線は薄すぎて
+     掴む場所が分からなかった)。標準リサイザー風の二重斜線をグレーで明確に。 */
   .mt-resizable::-webkit-resizer {
-    background: linear-gradient(135deg, transparent 45%, rgba(255,255,255,0.28) 45%, rgba(255,255,255,0.28) 60%, transparent 60%);
+    background: linear-gradient(135deg,
+      transparent 30%,
+      rgba(255,255,255,0.55) 30%, rgba(255,255,255,0.55) 44%,
+      transparent 44%, transparent 56%,
+      rgba(255,255,255,0.55) 56%, rgba(255,255,255,0.55) 70%,
+      transparent 70%);
   }
   /* LAYOUT RESET ボタン — NOW PLAYING カードの右上角 */
   .mt-layout-reset {
@@ -3989,7 +3994,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.11';
+const APP_VERSION = 'v12.9.12';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
