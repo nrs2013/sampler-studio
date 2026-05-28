@@ -2158,17 +2158,18 @@
     flex-shrink: 0;
     align-items: stretch;
   }
-  .mt-bottom-row > .mt-mixer-card   { flex: 0 1 auto; }   /* コンテンツ幅、必要なら縮む */
-  .mt-bottom-row > .mt-config-card  { flex: 1 1 280px; min-width: 280px; max-width: 600px; }
-  .mt-bottom-row > .mt-songinfo-card { flex: 1 1 320px; min-width: 240px; }
-  /* v12.9.10: 高さ揃え (旧 grid stretch 相当)。ただしリサイズで高さを変えた
-     (inline height が付いた) カードは :not で除外して自由に縮められるように。 */
-  .mt-bottom-row > .mt-mixer-card:not([style*="height"]),
-  .mt-bottom-row > .mt-config-card:not([style*="height"]) {
+  /* v12.9.13: スプリッター方式。mixer=可変(初期auto)、config=残りを埋める、
+     songinfo=可変(初期300px)。間の .mt-splitter-v をドラッグで mixer/songinfo の
+     幅を変え、config が自動で残りを埋める。 */
+  .mt-bottom-row > .mt-mixer-card   { flex: 0 0 auto; min-width: 180px; }
+  .mt-bottom-row > .mt-config-card  { flex: 1 1 auto; min-width: 200px; }
+  .mt-bottom-row > .mt-songinfo-card { flex: 0 0 300px; min-width: 180px; }
+  /* 高さ揃え (旧 grid stretch 相当) */
+  .mt-bottom-row > .mt-mixer-card,
+  .mt-bottom-row > .mt-config-card,
+  .mt-bottom-row > .mt-songinfo-card {
     min-height: 250px;
   }
-  /* リサイズで inline width 指定されたカードは flex-grow を切って固定幅に */
-  .mt-bottom-row > .mt-resizable[style*="width"] { flex: 0 0 auto; }
   /* 横幅が狭くなったら SELECTED SONG が次の行に折り返す */
   @media (max-width: 1400px) {
     .mt-bottom-row > .mt-songinfo-card { flex-basis: 100%; min-height: 140px; }
@@ -2208,61 +2209,43 @@
     padding: 6px 16px; font-weight: 500;
   }
 
-  /* ============= 4. RESIZABLE CARDS (v12.9.10) ============= */
-  /* MULTI-TRACK タブの 5 カードを、ブラウザ標準の resize で右下をつまんで
-     サイズ変更できるようにする。
-     v12.9.10: 自前ハンドル + hover ハイライト + 3 方向ドラッグを廃止し、
-     「普通のサイズ変更」(右下グリップだけ) のシンプルな実装に作り直した。 */
-  .mt-resizable {
-    resize: both;
-    overflow: auto;
-    min-width: 200px;
-    min-height: 100px;
-    max-width: 95vw;
-    max-height: 90vh;
-  }
-  /* v12.9.11: resize グリップを出すには overflow: auto が必須。
-     各カード固有の overflow: hidden (v12.9.8 で追加) が .mt-resizable の auto に
-     後勝ちしてグリップが出なくなっていた。高い詳細度で overflow: auto を強制。
-     #mtHero も hidden → auto に (背景は absolute inset:0 で親追従、はみ出さない)。 */
-  #mtHero.mt-resizable,
-  .mt-setlist-card.mt-resizable,
-  .mt-mixer-card.mt-resizable,
-  .mt-config-card.mt-resizable,
-  .mt-songinfo-card.mt-resizable {
-    overflow: auto;
-  }
-  /* flex の中でも固定サイズとして効くように (リサイズ後 inline width/height が付く) */
-  .mt-bottom-row > .mt-resizable { flex: 0 1 auto; }
-  /* setlist は flex: 1 なので、リサイズされたら固定化して効くように */
-  .mt-setlist-card.mt-resizable[style*="width"],
-  .mt-setlist-card.mt-resizable[style*="height"] { flex: 0 0 auto; }
-  /* v12.9.12: リサイズグリップをはっきり見えるように (v12.9.11 の斜線は薄すぎて
-     掴む場所が分からなかった)。標準リサイザー風の二重斜線をグレーで明確に。 */
-  .mt-resizable::-webkit-resizer {
-    background: linear-gradient(135deg,
-      transparent 30%,
-      rgba(255,255,255,0.55) 30%, rgba(255,255,255,0.55) 44%,
-      transparent 44%, transparent 56%,
-      rgba(255,255,255,0.55) 56%, rgba(255,255,255,0.55) 70%,
-      transparent 70%);
-  }
-  /* LAYOUT RESET ボタン — NOW PLAYING カードの右上角 */
-  .mt-layout-reset {
-    position: absolute;
-    top: 6px; right: 6px;
-    padding: 3px 8px;
-    font-size: 9px;
-    font-family: 'JetBrains Mono', ui-monospace, monospace;
-    letter-spacing: 0.4px;
-    color: #6A6A70;
+  /* ============= 4. PANEL SPLITTERS (v12.9.13) ============= */
+  /* MULTI-TRACK のパネル間に「仕切り線」を置き、ドラッグで隣同士の大きさ配分を変える。
+     DP やエディタと同じ普通のパネル分割。v12.9.6-12 のカード単体リサイズは全廃。 */
+  .mt-splitter-v {
+    flex: 0 0 8px;
+    align-self: stretch;
+    cursor: col-resize;
+    position: relative;
     background: transparent;
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 3px;
-    cursor: pointer;
-    z-index: 13;
+    -webkit-user-select: none; user-select: none;
+    touch-action: none;
   }
-  .mt-layout-reset:hover { color: #9A9AA0; }
+  .mt-splitter-v::after {
+    content: ''; position: absolute;
+    top: 10px; bottom: 10px; left: 3px; width: 2px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 1px;
+    transition: background 120ms;
+  }
+  .mt-splitter-v:hover::after, .mt-splitter-v.dragging::after { background: rgba(255,255,255,0.34); }
+
+  .mt-splitter-h {
+    flex: 0 0 8px;
+    cursor: row-resize;
+    position: relative;
+    background: transparent;
+    -webkit-user-select: none; user-select: none;
+    touch-action: none;
+  }
+  .mt-splitter-h::after {
+    content: ''; position: absolute;
+    left: 10px; right: 10px; top: 3px; height: 2px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 1px;
+    transition: background 120ms;
+  }
+  .mt-splitter-h:hover::after, .mt-splitter-h.dragging::after { background: rgba(255,255,255,0.34); }
 
   /* PRELOAD BANNER — ファイル準備中の大きな視認バナー */
   /* ========== PLAYBACK STARTED フルスクリーンオーバーレイ ========== */
@@ -3745,8 +3728,6 @@
     <!-- 1. NOW PLAYING — compact hero -->
     <div class="mt-hero compact" id="mtHero">
       <div class="mt-hero-bg" id="mtHeroBg"></div>
-      <!-- v12.9.6: LAYOUT RESET ボタン (5 カードのサイズを初期に戻す) -->
-      <button class="mt-layout-reset" onclick="_mtResetLayout()" title="MULTI-TRACK 内の 5 カードを初期サイズに戻す">⊞ LAYOUT RESET</button>
       <div class="mt-hero-inner">
         <div class="mt-hero-top">
           <div class="mt-hero-now-block">
@@ -3816,12 +3797,18 @@
       <div class="mt-setlist-list" id="mtSetlistList"></div>
     </div>
 
+    <!-- v12.9.13: SETLIST と下段の高さ配分を変える横スプリッター -->
+    <div class="mt-splitter-h" data-split="bottomrow" title="ドラッグで上下の大きさを調整"></div>
+
     <!-- 3. BOTTOM ROW: MIXER | AUDIO IFACE | SELECTED SONG (横一列) -->
     <div class="mt-bottom-row">
       <!-- MIXER (左) — ヘッダーも FADE OUT も無し（左パネルの大型 FADE OUT が全機能パニックストップ） -->
       <div class="mt-mixer-card">
         <div class="mt-mixer-strips" id="mtMixerStrips"></div>
       </div>
+
+      <!-- v12.9.13: MIXER と AUDIO IFACE の幅配分を変える縦スプリッター -->
+      <div class="mt-splitter-v" data-split="mixer" title="ドラッグで左右の大きさを調整"></div>
 
       <!-- AUDIO IFACE (ROUTING も内包) — v12.7.1: ヘッダーラベル撤去 -->
       <div class="mt-card mt-config-card">
@@ -3958,6 +3945,9 @@
         </div>
       </div><!-- /.mt-config-card (AUDIO IFACE + ROUTING) -->
 
+      <!-- v12.9.13: AUDIO IFACE と SELECTED SONG の幅配分を変える縦スプリッター -->
+      <div class="mt-splitter-v" data-split="songinfo" title="ドラッグで左右の大きさを調整"></div>
+
       <!-- SELECTED SONG: 選択中の曲のファイル一覧（最小ヘッダー、ドロップは不要） -->
       <div class="mt-card mt-songinfo-card">
         <div class="mt-songinfo-list" id="mtSongInfoList"></div>
@@ -3994,7 +3984,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.12';
+const APP_VERSION = 'v12.9.13';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -15202,81 +15192,90 @@ function mtMediaFadeOut() {
 }
 
 // =====================================================
-// v12.9.6: MULTI-TRACK LAYOUT RESIZE
-// 5 主要カードに「右辺・下辺・右下角」のドラッグハンドルを追加。
-// localStorage 自動保存 (mtResizable:<key>) で次回起動時に復元。
+// v12.9.13: MULTI-TRACK パネルスプリッター
+// パネル間の「仕切り線」をドラッグして隣同士の大きさ配分を変える
+// (DP やエディタと同じ普通のパネル分割)。v12.9.6-12 のカード単体リサイズは全廃。
+//
+// スプリッターと調整対象:
+//   data-split="mixer"     → .mt-mixer-card の幅 (config が残りを埋める)
+//   data-split="songinfo"  → .mt-songinfo-card の幅 (config が残りを埋める)
+//   data-split="bottomrow" → .mt-bottom-row の高さ (setlist が残りを埋める)
+// 配分は localStorage (mtSplit:<target>) に保存して次回復元。
 // =====================================================
-// v12.9.7: min 幅を CSS の min-width と揃える。CH pill 6 個や LTC 行が
-//          潰れて読めなくならない下限を設定。
-const MT_RESIZE_CARDS = [
-  { selector: '#mtHero',                 key: 'hero',     minW: 400, minH: 80  },
-  { selector: '.mt-setlist-card',        key: 'setlist',  minW: 360, minH: 120 },
-  { selector: '.mt-mixer-card',          key: 'mixer',    minW: 220, minH: 200 },
-  { selector: '.mt-config-card',         key: 'config',   minW: 280, minH: 200 },
-  { selector: '.mt-songinfo-card',       key: 'songinfo', minW: 240, minH: 120 },
-];
+const MT_SPLIT_SPECS = {
+  mixer:     { sel: '.mt-mixer-card',   axis: 'x', sign: 1,  min: 180, maxFrac: 0.6 },
+  songinfo:  { sel: '.mt-songinfo-card', axis: 'x', sign: -1, min: 180, maxFrac: 0.6 },
+  bottomrow: { sel: '.mt-bottom-row',   axis: 'y', sign: -1, min: 140, maxFrac: 0.65 },
+};
 
-// v12.9.10: ブラウザ標準の resize: both を使うシンプル実装に作り直し。
-//           自前ハンドル + pointer ドラッグ処理は廃止。
-//           CSS で resize: both を当て、ここでは「前回サイズ復元」と
-//           「サイズ変更されたら localStorage 保存」だけを担う。
-function _mtMakeResizable(card, spec) {
-  if (!card || card.dataset.mtResizableBound === '1') return;
-  card.dataset.mtResizableBound = '1';
-  card.classList.add('mt-resizable');
-  // 前回サイズを localStorage から復元
-  try {
-    const saved = JSON.parse(localStorage.getItem('mtResizable:' + spec.key) || 'null');
-    if (saved) {
-      if (saved.w) card.style.width = saved.w + 'px';
-      if (saved.h) card.style.height = saved.h + 'px';
-    }
-  } catch(_) {}
-  // resize されたら現在サイズを localStorage に保存 (debounce 500ms)。
-  // ResizeObserver は標準 resize グリップのドラッグも検知する。
-  let saveTimer = null;
-  try {
-    const ro = new ResizeObserver(() => {
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => {
-        try {
-          localStorage.setItem('mtResizable:' + spec.key, JSON.stringify({
-            w: Math.round(card.offsetWidth),
-            h: Math.round(card.offsetHeight),
-          }));
-        } catch(_) {}
-        // 内側のフェーダー等を再レイアウト
-        try { if (typeof mtRenderMixer === 'function') mtRenderMixer(); } catch(_) {}
-      }, 500);
-    });
-    ro.observe(card);
-  } catch(_) {}
+function _mtApplyPanelSize(panel, axis, px) {
+  // flex-basis を固定して、隣の flex:1 パネルが残りを埋める
+  panel.style.flex = '0 0 ' + Math.round(px) + 'px';
+  if (axis === 'y') panel.style.height = Math.round(px) + 'px';
 }
 
-function _mtResetLayout() {
-  if (!confirm('MULTI-TRACK タブ内の 5 カードを全部、初期サイズに戻しますか？')) return;
-  let cleared = 0;
-  for (const spec of MT_RESIZE_CARDS) {
-    try { localStorage.removeItem('mtResizable:' + spec.key); cleared++; } catch(_) {}
-    const card = document.querySelector(spec.selector);
-    if (card) {
-      card.style.width = '';
-      card.style.height = '';
-    }
-  }
-  try { showToast('レイアウトを初期サイズに戻しました (' + cleared + ' 件)'); } catch(_) {}
-  try { window.dispatchEvent(new Event('resize')); } catch(_) {}
-  // v12.9.8: リサイズ確定パスと対称的に再描画も呼ぶ
-  try { if (typeof mtRenderNow === 'function') mtRenderNow(); } catch(_) {}
-  try { if (typeof mtRenderSetlist === 'function') mtRenderSetlist(); } catch(_) {}
+function _mtStartSplit(ev, sp) {
+  if (ev.button !== undefined && ev.button !== 0) return;
+  const spec = MT_SPLIT_SPECS[sp.dataset.split];
+  if (!spec) return;
+  const panel = document.querySelector(spec.sel);
+  if (!panel) return;
+  ev.preventDefault();
+  sp.classList.add('dragging');
+  try { sp.setPointerCapture(ev.pointerId); } catch(_) {}
+  const startPos = spec.axis === 'x' ? ev.clientX : ev.clientY;
+  const rect = panel.getBoundingClientRect();
+  const start = spec.axis === 'x' ? rect.width : rect.height;
+  const max = Math.round((spec.axis === 'x' ? window.innerWidth : window.innerHeight) * spec.maxFrac);
+  const onMove = (e) => {
+    const cur = spec.axis === 'x' ? e.clientX : e.clientY;
+    let v = start + spec.sign * (cur - startPos);
+    v = Math.max(spec.min, Math.min(max, v));
+    _mtApplyPanelSize(panel, spec.axis, v);
+    try { localStorage.setItem('mtSplit:' + sp.dataset.split, String(Math.round(v))); } catch(_) {}
+  };
+  const onEnd = () => {
+    sp.classList.remove('dragging');
+    try { sp.releasePointerCapture(ev.pointerId); } catch(_) {}
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onEnd);
+    window.removeEventListener('pointercancel', onEnd);
+    try { if (typeof mtRenderMixer === 'function') mtRenderMixer(); } catch(_) {}
+  };
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onEnd);
+  window.addEventListener('pointercancel', onEnd);
+}
+
+// ダブルクリックでその仕切りの配分を初期に戻す
+function _mtResetSplit(sp) {
+  const key = sp.dataset.split;
+  const spec = MT_SPLIT_SPECS[key];
+  if (!spec) return;
+  try { localStorage.removeItem('mtSplit:' + key); } catch(_) {}
+  const panel = document.querySelector(spec.sel);
+  if (panel) { panel.style.flex = ''; panel.style.height = ''; }
   try { if (typeof mtRenderMixer === 'function') mtRenderMixer(); } catch(_) {}
 }
 
-function _mtInitResizable() {
-  for (const spec of MT_RESIZE_CARDS) {
-    const card = document.querySelector(spec.selector);
-    if (card) _mtMakeResizable(card, spec);
+function _mtInitSplitters() {
+  // localStorage から配分を復元
+  for (const key in MT_SPLIT_SPECS) {
+    const spec = MT_SPLIT_SPECS[key];
+    const panel = document.querySelector(spec.sel);
+    if (!panel) continue;
+    try {
+      const v = parseInt(localStorage.getItem('mtSplit:' + key) || '', 10);
+      if (v && v > 0) _mtApplyPanelSize(panel, spec.axis, v);
+    } catch(_) {}
   }
+  // 仕切り線に bind
+  document.querySelectorAll('.mt-splitter-v, .mt-splitter-h').forEach(sp => {
+    if (sp.dataset.splitBound === '1') return;
+    sp.dataset.splitBound = '1';
+    sp.addEventListener('pointerdown', (ev) => _mtStartSplit(ev, sp));
+    sp.addEventListener('dblclick', () => _mtResetSplit(sp));
+  });
 }
 
 // 整理: orphan サンプル削除 / 重複 blob 削除
@@ -17513,7 +17512,7 @@ function _hideInstallBanner() {
 init();
 // v12.9.6: MULTI-TRACK カードのリサイズ機能を bind
 // init() の後で実行 (display:none でも DOM 要素は存在するので問題なし)
-try { _mtInitResizable(); } catch(e) { console.warn('mt resize init failed', e); }
+try { _mtInitSplitters(); } catch(e) { console.warn('mt splitter init failed', e); }
 </script>
 </body>
 </html>
