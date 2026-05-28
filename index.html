@@ -1452,7 +1452,9 @@
 
   /* v11.9.3: AUDIO IFACE 行のデザイン刷新 — 統一感のある polished pill 化 */
   /* v12.9.2: 上下マージンを詰めて AUDIO IFACE カード全体をコンパクトに */
-  .mt-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+  /* v12.9.15: AUDIO IFACE カードが狭い時、DEVICE/CHANNELS 行も折り返せるように（タイムコード行と同様）。
+     これをしないと中の要素（select/readout/note）がカードからはみ出す or 縦書きに崩れる */
+  .mt-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; flex-wrap: wrap; row-gap: 4px; }
   .mt-label {
     font-size: 10px; letter-spacing: 2px; color: #5A5A60; font-weight: 500;
     min-width: 76px; text-transform: uppercase;
@@ -1460,8 +1462,9 @@
   /* DEVICE select + ⟳ ボタン を 1 つのコンテナに見せる */
   /* v11.9.9: flex-grow を完全に止めて固定幅に — 右側に確実に余白ができる */
   .mt-row > .mt-select {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     width: 280px;
+    max-width: 100%;
     background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
     border: 1px solid #25252A;
     color: #E6E6EA;
@@ -1505,6 +1508,7 @@
     font-size: 11px; color: #6A6A70;
     letter-spacing: 0.3px;
     font-weight: 400;
+    white-space: nowrap; /* v12.9.15: 「デバイス最大2ch/必要11ch」が1文字ずつ縦書きに折り返すのを防ぐ */
   }
   .mt-row-note.warn { color: #FFCB5A; }
   .mt-input-num {
