@@ -2153,10 +2153,14 @@
      flex なら inline style.width が即時反映され、リサイズハンドルが効く。 */
   .mt-bottom-row {
     display: flex;
-    flex-wrap: wrap;
+    /* v12.9.14: 折り返さない (nowrap)。wrap だと狭い時に縦積みになって
+       縦スプリッターが消える / MIXER を広げると AUDIO IFACE が次行に落ちて
+       崩壊する不具合があった。入りきらない時は横スクロールで対応。 */
+    flex-wrap: nowrap;
     gap: 8px;
     flex-shrink: 0;
     align-items: stretch;
+    overflow-x: auto;
   }
   /* v12.9.13: スプリッター方式。mixer=可変(初期auto)、config=残りを埋める、
      songinfo=可変(初期300px)。間の .mt-splitter-v をドラッグで mixer/songinfo の
@@ -2170,25 +2174,12 @@
   .mt-bottom-row > .mt-songinfo-card {
     min-height: 250px;
   }
-  /* 横幅が狭くなったら SELECTED SONG が次の行に折り返す */
-  @media (max-width: 1400px) {
-    .mt-bottom-row > .mt-songinfo-card { flex-basis: 100%; min-height: 140px; }
-  }
-  /* さらに狭い: フェーダー幅を縮めて全部 1 行に収める */
+  /* 狭い時はフェーダー幅を縮めて横スクロール量を減らす (折り返しはしない) */
   @media (max-width: 1100px) {
     .mt-mixer-strips { width: 500px !important; }
   }
   @media (max-width: 980px) {
     .mt-mixer-strips { width: 420px !important; gap: 5px !important; }
-  }
-  /* 極狭: 全カードを縦並びに */
-  @media (max-width: 860px) {
-    .mt-bottom-row > .mt-mixer-card,
-    .mt-bottom-row > .mt-config-card,
-    .mt-bottom-row > .mt-songinfo-card {
-      flex-basis: 100%;
-    }
-    .mt-bottom-row > .mt-songinfo-card { min-height: 140px; }
   }
 
   /* RECONNECT BANNER — ローカルファイルへの再アクセス要求 */
@@ -3984,7 +3975,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.13';
+const APP_VERSION = 'v12.9.14';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
