@@ -2210,6 +2210,104 @@
     padding: 6px 16px; font-weight: 500;
   }
 
+  /* ============= 4. RESIZABLE CARDS (v12.9.6) ============= */
+  /* MULTI-TRACK タブ内の 5 主要カードに「右辺・下辺・右下角」のドラッグハンドル。
+     Brutalist Vivid 準拠: 通常 1px 細線、hover/dragging で X-TIME 緑に光る。
+     カードサイズは localStorage (mtResizable:<key>) に自動保存。 */
+  .mt-resizable {
+    position: relative;
+  }
+  .mt-resize-handle {
+    position: absolute;
+    z-index: 12;
+    pointer-events: auto;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+  }
+  .mt-resize-handle::after {
+    content: '';
+    position: absolute;
+    background: rgba(255,255,255,0.06);
+    transition: background 120ms, box-shadow 120ms, width 120ms, height 120ms;
+    border-radius: 1px;
+  }
+  /* 右辺 — 縦の細線 */
+  .mt-resize-e {
+    top: 6px; bottom: 6px; right: -3px;
+    width: 6px; cursor: ew-resize;
+  }
+  .mt-resize-e::after {
+    top: 0; bottom: 0; right: 2px;
+    width: 1px;
+  }
+  .mt-resize-e:hover::after,
+  .mt-resize-e.dragging::after {
+    background: #6FDEB8;
+    box-shadow: 0 0 6px #6FDEB8;
+    width: 2px;
+  }
+  /* 下辺 — 横の細線 */
+  .mt-resize-s {
+    left: 6px; right: 6px; bottom: -3px;
+    height: 6px; cursor: ns-resize;
+  }
+  .mt-resize-s::after {
+    left: 0; right: 0; bottom: 2px;
+    height: 1px;
+  }
+  .mt-resize-s:hover::after,
+  .mt-resize-s.dragging::after {
+    background: #6FDEB8;
+    box-shadow: 0 0 6px #6FDEB8;
+    height: 2px;
+  }
+  /* 右下角 — 「⌟」型のコーナーマーク */
+  .mt-resize-se {
+    bottom: -3px; right: -3px;
+    width: 14px; height: 14px;
+    cursor: nwse-resize;
+  }
+  .mt-resize-se::after {
+    bottom: 3px; right: 3px;
+    width: 6px; height: 6px;
+    background: transparent;
+    border-right: 1px solid rgba(255,255,255,0.10);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    border-radius: 0;
+  }
+  .mt-resize-se:hover::after,
+  .mt-resize-se.dragging::after {
+    border-right-color: #6FDEB8;
+    border-bottom-color: #6FDEB8;
+    box-shadow: 0 0 5px rgba(111,222,184,0.55);
+    background: transparent;
+  }
+  /* LAYOUT RESET ボタン — NOW PLAYING カードの右上角 */
+  .mt-layout-reset {
+    position: absolute;
+    top: 6px; right: 6px;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    letter-spacing: 0.4px;
+    color: #6A6A70;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: color 120ms, border-color 120ms;
+    z-index: 13;
+  }
+  .mt-layout-reset:hover {
+    color: #6FDEB8;
+    border-color: #6FDEB8;
+  }
+  /* 直接 width/height 指定したカードが flex/grid の中で正しく振る舞うように */
+  .mt-resizable[style*="width"] {
+    flex: 0 0 auto;
+  }
+
   /* PRELOAD BANNER — ファイル準備中の大きな視認バナー */
   /* ========== PLAYBACK STARTED フルスクリーンオーバーレイ ========== */
   /* 再生開始から 10 秒間、ダブルタップ防止＆「鳴ってます」アピール */
@@ -3661,6 +3759,8 @@
     <!-- 1. NOW PLAYING — compact hero -->
     <div class="mt-hero compact" id="mtHero">
       <div class="mt-hero-bg" id="mtHeroBg"></div>
+      <!-- v12.9.6: LAYOUT RESET ボタン (5 カードのサイズを初期に戻す) -->
+      <button class="mt-layout-reset" onclick="_mtResetLayout()" title="MULTI-TRACK 内の 5 カードを初期サイズに戻す">⊞ LAYOUT RESET</button>
       <div class="mt-hero-inner">
         <div class="mt-hero-top">
           <div class="mt-hero-now-block">
@@ -3908,7 +4008,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.5';
+const APP_VERSION = 'v12.9.6';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -15115,6 +15215,105 @@ function mtMediaFadeOut() {
   }, dur * 1000 + 30);
 }
 
+// =====================================================
+// v12.9.6: MULTI-TRACK LAYOUT RESIZE
+// 5 主要カードに「右辺・下辺・右下角」のドラッグハンドルを追加。
+// localStorage 自動保存 (mtResizable:<key>) で次回起動時に復元。
+// =====================================================
+const MT_RESIZE_CARDS = [
+  { selector: '#mtHero',                 key: 'hero',     minW: 360, minH: 80  },
+  { selector: '.mt-setlist-card',        key: 'setlist',  minW: 320, minH: 120 },
+  { selector: '.mt-mixer-card',          key: 'mixer',    minW: 180, minH: 160 },
+  { selector: '.mt-config-card',         key: 'config',   minW: 240, minH: 160 },
+  { selector: '.mt-songinfo-card',       key: 'songinfo', minW: 200, minH: 100 },
+];
+
+function _mtMakeResizable(card, spec) {
+  if (!card || card.dataset.mtResizableBound === '1') return;
+  card.dataset.mtResizableBound = '1';
+  card.classList.add('mt-resizable');
+  // localStorage 復元
+  try {
+    const saved = JSON.parse(localStorage.getItem('mtResizable:' + spec.key) || 'null');
+    if (saved) {
+      if (saved.w && saved.w >= spec.minW) card.style.width = saved.w + 'px';
+      if (saved.h && saved.h >= spec.minH) card.style.height = saved.h + 'px';
+    }
+  } catch(_) {}
+  // ハンドル 3 個 (右辺・下辺・右下角)
+  for (const dir of ['e', 's', 'se']) {
+    const h = document.createElement('div');
+    h.className = 'mt-resize-handle mt-resize-' + dir;
+    h.dataset.dir = dir;
+    h.addEventListener('pointerdown', (ev) => _mtStartResize(ev, card, dir, spec));
+    card.appendChild(h);
+  }
+}
+
+function _mtStartResize(ev, card, dir, spec) {
+  // 主クリックのみ
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  const handle = ev.currentTarget;
+  handle.classList.add('dragging');
+  try { handle.setPointerCapture(ev.pointerId); } catch(_) {}
+  const startX = ev.clientX, startY = ev.clientY;
+  const rect = card.getBoundingClientRect();
+  const startW = rect.width, startH = rect.height;
+  const onMove = (e) => {
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    let w = startW, h = startH;
+    if (dir === 'e' || dir === 'se') w = Math.max(spec.minW, startW + dx);
+    if (dir === 's' || dir === 'se') h = Math.max(spec.minH, startH + dy);
+    if (dir === 'e' || dir === 'se') card.style.width = Math.round(w) + 'px';
+    if (dir === 's' || dir === 'se') card.style.height = Math.round(h) + 'px';
+  };
+  const onEnd = () => {
+    handle.classList.remove('dragging');
+    try { handle.releasePointerCapture(ev.pointerId); } catch(_) {}
+    handle.removeEventListener('pointermove', onMove);
+    handle.removeEventListener('pointerup', onEnd);
+    handle.removeEventListener('pointercancel', onEnd);
+    // localStorage に保存
+    try {
+      const r2 = card.getBoundingClientRect();
+      localStorage.setItem('mtResizable:' + spec.key, JSON.stringify({
+        w: Math.round(r2.width),
+        h: Math.round(r2.height),
+      }));
+    } catch(_) {}
+    // 内部要素 (メーター等) の reflow ヒント — ResizeObserver で拾ってる箇所もあるが念のため
+    try { window.dispatchEvent(new Event('resize')); } catch(_) {}
+  };
+  handle.addEventListener('pointermove', onMove);
+  handle.addEventListener('pointerup', onEnd);
+  handle.addEventListener('pointercancel', onEnd);
+}
+
+function _mtResetLayout() {
+  if (!confirm('MULTI-TRACK タブ内の 5 カードを全部、初期サイズに戻しますか？')) return;
+  let cleared = 0;
+  for (const spec of MT_RESIZE_CARDS) {
+    try { localStorage.removeItem('mtResizable:' + spec.key); cleared++; } catch(_) {}
+    const card = document.querySelector(spec.selector);
+    if (card) {
+      card.style.width = '';
+      card.style.height = '';
+    }
+  }
+  try { showToast('レイアウトを初期サイズに戻しました (' + cleared + ' 件)'); } catch(_) {}
+  try { window.dispatchEvent(new Event('resize')); } catch(_) {}
+}
+
+function _mtInitResizable() {
+  for (const spec of MT_RESIZE_CARDS) {
+    const card = document.querySelector(spec.selector);
+    if (card) _mtMakeResizable(card, spec);
+  }
+}
+
 // 整理: orphan サンプル削除 / 重複 blob 削除
 async function mtFsCleanup() {
   const refIds = new Set(_mtFsCollectAllIds());
@@ -17347,6 +17546,9 @@ function _hideInstallBanner() {
 }
 
 init();
+// v12.9.6: MULTI-TRACK カードのリサイズ機能を bind
+// init() の後で実行 (display:none でも DOM 要素は存在するので問題なし)
+try { _mtInitResizable(); } catch(e) { console.warn('mt resize init failed', e); }
 </script>
 </body>
 </html>
