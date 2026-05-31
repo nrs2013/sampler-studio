@@ -3991,7 +3991,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.16';
+const APP_VERSION = 'v12.9.17';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -4265,32 +4265,36 @@ function _projShowFolderDialog(projectName) {
       'box-shadow:0 8px 40px rgba(0,0,0,0.8)',
     ].join(';');
     dialog.innerHTML = `
-      <div style="font-size:13px;letter-spacing:2px;color:#88D6C2;margin-bottom:14px;font-weight:700;">📁 プロジェクトフォルダを選んでください</div>
+      <div style="font-size:13px;letter-spacing:2px;color:#88D6C2;margin-bottom:14px;font-weight:700;">プロジェクト「${projectName.replace(/</g,'&lt;')}」を作る</div>
       <div style="font-size:13px;color:#C8D8D0;margin-bottom:14px;">
-        プロジェクト「<b style="color:#FFFFFF;">${projectName.replace(/</g,'&lt;')}</b>」用に、アプリが新しいフォルダを作って音源と設定を保存します。
+        音源と設定の保存方法を選んでください。<b style="color:#88D6C2;">迷ったら「フォルダなしで作る」</b>でも本番で使えます (推奨)。
       </div>
-      <div style="font-size:12px;color:rgba(200,216,208,0.7);margin-bottom:18px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;">
-        <div style="font-weight:700;color:#88D6C2;margin-bottom:6px;">推奨の場所</div>
-        Mac の「書類」(Documents) 直下。<br/>
-        例: <code style="color:#FFCB5A;">~/Documents/${projectName.replace(/</g,'&lt;')}/</code>
+      <div style="font-size:12px;color:rgba(200,216,208,0.85);margin-bottom:14px;background:rgba(61,181,166,0.08);border:0.5px solid rgba(61,181,166,0.4);border-radius:6px;padding:10px 14px;">
+        <div style="font-weight:700;color:#88D6C2;margin-bottom:6px;">A) フォルダなしで作る (推奨・カンタン)</div>
+        ・アプリ内 (ブラウザの保存領域) に全部保存される<br/>
+        ・面倒な権限ダイアログが出ない / 本番中に「再接続」も出ない<br/>
+        ・別 Mac に持っていく時は <b>EXPORT で ZIP に書き出して IMPORT</b>
       </div>
-      <div style="font-size:12px;color:#FFCB5A;margin-bottom:18px;background:rgba(255,184,28,0.05);border:0.5px solid rgba(255,184,28,0.3);border-radius:6px;padding:10px 14px;">
-        <div style="font-weight:700;margin-bottom:6px;">⚠️ 重要な注意</div>
-        ・このフォルダの中身を Finder で <b>動かさない / 削除しない</b>でください<br/>
-        ・別の Mac に持っていく時は<b>フォルダごとコピー</b>してください<br/>
-        ・誤って動かすとアプリで再生できなくなります
+      <div style="font-size:12px;color:rgba(200,216,208,0.7);margin-bottom:14px;background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.08);border-radius:6px;padding:10px 14px;">
+        <div style="font-weight:700;color:#C8D8D0;margin-bottom:6px;">B) フォルダを選ぶ (上級者向け)</div>
+        音源を実ファイルとして Finder で管理したい人用。<br/>
+        ⚠️ <b>~/Documents 直下や ~/Desktop は Chrome に拒否されます</b>。<br/>
+        必ず Finder で <b>~/Documents/SamplerStudio/</b> などサブフォルダを<br/>
+        <b>先に作って</b>から、その「親フォルダ」(SamplerStudio) を選んでください。
       </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;">
-        <button id="projCancelBtn" style="padding:8px 18px;background:transparent;border:0.5px solid rgba(200,216,208,0.3);color:#C8D8D0;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">キャンセル</button>
-        <button id="projOkBtn" style="padding:8px 18px;background:linear-gradient(180deg, rgba(61,181,166,0.25), rgba(61,181,166,0.10));border:0.5px solid rgba(61,181,166,0.5);color:#88D6C2;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:700;">フォルダを選ぶ →</button>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap;">
+        <button id="projCancelBtn" style="padding:8px 14px;background:transparent;border:0.5px solid rgba(200,216,208,0.3);color:#C8D8D0;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">キャンセル</button>
+        <button id="projNoFolderBtn" style="padding:8px 14px;background:linear-gradient(180deg, rgba(61,181,166,0.35), rgba(61,181,166,0.15));border:0.5px solid rgba(61,181,166,0.6);color:#FFFFFF;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;font-weight:700;">フォルダなしで作る (推奨)</button>
+        <button id="projOkBtn" style="padding:8px 14px;background:transparent;border:0.5px solid rgba(200,216,208,0.3);color:#C8D8D0;border-radius:4px;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">フォルダを選ぶ</button>
       </div>
     `;
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);
     const close = (result) => { try { document.body.removeChild(overlay); } catch(_) {} resolve(result); };
-    dialog.querySelector('#projCancelBtn').onclick = () => close(false);
-    dialog.querySelector('#projOkBtn').onclick = () => close(true);
-    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    dialog.querySelector('#projCancelBtn').onclick = () => close('cancel');
+    dialog.querySelector('#projNoFolderBtn').onclick = () => close('no-folder');
+    dialog.querySelector('#projOkBtn').onclick = () => close('folder');
+    overlay.onclick = (e) => { if (e.target === overlay) close('cancel'); };
   });
 }
 
@@ -4303,43 +4307,61 @@ async function projCreateNew() {
   // 親フォルダ選択 (showDirectoryPicker)
   let dirHandle = null;
   let displayPath = '';
-  if ('showDirectoryPicker' in window) {
-    const proceed = await _projShowFolderDialog(safeName);
-    if (!proceed) {
-      return; // キャンセル
-    } else {
-      try {
-        const parent = await window.showDirectoryPicker({
-          id: 'sampler-studio-projects',
-          mode: 'readwrite',
-          startIn: 'documents',
-        });
-        // [プロジェクト名]/ サブフォルダを作成
-        dirHandle = await parent.getDirectoryHandle(safeName, { create: true });
-        displayPath = (parent.name || '') + '/' + safeName;
-      } catch(e) {
-        // v12.9.15: SecurityError (システムフォルダ拒否) に明確な案内を出す
-        if (e && (e.name === 'SecurityError' || /system files/i.test(e.message || ''))) {
-          alert(
-            'このフォルダは Chrome の制限で開けません。\n\n' +
-            '以下は選べません:\n' +
-            '・ホーム直下 (/Users/あなたの名前/)\n' +
-            '・Library / Desktop / Downloads / Applications\n\n' +
-            '代わりに ~/Documents/ の中の任意のフォルダを選んでください。'
-          );
+  // v12.9.17: showDirectoryPicker が無いブラウザでも「フォルダなしで作る」で続行可能。
+  //           ダイアログは「キャンセル / フォルダなしで作る / フォルダを選ぶ」の 3 択。
+  const proceed = ('showDirectoryPicker' in window)
+    ? await _projShowFolderDialog(safeName)
+    : 'no-folder'; // 未対応ブラウザは強制的にフォルダなしモード
+  if (proceed === 'cancel' || proceed === false) {
+    return; // キャンセル
+  } else if (proceed === 'no-folder') {
+    // フォルダなしで作成 (推奨モード) — localStorage + IndexedDB に保存。
+    // Chrome のシステムフォルダ拒否や本番中の「再接続」警告を完全に回避できる。
+    dirHandle = null;
+    displayPath = '(フォルダなし)';
+    try { showToast('フォルダなしで作成中… EXPORT で持ち出し可'); } catch(_) {}
+  } else if (proceed === 'folder' || proceed === true) {
+    // フォルダを選ぶ
+    try {
+      const parent = await window.showDirectoryPicker({
+        id: 'sampler-studio-projects',
+        mode: 'readwrite',
+        startIn: 'documents',
+      });
+      // [プロジェクト名]/ サブフォルダを作成
+      dirHandle = await parent.getDirectoryHandle(safeName, { create: true });
+      displayPath = (parent.name || '') + '/' + safeName;
+    } catch(e) {
+      // v12.9.15-17: SecurityError (システムフォルダ拒否) で詰まないようリカバリを案内
+      if (e && (e.name === 'SecurityError' || /system files/i.test(e.message || ''))) {
+        const retry = confirm(
+          'このフォルダは Chrome の制限で開けません。\n\n' +
+          '【解決方法】\n' +
+          '1. このダイアログを閉じる\n' +
+          '2. Finder で ~/Documents の中に新しいフォルダを作る\n   (例: SamplerStudio)\n' +
+          '3. もう一度 NEW PROJECT を試して、その「親フォルダ」を選ぶ\n\n' +
+          '【もっとカンタンな方法】\n' +
+          '「フォルダなしで作る」を選ぶと、この問題を完全に回避できます。\n' +
+          'そちらを使いますか？ → OK = フォルダなしで作る / キャンセル = 中止'
+        );
+        if (retry) {
+          dirHandle = null;
+          displayPath = '(フォルダなし)';
+          try { showToast('フォルダなしで作成中… EXPORT で持ち出し可'); } catch(_) {}
+        } else {
           return;
         }
-        if (e && e.name === 'AbortError') {
-          try { showToast('プロジェクト作成をキャンセルしました'); } catch(_) {}
-          return;
-        }
+      } else if (e && e.name === 'AbortError') {
+        try { showToast('プロジェクト作成をキャンセルしました'); } catch(_) {}
+        return;
+      } else {
         console.warn('[proj] showDirectoryPicker failed', e);
         alert('フォルダ選択に失敗しました: ' + (e.message || e));
         return;
       }
     }
   } else {
-    alert('お使いのブラウザはフォルダ選択に対応していません。Chrome で開いてください。');
+    // 想定外
     return;
   }
   // handle を IndexedDB に保存
