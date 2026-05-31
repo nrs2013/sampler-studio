@@ -2178,6 +2178,13 @@
   .mt-bottom-row > .mt-songinfo-card {
     min-height: 250px;
   }
+  /* v12.9.15: 横スプリッターで下段全体を縮めた時、子の min-height: 250 を解除して
+     カードがはみ出さないように */
+  .mt-bottom-row[style*="height"] > .mt-mixer-card,
+  .mt-bottom-row[style*="height"] > .mt-config-card,
+  .mt-bottom-row[style*="height"] > .mt-songinfo-card {
+    min-height: 100px;
+  }
   /* 狭い時はフェーダー幅を縮めて横スクロール量を減らす (折り返しはしない) */
   @media (max-width: 1100px) {
     .mt-mixer-strips { width: 500px !important; }
@@ -3313,13 +3320,18 @@
       <div class="tp-ws-stats" id="tpStats"></div>
     </div>
     <div class="tp-grid" id="tpGrid"></div>
+    <!-- v12.9.15: 別 Mac で持ち込んだ ZIP を最初の画面から読み込めるように -->
+    <div class="tp-actions" style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+      <button class="btn-small" onclick="(function(){ if (typeof openImportDialog==='function') openImportDialog(); else { const i=document.createElement('input'); i.type='file'; i.accept='.zip,.ssproj'; i.onchange=async()=>{ if(i.files[0]&&typeof importProject==='function') await importProject(i.files[0]); }; i.click(); } })()" style="padding:8px 18px;font-size:11px;letter-spacing:0.8px;border-color:#2A3D38;color:#A8C9B6;">IMPORT .ssproj.zip</button>
+    </div>
     <div class="tp-foot">
       データはブラウザに自動保存されます。EXPORT で .ssproj.zip として別 Mac に持ち出し可。
+      <br><span style="color:#FFCB5A;">⚠️ <b>Chrome / Edge 必須</b>（Safari / Firefox はフォルダ機能未対応）。フォルダ選択で「システムファイルが含まれています」と出る場合は、ホーム直下や Library ではなく <b>~/Documents/ 内のフォルダ</b>を選んでください。</span>
     </div>
   </div>
   <!-- ====================================================================== -->
 
-  <div id="appPage">
+  <div id="appPage" class="hidden">
   <div class="header">
     <div class="header-left">
       <button class="back-to-top-btn" onclick="projGoTop()" title="プロジェクト一覧へ戻る">← PROJECTS</button>
@@ -3979,7 +3991,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.14';
+const APP_VERSION = 'v12.9.15';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -4161,7 +4173,21 @@ async function projOpenFromFolder() {
       startIn: 'documents',
     });
   } catch(e) {
-    if (e && e.name === 'AbortError') return;
+    // v12.9.15: SecurityError (システムフォルダ拒否) と AbortError (キャンセル) を分けて案内
+    if (e && (e.name === 'SecurityError' || /system files/i.test(e.message || ''))) {
+      alert(
+        'このフォルダは Chrome の制限で開けません。\n\n' +
+        '以下は選べません:\n' +
+        '・ホーム直下 (/Users/あなたの名前/)\n' +
+        '・Library / Desktop / Downloads / Applications\n\n' +
+        '代わりに ~/Documents/ の中のプロジェクトフォルダを選んでください。'
+      );
+      return;
+    }
+    if (e && e.name === 'AbortError') {
+      try { showToast('フォルダ選択をキャンセルしました'); } catch(_) {}
+      return;
+    }
     console.warn('[projOpen] picker failed', e);
     alert('フォルダ選択に失敗しました: ' + (e.message || e));
     return;
@@ -4181,7 +4207,11 @@ async function projOpenFromFolder() {
   }
   // 既存リストに登録 (上書き or 新規)
   const list = projGetList();
-  const id = data.projectId || ('p_' + Date.now());
+  // v12.9.15: projectId='default' は projKey() で unprefixed になり、プレフィックス付き
+  //           キーへの書き込み (下の id+':samplerMultitrack' 等) と起動時の読込が
+  //           食い違ってデータが完全消失する。必ず新規 ID に振り直す。
+  let id = data.projectId || ('p_' + Date.now());
+  if (id === 'default') id = 'p_' + Date.now() + '_imp';
   let existing = list.find(p => p.id === id);
   if (!existing) {
     list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
@@ -4288,8 +4318,19 @@ async function projCreateNew() {
         dirHandle = await parent.getDirectoryHandle(safeName, { create: true });
         displayPath = (parent.name || '') + '/' + safeName;
       } catch(e) {
+        // v12.9.15: SecurityError (システムフォルダ拒否) に明確な案内を出す
+        if (e && (e.name === 'SecurityError' || /system files/i.test(e.message || ''))) {
+          alert(
+            'このフォルダは Chrome の制限で開けません。\n\n' +
+            '以下は選べません:\n' +
+            '・ホーム直下 (/Users/あなたの名前/)\n' +
+            '・Library / Desktop / Downloads / Applications\n\n' +
+            '代わりに ~/Documents/ の中の任意のフォルダを選んでください。'
+          );
+          return;
+        }
         if (e && e.name === 'AbortError') {
-          // ユーザーがキャンセル → 作成中止
+          try { showToast('プロジェクト作成をキャンセルしました'); } catch(_) {}
           return;
         }
         console.warn('[proj] showDirectoryPicker failed', e);
@@ -5542,6 +5583,9 @@ async function exportProject() {
     // EXPORT する音源はこれだけ（他プロジェクトの音は持っていかない）
     const stateRaw = localStorage.getItem(projKey('samplerStudioState'));
     const doorRaw  = localStorage.getItem(projKey('samplerStudioDoor'));
+    // v12.9.15: MULTI-TRACK 設定も EXPORT に含める (これまで欠落していて
+    //           別 Mac で MULTI-TRACK が空になる致命バグ)
+    const multiRaw = localStorage.getItem(projKey('samplerMultitrack'));
     const refIds = new Set();
     try {
       const st = JSON.parse(stateRaw || 'null');
@@ -5562,6 +5606,25 @@ async function exportProject() {
         dr.library.forEach(it => { if (it && it.sampleId) refIds.add(it.sampleId); });
       }
       if (dr && dr.logo && dr.logo.sampleId) refIds.add(dr.logo.sampleId);
+    } catch(_){}
+    // v12.9.15: MULTI-TRACK の曲・STEM の sampleId を refIds に追加
+    try {
+      const mt = JSON.parse(multiRaw || 'null');
+      if (mt && Array.isArray(mt.songs)) {
+        mt.songs.forEach(song => {
+          if (!song) return;
+          if (Array.isArray(song.tracks)) {
+            song.tracks.forEach(t => {
+              if (!t) return;
+              if (t.sampleId) refIds.add(t.sampleId);
+              if (Array.isArray(t.layers)) t.layers.forEach(l => { if (l && l.sampleId) refIds.add(l.sampleId); });
+            });
+          }
+          // 互換: song.layers / song.stems 等のキーも見る (バージョンによって異なる)
+          if (Array.isArray(song.layers)) song.layers.forEach(l => { if (l && l.sampleId) refIds.add(l.sampleId); });
+          if (Array.isArray(song.stems))  song.stems.forEach(s => { if (s && s.sampleId) refIds.add(s.sampleId); });
+        });
+      }
     } catch(_){}
     const samples = allSamples.filter(s => refIds.has(s.id));
 
@@ -5588,15 +5651,28 @@ async function exportProject() {
     const idToSavedAs = new Map();
     for (const s of samples) {
       if (!s.data) { idToSavedAs.set(s.id, null); continue; }
-      // ArrayBuffer / Uint8Array どちらでも digest できるよう正規化
-      const bytes = (s.data instanceof ArrayBuffer) ? s.data : (s.data.buffer || s.data);
+      // v12.9.15: Blob / File を ArrayBuffer に正規化。crypto.subtle.digest は
+      //   BufferSource 必須なので Blob を直接渡すと TypeError → EXPORT クラッシュ。
+      let bytes;
+      let byteLen = 0;
+      if (s.data instanceof ArrayBuffer) {
+        bytes = s.data; byteLen = s.data.byteLength;
+      } else if (typeof Blob !== 'undefined' && s.data instanceof Blob) {
+        bytes = await s.data.arrayBuffer(); byteLen = s.data.size;
+      } else if (s.data && s.data.buffer instanceof ArrayBuffer) {
+        bytes = s.data.buffer; byteLen = s.data.byteLength || s.data.length || 0;
+      } else {
+        // 不明な型: スキップせず Blob 化を試す
+        try { bytes = await new Blob([s.data]).arrayBuffer(); byteLen = bytes.byteLength; }
+        catch(_) { idToSavedAs.set(s.id, null); continue; }
+      }
       const hashBuf = await crypto.subtle.digest('SHA-256', bytes);
       const hash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
 
       if (hashToSavedAs.has(hash)) {
         // 既に同じ中身が保存済み → ファイル名だけ共有
         idToSavedAs.set(s.id, hashToSavedAs.get(hash));
-        dedupedBytes += s.data.byteLength || 0;
+        dedupedBytes += byteLen;
         continue;
       }
       // 新規 → ファイル名を確定して zip へ
@@ -5639,6 +5715,8 @@ async function exportProject() {
     zip.file('state.json', JSON.stringify({
       samplerStudioState: localStorage.getItem(projKey('samplerStudioState')),
       samplerStudioDoor: localStorage.getItem(projKey('samplerStudioDoor')),
+      // v12.9.15: MULTI-TRACK 設定を EXPORT に含める
+      samplerMultitrack: localStorage.getItem(projKey('samplerMultitrack')),
     }, null, 2));
     zip.file('README.txt',
       'SAMPLER STUDIO プロジェクトファイル\n' +
@@ -5769,6 +5847,8 @@ async function importProject(file) {
       const stateJson = JSON.parse(await stateFile.async('string'));
       if (stateJson.samplerStudioState) localStorage.setItem(projKey('samplerStudioState'), stateJson.samplerStudioState);
       if (stateJson.samplerStudioDoor)  localStorage.setItem(projKey('samplerStudioDoor'),  stateJson.samplerStudioDoor);
+      // v12.9.15: MULTI-TRACK 設定も復元
+      if (stateJson.samplerMultitrack)  localStorage.setItem(projKey('samplerMultitrack'),  stateJson.samplerMultitrack);
     }
 
     showToast(`✅ 「${newName}」として復元: ${restoredSamples}個の音源 / ${manifest.presetCount||0}個のプリセット — 3秒後にリロード`);
@@ -17441,7 +17521,10 @@ async function _projOpenFromSamplerFile(data, fileName) {
     }
     // 既存リストに登録
     const list = projGetList();
-    const id = data.projectId || ('p_' + Date.now());
+    // v12.9.15: 'default' は projKey() で unprefixed になりプレフィックス付き書込と
+    //           起動時 unprefixed 読込が食い違ってデータ消失。必ず新規 ID に振り直し。
+    let id = data.projectId || ('p_' + Date.now());
+    if (id === 'default') id = 'p_' + Date.now() + '_imp';
     let existing = list.find(p => p.id === id);
     if (!existing) {
       list.push({ id, name: data.projectName || dirHandle.name, folderPath: dirHandle.name, createdAt: data.savedAt || Date.now(), updatedAt: Date.now() });
