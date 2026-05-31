@@ -3991,7 +3991,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.15';
+const APP_VERSION = 'v12.9.16';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -17356,6 +17356,12 @@ async function init() {
     return;
   }
   // active プロジェクトあり → 通常通り起動
+  // v12.9.16 緊急: v12.9.15 で appPage に class="hidden" を付けたため、
+  //   既存ユーザー (activeId あり) のルートで hidden を外す処理が無く真っ黒だった。
+  //   hideTopPage() で topPage の active を外し、appPage の hidden を外す。
+  try { hideTopPage(); } catch(_) {
+    const ap = document.getElementById('appPage'); if (ap) ap.classList.remove('hidden');
+  }
   initBanks();
   loadStateLocal();
   await openDB();
