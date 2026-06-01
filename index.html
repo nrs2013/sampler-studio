@@ -3991,7 +3991,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.18';
+const APP_VERSION = 'v12.9.19';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -10303,6 +10303,16 @@ function doLoad() {
       };
     }
     if (Array.isArray(s.schedule)) {
+      // v12.9.19: 起動 / 再読込 / プロジェクト切替の瞬間に「既に過ぎた予定」を
+      //   played=true にして、起動直後の doTick で誤発火しないようにする。
+      //   （発火窓 FIRE_GRACE=60秒 はランタイム中の取りこぼし救済が目的で、
+      //    コールドスタート時に過去のナレ/BGM を蒸し返すのは演出事故になるため）
+      //   起動時刻のちょうど〜直前(5秒猶予)の予定は played=false のままにし、
+      //   稼働中の doTick が時刻到達で正しく発火させる。
+      //   手動で鳴らしたい場合は「済」を ReArm（クリック）で復活できる。
+      const _loadNow = (() => { const d = new Date(); return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds(); })();
+      const LOAD_GRACE = 5; // 起動時刻の 5 秒前までに来た予定は鳴らさない
+      const _timeStrSec = (str) => { const m = String(str).match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/); return m ? (parseInt(m[1])*3600 + parseInt(m[2])*60 + parseInt(m[3]||'0')) : 0; };
       state.door.schedule = s.schedule.map(r => {
         // Normalize legacy "HH:MM:SS" → "HH:MM"
         let t = r.time || '00:00';
@@ -10314,7 +10324,10 @@ function doLoad() {
           if (c && typeof c === 'object' && (c.type === 'a' || c.type === 'v')) return { type: c.type, idx: c.idx };
           return null;
         }).filter(Boolean);
-        return { id: r.id, time: t, chain, played: false };
+        // 起動時点で当日すでに過ぎている予定（5秒超過去）は済み扱い＝起動誤発火を防止。
+        // 深夜0時跨ぎ等の特殊ケースは稼働中の doTick が elapsed 判定で正しく処理する。
+        const alreadyPast = _timeStrSec(t) < _loadNow - LOAD_GRACE;
+        return { id: r.id, time: t, chain, played: alreadyPast };
       });
     }
     if (s.duck) {
