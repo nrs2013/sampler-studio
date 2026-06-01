@@ -3991,7 +3991,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.17';
+const APP_VERSION = 'v12.9.18';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -9875,22 +9875,38 @@ function doTick() {
     }
   }
 
-  // 事前 DUCK + 時刻ピッタリでナレ発火（HH:MM 精度 / 250ms 監視）
+  // 事前 DUCK + 時刻でナレ発火 + ミス判定（HH:MM:SS 精度 / 250ms 監視）
+  // v12.9.18 緊急修正: 未来の予定を絶対に played 化しない。
+  //   旧コード（v5.16 で混入）は「elapsed を無条件 +24h する 0時跨ぎ補正」が、
+  //   当日まだ来ていない未来の予定を「約23時間前のミス」と誤認し played 化していた。
+  //   症状: 1件再生し終わると（activeRowId が null に戻った瞬間）、残りの未来予定が
+  //         一斉に「済」表示になり、以後どれも時刻になっても発火しない。
+  //   修正: 1本の elapsed（正=過去 / 負=未来）で pre-DUCK・発火・ミスを一貫判定。
+  //         未来（elapsed<0）は発火/ミスの対象に絶対ならない。深夜0時跨ぎ（12h超
+  //         「先」= 実際は前日深夜の過去）だけ過去側へ補正する。
+  //         さらに発火窓を 3秒→60秒（FIRE_GRACE）に拡大し、長い再生中に時刻を
+  //         通過した行 / タブ throttle で遅れた行も再生終了後に確実に拾う。
   if (state.door.activeRowId == null) {
     const dNow = new Date();
     const now = dNow.getHours()*3600 + dNow.getMinutes()*60 + dNow.getSeconds() + dNow.getMilliseconds()/1000;
     const fadeSec = state.door.duck.fadeSec || 0.8;
+    const FIRE_GRACE = 60; // 予定時刻を過ぎても 60 秒以内は発火を試みる（取りこぼし救済）
     for (const row of state.door.schedule) {
       if (row.played) continue;
       if (!row.chain.length) continue;
       const rs = timeStrToSec(row.time);
-      // 1) DUCK 事前開始（予定の fadeSec 秒前）
-      if (!row.preDuckStarted && now >= rs - fadeSec && now < rs) {
+      // 経過秒（正=過去 / 負=未来）。深夜0時跨ぎ（12h超「先」= 実は前日深夜の過去）だけ
+      // 過去へ補正。当日の未来予定（数分〜数時間先）は elapsed<0 のままなので、
+      // 下の発火条件にもミス条件にも絶対に該当せず守られる。
+      let elapsed = now - rs;
+      if (elapsed < -12 * 3600) elapsed += 24 * 3600;
+      // 1) DUCK 事前開始（予定の fadeSec 秒前〜予定時刻）
+      if (!row.preDuckStarted && elapsed >= -fadeSec && elapsed < 0) {
         row.preDuckStarted = true;
         doDuckActivate();
       }
-      // 2) ナレ発火（予定時刻に到達）— タブ非表示中でも発火させる
-      if (now >= rs && now < rs + 3) {
+      // 2) ナレ発火（予定時刻に到達〜GRACE 秒以内）— タブ非表示中 / 直前の再生で窓を逃した行も拾う
+      if (elapsed >= 0 && elapsed <= FIRE_GRACE) {
         const wasDucked = row.preDuckStarted;
         row.preDuckStarted = false;
         if (!wasDucked) {
@@ -9901,10 +9917,8 @@ function doTick() {
         doStartRowAlreadyDucked(row.id);
         break;
       }
-      // 3) ミス（タブ寝てた等）— 0 時跨ぎ対応：elapsed を 24h modulo で計算
-      let elapsed = now - rs;
-      if (elapsed < 0) elapsed += 24 * 3600;
-      if (elapsed > 60 && elapsed < 24*3600 - 60) {
+      // 3) ミス（GRACE 超過＝取り逃し確定）。未来は elapsed<0 なので絶対にここへ来ない。
+      if (elapsed > FIRE_GRACE) {
         row.played = true;
         row.preDuckStarted = false;
       }
