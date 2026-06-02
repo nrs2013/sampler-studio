@@ -1130,6 +1130,18 @@
   }
   .do-bgm-vol-db { font-family: inherit; font-size: 11px; min-width: 42px; text-align: right; color: #E6E6EA; }
 
+  /* v12.9.21: dB 値を直接手入力できる input（span から置換）。普段は枠なしの数字表示、
+     ホバー/フォーカスで枠が出る。入力すると対応するフェーダー/スライダーがリンクして動く。 */
+  .db-input {
+    background: transparent; border: 1px solid transparent; color: inherit;
+    font: inherit; padding: 0 2px; border-radius: 3px; box-sizing: border-box;
+    -webkit-appearance: none; appearance: none; cursor: text;
+    transition: border-color 120ms, background 120ms;
+  }
+  .db-input:hover { border-color: rgba(255,255,255,0.20); }
+  .db-input:focus { border-color: #3DB5A6; color: #FFFFFF; outline: none; background: rgba(0,0,0,0.35); }
+  .db-input::-webkit-inner-spin-button, .db-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
   /* DUCK */
   .do-duck-row { display: flex; align-items: center; justify-content: space-between; }
   .do-duck-label { font-size: 11px; color: #C8C8CE; }
@@ -3452,7 +3464,7 @@
             <div class="meter"><div class="meter-fill" id="meterR"></div></div>
           </div>
         </div>
-        <div class="master-value"><span id="masterDbVal">-3.5</span><span class="unit"> dB</span></div>
+        <div class="master-value"><input id="masterDbVal" class="db-input" type="text" maxlength="6" value="-3.5" title="dB を直接入力（例 -2 / +1.5 / -∞）" style="width:42px; text-align:right;"><span class="unit"> dB</span></div>
       </div>
 
       <div class="divider"></div>
@@ -4819,6 +4831,18 @@ function linToDb(lin) {
 function dbToLin(db) {
   if (db <= -60) return 0;
   return Math.pow(10, db / 20);
+}
+
+// v12.9.21: dB 手入力文字列を数値にパース。失敗時 null、"-∞"/"-inf" は -Infinity。
+// 全角マイナス・余分な文字に寛容（例: "ー2", "-2dB", "+1.5" すべて OK）。
+function parseDbInputStr(raw) {
+  let s = (raw == null ? '' : String(raw)).trim().replace(/[−–—ー]/g, '-');
+  if (s === '') return null;
+  if (/^-\s*(∞|inf(inity)?)$/i.test(s)) return -Infinity;
+  const m = s.match(/^([+-]?)\s*([\d.]+)/);
+  if (!m) return null;
+  const v = parseFloat((m[1] || '') + m[2]);
+  return isFinite(v) ? v : null;
 }
 
 // マスターフェーダー: スケール表示 +6, +3, 0, -6, -12, -24, -∞ を
@@ -9936,14 +9960,12 @@ function doTick() {
     const dNow = new Date();
     const now = dNow.getHours()*3600 + dNow.getMinutes()*60 + dNow.getSeconds() + dNow.getMilliseconds()/1000;
     const fadeSec = state.door.duck.fadeSec || 0.8;
-    const FIRE_GRACE = 60; // 予定時刻を過ぎても 60 秒以内は発火を試みる（取りこぼし救済）
     for (const row of state.door.schedule) {
       if (row.played) continue;
       if (!row.chain.length) continue;
       const rs = timeStrToSec(row.time);
       // 経過秒（正=過去 / 負=未来）。深夜0時跨ぎ（12h超「先」= 実は前日深夜の過去）だけ
-      // 過去へ補正。当日の未来予定（数分〜数時間先）は elapsed<0 のままなので、
-      // 下の発火条件にもミス条件にも絶対に該当せず守られる。
+      // 過去へ補正。当日の未来予定（数分〜数時間先）は elapsed<0 のままなので守られる。
       let elapsed = now - rs;
       if (elapsed < -12 * 3600) elapsed += 24 * 3600;
       // 1) DUCK 事前開始（予定の fadeSec 秒前〜予定時刻）
@@ -9951,23 +9973,29 @@ function doTick() {
         row.preDuckStarted = true;
         doDuckActivate();
       }
-      // 2) ナレ発火（予定時刻に到達〜GRACE 秒以内）— タブ非表示中 / 直前の再生で窓を逃した行も拾う
-      if (elapsed >= 0 && elapsed <= FIRE_GRACE) {
+      // 2) ナレ発火（予定時刻に到達したら、何秒過ぎていても必ず発火）
+      //    v12.9.20: 発火の上限窓（旧 FIRE_GRACE=60秒）を撤廃。
+      //    ランタイムで past-due な未再生行 = 「前のナレ/BGM 再生中に時刻が来て
+      //    待たされた行」なので、engine が空いた瞬間に必ず鳴らすべき。旧コードは
+      //    60秒超で MISS（played 化）して捨てていたため、長いナレや連続ナレが
+      //    続くと後段（5個目など）の経過秒が 60秒を超え、永久に発火しなかった。
+      //    コールドスタート（起動/再読込/プロジェクト切替）の古い予定破棄は
+      //    doLoad が起動時に played 化して別途担保しているので、ここで上限ガードは不要。
+      //    1 tick 1 発火 + 再生中ゲート（activeRowId!=null で全停止）により、
+      //    backlog があっても自然に1件ずつ直列発火する（一斉発火しない）。
+      if (elapsed >= 0) {
         const wasDucked = row.preDuckStarted;
         row.preDuckStarted = false;
         if (!wasDucked) {
-          // pre-DUCK が走らなかった（タブ寝てた等）→ DUCK を即起動して並行発火
-          // doStartRow の setTimeout(fadeMs) はバックグラウンドで throttle されるので使わない
+          // pre-DUCK が走らなかった（タブ寝てた / 前の再生で窓を逃した等）
+          // → DUCK を即起動して並行発火
           doDuckActivate();
         }
         doStartRowAlreadyDucked(row.id);
         break;
       }
-      // 3) ミス（GRACE 超過＝取り逃し確定）。未来は elapsed<0 なので絶対にここへ来ない。
-      if (elapsed > FIRE_GRACE) {
-        row.played = true;
-        row.preDuckStarted = false;
-      }
+      // ※ 旧「ミス（60秒超で played 化）」分岐は廃止。ランタイムでは past-due 行を
+      //    絶対に捨てない（待たされた行は engine が空き次第すべて発火させる）。
     }
   }
 }
@@ -10074,7 +10102,7 @@ function _chainPlayA(libIdx) {
   state.door.activeAnnSource = src;
   state.door.activeAnnGain = g;
   state.door.activeAnnSlot = libIdx;
-  src.onended = () => {
+  const advance = () => {
     if (state.door.activeAnnSource === src) {
       state.door.activeAnnSource = null;
       state.door.activeAnnGain = null;
@@ -10084,6 +10112,13 @@ function _chainPlayA(libIdx) {
       if (state.door.activeRowId) doPlayNextInChain();
     }
   };
+  src.onended = advance;
+  // v12.9.20: ウォッチドッグ — src.start() が無音失敗 / 長さ0 / detached 等で
+  //   onended が永久に発火しないと activeRowId が null に戻らず、以後どのナレも
+  //   発火しなくなる（チェーン全停止）。再生長 + 余裕の時間で必ず前進させる保険。
+  //   正常に onended が先に来れば advance 内の activeAnnSource 一致チェックで二重実行されない。
+  const watchdogMs = ((item.audioBuffer.duration || 0) + 1.5) * 1000;
+  setTimeout(advance, watchdogMs);
   doRenderSchedule();
 }
 
@@ -10319,15 +10354,19 @@ function doLoad() {
       }
     }
     if (Array.isArray(s.library)) {
-      for (let i = 0; i < 4; i++) {
-        const it = s.library[i];
-        state.door.library[i] = it ? {
-          sampleId: it.sampleId,
-          sampleName: it.sampleName,
-          audioBuffer: null,
-          level: (it.level != null) ? it.level : 1.0,
-        } : null;
-      }
+      // v12.9.20: 復元を 4 枠固定から「保存されている全枠」に修正。
+      //   旧コードは for(i<4) で A1〜A4 しか読み戻さず、A5 以降のライブラリ枠を
+      //   chain で参照しているナレ（例: 5個目）が再読込後に音源 undefined となり、
+      //   _chainPlayA で無音スキップされて「鳴らない」原因になっていた。
+      //   保存側（doSave / saveProjectJSON）は全枠書いているので復元も全枠に揃える。
+      state.door.library = s.library.map(it => it ? {
+        sampleId: it.sampleId,
+        sampleName: it.sampleName,
+        audioBuffer: null,
+        level: (it.level != null) ? it.level : 1.0,
+      } : null);
+      // UI が A1〜A4 を常に描画する前提なので最低 4 枠は確保
+      while (state.door.library.length < 4) state.door.library.push(null);
     }
     if (Array.isArray(s.videoLibrary)) {
       state.door.videoLibrary = s.videoLibrary.map(it => it ? {
@@ -10414,8 +10453,8 @@ async function doRestoreAudioBuffers() {
       }
     } catch(e) { console.warn('BGM restore failed', slot, e); }
   }
-  // Library
-  for (let i = 0; i < 4; i++) {
+  // Library（v12.9.20: 4 枠固定 → 全枠。A5 以降の audioBuffer も IDB から復元）
+  for (let i = 0; i < state.door.library.length; i++) {
     const it = state.door.library[i];
     if (it && it.sampleId) {
       try {
