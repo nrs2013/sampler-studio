@@ -1096,8 +1096,10 @@
   .do-bgm-btn.active { background: #3DB5A6; color: #0E1A14; border-color: #3DB5A6; }
   .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
   .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; margin-bottom: 8px; }
-  .do-bgm-bar { height: 4px; background: #14141A; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
-  .do-bgm-bar-fill { height: 100%; background: #3DB5A6; width: 0%; }
+  /* v12.9.18: クリック／ドラッグでシークできるよう高さを 4→8px に、カーソルと hover を追加 */
+  .do-bgm-bar { height: 8px; background: #14141A; border-radius: 4px; overflow: hidden; margin-bottom: 6px; cursor: pointer; position: relative; transition: background 120ms; touch-action: none; }
+  .do-bgm-bar:hover { background: #1E1E26; }
+  .do-bgm-bar-fill { height: 100%; background: #3DB5A6; width: 0%; pointer-events: none; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
   .do-bgm-vol-label { font-size: 9px; color: #6A6A70; letter-spacing: 1.5px; width: 30px; }
   .do-bgm-vol-slider {
@@ -3532,11 +3534,8 @@
         </div>
         <div class="do-bgm-name-row"><span class="do-bgm-name" id="doBgmNameDoor">— ファイル未読込</span></div>
         <div class="do-bgm-controls">
-          <button class="do-bgm-btn primary door" id="doBgmPlayBtnDoor" onclick="doBgmTogglePlay('door')" title="再生／一時停止">
+          <button class="do-bgm-btn primary door" id="doBgmPlayBtnDoor" onclick="doBgmTogglePlay('door')" title="再生／停止（頭出し）">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" id="doBgmPlayIconDoor"><polygon points="7,5 19,12 7,19"/></svg>
-          </button>
-          <button class="do-bgm-btn" onclick="doBgmStop('door')" title="停止">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
           </button>
           <button class="do-bgm-btn active door" id="doBgmLoopBtnDoor" onclick="doBgmToggleLoop('door')" title="ループ">
             <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -3547,7 +3546,7 @@
             </svg>
           </button>
         </div>
-        <div class="do-bgm-bar"><div class="do-bgm-bar-fill door" id="doBgmBarFillDoor"></div></div>
+        <div class="do-bgm-bar" id="doBgmBarDoor" title="クリック／ドラッグで再生位置を移動"><div class="do-bgm-bar-fill door" id="doBgmBarFillDoor"></div></div>
         <div class="do-bgm-time" id="doBgmTimeDoor">--:-- / --:--</div>
         <div class="do-bgm-vol">
           <span class="do-bgm-vol-label">VOL</span>
@@ -3568,11 +3567,8 @@
         </div>
         <div class="do-bgm-name-row"><span class="do-bgm-name" id="doBgmNameWorkout">— ファイル未読込</span></div>
         <div class="do-bgm-controls">
-          <button class="do-bgm-btn primary workout" id="doBgmPlayBtnWorkout" onclick="doBgmTogglePlay('workout')" title="再生／一時停止">
+          <button class="do-bgm-btn primary workout" id="doBgmPlayBtnWorkout" onclick="doBgmTogglePlay('workout')" title="再生／停止（頭出し）">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" id="doBgmPlayIconWorkout"><polygon points="7,5 19,12 7,19"/></svg>
-          </button>
-          <button class="do-bgm-btn" onclick="doBgmStop('workout')" title="停止">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
           </button>
           <button class="do-bgm-btn active workout" id="doBgmLoopBtnWorkout" onclick="doBgmToggleLoop('workout')" title="ループ">
             <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -3583,7 +3579,7 @@
             </svg>
           </button>
         </div>
-        <div class="do-bgm-bar"><div class="do-bgm-bar-fill workout" id="doBgmBarFillWorkout"></div></div>
+        <div class="do-bgm-bar" id="doBgmBarWorkout" title="クリック／ドラッグで再生位置を移動"><div class="do-bgm-bar-fill workout" id="doBgmBarFillWorkout"></div></div>
         <div class="do-bgm-time" id="doBgmTimeWorkout">--:-- / --:--</div>
         <div class="do-bgm-vol">
           <span class="do-bgm-vol-label">VOL</span>
@@ -3991,7 +3987,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.19';
+const APP_VERSION = 'v12.9.20';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -7981,7 +7977,9 @@ function doBgmTogglePlay(slot) {
   if (!slot) slot = 'door';
   const b = _bgmObj(slot);
   if (!b.audioElement) { showToast('BGM ファイルを LOAD してください'); return; }
-  if (b.isPlaying) doBgmPause(slot); else doBgmPlay(slot);
+  // v12.9.18: 一時停止ではなく「停止（頭出し＋バーも0に戻る）」に変更。
+  //           再生ボタンを押すと毎回頭から素直に流れる。
+  if (b.isPlaying) doBgmStop(slot); else doBgmPlay(slot);
 }
 
 function doBgmPlay(slot) {
@@ -8075,8 +8073,9 @@ function doRenderBgm(slot) {
   if (nameEl) nameEl.textContent = b.sampleName || '— ファイル未読込';
   const playBtn = document.getElementById('doBgmPlayBtn' + sf);
   if (playBtn) {
+    // v12.9.18: 再生中は「停止（四角）」アイコン。押すと頭出しして止まる。
     playBtn.innerHTML = b.isPlaying
-      ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>`
+      ? `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>`
       : `<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><polygon points="7,5 19,12 7,19"/></svg>`;
   }
   const loopBtn = document.getElementById('doBgmLoopBtn' + sf);
@@ -8098,6 +8097,9 @@ function doRenderBgm(slot) {
     const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
     const cur = b.audioElement.currentTime || 0;
     if (timeEl) timeEl.textContent = `${fmtTime(cur)} / ${b.loop ? 'loop' : fmtTime(total)}`;
+    // v12.9.18: バーを現在位置から常に再描画。停止(頭出し=0)・シーク後に
+    //           バーが残る/戻らない問題を解消（再生中ループに頼らない）。
+    if (barFill) barFill.style.width = (total > 0 ? Math.min(100, (cur / total) * 100) : 0) + '%';
   } else {
     if (timeEl) timeEl.textContent = '--:-- / --:--';
     if (barFill) barFill.style.width = '0%';
@@ -8203,6 +8205,50 @@ function bindDoBgmVol() {
       try { slider.setPointerCapture(e.pointerId); } catch(err) {}
       _bgmVolActive = { slot, slider, pointerId: e.pointerId };
       update(e.clientX);
+    });
+  });
+}
+
+// v12.9.18: BGM タイムラインバーのシーク（クリック／ドラッグで再生位置移動）
+//           フェーダーと同じグローバル単一ハンドラ方式。
+let _bgmSeekActive = null; // { slot, bar, pointerId } or null
+function bindDoBgmSeek() {
+  const seekTo = (clientX) => {
+    if (!_bgmSeekActive) return;
+    const { slot, bar } = _bgmSeekActive;
+    const b = _bgmObj(slot);
+    if (!b || !b.audioElement) return;
+    const total = isFinite(b.duration) ? b.duration : (b.audioElement.duration || 0);
+    if (!(total > 0)) return;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    try { b.audioElement.currentTime = pct * total; } catch(e){}
+    doRenderBgm(slot); // バーを即反映
+  };
+  window.addEventListener('pointermove', e => {
+    if (!_bgmSeekActive) return;
+    e.preventDefault();
+    seekTo(e.clientX);
+  });
+  const endSeek = () => {
+    if (!_bgmSeekActive) return;
+    try { _bgmSeekActive.bar.releasePointerCapture(_bgmSeekActive.pointerId); } catch(err){}
+    _bgmSeekActive = null;
+  };
+  window.addEventListener('pointerup', endSeek);
+  window.addEventListener('pointercancel', endSeek);
+
+  BGM_SLOTS.forEach(slot => {
+    const bar = document.getElementById('doBgmBar' + _bgmIdSuffix(slot));
+    if (!bar) return;
+    bar.addEventListener('pointerdown', e => {
+      const b = _bgmObj(slot);
+      if (!b || !b.audioElement) return; // 未読込なら何もしない
+      e.preventDefault();
+      if (_bgmSeekActive) endSeek();
+      try { bar.setPointerCapture(e.pointerId); } catch(err){}
+      _bgmSeekActive = { slot, bar, pointerId: e.pointerId };
+      seekTo(e.clientX);
     });
   });
 }
@@ -10424,6 +10470,7 @@ function bindLibVolGlobal() {
 function doInit() {
   doLoad();
   bindDoBgmVol();
+  bindDoBgmSeek();
   bindLibVolGlobal();
   bindDoBgmDrop();
   bindDoLogoDrop();
