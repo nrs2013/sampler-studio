@@ -1134,7 +1134,13 @@
      ホバー/フォーカスで枠が出る。入力すると対応するフェーダー/スライダーがリンクして動く。 */
   .db-input {
     background: transparent; border: 1px solid transparent; color: inherit;
-    font: inherit; padding: 0 2px; border-radius: 3px; box-sizing: border-box;
+    /* v12.9.21 fix: font-size/weight は指定しない。input は font を継承しないが、
+       併記した .do-bgm-vol-db(11px)/.do-duck-value(13px)/.do-lib-vol-db(10px) が
+       各自 font-size を供給する。db-input が font-size:inherit を持つと後勝ちで
+       それらを潰して 16px に肥大するため、font-family だけ inherit にする。
+       (MASTER は class が無いので input 側に inline で font-size 指定) */
+    font-family: inherit;
+    padding: 0 2px; border-radius: 3px; box-sizing: border-box;
     -webkit-appearance: none; appearance: none; cursor: text;
     transition: border-color 120ms, background 120ms;
   }
@@ -3464,7 +3470,7 @@
             <div class="meter"><div class="meter-fill" id="meterR"></div></div>
           </div>
         </div>
-        <div class="master-value"><input id="masterDbVal" class="db-input" type="text" maxlength="6" value="-3.5" title="dB を直接入力（例 -2 / +1.5 / -∞）" style="width:42px; text-align:right;"><span class="unit"> dB</span></div>
+        <div class="master-value"><input id="masterDbVal" class="db-input" type="text" maxlength="6" value="-3.5" title="dB を直接入力（例 -2 / +1.5 / -∞）" style="width:42px; text-align:right; font-size:14px;"><span class="unit"> dB</span></div>
       </div>
 
       <div class="divider"></div>
@@ -3566,7 +3572,7 @@
             <div class="do-bgm-vol-fill door" id="doBgmVolFillDoor" style="width:50%;"></div>
             <div class="do-bgm-vol-thumb door" id="doBgmVolThumbDoor" style="left:50%;"></div>
           </div>
-          <span class="do-bgm-vol-db" id="doBgmVolDbDoor">0.0</span>
+          <input class="do-bgm-vol-db db-input" id="doBgmVolDbDoor" type="text" maxlength="6" value="0.0" title="dB を直接入力（例 -2 / +1.5 / -∞）">
         </div>
       </div>
       <!-- WORKOUT BGM -->
@@ -3599,7 +3605,7 @@
             <div class="do-bgm-vol-fill workout" id="doBgmVolFillWorkout" style="width:50%;"></div>
             <div class="do-bgm-vol-thumb workout" id="doBgmVolThumbWorkout" style="left:50%;"></div>
           </div>
-          <span class="do-bgm-vol-db" id="doBgmVolDbWorkout">0.0</span>
+          <input class="do-bgm-vol-db db-input" id="doBgmVolDbWorkout" type="text" maxlength="6" value="0.0" title="dB を直接入力（例 -2 / +1.5 / -∞）">
         </div>
       </div>
       </div><!-- /.do-top-bgm-pair -->
@@ -3609,7 +3615,7 @@
       <span class="do-card-head" style="margin:0;">DUCK 設定</span>
       <span class="do-duck-label">下げ幅</span>
       <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div><div class="do-duck-bar-thumb" id="doDuckDepthThumb" style="left:75%;"></div></div>
-      <span class="do-duck-value" id="doDuckDepthVal" style="min-width:60px;">-6.0 dB</span>
+      <input class="do-duck-value db-input" id="doDuckDepthVal" type="text" maxlength="6" value="-6.0" title="下げ幅 dB を直接入力（0 〜 -24）" style="width:46px; text-align:right;"><span class="do-duck-unit" style="font-size:11px; color:#6A6A70; margin-left:2px;">dB</span>
       <span style="width:24px;"></span>
       <span class="do-duck-label">フェード</span>
       <input type="number" id="doDuckFadeInput" min="0" max="30" step="0.1" value="0.8" class="do-duck-fade-input">
@@ -3999,7 +4005,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.20';
+const APP_VERSION = 'v12.9.21';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -4837,6 +4843,9 @@ function dbToLin(db) {
 // 全角マイナス・余分な文字に寛容（例: "ー2", "-2dB", "+1.5" すべて OK）。
 function parseDbInputStr(raw) {
   let s = (raw == null ? '' : String(raw)).trim().replace(/[−–—ー]/g, '-');
+  // v12.9.21 fix: 本番卓で IME ON のまま打つと全角数字になる。半角化する。
+  s = s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+       .replace(/[。．]/g, '.');
   if (s === '') return null;
   if (/^-\s*(∞|inf(inity)?)$/i.test(s)) return -Infinity;
   const m = s.match(/^([+-]?)\s*([\d.]+)/);
@@ -4895,7 +4904,9 @@ function setMasterVol(lin) {
     } catch(e) { /* ignore */ }
   }
   const db = linToDb(state.masterVol);
-  document.getElementById('masterDbVal').textContent = db === -Infinity ? '-∞' : db.toFixed(1);
+  // v12.9.21: input 化。入力中（フォーカス中）は上書きしない。
+  const _mEl = document.getElementById('masterDbVal');
+  if (_mEl && document.activeElement !== _mEl) _mEl.value = (db === -Infinity ? '-∞' : db.toFixed(1));
   // スケールと一致する piecewise マッピングで位置を計算
   const pct = masterDbToPct(db) * 100;
   document.getElementById('masterFill').style.height = pct + '%';
@@ -7789,6 +7800,23 @@ function bindMasterFader() {
     activeDrag = { update, end: () => saveStateLocal() };
     update(e.touches[0].clientY);
   }, { passive: false });
+  // v12.9.21: dB 手入力 → フェーダーにリンク
+  const dbInp = document.getElementById('masterDbVal');
+  if (dbInp) {
+    const applyDb = () => {
+      const db = parseDbInputStr(dbInp.value);
+      if (db === null) { setMasterVol(state.masterVol); return; } // 不正入力は元に戻す
+      setMasterVol(dbToLin(db)); // setMasterVol が上限 MASTER_MAX_LIN にクランプ
+      try { saveStateLocal(); } catch(_) {}
+    };
+    dbInp.addEventListener('change', applyDb);
+    dbInp.addEventListener('keydown', e => {
+      if (e.isComposing || e.keyCode === 229) return; // IME 変換確定中は無視
+      if (e.key === 'Enter') { e.preventDefault(); dbInp.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); setMasterVol(state.masterVol); dbInp.blur(); }
+    });
+    dbInp.addEventListener('focus', () => { try { dbInp.select(); } catch(_) {} });
+  }
 }
 
 // ===========================
@@ -8109,7 +8137,8 @@ function doRenderBgm(slot) {
   const effective = b.vol * duckMul;
   const db = linToDb(effective);
   const dbEl = document.getElementById('doBgmVolDb' + sf);
-  if (dbEl) dbEl.textContent = dbToStr(db);
+  // v12.9.21: input 化。入力中（フォーカス中）は上書きしない。
+  if (dbEl && document.activeElement !== dbEl) dbEl.value = dbToStr(db);
   const volPct = (effective / 1.4) * 100;
   const fill = document.getElementById('doBgmVolFill' + sf);
   const thumb = document.getElementById('doBgmVolThumb' + sf);
@@ -8221,15 +8250,33 @@ function bindDoBgmVol() {
 
   BGM_SLOTS.forEach(slot => {
     const slider = document.getElementById('doBgmVolSlider' + _bgmIdSuffix(slot));
-    if (!slider) return;
-    slider.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      // 万一前回のドラッグが残っていたらクリーンアップ
-      if (_bgmVolActive) endDrag();
-      try { slider.setPointerCapture(e.pointerId); } catch(err) {}
-      _bgmVolActive = { slot, slider, pointerId: e.pointerId };
-      update(e.clientX);
-    });
+    if (slider) {
+      slider.addEventListener('pointerdown', e => {
+        e.preventDefault();
+        // 万一前回のドラッグが残っていたらクリーンアップ
+        if (_bgmVolActive) endDrag();
+        try { slider.setPointerCapture(e.pointerId); } catch(err) {}
+        _bgmVolActive = { slot, slider, pointerId: e.pointerId };
+        update(e.clientX);
+      });
+    }
+    // v12.9.21: dB 手入力 → フェーダーにリンク
+    const dbInp = document.getElementById('doBgmVolDb' + _bgmIdSuffix(slot));
+    if (dbInp) {
+      const applyDb = () => {
+        const db = parseDbInputStr(dbInp.value);
+        if (db === null) { doRenderBgm(slot); return; } // 不正入力は元に戻す
+        let v = db; if (v > 3) v = 3; // BGM は +3dB 上限
+        doBgmSetVol(slot, dbToLin(v)); // 内部で 0〜1.4 にクランプ＆保存
+      };
+      dbInp.addEventListener('change', applyDb);
+      dbInp.addEventListener('keydown', e => {
+        if (e.isComposing || e.keyCode === 229) return; // IME 変換確定中は無視
+        if (e.key === 'Enter') { e.preventDefault(); dbInp.blur(); }
+        else if (e.key === 'Escape') { e.preventDefault(); doRenderBgm(slot); dbInp.blur(); }
+      });
+      dbInp.addEventListener('focus', () => { try { dbInp.select(); } catch(_) {} });
+    }
   });
 }
 
@@ -8326,6 +8373,37 @@ function bindDoDuck() {
     _duckDragActive = { depthBar, pointerId: e.pointerId };
     updateDuck(e.clientX);
   });
+  // v12.9.21: 下げ幅 dB の手入力 → スライダーにリンク（0 〜 -24 にクランプ）
+  const depthInp = document.getElementById('doDuckDepthVal');
+  if (depthInp) {
+    const applyDepth = () => {
+      const db = parseDbInputStr(depthInp.value);
+      if (db === null) { doRenderDuck(); return; } // 不正入力は元に戻す
+      let v = db; if (v > 0) v = 0; if (v < -24) v = -24;
+      state.door.duck.depthDb = v;
+      doRenderDuck();
+      // 実 DUCK 中ならその場で反映（ドラッグ時と同じ処理）
+      if (state.door.duckActive && doBgmDuckGain && ctx) {
+        const targetLin = dbToLin(v);
+        const t = ctx.currentTime;
+        try {
+          doBgmDuckGain.gain.cancelScheduledValues(t);
+          doBgmDuckGain.gain.setValueAtTime(doBgmDuckGain.gain.value, t);
+          doBgmDuckGain.gain.linearRampToValueAtTime(targetLin, t + 0.05);
+        } catch(_){}
+        _animateDuckEffective(state.door.duckEffective, targetLin, 0.05);
+      }
+      doSave();
+    };
+    depthInp.addEventListener('change', applyDepth);
+    depthInp.addEventListener('keydown', e => {
+      if (e.isComposing || e.keyCode === 229) return; // IME 変換確定中は無視
+      if (e.key === 'Enter') { e.preventDefault(); depthInp.blur(); }
+      else if (e.key === 'Escape') { e.preventDefault(); doRenderDuck(); depthInp.blur(); }
+    });
+    depthInp.addEventListener('pointerdown', e => e.stopPropagation());
+    depthInp.addEventListener('focus', () => { try { depthInp.select(); } catch(_) {} });
+  }
   // fade: 数値入力（0〜30秒）
   const fadeInp = document.getElementById('doDuckFadeInput');
   if (fadeInp) {
@@ -8360,7 +8438,9 @@ function bindDoDuck() {
 
 function doRenderDuck() {
   const d = state.door.duck;
-  document.getElementById('doDuckDepthVal').textContent = dbToStr(d.depthDb) + ' dB';
+  // v12.9.21: input 化。入力中（フォーカス中）は上書きしない。単位は別 span に分離済み。
+  const _dEl = document.getElementById('doDuckDepthVal');
+  if (_dEl && document.activeElement !== _dEl) _dEl.value = dbToStr(d.depthDb);
   // フル(100%) = 0dB / 空(0%) = -24dB（フェーダー風）
   const pct = (24 + d.depthDb) / 24;
   const pctClamped = Math.max(0, Math.min(1, pct));
@@ -9364,9 +9444,10 @@ function doLibSetLevel(slotIdx, linear) {
       const pct = (item.level / 1.4) * 100;
       if (fill) fill.style.width = pct.toFixed(1) + '%';
       if (thumb) thumb.style.left = pct.toFixed(1) + '%';
-      if (dbDisp) {
+      if (dbDisp && document.activeElement !== dbDisp) {
+        // v12.9.21: input 化。入力中（フォーカス中）は上書きしない。
         const db = linToDb(item.level);
-        dbDisp.textContent = dbToStr(db);
+        dbDisp.value = dbToStr(db);
       }
     }
   }
@@ -9374,6 +9455,17 @@ function doLibSetLevel(slotIdx, linear) {
 
 // pointerup 時に呼ぶ：localStorage 保存
 function doLibCommitLevel() { doSave(); }
+
+// v12.9.21: 影アナライブラリ各スロットの dB 手入力 → ミニフェーダーにリンク
+function doLibApplyDbInput(slotIdx, raw) {
+  const item = state.door.library[slotIdx];
+  if (!item) return;
+  const db = parseDbInputStr(raw);
+  if (db === null) { doLibSetLevel(slotIdx, item.level); return; } // 不正入力は元に戻す
+  let v = db; if (v > 3) v = 3; // +3dB 上限
+  doLibSetLevel(slotIdx, dbToLin(v));
+  doLibCommitLevel();
+}
 
 // プレビュー（▶/■ トグル）。再生中なら停止、未再生なら開始。DUCK 連動。
 function doLibPreview(slotIdx) {
@@ -9504,7 +9596,7 @@ function doRenderLibrary() {
               <div class="do-lib-vol-fill color-${colorIdx}" style="width:${levelPct.toFixed(1)}%;"></div>
               <div class="do-lib-vol-thumb color-${colorIdx}" style="left:${levelPct.toFixed(1)}%;"></div>
             </div>
-            <span class="do-lib-vol-db">${dbStr}</span>
+            <input class="do-lib-vol-db db-input" type="text" maxlength="6" value="${dbStr}" title="dB を直接入力（例 -2 / +1.5 / -∞）" onpointerdown="event.stopPropagation()" onchange="doLibApplyDbInput(${i}, this.value)" onkeydown="if(event.isComposing||event.keyCode===229)return;if(event.key==='Enter'){event.preventDefault();this.blur()}else if(event.key==='Escape'){event.preventDefault();doLibSetLevel(${i},state.door.library[${i}].level);this.blur()}" onfocus="try{this.select()}catch(_){}">
           </div>
         </div>
       `;
@@ -10282,7 +10374,8 @@ function _doRenderBgmFaderOnly(slot) {
   if (fill) fill.style.width = pct + '%';
   if (thumb) thumb.style.left = pct + '%';
   const dbEl = document.getElementById('doBgmVolDb' + sf);
-  if (dbEl) dbEl.textContent = dbToStr(linToDb(effective));
+  // v12.9.21: input 化。入力中（フォーカス中）は上書きしない。
+  if (dbEl && document.activeElement !== dbEl) dbEl.value = dbToStr(linToDb(effective));
 }
 
 // ---- PERSISTENCE ----
@@ -10541,6 +10634,7 @@ function doInit() {
   window.doLibClear = doLibClear;
   window.doLibPreview = doLibPreview;
   window.doLibSetLevel = doLibSetLevel;
+  window.doLibApplyDbInput = doLibApplyDbInput;
   window.doBgmLoad = doBgmLoad;
   window.doBgmClear = doBgmClear;
   window.doBgmTogglePlay = doBgmTogglePlay;
