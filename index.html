@@ -3706,7 +3706,7 @@
       <!-- v11.2.0: 右カラム row3 — SCHEDULE（フル高、上に伸びる） -->
       <div class="do-card do-grid do-sched-card">
         <div class="do-sched-head">
-          <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
+          <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生<span style="color:#5A5A60; font-weight:400; margin-left:8px;">［キー: Enter=次を発火 / 1〜4=A1〜A4］</span></span>
           <div style="display:flex; align-items:center; gap:10px;">
             <!-- v12.9.22: リハで「済」になった全予定を一括で未済に戻す（本番前の戻し忘れ防止） -->
             <button class="do-bgm-load" id="doSchedReArmAllBtn" onclick="doSchedReArmAll()" style="color:#3DB5A6; border:0.5px solid rgba(61,181,166,0.4);" title="リハで「済」になった予定を全部「未済」に戻して、本番でまた発火するようにする">↺ 全部リハ前に戻す</button>
@@ -4007,7 +4007,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.22';
+const APP_VERSION = 'v12.9.23';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -6067,6 +6067,31 @@ document.addEventListener('keydown', e => {
     }
   }
 
+  // v12.9.23: DOOR OPEN モード — 影アナをキーで素早く発火（マウス不要）。
+  //   パッド処理より前に置いて Digit1-4 の衝突を回避。ESC/FADE OUT は下でそのまま効く。
+  if (state.appMode === 'door') {
+    // Enter = SCHEDULE の「次の未発火予定」を手動発火（doStartRow が再生中ガード済み）
+    if (e.code === 'Enter' && !e.repeat) {
+      const next = (state.door.schedule || []).find(r => !r.played && r.chain && r.chain.length > 0);
+      if (next) doStartRow(next.id);
+      else showToast('発火できる予定（未済のチェーン）がありません');
+      e.preventDefault();
+      return;
+    }
+    // 1〜4 = ANNOUNCE LIBRARY の A1〜A4 を直接発火/停止（DUCK 連動の試聴と同じ動作）
+    const _libKeyMap = { Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3 };
+    if (e.code in _libKeyMap) {
+      const idx = _libKeyMap[e.code];
+      if (state.door.library[idx]) {
+        if (typeof doLibPreview === 'function') doLibPreview(idx);
+      } else {
+        showToast(`A${idx + 1} に影アナ素材がありません`);
+      }
+      e.preventDefault();
+      return;
+    }
+  }
+
   // Control shortcuts
   if (e.code === state.controlAssign.fadeout.key) { fadeOutAll(); e.preventDefault(); return; }
   // ESC = パニックストップ。即停止ではなく 2 秒 (= state.fadeTime) フェードアウト。
@@ -8023,9 +8048,14 @@ function bindDoBgmDrop() {
 
 async function doBgmClear(slot) {
   if (!slot) slot = 'door';
+  const b = _bgmObj(slot);
+  // v12.9.23: 読込済みなら誤爆防止の確認（暗い卓で LOAD の隣を押し間違える事故対策）
+  if (b && b.sampleName) {
+    const label = slot === 'workout' ? 'WORKOUT（客出し）' : 'DOOR OPEN（客入れ）';
+    if (!confirm(`${label} の BGM「${b.sampleName}」を外しますか？`)) return;
+  }
   // Anti-click: fade-and-detach in proper sequence
   await _doBgmDetachAsync(slot);
-  const b = _bgmObj(slot);
   b.sampleId = null; b.sampleName = null; b.audioBuffer = null; b.duration = NaN;
   doRenderBgm(slot);
   doSave();
@@ -8573,6 +8603,11 @@ function bindDoLibDrop() {
 }
 
 function doLibClear(slotIdx) {
+  const item = state.door.library[slotIdx];
+  // v12.9.23: 素材が入っていれば誤爆防止の確認（試聴▶/差替↻の隣の×を押し間違える事故対策）
+  if (item && (item.sampleName || item.sampleId || item.audioBuffer)) {
+    if (!confirm(`影アナ素材「${item.sampleName || '(無題)'}」を削除しますか？\nこの素材を使っている SCHEDULE のチェーンからも外れます。`)) return;
+  }
   doAnnStopAll();
   state.door.library[slotIdx] = null;
   doRenderLibrary();
