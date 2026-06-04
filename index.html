@@ -3708,6 +3708,8 @@
         <div class="do-sched-head">
           <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生</span>
           <div style="display:flex; align-items:center; gap:10px;">
+            <!-- v12.9.22: リハで「済」になった全予定を一括で未済に戻す（本番前の戻し忘れ防止） -->
+            <button class="do-bgm-load" id="doSchedReArmAllBtn" onclick="doSchedReArmAll()" style="color:#3DB5A6; border:0.5px solid rgba(61,181,166,0.4);" title="リハで「済」になった予定を全部「未済」に戻して、本番でまた発火するようにする">↺ 全部リハ前に戻す</button>
             <button class="do-bgm-load" id="doAnnStopBtn" onclick="doAnnStopAll()" style="color:#E24B4A; border:0.5px solid rgba(226,75,74,0.4);" title="再生中の影アナを止めて DUCK 解除">■ 影アナ停止</button>
             <span style="font-size:9px; color:#6A6A70;" id="doSchedStatus">0 件</span>
           </div>
@@ -4005,7 +4007,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.21';
+const APP_VERSION = 'v12.9.22';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -5002,6 +5004,9 @@ function safeBgmFadeAndPause(slot, opts) {
   const g = _bgmUserGain(slot);
   if (!b || !b.audioElement || !g) return;
   const resetTime = !!(opts && opts.resetTime);
+  // v12.9.22: 世代ガード。停止フェード中(30ms)に再生(doBgmPlay)や別の停止が走ったら、
+  //   この古い setTimeout の pause() を skip して「止めた直後に再生→無音」を防ぐ。
+  const myGen = (b._fadeGen = (b._fadeGen || 0) + 1);
   const t = ctx.currentTime;
   try {
     const cur = g.gain.value;
@@ -5010,6 +5015,7 @@ function safeBgmFadeAndPause(slot, opts) {
     g.gain.linearRampToValueAtTime(0.0001, t + BGM_STOP_FADE);
   } catch(e){}
   setTimeout(() => {
+    if (b._fadeGen !== myGen) return; // 新しい再生/停止が始まった → 何もしない
     try { b.audioElement.pause(); } catch(e){}
     if (resetTime) { try { b.audioElement.currentTime = 0; } catch(e){} }
     // Restore gain to user's target volume for next play (instant — no audio flowing now)
@@ -8038,6 +8044,8 @@ function doBgmPlay(slot) {
   if (!slot) slot = 'door';
   const b = _bgmObj(slot);
   if (!b.audioElement || !ctx) return;
+  // v12.9.22: 世代を進めて、保留中の停止フェードの pause() を無効化（連打 STOP→PLAY 対策）
+  b._fadeGen = (b._fadeGen || 0) + 1;
   if (ctx.state === 'suspended') ctx.resume();
   const g = _bgmUserGain(slot);
   if (g) {
@@ -9750,6 +9758,23 @@ function doSchedReArm(rowId) {
   showToast('予定を未済に戻しました');
 }
 
+// v12.9.22: 全予定を一括で「未済」に戻す（リハ後の戻し忘れによる本番無発火を防ぐ）
+function doSchedReArmAll() {
+  const rows = state.door.schedule || [];
+  const playedCount = rows.filter(r => r.played).length;
+  if (playedCount === 0) { showToast('「済」の予定はありません'); return; }
+  if (!confirm(`「済」になっている ${playedCount} 件の予定を、すべて「未済」に戻しますか？\n（本番でまた時刻通りに発火するようになります）`)) return;
+  let n = 0;
+  rows.forEach(r => {
+    // 再生中の行は触らない（doTick との race 回避）
+    if (state.door.activeRowId === r.id) return;
+    if (r.played || r.preDuckStarted) { r.played = false; r.preDuckStarted = false; n++; }
+  });
+  doRenderSchedule();
+  doSave();
+  showToast(`${n} 件を未済に戻しました`);
+}
+
 function doSchedTimeChange(rowId, val) {
   // normalize HH:MM or H:M -> HH:MM (seconds dropped)
   let v = val.trim();
@@ -10536,6 +10561,10 @@ async function doRestoreAudioBuffers() {
         audio.loop = b.loop;
         audio.preload = 'auto';
         audio.addEventListener('loadedmetadata', () => { b.duration = audio.duration; doRenderBgm(slot); });
+        // v12.9.22: 復元経路にも 'ended' リスナーを追加（初回読込 7915 と対称）。
+        //   これが無いと、再読込後にループOFFのBGMが最後まで流れても isPlaying が
+        //   true のまま固着し、▶が■表示のままになる（客入れBGMで実害）。
+        audio.addEventListener('ended', () => { if (!audio.loop) { b.isPlaying = false; doRenderBgm(slot); } });
         audio.addEventListener('error', e => console.warn('BGM restore audio err', slot, e));
         b.audioElement = audio;
         b.objectUrl = url;
@@ -10628,6 +10657,7 @@ function doInit() {
   window.doSchedDelConfirm = doSchedDelConfirm;
   window.doSchedChipDel = doSchedChipDel;
   window.doSchedReArm = doSchedReArm;
+  window.doSchedReArmAll = doSchedReArmAll;
   window.doStartRow = doStartRow;
   window.doAnnStopAll = doAnnStopAll;
   window.doLibLoad = doLibLoad;
