@@ -3539,6 +3539,12 @@
 
   <!-- DOOR OPEN PAGE -->
   <div id="doorPage" style="display:none;">
+      <!-- v12.9.24: 開演前の音源欠損チェックバナー（普段非表示。未ロードがある時だけ赤表示）-->
+      <div id="doMissingBanner" style="display:none; grid-column:1 / -1; align-items:center; gap:12px; margin-bottom:8px; padding:9px 14px; border:1px solid rgba(226,75,74,0.55); border-radius:6px; background:rgba(226,75,74,0.08);">
+        <span style="font-weight:700; color:#E24B4A; font-size:12px; letter-spacing:0.5px; flex-shrink:0;">未ロード</span>
+        <span id="doMissingText" style="color:#E8A0A0; font-size:12px; min-width:0;"></span>
+        <button class="do-bgm-load" onclick="doCheckMissingAssets()" style="margin-left:auto; flex-shrink:0; color:#E8A0A0; border:0.5px solid rgba(226,75,74,0.4);" title="ロード状態を再チェック">再チェック</button>
+      </div>
       <!-- v11.2.0: doorPage 全体が grid。直接 grid item を配置 -->
       <!-- 左カラム row1: BGM 2つを内側で 2 分割 -->
       <div class="do-top-bgm-pair">
@@ -4007,7 +4013,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.23';
+const APP_VERSION = 'v12.9.24';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -7907,7 +7913,7 @@ function setAppMode(m) {
   document.body.classList.toggle('mode-door', m === 'door');
   document.body.classList.toggle('mode-multi', m === 'multi');
   doSave();
-  if (m === 'door') doRenderAll();
+  if (m === 'door') { doRenderAll(); try { doCheckMissingAssets(); } catch(_) {} }
   if (m === 'multi' && typeof mtRenderAll === 'function') mtRenderAll();
   // v8.4.0: 診断パネルは multi 時のみ表示
   try { if (typeof _mtDiagPanelUpdate === 'function') _mtDiagPanelUpdate(); } catch(_) {}
@@ -10627,6 +10633,41 @@ async function doRestoreAudioBuffers() {
       } catch(e) {}
     }
   }
+  // v12.9.24: 復元が一巡したフラグ。これより前に欠損チェックすると誤検知するため。
+  _doRestoreDone = true;
+}
+
+// v12.9.24: 開演前の音源欠損チェック。sampleId はあるのに実体（audioElement /
+//   audioBuffer）が無い＝「鳴らない素材」を洗い出して赤バナーに出す。
+//   主にプロジェクト復元で IDB に音が見つからなかった時（別Mac移行・データ欠け）に発火。
+let _doRestoreDone = false;
+function doCheckMissingAssets() {
+  const banner = document.getElementById('doMissingBanner');
+  const text = document.getElementById('doMissingText');
+  if (!banner || !text) return [];
+  // 復元途中は誤検知するので、完了前は黙ってスキップ（バナーは出さない）
+  if (!_doRestoreDone) { banner.style.display = 'none'; return []; }
+  const missing = [];
+  // BGM door / workout: sampleId あるのに audioElement 無し＝復元失敗
+  BGM_SLOTS.forEach(slot => {
+    const b = state.door.bgm[slot];
+    if (b && b.sampleId && !b.audioElement) {
+      missing.push(slot === 'workout' ? 'WORKOUT BGM' : 'DOOR OPEN BGM');
+    }
+  });
+  // ANNOUNCE LIBRARY: sampleId あるのに audioBuffer 無し＝復元失敗
+  (state.door.library || []).forEach((it, i) => {
+    if (it && it.sampleId && !it.audioBuffer) {
+      missing.push('A' + (i + 1) + (it.sampleName ? `（${it.sampleName}）` : ''));
+    }
+  });
+  if (missing.length === 0) {
+    banner.style.display = 'none';
+  } else {
+    text.textContent = `${missing.length}件: ${missing.join(' / ')} — このままでは音が鳴りません。LOAD し直すか、正しいプロジェクトを開いてください`;
+    banner.style.display = 'flex';
+  }
+  return missing;
 }
 
 function doRenderAll() {
@@ -10693,6 +10734,7 @@ function doInit() {
   window.doSchedChipDel = doSchedChipDel;
   window.doSchedReArm = doSchedReArm;
   window.doSchedReArmAll = doSchedReArmAll;
+  window.doCheckMissingAssets = doCheckMissingAssets;
   window.doStartRow = doStartRow;
   window.doAnnStopAll = doAnnStopAll;
   window.doLibLoad = doLibLoad;
@@ -10722,6 +10764,8 @@ function doInit() {
     doRenderBgm();
     doRenderLibrary();
     doRenderSchedule();
+    // v12.9.24: 復元完了 → 音源欠損チェック（鳴らない素材を赤バナーで警告）
+    try { doCheckMissingAssets(); } catch(_) {}
   }).catch(e => console.warn('door restore err', e));
   // LOGO は別経路で IDB から復元（音源バッファの decode は不要）
   doRestoreLogoFromDB().catch(e => console.warn('logo restore err', e));
