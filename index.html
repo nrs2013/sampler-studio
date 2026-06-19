@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
-<meta name="theme-color" content="#3DB5A6">
+<meta name="theme-color" content="#FF9550">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SAMPLER STUDIO">
@@ -20,7 +20,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%;
-    background: #141414;
+    background: #282828;
     color: #E6E6EA;
     /* v11.9.0: フォント刷新 — Inter (Latin) + Noto Sans JP (日本語) を細身モダンに */
     font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Hiragino Sans", sans-serif;
@@ -48,15 +48,15 @@
   /* HEADER */
   .header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 14px; border: 1px solid #0A0A0A; border-radius: 8px;
-    background: #1A1A1A;
+    padding: 8px 14px; border: 1px solid #1E1E1E; border-radius: 8px;
+    background: #2E2E2E;
   }
   .header-left { display: flex; align-items: center; gap: 14px; }
   .logo { display: flex; align-items: center; gap: 10px; }
-  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #3A3A3A; box-shadow: none; }
+  .logo-dot { width: 10px; height: 10px; border-radius: 50%; background: #4E4E4E; box-shadow: none; }
   .logo-text { font-weight: 500; letter-spacing: 2px; font-size: 14px; }
-  .preset-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: #1E1E1E; border-radius: 4px; cursor: text; }
-  .preset-chip span:first-child { font-size: 9px; color: #6A6A70; letter-spacing: 1px; }
+  .preset-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: #323232; border-radius: 4px; cursor: text; }
+  .preset-chip span:first-child { font-size: 9px; color: #88888E; letter-spacing: 1px; }
   .preset-name { font-size: 11px; color: #E6E6EA; background: transparent; border: none; outline: none; color: inherit; font: inherit; width: 160px; }
   .header-right { display: flex; align-items: center; gap: 6px; }
   .btn-small {
@@ -64,12 +64,12 @@
     padding: 5px 12px; border-radius: 4px; font-size: 10px; letter-spacing: 1px;
     cursor: pointer; transition: all 0.15s;
   }
-  .btn-small:hover { border-color: #4D4D55; background: #1E1E1E; }
+  .btn-small:hover { border-color: #6C6C76; background: #323232; }
   /* v11.5.4: SHOW MODE トグル — pro-audio "ON-AIR" 風の赤、英文ラベル固定 */
   .show-mode-toggle-big {
     margin-left: auto; /* 残り空間で右寄せ (status はその更に右) */
     display: inline-flex; align-items: center; gap: 10px;
-    background: #1E1E1E; border: 1px solid #111111;
+    background: #323232; border: 1px solid #252525;
     color: #888890;
     padding: 9px 18px; border-radius: 2px;
     font-size: 12px; letter-spacing: 2.5px; font-weight: 500;
@@ -78,7 +78,7 @@
     white-space: nowrap;
   }
   .show-mode-toggle-big:hover {
-    border-color: #4D4D55; background: #1B1B22; color: #E6E6EA;
+    border-color: #6C6C76; background: #1B1B22; color: #E6E6EA;
   }
   .show-mode-toggle-big .lamp {
     width: 9px; height: 9px; border-radius: 50%;
@@ -110,8 +110,8 @@
   .mt-ch-add-btn {
     flex-shrink: 0;
     min-width: 56px;
-    background: rgba(200,85,0,0.06);
-    border: 1px dashed rgba(200,85,0,0.35);
+    background: rgba(255,149,80,0.06);
+    border: 1px dashed rgba(255,149,80,0.35);
     color: rgba(91,196,176,0.85);
     font-family: inherit;
     font-size: 11px;
@@ -126,8 +126,8 @@
     line-height: 1.2;
   }
   .mt-ch-add-btn:hover {
-    background: rgba(200,85,0,0.15);
-    border-color: #CC5500;
+    background: rgba(255,149,80,0.15);
+    border-color: #FF9550;
     border-style: solid;
     color: #FFFFFF;
   }
@@ -164,40 +164,40 @@
     display: flex; gap: 4px; align-items: center; justify-content: flex-end;
     padding: 2px 4px;
   }
-  .status { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #6A6A70; }
-  .midi-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #5A5A60; }
-  .midi-led.on { background: #CC5500; box-shadow: none; }
+  .status { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #88888E; }
+  .midi-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #7C7C84; }
+  .midi-led.on { background: #FF9550; box-shadow: none; }
 
   /* BANKS */
   .banks {
-    display: flex; gap: 6px; padding: 6px; background: #1A1A1A;
-    border: 1px solid #0A0A0A; border-radius: 8px; align-items: center;
+    display: flex; gap: 6px; padding: 6px; background: #2E2E2E;
+    border: 1px solid #1E1E1E; border-radius: 8px; align-items: center;
   }
-  .banks-label { font-size: 10px; color: #6A6A70; padding: 0 8px; letter-spacing: 1px; }
+  .banks-label { font-size: 10px; color: #88888E; padding: 0 8px; letter-spacing: 1px; }
   .banks-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; flex: 1; }
   .bank-btn {
     text-align: center; padding: 5px 0; font-size: 10px;
-    background: #1E1E1E; border-radius: 3px; color: #6A6A70; cursor: pointer;
+    background: #323232; border-radius: 3px; color: #88888E; cursor: pointer;
     border: none; font-family: inherit;
   }
-  .bank-btn:hover { background: #2A2A2A; color: #E6E6EA; }
-  .bank-btn.active { background: #CC5500; color: #111111; font-weight: 500; }
+  .bank-btn:hover { background: #3E3E3E; color: #E6E6EA; }
+  .bank-btn.active { background: #FF9550; color: #252525; font-weight: 500; }
   .bank-btn.has-content { color: #E6E6EA; }
-  .bank-btn.active.has-content { color: #111111; }
+  .bank-btn.active.has-content { color: #252525; }
   /* v12.3.0: BANK 切替ショートカット (← / →) のバッジ群 */
   .bank-nav {
     display: flex; align-items: center; gap: 4px;
     padding: 0 6px;
   }
   .bank-nav-arrow {
-    font-size: 13px; color: #6A6A70; cursor: pointer;
-    background: #1E1E1E; border: 1px solid #0A0A0A; border-radius: 3px;
+    font-size: 13px; color: #88888E; cursor: pointer;
+    background: #323232; border: 1px solid #1E1E1E; border-radius: 3px;
     width: 20px; height: 20px;
     display: flex; align-items: center; justify-content: center;
     font-family: inherit; padding: 0;
   }
-  .bank-nav-arrow:hover { background: #2A2A2A; color: #E6E6EA; }
-  .bank-nav-arrow:active { background: #CC5500; color: #111111; }
+  .bank-nav-arrow:hover { background: #3E3E3E; color: #E6E6EA; }
+  .bank-nav-arrow:active { background: #FF9550; color: #252525; }
   .bank-nav .badge-row { display: flex; gap: 2px; }
 
   /* MAIN */
@@ -215,14 +215,14 @@
 
   /* LEFT PANEL */
   .left-panel {
-    background: #1A1A1A; border: 1px solid #0A0A0A; border-radius: 8px;
+    background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 8px;
     padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 0;
   }
 
   .panel-section { display: flex; flex-direction: column; gap: 5px; }
   .section-head {
     display: flex; align-items: center; justify-content: space-between;
-    font-size: 9px; color: #6A6A70; letter-spacing: 1px;
+    font-size: 9px; color: #88888E; letter-spacing: 1px;
   }
   .section-head .badge-mini { display: flex; gap: 3px; }
   .divider { height: 0.5px; background: #1F1F22; margin: 2px 0; }
@@ -230,11 +230,11 @@
   /* PLAY MODE (SAMPLER モード時のみ) */
   .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
   .mode-btn {
-    background: #1E1E1E; padding: 6px 0; text-align: center; border-radius: 4px;
-    font-size: 9px; color: #6A6A70; cursor: pointer; border: none; font-family: inherit;
+    background: #323232; padding: 6px 0; text-align: center; border-radius: 4px;
+    font-size: 9px; color: #88888E; cursor: pointer; border: none; font-family: inherit;
   }
-  .mode-btn:hover { background: #2A2A2A; color: #E6E6EA; }
-  .mode-btn.active { background: #CC5500; color: #111111; font-weight: 500; }
+  .mode-btn:hover { background: #3E3E3E; color: #E6E6EA; }
+  .mode-btn.active { background: #FF9550; color: #252525; font-weight: 500; }
   /* モード別表示制御: SAMPLER モード以外では sampler-only クラスを隠す */
   body.mode-door .sampler-only,
   body.mode-multi .sampler-only { display: none !important; }
@@ -247,16 +247,16 @@
   .master-fader-wrap { display: flex; gap: 5px; align-items: stretch; flex: 1; min-height: 0; }
   .db-scale {
     display: flex; flex-direction: column; justify-content: space-between;
-    font-size: 8px; color: #5A5A60; text-align: right;
+    font-size: 8px; color: #7C7C84; text-align: right;
   }
   .fader-track {
-    position: relative; width: 14px; background: #1E1E1E; border-radius: 4px;
+    position: relative; width: 14px; background: #323232; border-radius: 4px;
     cursor: ns-resize;
     border: 1px solid #25252A;
   }
   .fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #252525;
+    background: #393939;
     border-radius: 3px;
   }
   /* つまみ — 小ぶり・上品なダークグレー (持ちやすさはキープ) */
@@ -266,7 +266,7 @@
     border-radius: 2px;
     transform: translateY(50%);
     pointer-events: none;
-    border: 0.5px solid #5A5A62;
+    border: 0.5px solid #7C7C86;
     box-shadow: none;
   }
   /* マスター L/R メーター — はっきり見える本番視認サイズ */
@@ -276,17 +276,17 @@
     background: linear-gradient(180deg, #08080A, #14141A);
     border-radius: 2px;
     position: relative; overflow: hidden;
-    border: 1px solid #0A0A0A;
+    border: 1px solid #1E1E1E;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
   }
   .meter-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #252525;
+    background: linear-gradient(180deg, #7CF0A8 0%, #34C46E 55%, #239E58 100%);
     transition: height 0.05s linear;
     height: 0%;
   }
   .master-value { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 14px; font-weight: 400; letter-spacing: 0.3px; }
-  .master-value .unit { font-size: 9px; color: #6A6A70; font-family: inherit; }
+  .master-value .unit { font-size: 9px; color: #88888E; font-family: inherit; }
 
   /* SAMPLER DECKS — 2列同時表示レイアウト */
   .sampler-dual-view {
@@ -295,7 +295,7 @@
   .deck-col {
     flex: 1; display: flex; flex-direction: column; gap: 4px;
     min-width: 0; min-height: 0;
-    border: 1px solid #0A0A0A; border-radius: 2px; padding: 6px;
+    border: 1px solid #1E1E1E; border-radius: 2px; padding: 6px;
     background: #0D0D10;
   }
   .deck-col.active-deck { border-color: #2D7A5E; }
@@ -303,51 +303,80 @@
     display: flex; align-items: center; gap: 6px; flex-shrink: 0;
     padding: 3px 4px; border-radius: 5px; cursor: pointer;
   }
-  .deck-col-header:hover { background: rgba(200,85,0,0.05); }
+  .deck-col-header:hover { background: rgba(255,149,80,0.05); }
   .deck-col-label {
-    font-size: 9px; color: #5DCAA5; letter-spacing: 2px; font-weight: 600;
+    font-size: 9px; color: #FF9550; letter-spacing: 2px; font-weight: 600;
     flex-shrink: 0; min-width: 36px;
   }
-  .deck-col.active-deck .deck-col-label { color: #FF7A1A; }
+  .deck-col.active-deck .deck-col-label { color: #FF8A3A; }
   .deck-mini-banks-row {
     display: flex; gap: 2px; flex: 1; overflow: hidden;
   }
   .deck-mbank-btn {
     flex: 1; font-size: 8px; padding: 3px 0; text-align: center; border-radius: 2px;
-    background: #1A1A20; border: none; color: #5A5A60; cursor: pointer; font-family: inherit;
+    background: #1A1A20; border: none; color: #7C7C84; cursor: pointer; font-family: inherit;
     min-width: 0;
   }
-  .deck-mbank-btn:hover { background: #2A2A2A; color: #C0C0C8; }
-  .deck-mbank-btn.active { background: #CC5500; color: #111111; font-weight: 600; }
+  .deck-mbank-btn:hover { background: #3E3E3E; color: #C0C0C8; }
+  .deck-mbank-btn.active { background: #FF9550; color: #252525; font-weight: 600; }
   .deck-mbank-btn.has-content { color: #C0C0C8; }
-  .deck-mbank-btn.active.has-content { color: #111111; }
+  .deck-mbank-btn.active.has-content { color: #252525; }
   .deck-col-body {
     display: flex; gap: 6px; flex: 1; min-height: 0;
   }
   /* コフェーダー（縦型・左パネルのMASTERと同デザイン） */
   .deck-cofader-area {
     display: flex; flex-direction: column; align-items: center;
-    width: 34px; flex-shrink: 0; gap: 3px; padding: 2px 0;
+    width: 58px; flex-shrink: 0; gap: 3px; padding: 2px 0;
+  }
+  /* スケール｜フェーダー｜ステレオメーター を横並び（MASTER と同じ構造） */
+  .deck-cofader-track-wrap {
+    display: flex; flex: 1; gap: 5px; align-items: stretch; justify-content: center;
+    min-height: 0; width: 100%;
+  }
+  /* デッキ用ステレオメーター（左パネル MASTER の .meter と同デザイン） */
+  .deck-cofader-meters { display: flex; gap: 2px; align-items: stretch; flex-shrink: 0; }
+  .deck-cofader-meter {
+    width: 3px; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #0A0A0A, #161616);
+    border: 1px solid #1E1E1E; border-radius: 1px;
+  }
+  .deck-cofader-meter-fill {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 0%;
+    background: linear-gradient(180deg, #7CF0A8 0%, #34C46E 55%, #239E58 100%);
+    transition: height 0.05s linear;
+  }
+  .deck-cofader-scale {
+    display: flex; flex-direction: column; justify-content: space-between;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+    font-size: 6px; line-height: 1; color: #6E6E74; text-align: right;
+    flex-shrink: 0; padding: 1px 0;
+  }
+  .deck-cofader-scale .zero { color: #C8C8D0; font-weight: 700; }
+  /* 0dB 基準ライン（4/6 の位置）— ここにフェーダーを合わせると 0dB */
+  .deck-cofader-track::before {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 66.66%;
+    height: 1px; background: rgba(255,255,255,0.28); z-index: 2; pointer-events: none;
   }
   .deck-cofader-lbl {
     font-size: 7px; color: #5A6A5A; letter-spacing: 1.5px; flex-shrink: 0;
   }
   .deck-cofader-badges { display: flex; gap: 2px; }
   .deck-cofader-track {
-    flex: 1; position: relative; width: 10px; background: #1E1E1E;
+    flex: 1; position: relative; width: 10px; background: #323232;
     border-radius: 4px; border: 1px solid #25252A; cursor: ns-resize; min-height: 80px;
     touch-action: none;
   }
   .deck-cofader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #252525;
+    background: #393939;
     border-radius: 3px;
   }
   .deck-cofader-thumb {
     position: absolute; left: -6px; right: -6px; height: 11px;
     background: #585858;
     border-radius: 2px; transform: translateY(50%); pointer-events: none;
-    border: 0.5px solid #5A5A62;
+    border: 0.5px solid #7C7C86;
     box-shadow: none;
   }
   .deck-cofader-db {
@@ -361,45 +390,45 @@
   /* FADE TIME */
   .fade-time-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
   .fade-btn {
-    background: #1E1E1E; padding: 6px 0; text-align: center; border-radius: 3px;
-    font-size: 9px; color: #6A6A70; cursor: pointer; border: none; font-family: inherit;
+    background: #323232; padding: 6px 0; text-align: center; border-radius: 3px;
+    font-size: 9px; color: #88888E; cursor: pointer; border: none; font-family: inherit;
   }
-  .fade-btn:hover { background: #2A2A2A; color: #E6E6EA; }
-  .fade-btn.active { background: #CC5500; color: #111111; font-weight: 500; }
+  .fade-btn:hover { background: #3E3E3E; color: #E6E6EA; }
+  .fade-btn.active { background: #FF9550; color: #252525; font-weight: 500; }
 
   /* CUSTOM FADE TIME INPUT */
   .fade-time-custom { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
   .fade-time-custom input {
-    flex: 1; background: #141414; border: 0.5px solid #25252A; color: #E6E6EA;
+    flex: 1; background: #282828; border: 0.5px solid #25252A; color: #E6E6EA;
     padding: 6px 8px; border-radius: 4px; font-family: inherit; font-size: 12px;
     text-align: right; min-width: 0; -moz-appearance: textfield;
   }
   .fade-time-custom input::-webkit-outer-spin-button,
   .fade-time-custom input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .fade-time-custom input:focus { outline: none; border-color: #CC5500; background: #1A1A1A; }
-  .fade-time-custom .unit { font-size: 10px; color: #6A6A70; padding-right: 4px; }
+  .fade-time-custom input:focus { outline: none; border-color: #FF9550; background: #2E2E2E; }
+  .fade-time-custom .unit { font-size: 10px; color: #88888E; padding-right: 4px; }
 
   /* CURVE PICKER */
   .curve-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
   .curve-btn {
-    background: #1E1E1E; border: none; padding: 5px; border-radius: 4px;
-    cursor: pointer; color: #6A6A70; display: flex; align-items: center; justify-content: center;
+    background: #323232; border: none; padding: 5px; border-radius: 4px;
+    cursor: pointer; color: #88888E; display: flex; align-items: center; justify-content: center;
     font-family: inherit; aspect-ratio: 1;
   }
   .curve-btn svg { width: 100%; height: 100%; }
-  .curve-btn:hover { background: #2A2A2A; color: #E6E6EA; }
-  .curve-btn.active { background: #CC5500; color: #111111; }
+  .curve-btn:hover { background: #3E3E3E; color: #E6E6EA; }
+  .curve-btn.active { background: #FF9550; color: #252525; }
 
   /* CURVE EDITOR (manual bezier) */
   .curve-editor {
     position: relative; width: 100%; height: 64px; margin-top: 4px;
-    background: #141414; border: 1px solid #0A0A0A; border-radius: 4px;
+    background: #282828; border: 1px solid #1E1E1E; border-radius: 4px;
     touch-action: none;
   }
   .curve-editor canvas { display: block; width: 100%; height: 100%; }
   .curve-handle {
     position: absolute; width: 12px; height: 12px; border-radius: 50%;
-    background: #CC5500; border: 2px solid #0E0E10;
+    background: #FF9550; border: 2px solid #0E0E10;
     transform: translate(-50%, -50%); cursor: grab;
     box-shadow: none;
     z-index: 2; touch-action: none;
@@ -408,16 +437,16 @@
   .curve-handle:active { cursor: grabbing; }
   .curve-hint {
     position: absolute; bottom: 2px; right: 4px; font-size: 7px;
-    color: #5A5A60; letter-spacing: 0.5px; pointer-events: none;
+    color: #7C7C84; letter-spacing: 0.5px; pointer-events: none;
   }
   .curve-label-row {
     display: flex; justify-content: space-between; font-size: 8px;
-    color: #5A5A60; letter-spacing: 0.5px; margin-top: 2px;
+    color: #7C7C84; letter-spacing: 0.5px; margin-top: 2px;
   }
 
   /* PRIMARY BUTTONS */
   .btn-primary {
-    width: 100%; background: #CC5500; border: none; color: #111111;
+    width: 100%; background: #FF9550; border: none; color: #252525;
     padding: 9px; border-radius: 2px; font-size: 11px; font-weight: 500;
     letter-spacing: 1px; cursor: pointer; display: flex;
     align-items: center; justify-content: center; gap: 5px; font-family: inherit;
@@ -450,7 +479,7 @@
   .btn-primary.big-fade.huge-fade {
     padding: 22px 12px; font-size: 16px; font-weight: 500;
     letter-spacing: 3px; gap: 10px;
-    background: #CC5500; color: #111111;
+    background: #FF9550; color: #252525;
     box-shadow: none;
   }
   .btn-primary.big-fade.huge-fade:hover { background: #E06510; }
@@ -459,14 +488,14 @@
   /* v11.3.4: font-size 拡大 (8→11px) — 左パネル STOP/PAUSE/MASTER 等の MIDI/KEY バッジが小さくて見えない問題対応 */
   .badge {
     font-size: 11px; padding: 3px 7px; border-radius: 2px;
-    background: #1E1E1E; color: #6A6A70; cursor: pointer; border: none;
+    background: #323232; color: #88888E; cursor: pointer; border: none;
     font-family: inherit; letter-spacing: 0.5px;
   }
-  .badge.midi { color: #CC5500; }
+  .badge.midi { color: #FF9550; }
   .badge.key { color: #E6E6EA; }
-  .badge:hover { background: #2A2A2A; }
+  .badge:hover { background: #3E3E3E; }
   .badge.learning {
-    background: #CC5500; color: #111111; animation: pulse 1s infinite;
+    background: #FF9550; color: #252525; animation: pulse 1s infinite;
   }
   @keyframes pulse {
     0%, 100% { opacity: 1; }
@@ -476,7 +505,7 @@
 
   /* PAD GRID — A-style channel strip (pad body + separate fader card) */
   .pad-grid {
-    background: #1A1A1A; border: 1px solid #0A0A0A; border-radius: 8px;
+    background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 8px;
     padding: 12px; flex: 1; display: flex; flex-direction: column;
     align-items: center; justify-content: center; min-height: 0; overflow: hidden;
   }
@@ -488,40 +517,40 @@
     display: flex; gap: 4px; min-width: 0; min-height: 0; position: relative;
   }
   .pad-body {
-    flex: 1; background: #1E1E1E; border: 0.5px solid #25252A; border-radius: 10px;
+    flex: 1; background: #323232; border: 0.5px solid #25252A; border-radius: 10px;
     padding: 8px; display: flex; flex-direction: column;
     justify-content: space-between; cursor: pointer; position: relative;
     transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
     min-width: 0; overflow: hidden;
   }
-  .pad-body:hover { background: #25252D; border-color: #4D4D55; }
+  .pad-body:hover { background: #25252D; border-color: #6C6C76; }
 
   /* Separate fader card (channel strip) */
   .pad-fader-card {
-    width: 22px; background: #1A1A1A; border: 0.5px solid #25252A;
+    width: 22px; background: #2E2E2E; border: 0.5px solid #25252A;
     border-radius: 2px; padding: 6px 3px;
     display: flex; flex-direction: column; align-items: center;
     justify-content: space-between; cursor: ns-resize; touch-action: none;
     flex-shrink: 0;
   }
-  .pad-fader-card:hover { border-color: #CC5500; background: #1A1F1D; }
-  .pad-fader-card .vol-label { font-size: 7px; color: #5A5A60; letter-spacing: 0.5px; }
+  .pad-fader-card:hover { border-color: #FF9550; background: #1A1F1D; }
+  .pad-fader-card .vol-label { font-size: 7px; color: #7C7C84; letter-spacing: 0.5px; }
   .pad-fader-track {
-    width: 6px; flex: 1; background: #1E1E1E; border-radius: 3px;
+    width: 6px; flex: 1; background: #323232; border-radius: 3px;
     position: relative; margin: 4px 0; pointer-events: none;
   }
   /* v12.4.6: 0dB スナップ位置 (1/1.4 = 71.4% from bottom = 28.6% from top) に細い目印線 */
   .pad-fader-track::before {
     content: ''; position: absolute;
     top: 28.6%; left: -3px; right: -3px; height: 1px;
-    background: #4D4D55; pointer-events: none;
+    background: #6C6C76; pointer-events: none;
   }
   .pad-fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #CC5500; border-radius: 3px;
+    background: #FF9550; border-radius: 3px;
   }
   .pad-fader-db {
-    font-size: 8px; color: #CC5500; font-weight: 500; min-height: 10px;
+    font-size: 8px; color: #FF9550; font-weight: 500; min-height: 10px;
     text-align: center;
   }
   .pad.empty .pad-fader-card { display: none; }
@@ -534,17 +563,17 @@
     background: transparent; border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     cursor: grab; z-index: 4;
-    color: #5A5A60; font-size: 11px;
+    color: #7C7C84; font-size: 11px;
     transition: background 0.1s, color 0.1s;
     -webkit-user-drag: element;
   }
-  .pad-grip:hover { background: rgba(200,85,0,0.15); color: #CC5500; }
-  .pad-grip:active { cursor: grabbing; background: rgba(200,85,0,0.3); color: #CC5500; }
+  .pad-grip:hover { background: rgba(255,149,80,0.15); color: #FF9550; }
+  .pad-grip:active { cursor: grabbing; background: rgba(255,149,80,0.3); color: #FF9550; }
   .pad.empty .pad-grip { display: none; }
 
   /* v12.4.4: パッド色 — pad-body + fader-card を一つの枠で囲う (B 案) */
   .pad.has-color {
-    background: #1E1E1E;
+    background: #323232;
     border: 1.5px solid var(--pad-c);
     border-radius: 10px;
     padding: 3px;
@@ -604,7 +633,7 @@
   .pad-color-dot {
     width: 11px; height: 11px; border-radius: 50%;
     background: transparent;
-    border: 1px dashed #5A5A60;
+    border: 1px dashed #7C7C84;
     cursor: pointer; padding: 0;
     flex-shrink: 0;
     transition: transform 0.1s, border-color 0.1s, background 0.1s;
@@ -612,7 +641,7 @@
   }
   .pad-color-dot:hover {
     transform: scale(1.25); opacity: 1;
-    border-color: #CC5500; border-style: solid;
+    border-color: #FF9550; border-style: solid;
   }
   /* 色付きパッドではドットは隠す (外枠で色は分かるので冗長) */
   .pad.has-color .pad-color-dot { display: none; }
@@ -620,7 +649,7 @@
   /* 色選択ポップオーバー (画面に fixed で表示) */
   .pad-color-popover {
     position: fixed; z-index: 9000;
-    background: #1A1A1A; border: 1px solid #111111; border-radius: 8px;
+    background: #2E2E2E; border: 1px solid #252525; border-radius: 8px;
     padding: 8px;
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.95);
@@ -641,18 +670,18 @@
     background: transparent; border-radius: 4px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer; z-index: 4;
-    color: #5A5A60; font-size: 10px;
+    color: #7C7C84; font-size: 10px;
     letter-spacing: 1px; font-weight: 500;
     border: none; font-family: inherit;
     transition: background 0.1s, color 0.1s;
   }
-  .pad-edit-btn:hover { background: rgba(200,85,0,0.15); color: #CC5500; }
-  .pad-edit-btn:active { background: rgba(200,85,0,0.3); color: #CC5500; }
+  .pad-edit-btn:hover { background: rgba(255,149,80,0.15); color: #FF9550; }
+  .pad-edit-btn:active { background: rgba(255,149,80,0.3); color: #FF9550; }
   .pad-body.empty .pad-edit-btn { display: none; }
 
   /* Flash effect when assigned key/MIDI is pressed */
   .pad-body.flash {
-    background: #CC5500 !important;
+    background: #FF9550 !important;
     border-color: #E06510 !important;
     box-shadow: none !important;
     transition: none !important;
@@ -660,41 +689,41 @@
   .pad-body.flash .pad-num,
   .pad-body.flash .pad-name,
   .pad-body.flash .pad-time,
-  .pad-body.flash .pad-shortcuts .badge { color: #111111 !important; }
-  .pad-body.flash + .pad-fader-card { border-color: #CC5500; }
+  .pad-body.flash .pad-shortcuts .badge { color: #252525 !important; }
+  .pad-body.flash + .pad-fader-card { border-color: #FF9550; }
   .pad-body.empty {
-    border-style: dashed; border-color: #3D3D45; color: #5A5A60;
+    border-style: dashed; border-color: #3D3D45; color: #7C7C84;
     align-items: center; justify-content: center; gap: 4px;
   }
-  .pad-body.empty .pad-name-empty { font-size: 9px; color: #5A5A60; }
-  .pad-body.empty .upload-icon { font-size: 18px; color: #5A5A60; }
+  .pad-body.empty .pad-name-empty { font-size: 9px; color: #7C7C84; }
+  .pad-body.empty .upload-icon { font-size: 18px; color: #7C7C84; }
   .pad-body.playing {
-    background: #1F2A26; border-color: #CC5500;
+    background: #1F2A26; border-color: #FF9550;
     box-shadow: none;
   }
-  .pad-body.drag-over { background: #2A3A35; border-color: #CC5500; border-style: dashed; }
+  .pad-body.drag-over { background: #2A3A35; border-color: #FF9550; border-style: dashed; }
   .pad-body.drag-target-pad {
-    background: #2A3A35 !important; border-color: #CC5500 !important; border-width: 2px !important;
+    background: #2A3A35 !important; border-color: #FF9550 !important; border-width: 2px !important;
     box-shadow: none !important;
   }
   /* v12.3.0: grip が top-left に移ったので padding-left に変更、右側は EDIT 用に確保 */
   .pad-head { display: flex; justify-content: space-between; align-items: center; font-size: 9px; padding-left: 26px; padding-right: 44px; }
   /* v12.5.5: pad-num 自体をクリック可能に (色変更ボタン兼任) */
   .pad-num {
-    color: #5A5A60; letter-spacing: 0.5px;
+    color: #7C7C84; letter-spacing: 0.5px;
     cursor: pointer; padding: 0 4px; border-radius: 3px;
     transition: background 0.1s;
     user-select: none;
   }
   .pad-num:hover { background: rgba(255,255,255,0.08); }
-  .pad.playing .pad-num { color: #CC5500; }
+  .pad.playing .pad-num { color: #FF9550; }
   .pad-name { font-size: 14px; font-weight: 500; color: #E6E6EA; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pad-footer { display: flex; flex-direction: column; gap: 2px; }
   .pad-time {
-    display: flex; justify-content: space-between; font-size: 8px; color: #CC5500;
+    display: flex; justify-content: space-between; font-size: 8px; color: #FF9550;
   }
-  .pad-progress { height: 2px; background: #141414; border-radius: 1px; overflow: hidden; }
-  .pad-progress-fill { height: 100%; background: #CC5500; border-radius: 1px; width: 0%; }
+  .pad-progress { height: 2px; background: #282828; border-radius: 1px; overflow: hidden; }
+  .pad-progress-fill { height: 100%; background: #FF9550; border-radius: 1px; width: 0%; }
   /* v11.3.4: pad 下の MIDI/KEY ショートカット表示を拡大 (7→10px) — 可読性確保 */
   .pad-shortcuts {
     display: flex; justify-content: space-between; font-size: 10px;
@@ -703,8 +732,8 @@
   /* v12.4.5: pad 内のバッジは普段は地味なグレー、ホバーで色が出る (常時カラーがガチャつく対策)。
      LEARN 中のバッジ (.learning) は親ルールが pulse 色を当てるので影響なし。 */
   .pad-shortcuts .badge.midi,
-  .pad-shortcuts .badge.key { color: #5A5A60; }
-  .pad-body:hover .pad-shortcuts .badge.midi { color: #CC5500; }
+  .pad-shortcuts .badge.key { color: #7C7C84; }
+  .pad-body:hover .pad-shortcuts .badge.midi { color: #FF9550; }
   .pad-body:hover .pad-shortcuts .badge.key  { color: #E6E6EA; }
 
   /* LEVELS TAB */
@@ -713,29 +742,29 @@
     gap: 8px; flex: 1;
   }
   .level-card {
-    background: #1E1E1E; border: 0.5px solid #25252A; border-radius: 10px;
+    background: #323232; border: 0.5px solid #25252A; border-radius: 10px;
     padding: 10px; display: flex; gap: 10px; align-items: stretch;
     cursor: pointer; transition: all 0.05s; overflow: hidden;
   }
-  .level-card:hover { background: #25252D; border-color: #4D4D55; }
+  .level-card:hover { background: #25252D; border-color: #6C6C76; }
   .level-card.empty { opacity: 0.35; border-style: dashed; cursor: default; }
-  .level-card.empty:hover { background: #1E1E1E; }
-  .level-card.playing { background: #1F2A26; border-color: #CC5500; box-shadow: none; }
+  .level-card.empty:hover { background: #323232; }
+  .level-card.playing { background: #1F2A26; border-color: #FF9550; box-shadow: none; }
   .level-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .level-info-name { font-size: 12px; color: #E6E6EA; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-  .level-info-num { font-size: 9px; color: #5A5A60; letter-spacing: 0.5px; }
-  .level-info-db { font-size: 14px; font-weight: 500; color: #CC5500; margin-top: auto; }
+  .level-info-num { font-size: 9px; color: #7C7C84; letter-spacing: 0.5px; }
+  .level-info-db { font-size: 14px; font-weight: 500; color: #FF9550; margin-top: auto; }
   .level-fader-wrap {
     width: 18px; display: flex; flex-direction: column; align-items: center; gap: 4px;
   }
   .level-fader {
     position: relative; width: 14px; flex: 1;
-    background: #1E1E1E; border-radius: 2px; cursor: ns-resize;
+    background: #323232; border-radius: 2px; cursor: ns-resize;
     touch-action: none;
   }
   .level-fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #CC5500; border-radius: 2px;
+    background: #FF9550; border-radius: 2px;
     pointer-events: none;
   }
   .level-fader-thumb {
@@ -747,11 +776,11 @@
   /* Global HOLD strip (always visible below pad grid) */
   .hold-strip {
     display: flex; gap: 6px; padding: 6px 8px;
-    background: #1A1A1A; border: 1px solid #0A0A0A; border-radius: 8px;
+    background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 8px;
     align-items: center;
   }
   .hold-strip-label {
-    font-size: 9px; color: #6A6A70; padding: 0 6px;
+    font-size: 9px; color: #88888E; padding: 0 6px;
     letter-spacing: 1px; flex-shrink: 0;
   }
   .hold-slots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex: 1; }
@@ -763,29 +792,29 @@
   .hold-slot.empty {
     background: transparent; border: 1px dashed #3D3D45;
     align-items: center; justify-content: center;
-    color: #5A5A60; font-size: 10px;
+    color: #7C7C84; font-size: 10px;
   }
   .hold-slot.filled {
-    background: #1E1E1E; border: 0.5px solid #25252A; cursor: grab;
+    background: #323232; border: 0.5px solid #25252A; cursor: grab;
   }
-  .hold-slot.filled:hover { background: #2A2A33; border-color: #CC5500; }
+  .hold-slot.filled:hover { background: #2A2A33; border-color: #FF9550; }
   .hold-slot.filled:active { cursor: grabbing; }
   .hold-slot.filled .slot-head {
-    font-size: 7px; color: #5A5A60; letter-spacing: 0.5px;
+    font-size: 7px; color: #7C7C84; letter-spacing: 0.5px;
   }
   .hold-slot.filled .slot-name {
     font-size: 11px; color: #E6E6EA; font-weight: 500;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .hold-slot.drag-target {
-    background: rgba(200,85,0,0.15) !important;
-    border: 2px dashed #CC5500 !important;
+    background: rgba(255,149,80,0.15) !important;
+    border: 2px dashed #FF9550 !important;
   }
 
   /* BANK row drop-target during drag */
-  .banks.drop-mode { border-color: #CC5500; background: #1A1F1D; }
+  .banks.drop-mode { border-color: #FF9550; background: #1A1F1D; }
   .bank-btn.drop-target {
-    border: 2px solid #CC5500 !important;
+    border: 2px solid #FF9550 !important;
     box-shadow: none !important;
   }
 
@@ -796,7 +825,7 @@
   }
   .modal-overlay.open { display: flex; }
   .modal {
-    background: #1A1A1A; border: 1px solid #0A0A0A; border-radius: 12px;
+    background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 12px;
     padding: 20px; min-width: 300px; max-width: 90vw;
   }
 
@@ -811,14 +840,14 @@
     flex: 1; min-width: 0; max-width: 480px;
   }
   .pad-rename-input:hover { border-color: #3A3A42; background: rgba(0,0,0,0.3); }
-  .pad-rename-input:focus { outline: none; border-color: #CC5500; background: rgba(0,0,0,0.4); color: #FFFFFF; }
-  .trim-subtitle { font-size: 11px; color: #6A6A70; margin-top: 2px; }
+  .pad-rename-input:focus { outline: none; border-color: #FF9550; background: rgba(0,0,0,0.4); color: #FFFFFF; }
+  .trim-subtitle { font-size: 11px; color: #88888E; margin-top: 2px; }
   .zoom-bar {
     display: flex; gap: 10px; margin-bottom: 8px; align-items: center;
     padding: 4px 2px;
   }
   .zoom-bar-label {
-    font-size: 9px; color: #6A6A70; letter-spacing: 1px;
+    font-size: 9px; color: #88888E; letter-spacing: 1px;
     flex-shrink: 0;
   }
   .zoom-slider-wrap {
@@ -828,40 +857,40 @@
   .zoom-slider {
     width: 100%; -webkit-appearance: none; appearance: none;
     height: 4px; border-radius: 2px;
-    background: linear-gradient(to right, #CC5500 var(--fill, 0%), #14141A var(--fill, 0%));
+    background: linear-gradient(to right, #FF9550 var(--fill, 0%), #14141A var(--fill, 0%));
     outline: none; cursor: pointer;
   }
   .zoom-slider::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 16px; height: 16px; border-radius: 50%;
-    background: #CC5500; border: 2px solid #0E0E10;
+    background: #FF9550; border: 2px solid #0E0E10;
     cursor: grab; box-shadow: none;
   }
   .zoom-slider::-webkit-slider-thumb:active { cursor: grabbing; }
   .zoom-slider::-moz-range-thumb {
     width: 16px; height: 16px; border-radius: 50%;
-    background: #CC5500; border: 2px solid #0E0E10; cursor: grab;
+    background: #FF9550; border: 2px solid #0E0E10; cursor: grab;
   }
   .zoom-value {
-    font-size: 13px; color: #CC5500; font-weight: 500;
+    font-size: 13px; color: #FF9550; font-weight: 500;
     min-width: 60px; text-align: right;
     font-family: var(--font-mono, monospace);
   }
   .zoom-reset-btn {
-    background: transparent; border: 0.5px solid #25252A; color: #6A6A70;
+    background: transparent; border: 0.5px solid #25252A; color: #88888E;
     padding: 4px 10px; border-radius: 4px; font-size: 10px;
     cursor: pointer; font-family: inherit; letter-spacing: 1px;
   }
-  .zoom-reset-btn:hover { border-color: #CC5500; color: #CC5500; }
-  .zoom-hint { font-size: 9px; color: #5A5A60; flex-shrink: 0; }
+  .zoom-reset-btn:hover { border-color: #FF9550; color: #FF9550; }
+  .zoom-hint { font-size: 9px; color: #7C7C84; flex-shrink: 0; }
   .waveform-wrap {
-    position: relative; background: #141414; border: 1px solid #0A0A0A;
+    position: relative; background: #282828; border: 1px solid #1E1E1E;
     border-radius: 2px; padding: 10px; margin-bottom: 4px;
   }
   .waveform-canvas { display: block; width: 100%; height: 160px; }
   .trim-ruler {
     display: flex; justify-content: space-between; padding: 0 10px;
-    font-size: 9px; color: #5A5A60; letter-spacing: 0.5px; margin-bottom: 12px;
+    font-size: 9px; color: #7C7C84; letter-spacing: 0.5px; margin-bottom: 12px;
     font-family: var(--font-mono, monospace);
   }
   .trim-overlay {
@@ -878,10 +907,10 @@
   }
   .trim-handle::before {
     content: ''; position: absolute; top: 0; bottom: 0;
-    left: 50%; width: 2px; background: #CC5500; transform: translateX(-50%);
+    left: 50%; width: 2px; background: #FF9550; transform: translateX(-50%);
   }
   .trim-handle::after {
-    content: ''; width: 10px; height: 30px; background: #CC5500; border-radius: 2px;
+    content: ''; width: 10px; height: 30px; background: #FF9550; border-radius: 2px;
     box-shadow: none;
   }
   .trim-handle.end::before, .trim-handle.end::after { background: #FF8A0F; box-shadow: none; }
@@ -891,13 +920,13 @@
   }
   .trim-controls {
     display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;
-    background: #1E1E1E; border-radius: 2px; padding: 10px; margin-bottom: 12px;
+    background: #323232; border-radius: 2px; padding: 10px; margin-bottom: 12px;
   }
   .trim-field { display: flex; flex-direction: column; gap: 3px; }
-  .trim-field-label { font-size: 9px; color: #6A6A70; letter-spacing: 1px; }
+  .trim-field-label { font-size: 9px; color: #88888E; letter-spacing: 1px; }
   .trim-field-value { font-size: 14px; font-weight: 500; color: #E6E6EA; }
   .trim-field input[type="number"] {
-    background: #141414; border: 0.5px solid #25252A; color: #E6E6EA;
+    background: #282828; border: 0.5px solid #25252A; color: #E6E6EA;
     padding: 4px 6px; border-radius: 3px; font-family: inherit; font-size: 12px;
     width: 100%;
   }
@@ -909,23 +938,23 @@
     color: #E6E6EA; font-size: 12px; border: 0.5px solid rgba(255,255,255,0.1);
   }
   .pad:hover .pad-edit-icon { opacity: 0.85; }
-  .pad-edit-icon:hover { background: #CC5500; color: #111111; opacity: 1 !important; }
+  .pad-edit-icon:hover { background: #FF9550; color: #252525; opacity: 1 !important; }
   /* Inline trim indicator placed next to time display, no overlap with shortcuts */
   .trim-icon {
     display: inline-flex; align-items: center; gap: 2px;
-    font-size: 9px; color: #CC5500;
+    font-size: 9px; color: #FF9550;
     padding: 0 3px; margin-right: 3px;
-    background: rgba(200,85,0,0.12); border-radius: 2px;
-    border: 0.5px solid rgba(200,85,0,0.25);
+    background: rgba(255,149,80,0.12); border-radius: 2px;
+    border: 0.5px solid rgba(255,149,80,0.25);
   }
   .modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
-  .modal p { font-size: 12px; color: #6A6A70; margin-bottom: 12px; }
+  .modal p { font-size: 12px; color: #88888E; margin-bottom: 12px; }
   .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
   /* LEARN OVERLAY */
   .learn-banner {
     display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-    background: #CC5500; color: #111111; padding: 10px 22px; border-radius: 2px;
+    background: #FF9550; color: #252525; padding: 10px 22px; border-radius: 2px;
     font-size: 13px; font-weight: 500; z-index: 999; box-shadow: none;
     cursor: pointer;
   }
@@ -935,9 +964,9 @@
   /* TOAST — 画面上部に表示（下のボタンと被らないよう） */
   .toast {
     position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
-    background: #1E1E1E; color: #E6E6EA; padding: 10px 18px; border-radius: 2px;
+    background: #323232; color: #E6E6EA; padding: 10px 18px; border-radius: 2px;
     font-size: 12px; z-index: 998; opacity: 0; transition: opacity 0.3s;
-    border: 1px solid #0A0A0A;
+    border: 1px solid #1E1E1E;
     pointer-events: none; /* prevent invisible toast from stealing clicks */
   }
   .toast.show { opacity: 1; }
@@ -947,29 +976,29 @@
   .preset-item {
     padding: 8px 10px; border-radius: 4px; cursor: pointer;
     display: flex; justify-content: space-between; align-items: center;
-    background: #1E1E1E; margin-bottom: 4px;
+    background: #323232; margin-bottom: 4px;
   }
-  .preset-item:hover { background: #2A2A2A; }
+  .preset-item:hover { background: #3E3E3E; }
   .preset-item-name { font-size: 12px; }
-  .preset-item-date { font-size: 10px; color: #6A6A70; }
+  .preset-item-date { font-size: 10px; color: #88888E; }
   .preset-delete { color: #E24B4A; cursor: pointer; padding: 2px 6px; font-size: 10px; }
 
   /* MISC */
-  .empty-grid-msg { text-align: center; padding: 20px; color: #5A5A60; font-size: 11px; }
+  .empty-grid-msg { text-align: center; padding: 20px; color: #7C7C84; font-size: 11px; }
 
   /* APP MODE TABS (SAMPLER / DOOR OPEN) */
   .app-mode-tabs {
     display: flex; gap: 4px; align-items: center;
-    padding: 6px; background: #1A1A1A; border: 1px solid #0A0A0A; border-radius: 8px;
+    padding: 6px; background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 8px;
   }
   .mode-tab {
-    background: #1E1E1E; border: none; padding: 8px 22px;
-    font-size: 11px; letter-spacing: 1.5px; color: #6A6A70;
+    background: #323232; border: none; padding: 8px 22px;
+    font-size: 11px; letter-spacing: 1.5px; color: #88888E;
     border-radius: 4px; cursor: pointer; font-family: inherit;
   }
-  .mode-tab:hover { background: #2A2A2A; color: #E6E6EA; }
-  .mode-tab.active { background: #CC5500; color: #111111; font-weight: 500; }
-  .mode-tab.door-active { background: #CC5500; color: #111111; font-weight: 500; }
+  .mode-tab:hover { background: #3E3E3E; color: #E6E6EA; }
+  .mode-tab.active { background: #FF9550; color: #252525; font-weight: 500; }
+  .mode-tab.door-active { background: #FF9550; color: #252525; font-weight: 500; }
   .app-mode-tabs .status { margin-left: auto; padding-right: 6px; }
   /* Left panel (MASTER / STOP / PAUSE / FADE TIME / FADE CURVE / FADE OUT) is shared across modes.
      Previously we hid PLAY MODE/FADE系 in DOOR mode, but the user wants them visible too. */
@@ -1010,7 +1039,7 @@
   .do-logo-tag { padding: 2px 8px; font-size: 9px; letter-spacing: 1.5px; font-weight: 500; border-radius: 4px;
     background: rgba(201,169,106,0.18); color: #C9A96A;
   }
-  .do-logo-sub { font-size: 9px; color: #6A6A70; }
+  .do-logo-sub { font-size: 9px; color: #88888E; }
   .do-logo-name { font-size: 11px; color: #C8C8CE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
   /* 本体: プレビュー（左、固定幅）+ スライダー群（右、伸縮） */
   .do-logo-body { display: flex; gap: 10px; align-items: stretch; }
@@ -1025,7 +1054,7 @@
   .do-logo-preview.empty {
     background: transparent; border-style: dashed;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    color: #6A6A70; font-size: 11px; letter-spacing: 1px;
+    color: #88888E; font-size: 11px; letter-spacing: 1px;
   }
   .do-logo-preview.empty:hover { border-color: #C9A96A; color: #C9A96A; }
   .do-logo-preview-content {
@@ -1063,7 +1092,7 @@
   .do-logo-btn.del:hover { background: rgba(226,75,74,0.1); }
   /* サイズスライダー */
   .do-logo-size-row { display: flex; align-items: center; gap: 6px; }
-  .do-logo-size-label { font-size: 9px; color: #6A6A70; letter-spacing: 1px; }
+  .do-logo-size-label { font-size: 9px; color: #88888E; letter-spacing: 1px; }
   .do-logo-size-slider {
     flex: 1; height: 18px; position: relative; cursor: ew-resize; touch-action: none;
   }
@@ -1089,36 +1118,36 @@
   .do-bgm-tag {
     padding: 3px 10px; font-size: 10px; letter-spacing: 1.5px; font-weight: 500; border-radius: 4px;
   }
-  .do-bgm-tag.tag-door { background: rgba(200,85,0,0.2); color: #CC5500; }
+  .do-bgm-tag.tag-door { background: rgba(255,149,80,0.2); color: #FF9550; }
   .do-bgm-tag.tag-workout { background: rgba(46,122,255,0.2); color: #2E7AFF; }
-  .do-bgm-sub { font-size: 10px; color: #6A6A70; }
+  .do-bgm-sub { font-size: 10px; color: #88888E; }
   .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* WORKOUT 用色違いボタン／フィル */
-  .do-bgm-btn.primary.door { background: #CC5500; color: #111111; border-color: #CC5500; }
+  .do-bgm-btn.primary.door { background: #FF9550; color: #252525; border-color: #FF9550; }
   .do-bgm-btn.primary.door:hover { background: #E06510; }
   .do-bgm-btn.primary.workout { background: #2E7AFF; color: #042C53; border-color: #2E7AFF; }
   .do-bgm-btn.primary.workout:hover { background: #B5D4F4; }
-  .do-bgm-btn.active.door { background: #CC5500; color: #111111; border-color: #CC5500; }
+  .do-bgm-btn.active.door { background: #FF9550; color: #252525; border-color: #FF9550; }
   .do-bgm-btn.active.workout { background: #2E7AFF; color: #042C53; border-color: #2E7AFF; }
-  .do-bgm-bar-fill.door { background: #CC5500; }
+  .do-bgm-bar-fill.door { background: #FF9550; }
   .do-bgm-bar-fill.workout { background: #2E7AFF; }
-  .do-bgm-vol-fill.door { background: #CC5500; }
+  .do-bgm-vol-fill.door { background: #FF9550; }
   .do-bgm-vol-fill.workout { background: #2E7AFF; }
-  .do-bgm-vol-thumb.door { background: #CC5500; }
+  .do-bgm-vol-thumb.door { background: #FF9550; }
   .do-bgm-vol-thumb.workout { background: #2E7AFF; }
   /* BGMカード共通 (v11.2.5: 内部スペース拡張で文字とボタンの息継ぎ確保) */
   .do-bgm-card { padding: 14px 14px 16px; }
   .do-card {
-    background: #1A1A1A; border: 1px solid #0A0A0A; border-radius: 2px; padding: 10px;
+    background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 2px; padding: 10px;
     transition: border-color 0.15s, background 0.15s;
   }
-  .do-card.drop-over { border-color: #CC5500; background: #1F1B0F; }
+  .do-card.drop-over { border-color: #FF9550; background: #1F1B0F; }
   .do-card-head {
-    font-size: 9px; color: #6A6A70; letter-spacing: 2px; margin-bottom: 6px;
+    font-size: 9px; color: #88888E; letter-spacing: 2px; margin-bottom: 6px;
   }
   /* NOW / NEXT — 黄色テーマで大きく */
   #doNowCard {
-    border-color: rgba(200,85,0,0.35);
+    border-color: rgba(255,149,80,0.35);
     padding: 10px 18px;
     display: flex; align-items: center; gap: 18px;
   }
@@ -1131,7 +1160,7 @@
   }
   .do-clock-divider { display: none; } /* 横並びでは不要 */
   .do-clock-divider { height: 0.5px; background: #1F1F22; margin: 10px 0; }
-  .do-clock-next-label { font-size: 9px; color: #6A6A70; letter-spacing: 1.5px; margin-bottom: 2px; }
+  .do-clock-next-label { font-size: 9px; color: #88888E; letter-spacing: 1.5px; margin-bottom: 2px; }
   .do-clock-next-name { font-size: 12px; color: #E6E6EA; min-height: 14px; display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
   .do-clock-next-eta {
     font-family: 'SF Mono', 'Menlo', 'JetBrains Mono', monospace;
@@ -1139,7 +1168,7 @@
     color: #C8C8CE; margin-top: 2px; letter-spacing: 0.5px;
   }
   .do-status-badge {
-    display: inline-block; background: rgba(200,85,0,0.15); color: #CC5500;
+    display: inline-block; background: rgba(255,149,80,0.15); color: #FF9550;
     padding: 2px 10px; border-radius: 4px; font-size: 11px; letter-spacing: 0.5px;
     align-self: flex-start;
   }
@@ -1149,36 +1178,36 @@
   /* BGM */
   .do-bgm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .do-bgm-name { font-size: 11px; color: #C8C8CE; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .do-bgm-load { font-size: 9px; color: #6A6A70; cursor: pointer; padding: 4px 10px; background: #1E1E1E; border-radius: 3px; border: none; font-family: inherit; letter-spacing: 1px; }
-  .do-bgm-load:hover { background: #2A2A2A; color: #E6E6EA; }
+  .do-bgm-load { font-size: 9px; color: #88888E; cursor: pointer; padding: 4px 10px; background: #323232; border-radius: 3px; border: none; font-family: inherit; letter-spacing: 1px; }
+  .do-bgm-load:hover { background: #3E3E3E; color: #E6E6EA; }
   .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; }
   .do-bgm-btn {
     width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #25252A;
-    background: #1E1E1E; color: #E6E6EA; cursor: pointer; display: flex;
+    background: #323232; color: #E6E6EA; cursor: pointer; display: flex;
     align-items: center; justify-content: center; font-size: 22px; font-family: inherit;
     transition: all 0.15s; flex-shrink: 0;
   }
   /* ループのくるっと矢印は他より一回り大きく */
   #doBgmLoopBtn { font-size: 30px; }
-  .do-bgm-btn:hover { background: #2A2A2A; }
-  .do-bgm-btn.primary { background: #CC5500; color: #111111; border-color: #CC5500; }
+  .do-bgm-btn:hover { background: #3E3E3E; }
+  .do-bgm-btn.primary { background: #FF9550; color: #252525; border-color: #FF9550; }
   .do-bgm-btn.primary:hover { background: #E06510; }
-  .do-bgm-btn.active { background: #CC5500; color: #111111; border-color: #CC5500; }
+  .do-bgm-btn.active { background: #FF9550; color: #252525; border-color: #FF9550; }
   .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
-  .do-bgm-time { font-family: inherit; font-size: 10px; color: #6A6A70; margin-bottom: 8px; }
+  .do-bgm-time { font-family: inherit; font-size: 10px; color: #88888E; margin-bottom: 8px; }
   /* v12.9.18: クリック／ドラッグでシークできるよう高さを 4→8px に、カーソルと hover を追加 */
-  .do-bgm-bar { height: 8px; background: #1E1E1E; border-radius: 4px; overflow: hidden; margin-bottom: 6px; cursor: pointer; position: relative; transition: background 120ms; touch-action: none; }
+  .do-bgm-bar { height: 8px; background: #323232; border-radius: 4px; overflow: hidden; margin-bottom: 6px; cursor: pointer; position: relative; transition: background 120ms; touch-action: none; }
   .do-bgm-bar:hover { background: #1E1E26; }
-  .do-bgm-bar-fill { height: 100%; background: #CC5500; width: 0%; pointer-events: none; }
+  .do-bgm-bar-fill { height: 100%; background: #FF9550; width: 0%; pointer-events: none; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
-  .do-bgm-vol-label { font-size: 9px; color: #6A6A70; letter-spacing: 1.5px; width: 30px; }
+  .do-bgm-vol-label { font-size: 9px; color: #88888E; letter-spacing: 1.5px; width: 30px; }
   .do-bgm-vol-slider {
     flex: 1; height: 26px; position: relative; cursor: ew-resize;
     z-index: 2; touch-action: none; user-select: none;
   }
   .do-bgm-vol-slider::before {
     content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-    height: 6px; background: #1E1E1E; border-radius: 3px; pointer-events: none;
+    height: 6px; background: #323232; border-radius: 3px; pointer-events: none;
   }
   /* 0dB 位置の目印（中央 50%） */
   .do-bgm-vol-slider::after {
@@ -1191,11 +1220,11 @@
   }
   .do-bgm-vol-fill {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-    height: 6px; background: #CC5500; border-radius: 3px; pointer-events: none;
+    height: 6px; background: #FF9550; border-radius: 3px; pointer-events: none;
   }
   .do-bgm-vol-thumb {
     position: absolute; top: 50%; transform: translate(-50%, -50%);
-    width: 20px; height: 20px; background: #CC5500; border-radius: 50%;
+    width: 20px; height: 20px; background: #FF9550; border-radius: 50%;
     pointer-events: none;
   }
   .do-bgm-vol-db { font-family: inherit; font-size: 11px; min-width: 42px; text-align: right; color: #E6E6EA; }
@@ -1215,28 +1244,28 @@
     transition: border-color 120ms, background 120ms;
   }
   .db-input:hover { border-color: rgba(255,255,255,0.20); }
-  .db-input:focus { border-color: #CC5500; color: #FFFFFF; outline: none; background: rgba(0,0,0,0.35); }
+  .db-input:focus { border-color: #FF9550; color: #FFFFFF; outline: none; background: rgba(0,0,0,0.35); }
   .db-input::-webkit-inner-spin-button, .db-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
   /* DUCK */
   .do-duck-row { display: flex; align-items: center; justify-content: space-between; }
   .do-duck-label { font-size: 11px; color: #C8C8CE; }
-  .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #CC5500; }
-  .do-duck-bar { height: 4px; background: #1E1E1E; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
+  .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #FF9550; }
+  .do-duck-bar { height: 4px; background: #323232; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
   .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #FF8A0F; border-radius: 2px; pointer-events: none; }
   .do-duck-bar-thumb {
     position: absolute; top: 50%; transform: translate(-50%, -50%);
     width: 18px; height: 18px; background: #FF8A0F; border-radius: 50%;
     pointer-events: none; box-shadow: none;
   }
-  .do-duck-bar.gray .do-duck-bar-fill { background: #5A5A60; }
-  .do-duck-bar.gray .do-duck-bar-thumb { background: #5A5A60; }
+  .do-duck-bar.gray .do-duck-bar-fill { background: #7C7C84; }
+  .do-duck-bar.gray .do-duck-bar-thumb { background: #7C7C84; }
   .do-duck-fade-input {
-    background: #1E1E1E; border: 0.5px solid #25252A; border-radius: 4px;
+    background: #323232; border: 0.5px solid #25252A; border-radius: 4px;
     color: #E6E6EA; font-family: inherit; font-size: 12px; font-weight: 500;
     padding: 4px 6px; width: 60px; text-align: right; outline: none;
   }
-  .do-duck-fade-input:focus { border-color: #CC5500; background: #1A1A1A; }
+  .do-duck-fade-input:focus { border-color: #FF9550; background: #2E2E2E; }
   .do-duck-fade-input::-webkit-outer-spin-button,
   .do-duck-fade-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
@@ -1247,17 +1276,17 @@
   .do-lib-vol-card { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(255,255,255,0.06); cursor: default; }
   /* ＋ 枠を追加 */
   .do-lib-slot-add {
-    border: 0.5px dashed rgba(200,85,0,0.5);
-    background: rgba(200,85,0,0.04);
+    border: 0.5px dashed rgba(255,149,80,0.5);
+    background: rgba(255,149,80,0.04);
     border-radius: 2px; padding: 14px 10px; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 100px; transition: all 0.15s;
   }
   .do-lib-slot-add:hover {
-    background: rgba(200,85,0,0.12); border-color: #CC5500;
+    background: rgba(255,149,80,0.12); border-color: #FF9550;
   }
   .do-lib-slot {
-    border: 1px solid #0A0A0A; border-radius: 2px; padding: 10px;
+    border: 1px solid #1E1E1E; border-radius: 2px; padding: 10px;
     display: flex; flex-direction: column; min-height: 100px; position: relative;
     transition: border-color 0.15s, background 0.15s;
   }
@@ -1293,25 +1322,25 @@
   .do-lib-badge.color-2 { background: rgba(107,199,36,0.2); color: #6BC724; }
   .do-lib-badge.color-3 { background: rgba(255,138,15,0.2); color: #FF8A0F; }
   .do-lib-actions { display: flex; gap: 4px; align-items: center; }
-  .do-lib-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
-  .do-lib-act:hover { color: #CC5500; }
+  .do-lib-act { background: none; border: none; color: #7C7C84; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
+  .do-lib-act:hover { color: #FF9550; }
   .do-lib-act.del:hover { color: #E24B4A; }
   .do-lib-act.play { font-size: 14px; }
   .do-lib-act.play.playing-btn.color-0 { background: #FF4A8F; color: #4B1528; font-weight: 500; padding: 2px 8px; }
   .do-lib-act.play.playing-btn.color-1 { background: #2E7AFF; color: #042C53; font-weight: 500; padding: 2px 8px; }
   .do-lib-act.play.playing-btn.color-2 { background: #6BC724; color: #173404; font-weight: 500; padding: 2px 8px; }
-  .do-lib-act.play.playing-btn.color-3 { background: #FF8A0F; color: #111111; font-weight: 500; padding: 2px 8px; }
+  .do-lib-act.play.playing-btn.color-3 { background: #FF8A0F; color: #252525; font-weight: 500; padding: 2px 8px; }
   .do-lib-act.play.color-0:hover { color: #FF4A8F; }
   .do-lib-act.play.color-1:hover { color: #2E7AFF; }
   .do-lib-act.play.color-2:hover { color: #6BC724; }
   .do-lib-act.play.color-3:hover { color: #FF8A0F; }
   .do-lib-name { font-size: 12px; font-weight: 500; color: #E6E6EA; word-break: break-all; line-height: 1.3; margin-top: 2px; }
-  .do-lib-meta { font-size: 10px; color: #6A6A70; margin-top: 3px; font-family: inherit; }
-  .do-lib-empty-text { font-size: 11px; margin-top: 6px; color: #5A5A60; }
+  .do-lib-meta { font-size: 10px; color: #88888E; margin-top: 3px; font-family: inherit; }
+  .do-lib-empty-text { font-size: 11px; margin-top: 6px; color: #7C7C84; }
 
   /* ミニ VOL フェーダー（横）— ヒットエリア広く＋ew-resize カーソル */
   .do-lib-vol { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-  .do-lib-vol-label { font-size: 9px; color: #6A6A70; letter-spacing: 0.5px; min-width: 22px; }
+  .do-lib-vol-label { font-size: 9px; color: #88888E; letter-spacing: 0.5px; min-width: 22px; }
   .do-lib-vol-label.playing { color: #E6E6EA; }
   .do-lib-vol-slider {
     flex: 1; height: 26px; position: relative; cursor: ew-resize;
@@ -1319,7 +1348,7 @@
   }
   .do-lib-vol-track {
     position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-    height: 6px; background: #1E1E1E; border-radius: 3px; pointer-events: none;
+    height: 6px; background: #323232; border-radius: 3px; pointer-events: none;
   }
   .do-lib-vol-fill {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
@@ -1354,18 +1383,18 @@
   .tp-header { display: flex; align-items: center; gap: 16px; margin-bottom: 56px; }
   .tp-icon {
     width: 56px; height: 56px;
-    background: #222222; border-radius: 2px;
+    background: #363636; border-radius: 2px;
     display: flex; align-items: center; justify-content: center;
-    color: #111111; font-weight: 500; font-size: 28px; letter-spacing: -1px;
+    color: #252525; font-weight: 500; font-size: 28px; letter-spacing: -1px;
     font-family: 'Georgia', serif;
     box-shadow: none;
   }
   .tp-app-name { font-size: 22px; font-weight: 500; letter-spacing: 6px; color: #E6E6EA; }
-  .tp-app-sub  { font-size: 10px; letter-spacing: 4px; color: #CC5500; margin-top: 4px; font-weight: 500; }
-  .tp-ws-label { font-size: 10px; letter-spacing: 5px; color: #5A5A60; font-weight: 500; margin-bottom: 16px; }
+  .tp-app-sub  { font-size: 10px; letter-spacing: 4px; color: #FF9550; margin-top: 4px; font-weight: 500; }
+  .tp-ws-label { font-size: 10px; letter-spacing: 5px; color: #7C7C84; font-weight: 500; margin-bottom: 16px; }
   .tp-ws-row { display: flex; align-items: baseline; gap: 24px; margin-bottom: 32px; }
   .tp-ws-title { font-size: 56px; font-weight: 800; color: #E6E6EA; letter-spacing: -1px; }
-  .tp-ws-stats { margin-left: auto; font-size: 11px; letter-spacing: 3px; color: #5A5A60; }
+  .tp-ws-stats { margin-left: auto; font-size: 11px; letter-spacing: 3px; color: #7C7C84; }
   .tp-ws-stats strong { color: #C8C8CE; font-weight: 500; }
   .tp-grid {
     display: grid;
@@ -1373,27 +1402,27 @@
     gap: 14px;
   }
   .tp-card {
-    background: #1A1A1A; border: 1px solid #0A0A0A; border-radius: 8px;
+    background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 8px;
     padding: 22px 22px 20px;
     min-height: 180px;
     display: flex; flex-direction: column;
     cursor: pointer; position: relative;
     transition: border-color 0.15s, background 0.15s;
   }
-  .tp-card:hover { border-color: #555555; background: #1E1E1E; }
-  .tp-card-num { position: absolute; top: 18px; right: 22px; font-size: 11px; color: #5A5A60; letter-spacing: 1px; font-weight: 500; }
+  .tp-card:hover { border-color: #555555; background: #323232; }
+  .tp-card-num { position: absolute; top: 18px; right: 22px; font-size: 11px; color: #7C7C84; letter-spacing: 1px; font-weight: 500; }
   .tp-card-name { font-size: 22px; font-weight: 500; color: #E6E6EA; margin-bottom: 14px; letter-spacing: -0.5px; word-break: break-all; padding-right: 32px; }
   .tp-card-stats { display: flex; gap: 18px; margin-bottom: auto; }
   .tp-card-stat { display: flex; flex-direction: column; gap: 2px; }
-  .tp-card-stat-num { font-size: 17px; font-weight: 500; color: #CC5500; letter-spacing: -0.5px; }
-  .tp-card-stat-label { font-size: 8.5px; letter-spacing: 1.5px; color: #5A5A60; font-weight: 500; }
-  .tp-card-meta { margin-top: 16px; font-size: 10px; color: #5A5A60; letter-spacing: 1.5px; }
+  .tp-card-stat-num { font-size: 17px; font-weight: 500; color: #FF9550; letter-spacing: -0.5px; }
+  .tp-card-stat-label { font-size: 8.5px; letter-spacing: 1.5px; color: #7C7C84; font-weight: 500; }
+  .tp-card-meta { margin-top: 16px; font-size: 10px; color: #7C7C84; letter-spacing: 1.5px; }
   .tp-card-menu, .tp-card-rename {
     position: absolute; bottom: 12px;
     width: 36px; height: 36px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    color: #5A5A60; font-size: 18px;
-    background: #1E1E1E;
+    color: #7C7C84; font-size: 18px;
+    background: #323232;
     border: 0.5px solid #25252A;
     opacity: 0.6; transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
     cursor: pointer;
@@ -1402,7 +1431,7 @@
   .tp-card-menu { right: 14px; font-size: 20px; }
   .tp-card:hover .tp-card-menu,
   .tp-card:hover .tp-card-rename { opacity: 1; color: #C8C8CE; }
-  .tp-card-rename:hover { background: rgba(200,85,0,0.12); border-color: #CC5500; color: #CC5500; }
+  .tp-card-rename:hover { background: rgba(255,149,80,0.12); border-color: #FF9550; color: #FF9550; }
   .tp-card-menu:hover { background: rgba(226,75,74,0.12); border-color: #E24B4A; color: #E24B4A; }
   .tp-new {
     background: transparent; border: 0.5px dashed #2A2A30; border-radius: 8px;
@@ -1410,23 +1439,23 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
     cursor: pointer; transition: all 0.15s;
   }
-  .tp-new:hover { border-color: #CC5500; background: rgba(200,85,0,0.04); }
-  .tp-new-icon { font-size: 22px; color: #5A5A60; transition: color 0.15s; }
-  .tp-new:hover .tp-new-icon { color: #CC5500; }
-  .tp-new-label { font-size: 11px; letter-spacing: 3px; color: #5A5A60; font-weight: 500; transition: color 0.15s; }
-  .tp-new:hover .tp-new-label { color: #CC5500; }
+  .tp-new:hover { border-color: #FF9550; background: rgba(255,149,80,0.04); }
+  .tp-new-icon { font-size: 22px; color: #7C7C84; transition: color 0.15s; }
+  .tp-new:hover .tp-new-icon { color: #FF9550; }
+  .tp-new-label { font-size: 11px; letter-spacing: 3px; color: #7C7C84; font-weight: 500; transition: color 0.15s; }
+  .tp-new:hover .tp-new-label { color: #FF9550; }
   .tp-foot {
     margin-top: 56px; font-size: 10px; letter-spacing: 1.5px; color: #3A3A48; text-align: center;
   }
-  .tp-foot a { color: #5A5A60; cursor: pointer; }
-  .tp-foot a:hover { color: #CC5500; }
+  .tp-foot a { color: #7C7C84; cursor: pointer; }
+  .tp-foot a:hover { color: #FF9550; }
   /* Back-to-projects 小ボタン（メインアプリ側のヘッダー左に追加） */
   .back-to-top-btn {
-    background: transparent; border: 1px solid #111111; color: #6A6A70;
+    background: transparent; border: 1px solid #252525; color: #88888E;
     border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 9px;
     letter-spacing: 2px; cursor: pointer; transition: all 0.15s;
   }
-  .back-to-top-btn:hover { border-color: #CC5500; color: #CC5500; }
+  .back-to-top-btn:hover { border-color: #FF9550; color: #FF9550; }
   /* メインアプリページ — body 直下時と同じ flex 振る舞いに */
   #appPage {
     display: flex; flex-direction: column;
@@ -1470,9 +1499,9 @@
   }
   .do-vid-thumb img { width: 100%; height: 100%; object-fit: cover; }
   .do-vid-name { font-size: 12px; font-weight: 500; color: #E6E6EA; word-break: break-all; line-height: 1.3; margin-top: 4px; }
-  .do-vid-meta { font-size: 10px; color: #6A6A70; margin-top: 3px; font-family: inherit; }
+  .do-vid-meta { font-size: 10px; color: #88888E; margin-top: 3px; font-family: inherit; }
   /* アクションは ANNOUNCE LIBRARY と完全に同じスタイル */
-  .do-vid-act { background: none; border: none; color: #5A5A60; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
+  .do-vid-act { background: none; border: none; color: #7C7C84; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
   .do-vid-act:hover { color: #4FD1C5; }
   .do-vid-act.del:hover { color: #E24B4A; }
   .do-vid-act.play { font-size: 14px; }
@@ -1488,7 +1517,7 @@
   .do-out-btn.open { background: #4FD1C5; color: #093B36; border-color: #4FD1C5; }
   /* ヘッダー内 OUTPUT 状態ピル — 影アナ件数表示と同じ控えめスタイル */
   .out-status-pill {
-    font-size: 9px; color: #5A5A60; letter-spacing: 0.5px;
+    font-size: 9px; color: #7C7C84; letter-spacing: 0.5px;
   }
   .out-status-pill.open { color: #4FD1C5; }
   /* チェーン内 V チップ */
@@ -1499,31 +1528,31 @@
   /* SAMPLER モードの表示を「4×4 パッド」と「MacBook キーボード配列」で切替。
      各キーに音をドロップ→叩く/クリックで再生。機能キー(FADE OUT等)は赤系で区別。 */
   .kb-view-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
-  .kb-toggle { display: inline-flex; border: 1px solid #111111; border-radius: 2px; overflow: hidden; }
+  .kb-toggle { display: inline-flex; border: 1px solid #252525; border-radius: 2px; overflow: hidden; }
   .kb-toggle button { padding: 5px 14px; font-size: 10px; letter-spacing: 1px; background: transparent; color: #8A8A90; border: none; cursor: pointer; font-family: inherit; }
-  .kb-toggle button.active { background: #CC5500; color: #04342C; font-weight: 700; }
-  .kb-bank-label { font-size: 10px; color: #6A6A70; letter-spacing: 1px; }
-  .kb-hint { font-size: 9px; color: #5A5A60; margin-left: auto; }
+  .kb-toggle button.active { background: #FF9550; color: #04342C; font-weight: 700; }
+  .kb-bank-label { font-size: 10px; color: #88888E; letter-spacing: 1px; }
+  .kb-hint { font-size: 9px; color: #7C7C84; margin-left: auto; }
 
   .kb-view { display: flex; flex-direction: column; gap: 7px; padding: 12px 8px; align-items: center; overflow: auto; flex: 1; min-height: 0; }
   .kb-row { display: flex; gap: 6px; justify-content: center; }
   .kb-key {
-    width: 60px; height: 60px; border: 1px solid #111111; border-radius: 8px; background: #1A1A1A;
+    width: 60px; height: 60px; border: 1px solid #252525; border-radius: 8px; background: #2E2E2E;
     display: flex; flex-direction: column; align-items: stretch; padding: 5px 6px; cursor: pointer;
     position: relative; transition: background 80ms, border-color 80ms; box-sizing: border-box;
   }
-  .kb-key:hover { border-color: #CC5500; }
+  .kb-key:hover { border-color: #FF9550; }
   .kb-key .kb-cap { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8A8A90; line-height: 1; }
   .kb-key .kb-name {
     font-size: 9px; color: #E6E6EA; margin-top: auto; width: 100%; text-align: center;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25;
   }
   .kb-key.empty .kb-name { color: #44444A; }
-  .kb-key.assigned { background: #18221F; border-color: rgba(200,85,0,0.55); }
-  .kb-key.assigned .kb-cap { color: #FF7A1A; }
-  .kb-key.playing { background: #CC5500; }
+  .kb-key.assigned { background: #18221F; border-color: rgba(255,149,80,0.55); }
+  .kb-key.assigned .kb-cap { color: #FF8A3A; }
+  .kb-key.playing { background: #FF9550; }
   .kb-key.playing .kb-cap, .kb-key.playing .kb-name { color: #04342C; }
-  .kb-key.kb-drop-over { border-color: #FF7A1A; background: #23332F; box-shadow: none; /* was glow rgba(111,222,184,0.4); }
+  .kb-key.kb-drop-over { border-color: #FF8A3A; background: #23332F; box-shadow: none; }
   /* 機能キー（FADE OUT 等）は赤系で区別 */
   .kb-key.func { background: #221718; border-color: rgba(226,75,74,0.4); }
   .kb-key.func .kb-cap { color: #E8A0A0; }
@@ -1546,7 +1575,7 @@
   /* --- 共通 --- */
   .mt-card {
     background: linear-gradient(180deg, #131316, #101013);
-    border: 1px solid #0A0A0A; border-radius: 10px; padding: 14px 16px;
+    border: 1px solid #1E1E1E; border-radius: 10px; padding: 14px 16px;
     box-shadow: 0 2px 20px rgba(0,0,0,0.3);
   }
   .mt-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 12px; flex-wrap: wrap; row-gap: 6px; }
@@ -1555,10 +1584,10 @@
   .mt-section-num {
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 10px; color: #3A3A42;
     background: #0B0B0D; padding: 2px 6px; border-radius: 3px; letter-spacing: 1px;
-    border: 1px solid #111111;
+    border: 1px solid #252525;
   }
   .mt-section-title { font-size: 11px; letter-spacing: 3px; color: #E6E6EA; font-weight: 500; text-transform: uppercase; }
-  .mt-section-count { font-size: 9px; letter-spacing: 1.5px; color: #5A5A60; text-transform: uppercase; }
+  .mt-section-count { font-size: 9px; letter-spacing: 1.5px; color: #7C7C84; text-transform: uppercase; }
   .mt-section-actions { display: flex; gap: 6px; }
 
   .mt-btn {
@@ -1567,11 +1596,11 @@
     letter-spacing: 1.5px; font-weight: 500; cursor: pointer;
     transition: all 0.15s;
   }
-  .mt-btn:hover { border-color: #CC5500; color: #CC5500; background: rgba(200,85,0,0.04); }
+  .mt-btn:hover { border-color: #FF9550; color: #FF9550; background: rgba(255,149,80,0.04); }
   .mt-btn.ghost { background: rgba(255,255,255,0.02); }
-  .mt-btn.ghost.subtle { color: #5A5A60; border-color: #1F1F22; }
+  .mt-btn.ghost.subtle { color: #7C7C84; border-color: #1F1F22; }
   .mt-btn.ghost.subtle:hover { color: #E24B4A; border-color: rgba(226,75,74,0.4); background: rgba(226,75,74,0.05); }
-  .mt-btn.primary { background: #CC5500; color: #111111; border: none; }
+  .mt-btn.primary { background: #FF9550; color: #252525; border: none; }
   .mt-btn.primary:hover { background: #E06510; }
   .mt-btn.danger { color: #E24B4A; border-color: rgba(226,75,74,0.4); }
   .mt-btn.danger:hover { background: rgba(226,75,74,0.1); }
@@ -1582,7 +1611,7 @@
      これをしないと中の要素（select/readout/note）がカードからはみ出す or 縦書きに崩れる */
   .mt-row { display: flex; align-items: center; gap: 10px; margin: 4px 0; flex-wrap: wrap; row-gap: 4px; }
   .mt-label {
-    font-size: 10px; letter-spacing: 2px; color: #5A5A60; font-weight: 500;
+    font-size: 10px; letter-spacing: 2px; color: #7C7C84; font-weight: 500;
     min-width: 76px; text-transform: uppercase;
   }
   /* DEVICE select + ⟳ ボタン を 1 つのコンテナに見せる */
@@ -1600,7 +1629,7 @@
     transition: border-color 0.15s, background 0.15s;
   }
   .mt-row > .mt-select:hover { border-color: #3A3A42; }
-  .mt-row > .mt-select:focus { outline: none; border-color: #CC5500; }
+  .mt-row > .mt-select:focus { outline: none; border-color: #FF9550; }
   /* DEVICE 行の ⟳ ボタンを正方形に + select と高さ揃え */
   .mt-row > .mt-btn.ghost.subtle {
     width: 26px; height: 26px; padding: 0 !important;
@@ -1614,8 +1643,8 @@
     margin-left: 0 !important;
   }
   .mt-row > .mt-btn.ghost.subtle:hover {
-    border-color: #CC5500;
-    color: #CC5500;
+    border-color: #FF9550;
+    color: #FF9550;
     background: linear-gradient(180deg, #1A1A22 0%, #14141A 100%);
   }
   /* CHANNELS 行: 数値バッジ + 状態テキストを 1 つの pill にまとめる */
@@ -1631,18 +1660,18 @@
   }
   /* 状態テキスト (デバイス最大 / 必要) — 不足時は色変える */
   .mt-row-note {
-    font-size: 11px; color: #6A6A70;
+    font-size: 11px; color: #88888E;
     letter-spacing: 0.3px;
     font-weight: 400;
     white-space: nowrap; /* v12.9.15: 「デバイス最大2ch/必要11ch」が1文字ずつ縦書きに折り返すのを防ぐ */
   }
   .mt-row-note.warn { color: #FFCB5A; }
   .mt-input-num {
-    width: 60px; background: #141414; border: 0.5px solid #25252A; color: #E6E6EA;
+    width: 60px; background: #282828; border: 0.5px solid #25252A; color: #E6E6EA;
     padding: 5px 8px; border-radius: 3px; font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 11px; text-align: right;
   }
-  .mt-input-num:focus { outline: none; border-color: #CC5500; }
+  .mt-input-num:focus { outline: none; border-color: #FF9550; }
 
   /* iOS風 toggle switch */
   .mt-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; }
@@ -1654,18 +1683,18 @@
   }
   .mt-switch-thumb {
     position: absolute; top: 1px; left: 1px;
-    width: 14px; height: 14px; background: #6A6A70; border-radius: 50%;
+    width: 14px; height: 14px; background: #88888E; border-radius: 50%;
     transition: all 0.18s;
   }
-  .mt-switch input:checked + .mt-switch-track { background: rgba(200,85,0,0.3); border-color: #CC5500; }
-  .mt-switch input:checked + .mt-switch-track .mt-switch-thumb { left: 15px; background: #CC5500; box-shadow: none; }
+  .mt-switch input:checked + .mt-switch-track { background: rgba(255,149,80,0.3); border-color: #FF9550; }
+  .mt-switch input:checked + .mt-switch-track .mt-switch-thumb { left: 15px; background: #FF9550; box-shadow: none; }
   .mt-switch-text { font-size: 10px; color: #C8C8CE; letter-spacing: 0.5px; }
 
   /* ============= 1. NOW PLAYING HERO (compact) ============= */
   .mt-hero {
     position: relative; overflow: hidden;
     border-radius: 10px;
-    border: 1px solid #0A0A0A;
+    border: 1px solid #1E1E1E;
     background: #0A0A0C;
     flex-shrink: 0;
   }
@@ -1673,7 +1702,7 @@
   .mt-hero-bg {
     position: absolute; inset: 0;
     background:
-      radial-gradient(700px 160px at 8% 30%, rgba(200,85,0,0.10), transparent 60%),
+      radial-gradient(700px 160px at 8% 30%, rgba(255,149,80,0.10), transparent 60%),
       radial-gradient(500px 140px at 85% 70%, rgba(46,122,255,0.06), transparent 60%),
       linear-gradient(180deg, #16161B 0%, #0C0C0F 100%);
     transition: opacity 0.3s;
@@ -1708,9 +1737,9 @@
   .mt-hero-trackchip {
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 22px; font-weight: 800;
-    color: #CC5500;
-    background: rgba(200,85,0,0.06);
-    border: 1px solid rgba(200,85,0,0.7);
+    color: #FF9550;
+    background: rgba(255,149,80,0.06);
+    border: 1px solid rgba(255,149,80,0.7);
     padding: 8px 18px; border-radius: 8px;
     letter-spacing: 2px;
     flex-shrink: 0;
@@ -1779,8 +1808,8 @@
     cursor: text;
   }
   .mt-hero-title:hover:not(:disabled) { border-color: #25252A; background: rgba(0,0,0,0.2); }
-  .mt-hero-title:focus { border-color: #CC5500; background: rgba(0,0,0,0.35); color: #FFFFFF; }
-  .mt-hero-title:disabled { cursor: default; color: #5A5A60; }
+  .mt-hero-title:focus { border-color: #FF9550; background: rgba(0,0,0,0.35); color: #FFFFFF; }
+  .mt-hero-title:disabled { cursor: default; color: #7C7C84; }
   /* 再生中のタイトル色変化も廃止 */
   /* 下段: progress bar + meta */
   .mt-hero-bottom { display: flex; flex-direction: column; gap: 4px; }
@@ -1826,7 +1855,7 @@
     box-shadow: none;
   }
   .mt-locate-drop:hover { filter: brightness(1.25); border-color: #FFB81C; }
-  .mt-locate-drop:active, .mt-locate-drop.dragging { cursor: grabbing; box-shadow: none; /* was 0 0 10px rgba(255,184,28,0.4); }
+  .mt-locate-drop:active, .mt-locate-drop.dragging { cursor: grabbing; box-shadow: none; }
   /* ドラッグ中のゴースト (カーソル追従) — マーカーと同じ黄色三角 */
   .mt-locate-ghost {
     position: fixed; z-index: 99999; pointer-events: none;
@@ -1914,7 +1943,7 @@
   }
   .mt-hero-timeline-fill {
     position: absolute; top: 0; bottom: 0; left: 0; width: 0%;
-    background: #CC5500;
+    background: #FF9550;
     border-radius: 3px;
     transition: width 0.08s linear;
     pointer-events: none;
@@ -1938,9 +1967,9 @@
     transform: translate(-50%, -100%);
     padding: 6px 14px;
     background: linear-gradient(180deg, #0F1115, #07080A);
-    border: 1px solid #CC5500;
+    border: 1px solid #FF9550;
     border-radius: 2px;
-    color: #FF7A1A;
+    color: #FF8A3A;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 22px;
     font-weight: 500;
@@ -1962,7 +1991,7 @@
     width: 0; height: 0;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-top: 6px solid #CC5500;
+    border-top: 6px solid #FF9550;
   }
   /* ロケートドロップ中にタイムラインがハイライト */
   .mt-hero-timeline.locate-target .mt-hero-timeline-track {
@@ -1970,11 +1999,11 @@
     background: rgba(255,184,28,0.08);
   }
   .mt-hero-meta-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #6A6A70; text-transform: uppercase; }
+  .mt-hero-status { font-size: 9px; letter-spacing: 1.5px; color: #88888E; text-transform: uppercase; }
   /* status の色変化も廃止 */
   .mt-hero-times {
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 10px;
-    color: #6A6A70; letter-spacing: 0.5px;
+    color: #88888E; letter-spacing: 0.5px;
   }
   /* time-now の色変化も廃止 */
   /* Transport buttons (compact) */
@@ -1989,9 +2018,9 @@
   }
   .mt-tbtn:hover { background: rgba(255,255,255,0.08); border-color: #3A3A42; }
   .mt-tbtn.play {
-    background: linear-gradient(180deg, #CC5500, #5DA084);
+    background: linear-gradient(180deg, #FF9550, #5DA084);
     color: #0A1410; border: none; width: 40px; height: 40px; font-size: 13px;
-    box-shadow: 0 3px 14px rgba(200,85,0,0.25);
+    box-shadow: 0 3px 14px rgba(255,149,80,0.25);
   }
   .mt-tbtn.play:hover { background: linear-gradient(180deg, #E06510, #6CB096); }
   /* 再生中の PLAY ボタン金色化は廃止（常に緑のまま） */
@@ -2016,7 +2045,7 @@
     box-shadow: none;
   }
   .mt-legend-lbl {
-    font-size: 8px; letter-spacing: 0.5px; color: #5A5A60;
+    font-size: 8px; letter-spacing: 0.5px; color: #7C7C84;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; margin-right: 2px;
   }
   /* 2 カラム縦流し（デフォルト）: 左列 1〜8 を上から下 → 右列 9〜16
@@ -2045,7 +2074,7 @@
     grid-template-columns: 12px 22px 28px minmax(0, 1fr) 32px 56px 22px;
     /* grip / num / play / name / autotoggle / delay / del */
     gap: 4px; align-items: center;
-    padding: 6px 6px 6px 4px; border: 1px solid #0A0A0A; border-radius: 2px;
+    padding: 6px 6px 6px 4px; border: 1px solid #1E1E1E; border-radius: 2px;
     background: rgba(255,255,255,0.015);
     position: relative;
     transition: border-color 0.15s, background 0.15s;
@@ -2075,10 +2104,10 @@
     display: inline-flex; align-items: center; justify-content: center;
     width: 18px; height: 18px; border-radius: 50%;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 9px; font-weight: 500;
-    color: #6A6A70; background: rgba(255,255,255,0.04);
+    color: #88888E; background: rgba(255,255,255,0.04);
   }
   .mt-song-loadcount.has-files {
-    background: rgba(200,85,0,0.18);
+    background: rgba(255,149,80,0.18);
     color: #88D6C2;
     box-shadow: none;
   }
@@ -2087,13 +2116,13 @@
     color: #FFB81C;
     box-shadow: none;
   }
-  .mt-song-row:hover { border-color: #111111; background: rgba(255,255,255,0.025); }
+  .mt-song-row:hover { border-color: #252525; background: rgba(255,255,255,0.025); }
   .mt-song-row.playing {
-    border-color: #CC5500;
-    background: linear-gradient(90deg, rgba(200,85,0,0.10), rgba(200,85,0,0.02) 60%);
-    box-shadow: inset 3px 0 0 #CC5500;
+    border-color: #FF9550;
+    background: linear-gradient(90deg, rgba(255,149,80,0.10), rgba(255,149,80,0.02) 60%);
+    box-shadow: inset 3px 0 0 #FF9550;
   }
-  .mt-song-row.queued  { border-color: rgba(200,85,0,0.4); }
+  .mt-song-row.queued  { border-color: rgba(255,149,80,0.4); }
   /* selected (= NEXT UP): playing と区別して "金色で強く"。SPACE で重ねて再生される曲 */
   .mt-song-row.selected:not(.playing) {
     border-color: #FFB81C;
@@ -2104,7 +2133,7 @@
   .mt-song-row.selected:not(.playing) .mt-song-play {
     background: linear-gradient(180deg, #FFB81C, #C9A03D);
     color: #2A1F08; border-color: #FFB81C;
-    box-shadow: none; /* was 0 0 10px rgba(255,184,28,0.5);
+    box-shadow: none;
     animation: mtNextPulse 1.6s ease-in-out infinite;
   }
   @keyframes mtNextPulse {
@@ -2130,7 +2159,7 @@
   .mt-song-playingbadge { display: none; }
   .mt-song-row.playing .mt-song-playingbadge {
     display: inline-block;
-    background: linear-gradient(180deg, #CC5500, #5DA084);
+    background: linear-gradient(180deg, #FF9550, #5DA084);
     color: #0A1410;
     font-size: 9px; font-weight: 500; letter-spacing: 1.2px;
     padding: 1px 7px;
@@ -2142,11 +2171,11 @@
     user-select: none;
   }
   .mt-song-row.drop-target {
-    border-color: #CC5500; background: rgba(200,85,0,0.12); border-style: dashed;
-    box-shadow: 0 0 0 1px rgba(200,85,0,0.2);
+    border-color: #FF9550; background: rgba(255,149,80,0.12); border-style: dashed;
+    box-shadow: 0 0 0 1px rgba(255,149,80,0.2);
   }
-  .mt-song-num { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px; color: #5A5A60; text-align: right; font-weight: 500; letter-spacing: 0.3px; }
-  .mt-song-row.playing .mt-song-num { color: #CC5500; }
+  .mt-song-num { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px; color: #7C7C84; text-align: right; font-weight: 500; letter-spacing: 0.3px; }
+  .mt-song-row.playing .mt-song-num { color: #FF9550; }
   .mt-song-play {
     width: 26px; height: 26px; border-radius: 50%;
     background: rgba(255,255,255,0.04); color: #C8C8CE; border: 0.5px solid #25252A;
@@ -2154,9 +2183,9 @@
     font-size: 11px; cursor: pointer; transition: all 0.15s;
     padding: 0;
   }
-  .mt-song-play:hover { background: #CC5500; color: #111111; border-color: #CC5500; }
+  .mt-song-play:hover { background: #FF9550; color: #252525; border-color: #FF9550; }
   .mt-song-row.playing .mt-song-play {
-    background: #CC5500; color: #111111; border-color: #CC5500;
+    background: #FF9550; color: #252525; border-color: #FF9550;
     box-shadow: none;
   }
   /* 曲名テキスト (リネーム不可。リネームは NOW PLAYING タイトル input で) — 本番視認サイズ */
@@ -2171,14 +2200,14 @@
   /* 並べ替えドラッグの視覚化（行全体ではなく grip ハンドル経由でのみ） */
   .mt-song-row { cursor: default; }
   .mt-song-row.reorder-dragging { opacity: 0.4; }
-  .mt-song-row.reorder-above { box-shadow: inset 0 2px 0 #CC5500; }
-  .mt-song-row.reorder-below { box-shadow: inset 0 -2px 0 #CC5500; }
+  .mt-song-row.reorder-above { box-shadow: inset 0 2px 0 #FF9550; }
+  .mt-song-row.reorder-below { box-shadow: inset 0 -2px 0 #FF9550; }
   /* 行の左端の grip ハンドル（点々マーク、これを掴んだときだけ並べ替え可能） */
   .mt-song-grip {
     width: 12px; height: 22px;
     display: flex; align-items: center; justify-content: center;
     cursor: grab;
-    color: #4A4A55;
+    color: #6E6E78;
     font-size: 12px;
     line-height: 1;
     user-select: none;
@@ -2186,11 +2215,11 @@
     transition: color 0.12s;
   }
   .mt-song-grip:hover { color: #B8B8C0; }
-  .mt-song-grip:active { cursor: grabbing; color: #CC5500; }
+  .mt-song-grip:active { cursor: grabbing; color: #FF9550; }
   /* インライン rename input */
   .mt-song-name-input {
-    background: rgba(200,85,0,0.10);
-    border: 1px solid #CC5500;
+    background: rgba(255,149,80,0.10);
+    border: 1px solid #FF9550;
     border-radius: 3px;
     color: #FFFFFF;
     font-family: inherit;
@@ -2231,13 +2260,13 @@
   .mt-track-slot.has-content:hover { color: #FFFFFF; filter: brightness(1.15); }
 
   .mt-track-slot.drop-over {
-    border-color: #CC5500; background: rgba(200,85,0,0.28); color: #FFFFFF;
+    border-color: #FF9550; background: rgba(255,149,80,0.28); color: #FFFFFF;
     border-style: solid; box-shadow: none;
   }
   .mt-track-slot.loading { color: #FF8A0F; border-color: #FF8A0F; background: rgba(255,138,15,0.08); }
 
   .mt-song-del {
-    color: #4A4A50; background: transparent; border: none; cursor: pointer;
+    color: #6A6A72; background: transparent; border: none; cursor: pointer;
     font-size: 14px; transition: color 0.12s; padding: 0;
   }
   .mt-song-del:hover { color: #E24B4A; }
@@ -2245,9 +2274,9 @@
   /* AUTO/STOP トグル — 本番視認サイズに */
   .mt-song-autotoggle {
     width: 32px; height: 28px; border-radius: 4px;
-    border: 0.5px solid rgba(200,85,0,0.35);
-    background: rgba(200,85,0,0.08);
-    color: #CC5500;
+    border: 0.5px solid rgba(255,149,80,0.35);
+    background: rgba(255,149,80,0.08);
+    color: #FF9550;
     font-size: 10px; font-family: inherit; font-weight: 500;
     cursor: pointer; padding: 0;
     line-height: 1; letter-spacing: 0;
@@ -2265,13 +2294,13 @@
   /* 次曲スタートまでの delay 秒数 — 白文字、本番視認サイズ */
   .mt-song-delay {
     width: 100%; min-width: 0; height: 28px;
-    background: #0A0A0A; border: 1px solid #0A0A0A; color: #FFFFFF;
+    background: #1E1E1E; border: 1px solid #1E1E1E; color: #FFFFFF;
     padding: 2px 4px; border-radius: 4px;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 12px;
     text-align: center; font-weight: 500;
     box-shadow: inset 0 1px 1px rgba(0,0,0,0.4);
   }
-  .mt-song-delay:focus { outline: none; border-color: #CC5500; color: #FFFFFF; }
+  .mt-song-delay:focus { outline: none; border-color: #FF9550; color: #FFFFFF; }
   .mt-song-delay:disabled { opacity: 0.25; }
   .mt-song-delay::-webkit-inner-spin-button { display: none; }
   .mt-song-delay::-webkit-outer-spin-button { display: none; }
@@ -2380,7 +2409,7 @@
   /* 再生開始から 10 秒間、ダブルタップ防止＆「鳴ってます」アピール */
   .mt-playback-overlay {
     position: fixed; inset: 0;
-    background: radial-gradient(ellipse at center, rgba(200,85,0,0.18) 0%, rgba(0,0,0,0.88) 60%);
+    background: radial-gradient(ellipse at center, rgba(255,149,80,0.18) 0%, rgba(0,0,0,0.88) 60%);
     z-index: 10000;
     display: none;
     flex-direction: column;
@@ -2397,9 +2426,9 @@
   }
   .mt-pb-icon {
     font-size: 100px;
-    color: #CC5500;
+    color: #FF9550;
     line-height: 1;
-    text-shadow: 0 0 30px rgba(200,85,0,0.8), 0 0 60px rgba(200,85,0,0.4);
+    text-shadow: 0 0 30px rgba(255,149,80,0.8), 0 0 60px rgba(255,149,80,0.4);
     animation: mt-pb-pulse 1.5s ease-in-out infinite;
   }
   @keyframes mt-pb-pulse {
@@ -2413,7 +2442,7 @@
     font-weight: 800;
     color: #88D6C2;
     margin-top: 24px;
-    text-shadow: 0 0 18px rgba(200,85,0,0.5);
+    text-shadow: 0 0 18px rgba(255,149,80,0.5);
   }
   .mt-pb-song {
     font-size: 22px;
@@ -2438,7 +2467,7 @@
     font-size: 56px; font-weight: 800;
     color: #FFFFFF;
     width: 90px; height: 90px;
-    border: 2px solid #CC5500;
+    border: 2px solid #FF9550;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     box-shadow: none;
@@ -2542,20 +2571,20 @@
   .mt-preload-banner.mt-preload-ready {
     background: linear-gradient(180deg, #0E1815 0%, #0B1310 100%);
     box-shadow:
-      inset 0 1px 0 rgba(200,85,0,0.6),
-      inset 0 -1px 0 rgba(200,85,0,0.3),
+      inset 0 1px 0 rgba(255,149,80,0.6),
+      inset 0 -1px 0 rgba(255,149,80,0.3),
       0 1px 0 rgba(0,0,0,0.4);
   }
   .mt-preload-banner.mt-preload-ready::before { display: none; }
   .mt-preload-banner.mt-preload-ready .mt-preload-icon {
-    background: #CC5500;
+    background: #FF9550;
     box-shadow: none;
     animation: none;
   }
   .mt-preload-banner.mt-preload-ready .mt-preload-label { color: #88D6C2; }
   .mt-preload-banner.mt-preload-ready .mt-preload-hint { color: rgba(184,224,204,0.7); }
   .mt-preload-banner.mt-preload-ready .mt-preload-bar-fill {
-    background: linear-gradient(90deg, #CC5500, #88D6C2);
+    background: linear-gradient(90deg, #FF9550, #88D6C2);
     animation: none;
   }
 
@@ -2641,7 +2670,7 @@
   .mt-mixer-card {
     position: relative;
     background: linear-gradient(180deg, #131316, #0E0E12);
-    border: 1px solid #0A0A0A; border-radius: 10px; padding: 10px 12px 12px;
+    border: 1px solid #1E1E1E; border-radius: 10px; padding: 10px 12px 12px;
     box-shadow: 0 2px 24px rgba(0,0,0,0.4);
     min-width: 0;
     display: flex; flex-direction: column;
@@ -2682,7 +2711,7 @@
     display: flex; flex-direction: column; align-items: stretch; gap: 3px;
     padding: 11px 4px 6px 4px;
     background: #0E0E12;
-    border: 1px solid #111111;
+    border: 1px solid #252525;
     border-radius: 8px;
     min-width: 0;
     /* モヤモヤする drop-shadow / inset shadow は廃止 → スッキリ */
@@ -2751,7 +2780,7 @@
   /* v12.2 (Phase C): ラベル編集中の入力フィールド (ストリップ内インライン) */
   .mt-strip-label-edit {
     font-family: inherit; font-size: 10px; letter-spacing: 1.2px; font-weight: 500;
-    background: #0A0A0A; border: 0.5px solid #CC5500; color: #E6E6EA;
+    background: #1E1E1E; border: 0.5px solid #FF9550; color: #E6E6EA;
     padding: 1px 4px; border-radius: 3px;
     width: 100%; min-width: 0;
     outline: none;
@@ -2778,7 +2807,7 @@
     line-height: 1.3;
   }
   .mt-strip-fcount.empty {
-    color: #4A4A50;
+    color: #6A6A72;
     background: rgba(255,255,255,0.03);
     border-color: rgba(255,255,255,0.06);
   }
@@ -2821,7 +2850,7 @@
   /* Fader */
   .mt-strip-fader {
     position: relative; width: 8px;
-    background: #1E1E1E;
+    background: #323232;
     border-radius: 3px;
     cursor: ns-resize;
     flex-shrink: 0;
@@ -2848,7 +2877,7 @@
     position: absolute; bottom: 0; left: 50%;
     width: 2px;
     transform: translateX(-50%);
-    background: #252525;
+    background: #393939;
     border-radius: 1px;
     box-shadow: none;
   }
@@ -2859,7 +2888,7 @@
     border-radius: 2px;
     transform: translateY(50%);
     pointer-events: none;
-    border: 0.5px solid #5A5A62;
+    border: 0.5px solid #7C7C86;
     box-shadow: none;
   }
   /* Meter ステレオ — L / R を 2 本の細いバーで表示 */
@@ -2870,9 +2899,9 @@
     flex-shrink: 0;
   }
   .mt-strip-meter-bar {
-    width: 2px; background: #0A0A0A; border-radius: 1px;
+    width: 2px; background: #1E1E1E; border-radius: 1px;
     position: relative; overflow: hidden;
-    border: 1px solid #111111;
+    border: 1px solid #252525;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
   }
   /* v11.8.2: mono メーターは L のみ表示、視覚バランスのため少し太く */
@@ -2883,7 +2912,7 @@
     position: absolute; bottom: 0; left: 0; right: 0;
     background: linear-gradient(to top,
       #2E7A5B 0%,
-      #CC5500 55%,
+      #FF9550 55%,
       #FF8A0F 78%,
       #E24B4A 93%);
     height: 0%;
@@ -2907,16 +2936,16 @@
   /* dB readout LCD-style (入力可能) */
   .mt-strip-db {
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 9px; color: #FFFFFF;
-    background: #0A0A0A; padding: 2px 4px; border-radius: 3px;
+    background: #1E1E1E; padding: 2px 4px; border-radius: 3px;
     text-align: center; letter-spacing: 0.5px;
-    border: 1px solid #111111;
+    border: 1px solid #252525;
     box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
     width: 100%; min-width: 0;
     -webkit-appearance: none; appearance: none;
     outline: none;
     cursor: text;
   }
-  .mt-strip-db:focus { border-color: #CC5500; color: #FFFFFF; }
+  .mt-strip-db:focus { border-color: #FF9550; color: #FFFFFF; }
   .mt-strip-db[readonly] { cursor: default; }
   .mt-strip.muted .mt-strip-db { color: #E24B4A; text-shadow: 0 0 4px rgba(226,75,74,0.5); }
 
@@ -2924,7 +2953,7 @@
   .mt-strip-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
   .mt-stripbtn {
     background: linear-gradient(180deg, #1A1A1E, #131316);
-    color: #6A6A70; border: 0.5px solid #25252A;
+    color: #88888E; border: 0.5px solid #25252A;
     padding: 4px 0; border-radius: 3px; font-size: 8px; letter-spacing: 1px;
     cursor: pointer; font-family: inherit; font-weight: 500;
     transition: all 0.12s;
@@ -2942,7 +2971,7 @@
   .mt-stripbtn.solo.active {
     background: linear-gradient(180deg, #FFB81C, #C9A03D);
     color: #2A1F08; border-color: #FFB81C;
-    box-shadow: none; /* was 0 0 10px rgba(255,184,28,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    box-shadow: none;
   }
   .mt-strip.muted .mt-strip-fader-fill { opacity: 0.2; }
   .mt-strip.muted .mt-strip-meter-fill { opacity: 0.15; }
@@ -2960,7 +2989,7 @@
   }
   /* ROUTING を AUDIO IFACE 内に統合した時の見出し */
   .mt-routing-inline-label {
-    font-size: 8px; letter-spacing: 1.5px; color: #4A4A50; font-weight: 500;
+    font-size: 8px; letter-spacing: 1.5px; color: #6A6A72; font-weight: 500;
     margin: 10px 0 5px; padding-top: 8px;
     border-top: 0.5px solid #1F1F22;
   }
@@ -3002,7 +3031,7 @@
     flex-shrink: 0;
   }
   .mt-songinfo-empty {
-    font-size: 10px; color: #4A4A50; padding: 12px 4px; text-align: center;
+    font-size: 10px; color: #6A6A72; padding: 12px 4px; text-align: center;
   }
   /* 各ファイル行 */
   .mt-songinfo-row {
@@ -3021,8 +3050,8 @@
   /* グループセレクタ（枠+背景うっすらグループ色、選択時の文字色もグループ色） */
   .mt-songinfo-groupsel {
     width: 100%; min-width: 0;
-    background: #0A0A0A; color: #C8C8CE;
-    border: 1px solid #111111; border-radius: 5px;
+    background: #1E1E1E; color: #C8C8CE;
+    border: 1px solid #252525; border-radius: 5px;
     padding: 3px 4px;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 10px; font-weight: 800;
     letter-spacing: 0.6px;
@@ -3039,7 +3068,7 @@
     min-width: 0; font-size: 10px;
   }
   .mt-songinfo-del {
-    background: transparent; border: none; color: #4A4A50; cursor: pointer;
+    background: transparent; border: none; color: #6A6A72; cursor: pointer;
     font-size: 11px; padding: 0;
   }
   .mt-songinfo-del:hover { color: #E24B4A; }
@@ -3063,14 +3092,14 @@
   }
   /* layer 数チップ */
   .mt-strip-layer-badge {
-    display: inline-block; color: #CC5500; font-size: 7px; letter-spacing: 0;
+    display: inline-block; color: #FF9550; font-size: 7px; letter-spacing: 0;
     margin-right: 3px; vertical-align: middle;
   }
   .mt-strip-layer-badge.pending { color: #FF8A0F; }
   /* 行も drop target ハイライト */
   .mt-song-row.drop-target {
-    border-color: #CC5500 !important;
-    background: rgba(200,85,0,0.08) !important;
+    border-color: #FF9550 !important;
+    background: rgba(255,149,80,0.08) !important;
   }
 
   /* CHANNEL ROUTING - フェーダーストリップと同じカードデザイン */
@@ -3088,8 +3117,8 @@
     gap: 2px;
     /* v12.9.2: padding を縦に詰めて AUDIO IFACE カード全体を短く */
     padding: 7px 4px 5px 4px;
-    background: #1A1A1A;
-    border: 1px solid #111111;
+    background: #2E2E2E;
+    border: 1px solid #252525;
     border-radius: 2px;
     min-width: 0;
     box-shadow: none;
@@ -3121,12 +3150,12 @@
     width: 100%;
   }
   .mt-ch-sep {
-    color: #6A6A70; font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 10px;
+    color: #88888E; font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 10px;
     flex-shrink: 0;
   }
   .mt-ch-input {
     width: 26px; min-width: 0;
-    background: #0A0A0A; border: 1px solid #111111; color: #FFFFFF;
+    background: #1E1E1E; border: 1px solid #252525; color: #FFFFFF;
     padding: 2px 0; border-radius: 3px;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px;
     text-align: center; font-weight: 500;
@@ -3134,7 +3163,7 @@
   }
   .mt-ch-input:focus {
     outline: none; color: #FFFFFF;
-    background: rgba(200,85,0,0.12); border-color: #CC5500;
+    background: rgba(255,149,80,0.12); border-color: #FF9550;
   }
   .mt-ch-input::-webkit-inner-spin-button { display: none; }
   .mt-ch-input { -moz-appearance: textfield; }
@@ -3143,7 +3172,7 @@
   /* v11.9.1: 縦積みレイアウトに合わせて大型化 — 数字を読みやすく */
   .mt-ch-select {
     width: 80%; min-width: 0; max-width: 56px;
-    background: #0A0A0A; border: 1px solid #111111; color: #FFFFFF;
+    background: #1E1E1E; border: 1px solid #252525; color: #FFFFFF;
     padding: 2px 0; border-radius: 3px;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 13px;
     text-align: center; font-weight: 500;
@@ -3154,9 +3183,9 @@
   }
   .mt-ch-select:focus {
     outline: none; color: #FFFFFF;
-    background: rgba(200,85,0,0.12); border-color: #CC5500;
+    background: rgba(255,149,80,0.12); border-color: #FF9550;
   }
-  .mt-ch-select option { background: #0A0A0A; color: #FFFFFF; padding: 2px; }
+  .mt-ch-select option { background: #1E1E1E; color: #FFFFFF; padding: 2px; }
   .mt-ch-select option:disabled { color: #FF6464; }
 
   /* v12.7.1: LTC セクション — タイトル削除、1 行集約レイアウト */
@@ -3164,8 +3193,8 @@
   .mt-tc-section {
     margin-top: 4px;
     padding: 4px 10px;
-    background: #111111;
-    border: 1px solid #111111;
+    background: #252525;
+    border: 1px solid #252525;
     border-radius: 2px;
     display: flex; flex-direction: column; gap: 3px;
   }
@@ -3181,7 +3210,7 @@
     font-size: 10px; color: #E6E6EA; cursor: pointer;
     letter-spacing: 1.5px; font-weight: 600;
     padding-right: 4px;
-    border-right: 1px solid #0A0A0A;
+    border-right: 1px solid #1E1E1E;
     margin-right: 2px;
   }
   /* v12.9.3: 画面狭い時に「LTC IN」が縦に改行されないよう縮小 + nowrap */
@@ -3193,7 +3222,7 @@
   }
   .mt-tc-toggle input[type="checkbox"] {
     width: 14px; height: 14px; margin: 0;
-    accent-color: #CC5500;
+    accent-color: #FF9550;
     cursor: pointer;
   }
   .mt-tc-label {
@@ -3202,7 +3231,7 @@
   }
   .mt-tc-input {
     width: 46px;
-    background: #0A0A0A; border: 1px solid #111111; color: #FFFFFF;
+    background: #1E1E1E; border: 1px solid #252525; color: #FFFFFF;
     padding: 3px 5px; border-radius: 3px;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px;
     text-align: center; font-weight: 500;
@@ -3210,7 +3239,7 @@
   }
   .mt-tc-input:focus {
     outline: none; color: #FFFFFF;
-    background: rgba(200,85,0,0.12); border-color: #CC5500;
+    background: rgba(255,149,80,0.12); border-color: #FF9550;
   }
   .mt-tc-input::-webkit-inner-spin-button,
   .mt-tc-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -3218,14 +3247,14 @@
     font-size: 10px; color: #8A8A90; letter-spacing: 0.5px;
   }
   .mt-tc-hint {
-    font-size: 9px; color: #5A5A60; line-height: 1.4;
+    font-size: 9px; color: #7C7C84; line-height: 1.4;
     letter-spacing: 0.3px;
     padding-top: 4px;
     border-top: 0.5px solid #1F1F25;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
   }
   /* v12.8.2 M7: OUT/IN を amber/teal で視覚区別 (left-border 2px) */
-  #mtTimecodeSection { border-left: 2px solid #CC5500; }
+  #mtTimecodeSection { border-left: 2px solid #FF9550; }
   #mtTimecodeInSection { border-left: 2px solid #FFB81C; }
   /* v12.9.1: LTC IN 行を強制改行させない (曲名表示エリアを圧迫しない) */
   #mtTcInTime {
@@ -3239,7 +3268,7 @@
     min-width: 56px !important;
   }
   #mtTcInStatus.tc-ok-glow {
-    text-shadow: 0 0 8px rgba(200,85,0,0.8);
+    text-shadow: 0 0 8px rgba(255,149,80,0.8);
   }
   /* v12.9.1: ヒント常時表示は廃止 — 曲名表示を優先 */
   .mt-tc-hint { display: none; }
@@ -3265,8 +3294,8 @@
     transition: all 0.12s;
   }
   .mt-ch-mode:hover {
-    background: rgba(200,85,0,0.18);
-    border-color: #CC5500;
+    background: rgba(255,149,80,0.18);
+    border-color: #FF9550;
     color: #FFFFFF;
   }
   .mt-ch-mode.mono {
@@ -3310,59 +3339,59 @@
   .do-sched-leftactions { display: flex; gap: 5px; align-items: center; }
   .do-sched-bigact {
     width: 30px; height: 30px; border-radius: 50%;
-    border: 0.5px solid #25252A; background: #1E1E1E; color: #E6E6EA;
+    border: 0.5px solid #25252A; background: #323232; color: #E6E6EA;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     font-size: 13px; font-family: inherit; transition: all 0.15s; flex-shrink: 0;
   }
-  .do-sched-bigact:hover { border-color: #CC5500; color: #CC5500; }
-  .do-sched-bigact.play.next { background: #CC5500; color: #111111; border-color: #CC5500; }
-  .do-sched-bigact.play.next:hover { background: #E06510; color: #111111; }
-  .do-sched-bigact.play.playing { background: #CC5500; color: #111111; border-color: #CC5500; }
+  .do-sched-bigact:hover { border-color: #FF9550; color: #FF9550; }
+  .do-sched-bigact.play.next { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .do-sched-bigact.play.next:hover { background: #E06510; color: #252525; }
+  .do-sched-bigact.play.playing { background: #FF9550; color: #252525; border-color: #FF9550; }
   .do-sched-bigact.play.playing:hover { background: #E06510; }
   .do-sched-bigact.del:hover { border-color: #E24B4A; color: #E24B4A; }
   .do-sched-row:first-child { border-top: none; }
   .do-sched-row.next {
-    background: rgba(200,85,0,0.04); border-top-color: #1F1F22; border-radius: 4px;
+    background: rgba(255,149,80,0.04); border-top-color: #1F1F22; border-radius: 4px;
   }
   .do-sched-row.done { opacity: 0.4; }
   /* 取り消し線は廃止。代わりに opacity と「✓ 済」チップで表現 */
   .do-sched-done-chip {
-    display: inline-block; background: rgba(138,138,146,0.15); color: #6A6A70;
+    display: inline-block; background: rgba(138,138,146,0.15); color: #88888E;
     padding: 3px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;
     margin-right: 4px; transition: all 0.15s;
   }
-  .do-sched-done-chip:hover { background: rgba(200,85,0,0.15); color: #CC5500; }
+  .do-sched-done-chip:hover { background: rgba(255,149,80,0.15); color: #FF9550; }
   .do-sched-next-chip {
-    display: inline-block; background: rgba(200,85,0,0.15); color: #CC5500;
+    display: inline-block; background: rgba(255,149,80,0.15); color: #FF9550;
     padding: 3px 8px; border-radius: 3px; font-size: 10px; margin-right: 4px;
   }
   .do-sched-playing-chip {
-    display: inline-block; background: rgba(200,85,0,0.15); color: #CC5500;
+    display: inline-block; background: rgba(255,149,80,0.15); color: #FF9550;
     padding: 3px 8px; border-radius: 3px; font-size: 10px; margin-right: 4px;
   }
-  .do-sched-row.playing { background: rgba(200,85,0,0.08); border-top-color: #1F1F22; }
+  .do-sched-row.playing { background: rgba(255,149,80,0.08); border-top-color: #1F1F22; }
   .do-sched-time {
     font-family: inherit; font-size: 16px; font-weight: 500; color: #E6E6EA;
     background: transparent; border: 0.5px solid transparent; border-radius: 4px;
     padding: 3px 6px; width: 82px;
   }
-  .do-sched-time:hover { border-color: #25252A; background: #141414; }
-  .do-sched-time:focus { border-color: #CC5500; background: #141414; outline: none; }
+  .do-sched-time:hover { border-color: #25252A; background: #282828; }
+  .do-sched-time:focus { border-color: #FF9550; background: #282828; outline: none; }
   .do-sched-row.next .do-sched-time, .do-sched-row.playing .do-sched-time {
-    border-color: #CC5500; color: #CC5500; background: #141414;
+    border-color: #FF9550; color: #FF9550; background: #282828;
   }
   .do-chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px; padding: 2px; border-radius: 4px; transition: background 0.15s; }
-  .do-chain.drop-over { background: rgba(200,85,0,0.06); outline: 0.5px dashed #CC5500; }
+  .do-chain.drop-over { background: rgba(255,149,80,0.06); outline: 0.5px dashed #FF9550; }
   /* 白基調のピル＋色バッジ — v12.5.10: ドラッグ可能を見た目で示す */
   .do-chip {
     display: inline-flex; align-items: center; gap: 6px;
-    background: #1E1E1E; border: 0.5px solid #25252A; border-radius: 4px;
+    background: #323232; border: 0.5px solid #25252A; border-radius: 4px;
     padding: 5px 10px; font-size: 11px; color: #E6E6EA; cursor: grab;
     transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
     user-select: none;
   }
   .do-chip:hover {
-    border-color: rgba(200,85,0,0.6);
+    border-color: rgba(255,149,80,0.6);
     background: #1A1A20;
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0,0,0,0.4);
@@ -3373,7 +3402,7 @@
   .do-chip * { pointer-events: none; }
   .do-chip .do-chip-x { pointer-events: auto; } /* × ボタンだけはクリック可能 */
   /* 再生中：囲み線なしで背景の濃さだけで示す（パステル緑塗り） */
-  .do-chip.playing { background: rgba(200,85,0,0.22); border-color: transparent; }
+  .do-chip.playing { background: rgba(255,149,80,0.22); border-color: transparent; }
   .do-chip.playing .do-chip-label { font-weight: 500; }
   .do-chip.played { opacity: 0.4; }
   /* チップ内の色バッジ（A1〜A4） */
@@ -3384,63 +3413,63 @@
   .do-chip-badge.color-0 { background: #FF4A8F; color: #4B1528; }
   .do-chip-badge.color-1 { background: #2E7AFF; color: #042C53; }
   .do-chip-badge.color-2 { background: #6BC724; color: #173404; }
-  .do-chip-badge.color-3 { background: #FF8A0F; color: #111111; }
-  .do-chip-badge.color-missing { background: #5A5A60; color: #E6E6EA; }
+  .do-chip-badge.color-3 { background: #FF8A0F; color: #252525; }
+  .do-chip-badge.color-missing { background: #7C7C84; color: #E6E6EA; }
   .do-chip-label { font-weight: 500; }
-  .do-chip-dur { font-family: inherit; font-size: 9px; color: #6A6A70; margin-left: 2px; }
-  .do-chip-x { color: #5A5A60; cursor: pointer; padding: 0 2px; margin-left: 2px; font-size: 12px; }
+  .do-chip-dur { font-family: inherit; font-size: 9px; color: #88888E; margin-left: 2px; }
+  .do-chip-x { color: #7C7C84; cursor: pointer; padding: 0 2px; margin-left: 2px; font-size: 12px; }
   .do-chip-x:hover { color: #E24B4A; }
-  .do-arrow { color: #5A5A60; font-size: 11px; }
+  .do-arrow { color: #7C7C84; font-size: 11px; }
   .do-chain-drop-hint {
     border: 0.5px dashed #25252A; border-radius: 4px;
-    padding: 5px 10px; font-size: 10px; color: #5A5A60;
+    padding: 5px 10px; font-size: 10px; color: #7C7C84;
   }
   .do-sched-actions { display: flex; gap: 4px; justify-content: flex-end; }
-  .do-sched-act { background: none; border: none; color: #5A5A60; cursor: pointer; font-size: 13px; font-family: inherit; padding: 2px 6px; border-radius: 3px; }
-  .do-sched-act:hover { color: #E6E6EA; background: #1E1E1E; }
+  .do-sched-act { background: none; border: none; color: #7C7C84; cursor: pointer; font-size: 13px; font-family: inherit; padding: 2px 6px; border-radius: 3px; }
+  .do-sched-act:hover { color: #E6E6EA; background: #323232; }
   .do-sched-act.del:hover { color: #E24B4A; }
   .do-sched-add {
-    border: 0.5px dashed #CC5500; padding: 9px;
-    text-align: center; color: #CC5500; font-size: 12px; cursor: pointer; letter-spacing: 1.5px;
-    background: rgba(200,85,0,0.05); border-radius: 2px;
+    border: 0.5px dashed #FF9550; padding: 9px;
+    text-align: center; color: #FF9550; font-size: 12px; cursor: pointer; letter-spacing: 1.5px;
+    background: rgba(255,149,80,0.05); border-radius: 2px;
     width: 100%; font-family: inherit; margin-top: 6px; font-weight: 500;
     transition: all 0.15s;
   }
-  .do-sched-add:hover { background: rgba(200,85,0,0.15); border-style: solid; }
-  .do-sched-total { font-size: 10px; color: #6A6A70; margin: 4px 0 0 108px; font-family: inherit; }
+  .do-sched-add:hover { background: rgba(255,149,80,0.15); border-style: solid; }
+  .do-sched-total { font-size: 10px; color: #88888E; margin: 4px 0 0 108px; font-family: inherit; }
 
   /* =============================================
      ABLETON FLAT DARK UI v2 — オレンジテーマ全モード
-     テーマ色 #CC5500 / Deck A #C4AE00 / Deck B #38ADAA
+     テーマ色 #FF9550 / Deck A #FFD21A / Deck B #38ADAA
      !important で元CSSに確実に勝つ
      ============================================= */
 
   /* --- BASE --- */
-  html, body { background: #141414 !important; color: #CDCDCD !important; }
+  html, body { background: #282828 !important; color: #CDCDCD !important; }
   * { box-sizing: border-box; }
 
   /* --- HEADER --- */
   .header {
-    background: #0D0D0D !important;
+    background: #212121 !important;
     border: none !important;
-    border-bottom: 1px solid #0A0A0A !important;
+    border-bottom: 1px solid #1E1E1E !important;
     border-radius: 0 !important;
     box-shadow: none !important;
   }
-  .logo-dot { background: #3A3A3A !important; box-shadow: none !important; border-radius: 50% !important; }
+  .logo-dot { background: #4E4E4E !important; box-shadow: none !important; border-radius: 50% !important; }
   .app-name { color: #909090 !important; }
   .app-sub { color: #484848 !important; }
 
   /* --- MODE TABS --- */
-  .app-mode-tabs { background: #0D0D0D !important; border: none !important; border-radius: 0 !important; }
-  .mode-btn { background: #1C1C1C !important; border-radius: 2px !important; color: #585858 !important; border: none !important; box-shadow: none !important; }
-  .mode-btn:hover { background: #272727 !important; color: #999 !important; }
-  .mode-btn.active { background: #CC5500 !important; color: #111 !important; font-weight: 700 !important; box-shadow: none !important; }
+  .app-mode-tabs { background: #212121 !important; border: none !important; border-radius: 0 !important; }
+  .mode-btn { background: #303030 !important; border-radius: 2px !important; color: #585858 !important; border: none !important; box-shadow: none !important; }
+  .mode-btn:hover { background: #3B3B3B !important; color: #999 !important; }
+  .mode-btn.active { background: #FF9550 !important; color: #252525 !important; font-weight: 700 !important; box-shadow: none !important; }
 
   /* --- LEFT PANEL --- */
   .left-panel, .left-panel-wrap {
-    background: #111 !important;
-    border-right: 1px solid #0A0A0A !important;
+    background: #252525 !important;
+    border-right: 1px solid #1E1E1E !important;
     border-radius: 0 !important;
     box-shadow: none !important;
   }
@@ -3455,186 +3484,247 @@
     border-radius: 2px !important; color: #CC8800 !important; box-shadow: none !important;
   }
 
-  /* --- MASTER FADER (完全フラット) --- */
-  .fader-track { background: #0A0A0A !important; }
-  .fader-fill { background: #252525 !important; }
+  /* --- MASTER FADER (Ableton スタイル) --- */
+  .fader-track {
+    background: #212121 !important;
+    width: 5px !important;
+    border: none !important;
+    border-left: 1px solid #323232 !important;
+    border-right: 1px solid #323232 !important;
+    border-radius: 0 !important;
+  }
+  .fader-fill { background: #3E3E3E !important; border-radius: 0 !important; }
   .fader-thumb {
-    background: #606060 !important; box-shadow: none !important;
-    border-radius: 2px !important; border: none !important;
+    background: linear-gradient(180deg,
+      #4E4E4E 0%,
+      #4E4E4E calc(50% - 1.5px),
+      #C8C8C8 calc(50% - 1.5px),
+      #C8C8C8 calc(50% + 1.5px),
+      #4E4E4E calc(50% + 1.5px),
+      #4E4E4E 100%
+    ) !important;
+    box-shadow: none !important;
+    border-radius: 1px !important;
+    border: 1px solid #4E4E4E !important;
+    height: 16px !important;
+    left: -10px !important;
+    right: -10px !important;
   }
   .fader-thumb::before, .fader-thumb::after { display: none !important; }
   .fader-track-wrap { background: transparent !important; }
+  /* dBスケール — ティックマーク付き */
+  .db-scale { color: #5E5E5E !important; font-size: 7px !important; }
+  .db-scale span { position: relative !important; }
+  .db-scale span::after {
+    content: '' !important; position: absolute !important;
+    right: -5px !important; top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 3px !important; height: 1px !important;
+    background: #3B3B3B !important;
+  }
+  .db-scale span:nth-child(3) { color: #888888 !important; font-weight: 700 !important; }
+  .db-scale span:nth-child(3)::after { width: 5px !important; background: #484848 !important; right: -6px !important; }
 
   /* --- CROSSFADER --- */
   input[type="range"].crossfader-slider {
-    background: linear-gradient(to right, #555 var(--fill, 50%), #0A0A0A var(--fill, 50%)) !important;
+    background: linear-gradient(to right, #555 var(--fill, 50%), #1E1E1E var(--fill, 50%)) !important;
   }
   input[type="range"].crossfader-slider::-webkit-slider-thumb {
-    background: #606060 !important; border: 2px solid #141414 !important; box-shadow: none !important;
+    background: #606060 !important; border: 2px solid #282828 !important; box-shadow: none !important;
   }
 
   /* --- FADE TIME / CURVE --- */
   .fade-btn {
-    background: #1C1C1C !important; border: 1px solid #111 !important;
+    background: #303030 !important; border: 1px solid #252525 !important;
     border-radius: 2px !important; color: #585858 !important; box-shadow: none !important;
   }
-  .fade-btn:hover { background: #272727 !important; color: #999 !important; }
-  .fade-btn.active { background: #CC5500 !important; color: #111 !important; box-shadow: none !important; }
+  .fade-btn:hover { background: #3B3B3B !important; color: #999 !important; }
+  .fade-btn.active { background: #FF9550 !important; color: #252525 !important; box-shadow: none !important; }
   .fade-time-custom input {
-    background: #1C1C1C !important; border: 1px solid #1A1A1A !important;
+    background: #303030 !important; border: 1px solid #2E2E2E !important;
     border-radius: 2px !important; color: #CDCDCD !important;
   }
-  .fade-time-custom input:focus { border-color: #CC5500 !important; }
-  .curve-btn { background: #1C1C1C !important; border-radius: 2px !important; color: #585858 !important; }
-  .curve-btn:hover { background: #272727 !important; color: #999 !important; }
-  .curve-btn.active { background: #CC5500 !important; color: #111 !important; }
-  .curve-handle { background: #CC5500 !important; border-color: #141414 !important; box-shadow: none !important; }
+  .fade-time-custom input:focus { border-color: #FF9550 !important; }
+  .curve-btn { background: #303030 !important; border-radius: 2px !important; color: #585858 !important; }
+  .curve-btn:hover { background: #3B3B3B !important; color: #999 !important; }
+  .curve-btn.active { background: #FF9550 !important; color: #252525 !important; }
+  .curve-handle { background: #FF9550 !important; border-color: #282828 !important; box-shadow: none !important; }
   .curve-handle.h2 { background: #887700 !important; box-shadow: none !important; }
 
   /* --- BTN PRIMARY --- */
   .btn-primary {
-    background: #CC5500 !important; color: #111 !important;
+    background: #FF9550 !important; color: #252525 !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
-  .btn-primary:hover { background: #DD6610 !important; box-shadow: none !important; }
+  .btn-primary:hover { background: #FFA565 !important; box-shadow: none !important; }
 
   /* --- BANKS --- */
   .banks {
-    background: #111 !important; border: 1px solid #0A0A0A !important; border-radius: 2px !important;
+    background: #252525 !important; border: 1px solid #1E1E1E !important; border-radius: 2px !important;
   }
   .bank-btn {
-    background: #1C1C1C !important; border: none !important;
+    background: #303030 !important; border: none !important;
     border-radius: 2px !important; color: #585858 !important;
   }
-  .bank-btn:hover { background: #272727 !important; color: #999 !important; }
-  .bank-btn.active { background: #CC5500 !important; color: #111 !important; font-weight: 600 !important; }
-  .bank-nav-arrow { color: #585858 !important; background: #1C1C1C !important; border-radius: 2px !important; }
-  .bank-nav-arrow:active { background: #CC5500 !important; color: #111 !important; }
-  .midi-led.on { background: #CC5500 !important; box-shadow: none !important; }
+  .bank-btn:hover { background: #3B3B3B !important; color: #999 !important; }
+  .bank-btn.active { background: #FF9550 !important; color: #252525 !important; font-weight: 600 !important; }
+  .bank-nav-arrow { color: #585858 !important; background: #303030 !important; border-radius: 2px !important; }
+  .bank-nav-arrow:active { background: #FF9550 !important; color: #252525 !important; }
+  .midi-led.on { background: #FF9550 !important; box-shadow: none !important; }
 
   /* --- SAMPLER DECK COLUMNS --- */
   .deck-col {
-    background: #111 !important; border: 1px solid #0A0A0A !important; border-radius: 2px !important;
+    background: #252525 !important; border: 1px solid #1E1E1E !important; border-radius: 2px !important;
   }
-  .deck-col.active-deck { border-color: #333 !important; }
+  .deck-col.active-deck { border-color: #474747 !important; }
+  /* ヘッダーはベタ塗りせず、ダークグレー＋左の細い識別帯だけ */
   .deck-col-header {
-    background: #222 !important; border-radius: 2px 2px 0 0 !important;
+    background: #2A2A2A !important; border-radius: 2px !important;
     box-shadow: none !important;
+    border-left: 3px solid #555555 !important;
   }
-  .deck-col-header:hover { background: #282828 !important; }
-  .deck-col-label { color: #111 !important; font-weight: 700 !important; }
-  .deck-col.active-deck .deck-col-label { color: #111 !important; }
-  /* Deck A = yellow, Deck B = teal (デッキ固有色) */
-  #deckCol0 .deck-col-header { background: #C4AE00 !important; }
-  #deckCol1 .deck-col-header { background: #38ADAA !important; }
-  #deckCol0.active-deck { border-color: #C4AE00 !important; }
-  #deckCol1.active-deck { border-color: #38ADAA !important; }
+  .deck-col-header:hover { background: #323232 !important; }
+  .deck-col-label { font-weight: 700 !important; }
+  /* Deck A = 黄 / Deck B = ティール — 左帯＋文字色だけで識別（ベタ塗りなし） */
+  #deckCol0 .deck-col-header { border-left-color: #FFD21A !important; }
+  #deckCol0 .deck-col-label  { color: #FFD21A !important; }
+  #deckCol1 .deck-col-header { border-left-color: #38ADAA !important; }
+  #deckCol1 .deck-col-label  { color: #38ADAA !important; }
+  /* アクティブは識別色を薄く（0.45）＋ヘッダーに極薄ティント — ギラ枠をやめる */
+  #deckCol0.active-deck { border-color: rgba(255,210,26,0.45) !important; }
+  #deckCol1.active-deck { border-color: rgba(56,173,170,0.45) !important; }
+  #deckCol0.active-deck .deck-col-header { background: rgba(255,210,26,0.10) !important; }
+  #deckCol1.active-deck .deck-col-header { background: rgba(56,173,170,0.10) !important; }
 
   /* --- DECK BANK BUTTONS --- */
-  .deck-mbank-btn { background: #1C1C1C !important; border-radius: 2px !important; color: #585858 !important; border: none !important; }
-  .deck-mbank-btn:hover { background: #272727 !important; color: #999 !important; }
-  .deck-mbank-btn.active { background: #CC5500 !important; color: #111 !important; font-weight: 600 !important; }
+  .deck-mbank-btn { background: #303030 !important; border-radius: 2px !important; color: #585858 !important; border: none !important; }
+  .deck-mbank-btn:hover { background: #3B3B3B !important; color: #999 !important; }
+  .deck-mbank-btn.active { background: #FF9550 !important; color: #252525 !important; font-weight: 600 !important; }
+  /* アクティブバンクのハイライトはデッキ識別色に合わせる（A=黄 / B=シアン） */
+  #deckCol0 .deck-mbank-btn.active { background: #FFD21A !important; color: #252525 !important; }
+  #deckCol1 .deck-mbank-btn.active { background: #38ADAA !important; color: #252525 !important; }
 
-  /* --- DECK COFADER (完全フラット) --- */
-  .deck-cofader-track { background: #0A0A0A !important; }
-  .deck-cofader-fill { background: #252525 !important; }
+  /* --- DECK COFADER (Ableton スタイル) --- */
+  .deck-cofader-track {
+    background: #212121 !important;
+    /* 横並びで flex:1 が効いて太るのを止め、MASTER と同じ 5px に固定 */
+    flex: 0 0 5px !important;
+    width: 5px !important;
+    border: none !important;
+    border-left: 1px solid #1E1E1E !important;
+    border-right: 1px solid #1E1E1E !important;
+    border-radius: 0 !important;
+  }
+  .deck-cofader-fill { background: #3A3A3A !important; border-radius: 0 !important; }
   .deck-cofader-thumb {
-    background: #606060 !important; box-shadow: none !important;
-    border-radius: 2px !important;
+    background: linear-gradient(180deg,
+      #484848 0%,
+      #484848 calc(50% - 1px),
+      #B8B8B8 calc(50% - 1px),
+      #B8B8B8 calc(50% + 1px),
+      #484848 calc(50% + 1px),
+      #484848 100%
+    ) !important;
+    box-shadow: none !important;
+    border-radius: 1px !important;
+    border: 1px solid #4C4C4C !important;
+    height: 14px !important;
+    left: -6px !important;
+    right: -6px !important;
   }
   .deck-cofader-thumb::before, .deck-cofader-thumb::after { display: none !important; }
-  .deck-cofader-db { color: #666 !important; }
+  .deck-cofader-db { color: #555 !important; }
 
   /* --- PADS --- */
   .pad-body {
-    background: #1E1E1E !important; border: 1px solid #0A0A0A !important;
+    background: #323232 !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: none !important;
     transition: background 0.04s !important;
   }
-  .pad-body:hover { background: #282828 !important; border-color: #1E1E1E !important; }
-  .pad-body.empty { background: #141414 !important; border: 1px dashed #1E1E1E !important; }
+  .pad-body:hover { background: #3C3C3C !important; border-color: #323232 !important; }
+  .pad-body.empty { background: #282828 !important; border: 1px dashed #323232 !important; }
   .pad-body.playing {
-    background: #252525 !important; border-color: #CC5500 !important;
+    background: #393939 !important; border-color: #FF9550 !important;
     box-shadow: none !important; border-width: 1px !important;
   }
-  .pad-body.flash { background: #CC5500 !important; box-shadow: none !important; }
-  .pad-body.drag-over { background: #2A2A2A !important; border-color: #CC5500 !important; border-style: dashed !important; }
+  .pad-body.flash { background: #FF9550 !important; box-shadow: none !important; }
+  .pad-body.drag-over { background: #3E3E3E !important; border-color: #FF9550 !important; border-style: dashed !important; }
   .pad-body.drop-target {
-    background: #2A2A2A !important; border-color: #CC5500 !important;
+    background: #3E3E3E !important; border-color: #FF9550 !important;
     border-width: 2px !important; box-shadow: none !important;
   }
-  .pad-num { color: #404040 !important; }
-  .pad.playing .pad-num { color: #CC5500 !important; }
+  .pad-num { color: #5C5C5C !important; }
+  .pad.playing .pad-num { color: #FF9550 !important; }
 
   /* --- PAD FADER CARD --- */
   .pad-fader-card {
-    background: #181818 !important; border: 1px solid #0A0A0A !important;
+    background: #2C2C2C !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
-  .pad-fader-card:hover { border-color: #2A2A2A !important; background: #1E1E1E !important; }
-  .pad-fader-fill { background: #383838 !important; border-radius: 2px !important; }
+  .pad-fader-card:hover { border-color: #3E3E3E !important; background: #323232 !important; }
+  .pad-fader-fill { background: #4C4C4C !important; border-radius: 2px !important; }
   .pad.has-color .pad-fader-fill { background: var(--pad-c) !important; }
-  .pad-body.flash + .pad-fader-card { border-color: #CC5500 !important; }
-  .pad-grip:hover { background: rgba(200,85,0,0.12) !important; color: #CC5500 !important; }
-  .pad-grip:active { background: rgba(200,85,0,0.25) !important; color: #CC5500 !important; }
-  .pad-progress-fill { background: #CC5500 !important; border-radius: 1px !important; }
+  .pad-body.flash + .pad-fader-card { border-color: #FF9550 !important; }
+  .pad-grip:hover { background: rgba(255,149,80,0.12) !important; color: #FF9550 !important; }
+  .pad-grip:active { background: rgba(255,149,80,0.25) !important; color: #FF9550 !important; }
+  .pad-progress-fill { background: #FF9550 !important; border-radius: 1px !important; }
   .pad-progress-bar-row { color: #555 !important; }
 
   /* --- PAD EDIT POPUP --- */
   .pad-edit-popup {
-    background: #1A1A1A !important; border: 1px solid #0A0A0A !important;
+    background: #2E2E2E !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: 0 4px 24px rgba(0,0,0,0.95) !important;
   }
-  .pad-edit-btn { background: #222 !important; border-radius: 2px !important; }
-  .pad-edit-btn:hover { background: #CC5500 !important; color: #111 !important; }
-  .pad-edit-icon:hover { background: #CC5500 !important; color: #111 !important; opacity: 1 !important; }
+  .pad-edit-btn { background: #363636 !important; border-radius: 2px !important; }
+  .pad-edit-btn:hover { background: #FF9550 !important; color: #252525 !important; }
+  .pad-edit-icon:hover { background: #FF9550 !important; color: #252525 !important; opacity: 1 !important; }
   .pad-edit-color-btn { border-radius: 2px !important; }
-  .pad-rename-input:focus { border-color: #CC5500 !important; background: rgba(0,0,0,0.5) !important; }
+  .pad-rename-input:focus { border-color: #FF9550 !important; background: rgba(0,0,0,0.5) !important; }
 
   /* --- LEVEL CARDS --- */
   .level-card {
-    background: #181818 !important; border: 1px solid #0A0A0A !important;
+    background: #2C2C2C !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
-  .level-card.playing { background: #1E1E1E !important; border-color: #CC5500 !important; box-shadow: none !important; }
-  .level-info-db { color: #CC5500 !important; }
-  .level-fader-fill { background: #383838 !important; border-radius: 4px !important; }
+  .level-card.playing { background: #323232 !important; border-color: #FF9550 !important; box-shadow: none !important; }
+  .level-info-db { color: #FF9550 !important; }
+  .level-fader-fill { background: #4C4C4C !important; border-radius: 4px !important; }
   .level-fader-thumb { background: #606060 !important; border-radius: 2px !important; }
 
   /* --- HOLD STRIP --- */
-  .hold-strip { background: #111 !important; border: 1px solid #0A0A0A !important; border-radius: 2px !important; }
+  .hold-strip { background: #252525 !important; border: 1px solid #1E1E1E !important; border-radius: 2px !important; }
   .hold-slot { border-radius: 2px !important; }
-  .hold-slot.filled:hover { background: #242424 !important; border-color: #CC5500 !important; }
-  .banks.drop-mode { border-color: #CC5500 !important; background: #181818 !important; }
-  .hold-slot.drop-target { border: 2px solid #CC5500 !important; box-shadow: none !important; }
+  .hold-slot.filled:hover { background: #383838 !important; border-color: #FF9550 !important; }
+  .banks.drop-mode { border-color: #FF9550 !important; background: #2C2C2C !important; }
+  .hold-slot.drop-target { border: 2px solid #FF9550 !important; box-shadow: none !important; }
 
   /* --- TRIM EDITOR --- */
-  .trim-handle.start::before, .trim-handle.start::after { background: #CC5500 !important; box-shadow: none !important; }
+  .trim-handle.start::before, .trim-handle.start::after { background: #FF9550 !important; box-shadow: none !important; }
   .trim-handle.end::before, .trim-handle.end::after { background: #887700 !important; box-shadow: none !important; }
 
   /* --- BADGE / TOAST / MIDI --- */
-  .badge.midi { color: #CC5500 !important; }
-  .badge.playing { background: #CC5500 !important; color: #111 !important; animation: none !important; box-shadow: none !important; }
-  .db-input:focus { border-color: #CC5500 !important; }
+  .badge.midi { color: #FF9550 !important; }
+  .badge.playing { background: #FF9550 !important; color: #252525 !important; animation: none !important; box-shadow: none !important; }
+  .db-input:focus { border-color: #FF9550 !important; }
 
   /* ===== DOOR OPEN MODE ===== */
 
   /* Cards */
   .do-card {
-    background: #1A1A1A !important; border: 1px solid #0A0A0A !important;
+    background: #2E2E2E !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
-  .do-card.drop-over { border-color: #CC5500 !important; background: #1E1E1E !important; }
+  .do-card.drop-over { border-color: #FF9550 !important; background: #323232 !important; }
   .do-card-head { color: #484848 !important; letter-spacing: 2px !important; }
 
   /* NOW / NEXT */
-  #doNowCard { border-color: #0A0A0A !important; }
-  .now-block.next-block { border-left: 1px solid #1A1A1A !important; }
+  #doNowCard { border-color: #1E1E1E !important; }
+  .now-block.next-block { border-left: 1px solid #2E2E2E !important; }
   .do-clock-now { color: #E0E0E0 !important; }
   .do-clock-next-label { color: #484848 !important; }
   .do-clock-next-name { color: #CDCDCD !important; }
   .do-clock-next-eta { color: #888 !important; }
-  .do-clock-divider { background: #0A0A0A !important; }
+  .do-clock-divider { background: #1E1E1E !important; }
   .do-status-badge {
     background: rgba(200,200,200,0.08) !important; color: #777 !important;
     border-radius: 2px !important;
@@ -3644,73 +3734,73 @@
 
   /* BGM tags */
   .do-bgm-tag { border-radius: 2px !important; }
-  .do-bgm-tag.tag-door { background: rgba(200,85,0,0.18) !important; color: #CC5500 !important; }
+  .do-bgm-tag.tag-door { background: rgba(255,149,80,0.18) !important; color: #FF9550 !important; }
   .do-bgm-tag.tag-workout { background: rgba(50,100,200,0.18) !important; color: #4A78CC !important; }
 
   /* BGM buttons (円形→四角フラット) */
   .do-bgm-btn {
     width: 38px !important; height: 38px !important;
-    background: #222 !important; border: 1px solid #111 !important;
+    background: #363636 !important; border: 1px solid #252525 !important;
     border-radius: 2px !important; color: #CDCDCD !important;
     font-size: 17px !important; box-shadow: none !important;
   }
-  .do-bgm-btn:hover { background: #2A2A2A !important; }
+  .do-bgm-btn:hover { background: #3E3E3E !important; }
   .do-bgm-btn.primary,
   .do-bgm-btn.active { background: #555 !important; color: #CDCDCD !important; border-color: #555 !important; }
   .do-bgm-btn.primary.door,
-  .do-bgm-btn.active.door { background: #CC5500 !important; color: #111 !important; border-color: #CC5500 !important; }
-  .do-bgm-btn.primary.door:hover { background: #DD6610 !important; }
+  .do-bgm-btn.active.door { background: #FF9550 !important; color: #252525 !important; border-color: #FF9550 !important; }
+  .do-bgm-btn.primary.door:hover { background: #FFA565 !important; }
   .do-bgm-btn.primary.workout,
-  .do-bgm-btn.active.workout { background: #3A6ACC !important; color: #111 !important; border-color: #3A6ACC !important; }
+  .do-bgm-btn.active.workout { background: #3A6ACC !important; color: #252525 !important; border-color: #3A6ACC !important; }
   .do-bgm-btn.primary.workout:hover { background: #4A7ADB !important; }
 
   /* BGM progress bar (薄くフラット) */
   .do-bgm-bar {
-    background: #111 !important; border-radius: 0 !important; height: 3px !important;
+    background: #252525 !important; border-radius: 0 !important; height: 3px !important;
     cursor: pointer !important;
   }
-  .do-bgm-bar:hover { background: #1A1A1A !important; }
+  .do-bgm-bar:hover { background: #2E2E2E !important; }
   .do-bgm-bar-fill { border-radius: 0 !important; }
-  .do-bgm-bar-fill.door { background: #CC5500 !important; }
+  .do-bgm-bar-fill.door { background: #FF9550 !important; }
   .do-bgm-bar-fill.workout { background: #3A6ACC !important; }
 
   /* BGM vol slider (フラット細め) */
   .do-bgm-vol-slider::before {
-    background: #0A0A0A !important; border-radius: 0 !important; height: 3px !important;
+    background: #1E1E1E !important; border-radius: 0 !important; height: 3px !important;
   }
   .do-bgm-vol-slider::after { background: rgba(255,255,255,0.2) !important; width: 1px !important; }
   .do-bgm-vol-fill { border-radius: 0 !important; height: 3px !important; }
-  .do-bgm-vol-fill.door { background: #CC5500 !important; }
+  .do-bgm-vol-fill.door { background: #FF9550 !important; }
   .do-bgm-vol-fill.workout { background: #3A6ACC !important; }
   .do-bgm-vol-thumb { width: 8px !important; height: 8px !important; border-radius: 1px !important; }
-  .do-bgm-vol-thumb.door { background: #CC5500 !important; }
+  .do-bgm-vol-thumb.door { background: #FF9550 !important; }
   .do-bgm-vol-thumb.workout { background: #3A6ACC !important; }
 
   .do-bgm-load {
-    background: #1C1C1C !important; border-radius: 2px !important;
+    background: #303030 !important; border-radius: 2px !important;
     color: #555 !important; border: none !important;
   }
-  .do-bgm-load:hover { background: #272727 !important; color: #CDCDCD !important; }
+  .do-bgm-load:hover { background: #3B3B3B !important; color: #CDCDCD !important; }
 
   /* DUCK */
-  .do-duck-value { color: #CC5500 !important; }
-  .do-duck-bar { background: #0A0A0A !important; border-radius: 0 !important; }
+  .do-duck-value { color: #FF9550 !important; }
+  .do-duck-bar { background: #1E1E1E !important; border-radius: 0 !important; }
   .do-duck-bar-fill { background: #887700 !important; border-radius: 0 !important; }
   .do-duck-bar-thumb {
     background: #887700 !important; border-radius: 2px !important;
     box-shadow: none !important; width: 12px !important; height: 12px !important;
   }
-  .do-duck-bar.gray .do-duck-bar-fill { background: #3A3A3A !important; }
-  .do-duck-bar.gray .do-duck-bar-thumb { background: #3A3A3A !important; }
+  .do-duck-bar.gray .do-duck-bar-fill { background: #4E4E4E !important; }
+  .do-duck-bar.gray .do-duck-bar-thumb { background: #4E4E4E !important; }
   .do-duck-fade-input {
-    background: #1C1C1C !important; border: 1px solid #1A1A1A !important;
+    background: #303030 !important; border: 1px solid #2E2E2E !important;
     border-radius: 2px !important; color: #CDCDCD !important;
   }
-  .do-duck-fade-input:focus { border-color: #CC5500 !important; }
+  .do-duck-fade-input:focus { border-color: #FF9550 !important; }
 
   /* LIBRARY slots */
   .do-lib-slot {
-    background: #1A1A1A !important; border: 1px solid #0A0A0A !important; border-radius: 2px !important;
+    background: #2E2E2E !important; border: 1px solid #1E1E1E !important; border-radius: 2px !important;
   }
   .do-lib-slot.slot-0 { background: rgba(140,20,55,0.08) !important; border-color: rgba(140,20,55,0.35) !important; }
   .do-lib-slot.slot-1 { background: rgba(20,65,185,0.08) !important; border-color: rgba(20,65,185,0.35) !important; }
@@ -3727,10 +3817,10 @@
   .do-lib-slot.empty.slot-2 { background: rgba(25,105,0,0.05) !important; border-color: rgba(25,105,0,0.25) !important; }
   .do-lib-slot.empty.slot-3 { background: rgba(125,45,0,0.05) !important; border-color: rgba(125,45,0,0.25) !important; }
   .do-lib-slot-add {
-    border: 1px dashed #252525 !important; background: transparent !important; border-radius: 2px !important;
+    border: 1px dashed #393939 !important; background: transparent !important; border-radius: 2px !important;
   }
-  .do-lib-slot-add:hover { border-color: #CC5500 !important; background: rgba(200,85,0,0.05) !important; }
-  .do-lib-act:hover { color: #CC5500 !important; }
+  .do-lib-slot-add:hover { border-color: #FF9550 !important; background: rgba(255,149,80,0.05) !important; }
+  .do-lib-act:hover { color: #FF9550 !important; }
   .do-lib-act.del:hover { color: #CC3333 !important; }
   .do-lib-act.play.playing-btn.color-0 { background: rgba(185,40,80,0.85) !important; color: #FFF !important; }
   .do-lib-act.play.playing-btn.color-1 { background: rgba(35,90,195,0.85) !important; color: #FFF !important; }
@@ -3738,7 +3828,7 @@
   .do-lib-act.play.playing-btn.color-3 { background: rgba(165,75,0,0.85) !important; color: #FFF !important; }
 
   /* Library vol fader */
-  .do-lib-vol-track { background: #0A0A0A !important; border-radius: 0 !important; height: 3px !important; }
+  .do-lib-vol-track { background: #1E1E1E !important; border-radius: 0 !important; height: 3px !important; }
   .do-lib-vol-fill { border-radius: 0 !important; height: 3px !important; }
   .do-lib-vol-fill.color-0 { background: #A82850 !important; }
   .do-lib-vol-fill.color-1 { background: #2850A8 !important; }
@@ -3758,69 +3848,88 @@
   .do-logo-size-fill { background: #8A7830 !important; border-radius: 0 !important; }
   .do-logo-size-thumb { background: #8A7830 !important; }
   .do-logo-size-val { color: #8A7830 !important; }
-  .do-logo-size-slider::before { background: #0A0A0A !important; border-radius: 0 !important; }
+  .do-logo-size-slider::before { background: #1E1E1E !important; border-radius: 0 !important; }
 
   /* SCHEDULE */
   .do-sched-add {
-    border: 1px dashed #252525 !important; background: transparent !important;
+    border: 1px dashed #393939 !important; background: transparent !important;
     border-radius: 2px !important; color: #484848 !important;
   }
-  .do-sched-add:hover { background: rgba(200,85,0,0.05) !important; border-color: #CC5500 !important; color: #CC5500 !important; border-style: dashed !important; }
-  .do-chip { background: #212121 !important; border: 1px solid #181818 !important; border-radius: 2px !important; }
-  .do-chip.playing { background: rgba(200,85,0,0.18) !important; border-color: #CC5500 !important; }
-  .do-chain-drop-hint { border-color: #1A1A1A !important; border-radius: 2px !important; color: #383838 !important; }
-  .do-arrow { color: #2A2A2A !important; }
-  .do-sched-act:hover { color: #CDCDCD !important; background: #1C1C1C !important; }
+  .do-sched-add:hover { background: rgba(255,149,80,0.05) !important; border-color: #FF9550 !important; color: #FF9550 !important; border-style: dashed !important; }
+  .do-chip { background: #353535 !important; border: 1px solid #2C2C2C !important; border-radius: 2px !important; }
+  .do-chip.playing { background: rgba(255,149,80,0.18) !important; border-color: #FF9550 !important; }
+  .do-chain-drop-hint { border-color: #2E2E2E !important; border-radius: 2px !important; color: #4C4C4C !important; }
+  .do-arrow { color: #3E3E3E !important; }
+  .do-sched-act:hover { color: #CDCDCD !important; background: #303030 !important; }
   .do-sched-act.del:hover { color: #CC3333 !important; }
 
   /* ===== MULTI-TRACK MODE ===== */
 
   .mt-ch-pill {
-    background: #1A1A1A !important; border: 1px solid #0A0A0A !important;
+    background: #2E2E2E !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
   .mt-ch-pill::before { box-shadow: none !important; border-radius: 1px !important; }
   .mt-tc-section {
-    background: #111 !important; border: 1px solid #0A0A0A !important;
+    background: #252525 !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important;
   }
   .mt-ch-input,
   .mt-ch-select,
   .mt-tc-input {
-    background: #0A0A0A !important; border: 1px solid #1A1A1A !important;
+    background: #1E1E1E !important; border: 1px solid #2E2E2E !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
   .mt-ch-input:focus,
   .mt-ch-select:focus,
   .mt-tc-input:focus {
-    background: rgba(200,85,0,0.08) !important; border-color: #CC5500 !important;
+    background: rgba(255,149,80,0.08) !important; border-color: #FF9550 !important;
   }
-  .mt-tc-toggle input[type="checkbox"] { accent-color: #CC5500 !important; }
+  .mt-tc-toggle input[type="checkbox"] { accent-color: #FF9550 !important; }
   .mt-ch-add-btn {
-    background: #1A1A1A !important; border: 1px solid #0A0A0A !important;
+    background: #2E2E2E !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; color: #484848 !important;
   }
-  .mt-ch-add-btn:hover { border-color: #CC5500 !important; color: #CC5500 !important; }
+  .mt-ch-add-btn:hover { border-color: #FF9550 !important; color: #FF9550 !important; }
   .mt-ch-add-btn .mt-ch-add-plus { color: inherit !important; }
   .mt-ch-close { color: #484848 !important; }
   .mt-ch-close:hover { color: #CC3333 !important; }
 
-  /* MT strip fader */
-  .mt-strip-fader-track { background: #0A0A0A !important; }
-  .mt-strip-fader-thumb { background: #585858 !important; border-radius: 2px !important; box-shadow: none !important; }
+  /* MT strip fader (Ableton スタイル) */
+  .mt-strip-fader-track {
+    background: #212121 !important;
+    border: none !important;
+    border-left: 1px solid #323232 !important;
+    border-right: 1px solid #323232 !important;
+    border-radius: 0 !important;
+    width: 4px !important;
+  }
+  .mt-strip-fader-thumb {
+    background: linear-gradient(180deg,
+      #484848 0%,
+      #484848 calc(50% - 1px),
+      #B0B0B0 calc(50% - 1px),
+      #B0B0B0 calc(50% + 1px),
+      #484848 calc(50% + 1px),
+      #484848 100%
+    ) !important;
+    border-radius: 1px !important;
+    border: 1px solid #4C4C4C !important;
+    box-shadow: none !important;
+  }
 
   /* ===== TOP PAGE ===== */
   .tp-icon {
-    background: #1E1E1E !important; box-shadow: none !important;
-    border-radius: 2px !important; color: #CC5500 !important;
+    background: #323232 !important; box-shadow: none !important;
+    border-radius: 2px !important; color: #FF9550 !important;
   }
-  .tp-app-sub { color: #404040 !important; }
-  .tp-card-stat-num { color: #CC5500 !important; }
+  .tp-app-sub { color: #5C5C5C !important; }
+  .tp-card-stat-num { color: #FF9550 !important; }
   .tp-card {
-    background: #1A1A1A !important; border: 1px solid #0A0A0A !important; border-radius: 2px !important;
+    background: #2E2E2E !important; border: 1px solid #1E1E1E !important; border-radius: 2px !important;
   }
-  .tp-card:hover { border-color: #CC5500 !important; background: #1E1E1E !important; }
-  .tp-card-menu, .tp-card-rename { background: #1A1A1A !important; border-radius: 2px !important; }
+  .tp-card:hover { border-color: #FF9550 !important; background: #323232 !important; }
+  .tp-card-menu, .tp-card-rename { background: #2E2E2E !important; border-radius: 2px !important; }
 </style>
 </head>
 <body>
@@ -3967,7 +4076,7 @@
       <!-- MASTER -->
       <div class="master-area">
         <div class="master-head">
-          <span style="font-size:9px; color:#6A6A70; letter-spacing:2px;">MASTER</span>
+          <span style="font-size:9px; color:#88888E; letter-spacing:2px;">MASTER</span>
           <div class="badge-mini">
             <button class="badge midi" id="masterMidiBadge" onclick="startLearn('master','midi')">CC 7</button>
             <button class="badge key" id="masterKeyBadge" onclick="startLearn('master','key')">↑↓</button>
@@ -4137,16 +4246,16 @@
       <span class="do-card-head" style="margin:0;">DUCK 設定</span>
       <span class="do-duck-label">下げ幅</span>
       <div class="do-duck-bar" id="doDuckDepthBar" style="width:160px;"><div class="do-duck-bar-fill" id="doDuckDepthFill" style="width:75%;"></div><div class="do-duck-bar-thumb" id="doDuckDepthThumb" style="left:75%;"></div></div>
-      <input class="do-duck-value db-input" id="doDuckDepthVal" type="text" maxlength="6" value="-6.0" title="下げ幅 dB を直接入力（0 〜 -24）" style="width:46px; text-align:right;"><span class="do-duck-unit" style="font-size:11px; color:#6A6A70; margin-left:2px;">dB</span>
+      <input class="do-duck-value db-input" id="doDuckDepthVal" type="text" maxlength="6" value="-6.0" title="下げ幅 dB を直接入力（0 〜 -24）" style="width:46px; text-align:right;"><span class="do-duck-unit" style="font-size:11px; color:#88888E; margin-left:2px;">dB</span>
       <span style="width:24px;"></span>
       <span class="do-duck-label">フェード</span>
       <input type="number" id="doDuckFadeInput" min="0" max="30" step="0.1" value="0.8" class="do-duck-fade-input">
-      <span style="font-size:11px; color:#6A6A70;">秒</span>
+      <span style="font-size:11px; color:#88888E;">秒</span>
       <span style="width:24px;"></span>
-      <span class="do-duck-label" style="color:#4FD1C5;">映像時 BGM フェード</span>
+      <span class="do-duck-label" style="color:#A0A0A6;">映像時 BGM フェード</span>
       <input type="number" id="doVidFadeInput" min="0" max="30" step="0.1" value="2.0" class="do-duck-fade-input">
-      <span style="font-size:11px; color:#6A6A70;">秒</span>
-      <span style="font-size:9px; color:#6A6A70; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
+      <span style="font-size:11px; color:#88888E;">秒</span>
+      <span style="font-size:9px; color:#88888E; margin-left:auto;">予定時刻にナレ頭がくるよう逆算</span>
     </div>
 
     <!-- v11.2.0: 下段は doorPage grid の row3 に展開
@@ -4157,7 +4266,7 @@
         <div class="do-card" id="doLibCard">
           <div class="do-sched-head">
             <span class="do-card-head" style="margin:0;">ANNOUNCE LIBRARY — 影アナ素材</span>
-            <span style="font-size:9px; color:#6A6A70;" id="doLibStatus">0 個</span>
+            <span style="font-size:9px; color:#88888E;" id="doLibStatus">0 個</span>
           </div>
           <div class="do-lib-grid" id="doLibGrid"></div>
         </div>
@@ -4180,7 +4289,7 @@
               <span class="do-logo-tag">LOGO</span>
               <span class="do-logo-sub">客入れ常時表示・ドラッグで位置調節</span>
             </div>
-            <span class="do-logo-name" id="doLogoName" style="color:#6A6A70; text-align:right; flex:none;">— 未読込</span>
+            <span class="do-logo-name" id="doLogoName" style="color:#88888E; text-align:right; flex:none;">— 未読込</span>
           </div>
           <div class="do-logo-body">
             <div class="do-logo-preview empty" id="doLogoPreview">
@@ -4228,12 +4337,12 @@
       <!-- v11.2.0: 右カラム row3 — SCHEDULE（フル高、上に伸びる） -->
       <div class="do-card do-grid do-sched-card">
         <div class="do-sched-head">
-          <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生<span style="color:#5A5A60; font-weight:400; margin-left:8px;">［キー: Enter=次を発火 / 1〜4=A1〜A4］</span></span>
+          <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生<span style="color:#7C7C84; font-weight:400; margin-left:8px;">［キー: Enter=次を発火 / 1〜4=A1〜A4］</span></span>
           <div style="display:flex; align-items:center; gap:10px;">
             <!-- v12.9.22: リハで「済」になった全予定を一括で未済に戻す（本番前の戻し忘れ防止） -->
-            <button class="do-bgm-load" id="doSchedReArmAllBtn" onclick="doSchedReArmAll()" style="color:#3DB5A6; border:0.5px solid rgba(61,181,166,0.4);" title="リハで「済」になった予定を全部「未済」に戻して、本番でまた発火するようにする">↺ 全部リハ前に戻す</button>
+            <button class="do-bgm-load" id="doSchedReArmAllBtn" onclick="doSchedReArmAll()" style="color:#FF9550; border:0.5px solid rgba(255,149,80,0.4);" title="リハで「済」になった予定を全部「未済」に戻して、本番でまた発火するようにする">↺ 全部リハ前に戻す</button>
             <button class="do-bgm-load" id="doAnnStopBtn" onclick="doAnnStopAll()" style="color:#E24B4A; border:0.5px solid rgba(226,75,74,0.4);" title="再生中の影アナを止めて DUCK 解除">■ 影アナ停止</button>
-            <span style="font-size:9px; color:#6A6A70;" id="doSchedStatus">0 件</span>
+            <span style="font-size:9px; color:#88888E;" id="doSchedStatus">0 件</span>
           </div>
         </div>
         <div class="do-sched-list" id="doSchedList" style="overflow-y:auto; flex:1; min-height:0;"></div>
@@ -4325,7 +4434,7 @@
           <span class="mt-section-count" id="mtSetlistCount">0 SONGS</span>
           <!-- 使い方ヒント -->
           <div class="mt-legend" title="① ＋ ADD SONG で曲枠を作成 ② 空いたフェーダー（パルス中）に音声ファイルを直接ドロップ">
-            <span class="mt-legend-lbl" style="color:#3DB5A6;">＋ ADD SONG → パルス中のフェーダーへ直接 drop</span>
+            <span class="mt-legend-lbl" style="color:#FF9550;">＋ ADD SONG → パルス中のフェーダーへ直接 drop</span>
           </div>
         </div>
         <div class="mt-section-actions">
@@ -4478,7 +4587,7 @@
             <input type="number" id="mtTcInSpacing" class="mt-tc-input" min="1" max="120" value="15"
                    onchange="mtTcInSetSpacing(this.value)" title="送出側と同じ間隔 (分) — N曲目 = (N-1) × この値" />
             <span class="mt-tc-unit">分</span>
-            <span class="mt-tc-label" id="mtTcInTime" style="font-family:monospace;color:#3DB5A6;min-width:90px;">00:00:00.00</span>
+            <span class="mt-tc-label" id="mtTcInTime" style="font-family:monospace;color:#888;min-width:90px;">00:00:00.00</span>
             <!-- v12.8.3 J2/J3: アイコン + ラベル + 背景色で本番卓上でも視認性 UP -->
             <span id="mtTcInStatus" title="信号レベル / sync 状態" style="color:#888;display:inline-block;min-width:96px;padding:2px 8px;border-radius:4px;font-size:11px;letter-spacing:0.4px;font-weight:600;text-align:center;">○ OFF</span>
           </div>
@@ -5401,9 +5510,18 @@ function renderDeckColumn(deckIdx, container) {
             onclick="event.stopPropagation();setActiveDeck(${deckIdx});startLearn('deckVol${deckIdx}','midi');"
             title="MIDIラーン">${ccLabel}</button>
         </div>
-        <div class="deck-cofader-track" id="cofaderTrack${deckIdx}" title="ドラッグで音量調整">
-          <div class="deck-cofader-fill" id="cofaderFill${deckIdx}" style="height:${pct}%"></div>
-          <div class="deck-cofader-thumb" id="cofaderThumb${deckIdx}" style="bottom:${pct}%"></div>
+        <div class="deck-cofader-track-wrap">
+          <div class="deck-cofader-scale">
+            <span>+6</span><span>+3</span><span class="zero">0</span><span>-6</span><span>-12</span><span>-24</span><span>-∞</span>
+          </div>
+          <div class="deck-cofader-track" id="cofaderTrack${deckIdx}" title="ドラッグで音量調整">
+            <div class="deck-cofader-fill" id="cofaderFill${deckIdx}" style="height:${pct}%"></div>
+            <div class="deck-cofader-thumb" id="cofaderThumb${deckIdx}" style="bottom:${pct}%"></div>
+          </div>
+          <div class="deck-cofader-meters">
+            <div class="deck-cofader-meter"><div class="deck-cofader-meter-fill" id="cofaderMeterL${deckIdx}"></div></div>
+            <div class="deck-cofader-meter"><div class="deck-cofader-meter-fill" id="cofaderMeterR${deckIdx}"></div></div>
+          </div>
         </div>
         <input class="deck-cofader-db" id="cofaderDb${deckIdx}" type="text"
           maxlength="6" value="${dbStr}"
@@ -5432,6 +5550,8 @@ let masterGain;
 let deckGains = [];
 let analyserL, analyserR;
 let splitter;
+let deckMeterAnalysers = [];   // 各デッキのステレオ解析 [{L,R,bufL,bufR}]
+const _deckMeterState = [];    // 各デッキメーターの平滑化状態 [{L,R}]
 let isPaused = false;
 // DOOR OPEN gain nodes
 let doBgmGainDoor;     // ドアオープン BGM ユーザー音量
@@ -5478,10 +5598,21 @@ function initAudio() {
   masterGain.connect(ctx.destination);
 
   // Per-deck GainNodes (sampler pads route through these before masterGain)
-  deckGains = state.samplerDecks.map(d => {
+  deckMeterAnalysers = [];
+  deckGains = state.samplerDecks.map((d, i) => {
     const g = ctx.createGain();
     g.gain.value = d.deckVol ?? 0.71;
     g.connect(masterGain);
+    // 各デッキにステレオ解析（sink-only：出力には影響しない）→ コフェーダー横の L/R メーター
+    try {
+      const sp = ctx.createChannelSplitter(2);
+      const aL = ctx.createAnalyser(); aL.fftSize = 256;
+      const aR = ctx.createAnalyser(); aR.fftSize = 256;
+      g.connect(sp);
+      sp.connect(aL, 0);
+      sp.connect(aR, 1);
+      deckMeterAnalysers[i] = { L: aL, R: aR, bufL: new Uint8Array(aL.fftSize), bufR: new Uint8Array(aR.fftSize) };
+    } catch(e) { deckMeterAnalysers[i] = null; }
     return g;
   });
   if (deckGains.length === 0) {
@@ -5558,6 +5689,31 @@ function meterLoop() {
   _masterMeterState.R = (pctR > _masterMeterState.R) ? pctR : _masterMeterState.R * 0.85 + pctR * 0.15;
   document.getElementById('meterL').style.height = _masterMeterState.L.toFixed(1) + '%';
   document.getElementById('meterR').style.height = _masterMeterState.R.toFixed(1) + '%';
+
+  // 各デッキのステレオメーター（マスターと同じ amp2pct / attack・release）
+  for (let di = 0; di < deckMeterAnalysers.length; di++) {
+    const dm = deckMeterAnalysers[di];
+    if (!dm) continue;
+    const elL = document.getElementById('cofaderMeterL' + di);
+    const elR = document.getElementById('cofaderMeterR' + di);
+    if (!elL || !elR) continue;   // sampler 以外のタブでは要素が無い
+    dm.L.getByteTimeDomainData(dm.bufL);
+    dm.R.getByteTimeDomainData(dm.bufR);
+    let dpkL = 0, dpkR = 0;
+    for (let i = 0; i < dm.bufL.length; i++) {
+      const vL = dm.bufL[i] - 128; const aL = vL < 0 ? -vL : vL;
+      const vR = dm.bufR[i] - 128; const aR = vR < 0 ? -vR : vR;
+      if (aL > dpkL) dpkL = aL;
+      if (aR > dpkR) dpkR = aR;
+    }
+    const dPctL = amp2pct(dpkL), dPctR = amp2pct(dpkR);
+    if (!_deckMeterState[di]) _deckMeterState[di] = { L: 0, R: 0 };
+    const st = _deckMeterState[di];
+    st.L = (dPctL > st.L) ? dPctL : st.L * 0.85 + dPctL * 0.15;
+    st.R = (dPctR > st.R) ? dPctR : st.R * 0.85 + dPctR * 0.15;
+    elL.style.height = st.L.toFixed(1) + '%';
+    elR.style.height = st.R.toFixed(1) + '%';
+  }
   requestAnimationFrame(meterLoop);
 }
 
@@ -7511,7 +7667,7 @@ function renderDeckPads(deckIdx, bankIdx) {
       cell.classList.add('has-color');
       cell.style.setProperty('--pad-c', colorHex);
     }
-    const playArrowColor = colorHex || '#3DB5A6';
+    const playArrowColor = colorHex || '#FF9550';
 
     if (pad.audioBuffer) {
       const hasTrim = (pad.trimStart||0) > 0 || (pad.trimEnd != null && pad.trimEnd < pad.audioBuffer.duration);
@@ -7554,12 +7710,12 @@ function renderDeckPads(deckIdx, bankIdx) {
       cell.innerHTML = `
         <div class="pad-body empty"
           oncontextmenu="event.preventDefault();event.stopPropagation();setActiveDeck(${deckIdx});openPadColorPicker(${bankIdx},${idx},this);return false;">
-          <div style="font-size:9px; color:#5A5A60; display:flex; align-items:center; gap:6px;">
+          <div style="font-size:9px; color:#7C7C84; display:flex; align-items:center; gap:6px;">
             <span>PAD ${idx+1}</span>
             <button class="pad-color-dot" onclick="event.stopPropagation();setActiveDeck(${deckIdx});openPadColorPicker(${bankIdx},${idx},this);"></button>
           </div>
           <div class="upload-icon">↓</div>
-          <div style="font-size:8px; color:#5A5A60; letter-spacing:1px;">DROP AUDIO</div>
+          <div style="font-size:8px; color:#7C7C84; letter-spacing:1px;">DROP AUDIO</div>
           <div class="pad-shortcuts" style="position:absolute; bottom:6px; left:8px; right:8px;">
             <button class="badge midi" onclick="event.stopPropagation();setActiveDeck(${deckIdx});startLearn('pad-${idx}','midi');">N${pad.midiNote ?? '-'}</button>
             <button class="badge key" onclick="event.stopPropagation();setActiveDeck(${deckIdx});startLearn('pad-${idx}','key');">${keyLabel(pad.key)}</button>
@@ -7817,7 +7973,7 @@ function openTrimEditor(bankIdx, padIdx) {
       <div class="trim-header">
         <div style="flex:1; min-width:0;">
           <div class="trim-title">
-            <span style="color:#6A6A70;">PAD ${padIdx+1} ・</span>
+            <span style="color:#88888E;">PAD ${padIdx+1} ・</span>
             <input type="text" id="padRenameInp" class="pad-rename-input"
                    value="${escapeHtml(pad.sampleName || '')}"
                    title="クリックして名前を変更" />
@@ -7845,7 +8001,7 @@ function openTrimEditor(bankIdx, padIdx) {
       </div>
       <div class="trim-ruler">
         <span id="rulerStart">0.000 s</span>
-        <span id="rulerMid" style="color:#6A6A70;">—</span>
+        <span id="rulerMid" style="color:#88888E;">—</span>
         <span id="rulerEnd">${dur.toFixed(3)} s</span>
       </div>
       <div class="trim-controls">
@@ -7868,7 +8024,7 @@ function openTrimEditor(bankIdx, padIdx) {
         <button class="btn-small" onclick="resetTrim()" style="margin-right:auto;">RESET</button>
         <button class="btn-small" onclick="previewTrim()">▶ PREVIEW</button>
         <button class="btn-small" onclick="closeTrimEditor()">CANCEL</button>
-        <button class="btn-small" style="background:#3DB5A6; color:#0E1A14; border-color:#3DB5A6; font-weight:500;" onclick="applyTrim()">APPLY</button>
+        <button class="btn-small" style="background:#FF9550; color:#252525; border-color:#FF9550; font-weight:500;" onclick="applyTrim()">APPLY</button>
       </div>
     </div>
   `;
@@ -8122,7 +8278,7 @@ function drawWaveform() {
   const endSample = Math.min(ch.length, Math.floor(viewEnd * sampleRate));
   const totalSamples = endSample - startSample;
   const samplesPerPixel = totalSamples / W;
-  c.strokeStyle = '#3DB5A6';
+  c.strokeStyle = '#FF9550';
   c.lineWidth = 1;
   c.beginPath();
   if (samplesPerPixel >= 1) {
@@ -8642,7 +8798,7 @@ function drawCurveEditor() {
   c.setLineDash([]);
 
   // curve
-  c.strokeStyle = '#3DB5A6';
+  c.strokeStyle = '#FF9550';
   c.lineWidth = 2;
   c.beginPath();
   for (let i = 0; i <= 64; i++) {
@@ -9543,6 +9699,17 @@ function doLibClear(slotIdx) {
     if (!confirm(`影アナ素材「${item.sampleName || '(無題)'}」を削除しますか？\nこの素材を使っている SCHEDULE のチェーンからも外れます。`)) return;
   }
   doAnnStopAll();
+  // v12.9.26: 確認ダイアログの約束どおり、この素材(slotIdx)を参照している
+  //   SCHEDULE チェーンの A チップを実際に外す。従来は library[slotIdx]=null に
+  //   するだけでチェーンの {type:'a', idx:slotIdx} が残り、(a)その予定が時刻に
+  //   発火し続ける、(b)後で別ファイルが同じ枠に入ると「違うナレーション」を鳴らす、
+  //   という事故になっていた。※ library 配列は splice せず null 化のままなので、
+  //   他チップの idx（位置）はズレない。残った空チェーン行はそのまま（手動で削除/再設定可）。
+  (state.door.schedule || []).forEach(row => {
+    if (Array.isArray(row.chain)) {
+      row.chain = row.chain.filter(it => !(it && it.type === 'a' && it.idx === slotIdx));
+    }
+  });
   state.door.library[slotIdx] = null;
   doRenderLibrary();
   doRenderSchedule();
@@ -9694,7 +9861,7 @@ function doRenderVideoLibrary() {
     if (isEmpty) {
       slot.innerHTML = `
         <div class="do-vid-slot-head"><span class="do-vid-badge">V${i+1}</span></div>
-        <div style="display:flex; flex:1; align-items:center; justify-content:center; color:#5A5A60; font-size:11px;">+ 映像ファイルを<br>ドロップ</div>
+        <div style="display:flex; flex:1; align-items:center; justify-content:center; color:#7C7C84; font-size:11px;">+ 映像ファイルを<br>ドロップ</div>
       `;
       slot.addEventListener('click', () => doVidLoadEmpty(i));
       // スロット単体にも drop ハンドラを付ける（grid だけだと取りこぼす場合がある）
@@ -9904,7 +10071,7 @@ function doRenderLogo() {
   const xRow = document.getElementById('doLogoXRow');
   const yRow = document.getElementById('doLogoYRow');
   if (!it) {
-    if (nameEl) { nameEl.textContent = '— 未読込'; nameEl.style.color = '#6A6A70'; }
+    if (nameEl) { nameEl.textContent = '— 未読込'; nameEl.style.color = '#88888E'; }
     previewEl.className = 'do-logo-preview empty';
     if (previewEmptyText) previewEmptyText.style.display = '';
     if (previewContent) previewContent.innerHTML = '';
@@ -10772,6 +10939,12 @@ function doSchedChipAdd(rowId, item, atPos) {
   // item は {type:'a'|'v', idx} の object（旧コードからの数値呼び出しは audio 扱い）
   if (typeof item === 'number') item = { type: 'a', idx: item };
   if (!item || (item.type !== 'a' && item.type !== 'v')) return;
+  // v12.9.26: A(影アナ)素材は安定 ID も控える。番号(idx)だけだと枠の入替/削除で
+  //   別素材を鳴らす事故になるため、発火時は sampleId 優先で解決する（idx は表示用に残す）。
+  if (item.type === 'a' && item.sampleId == null) {
+    const _lib = state.door.library[item.idx];
+    item.sampleId = (_lib && _lib.sampleId) || null;
+  }
   if (atPos == null || atPos >= row.chain.length) {
     row.chain.push(item);
   } else {
@@ -11009,7 +11182,7 @@ function doTick() {
       document.getElementById('doNextLabel').textContent = `NEXT　${nxt.time}`;
       const nameEl = document.getElementById('doNextName');
       if (nxt.chain.length === 0) {
-        nameEl.innerHTML = '<span style="color:#5A5A60;">（チェーン未設定）</span>';
+        nameEl.innerHTML = '<span style="color:#7C7C84;">（チェーン未設定）</span>';
       } else {
         nameEl.innerHTML = nxt.chain.map((item, i) => {
           let badge;
@@ -11019,14 +11192,14 @@ function doTick() {
             const c = (item.idx >= 0) ? (item.idx % 4) : 'missing';
             badge = `<span class="do-chip-badge color-${c}">A${item.idx+1}</span>`;
           }
-          return badge + (i < nxt.chain.length-1 ? '<span style="color:#5A5A60; font-size:11px;">→</span>' : '');
+          return badge + (i < nxt.chain.length-1 ? '<span style="color:#7C7C84; font-size:11px;">→</span>' : '');
         }).join(' ');
       }
       const eta = timeStrToSec(nxt.time) - now;
       document.getElementById('doNextEta').textContent = fmtTime(Math.max(0, eta));
     } else {
       document.getElementById('doNextLabel').textContent = 'NEXT —';
-      document.getElementById('doNextName').innerHTML = '<span style="color:#5A5A60;">予定なし</span>';
+      document.getElementById('doNextName').innerHTML = '<span style="color:#7C7C84;">予定なし</span>';
       document.getElementById('doNextEta').textContent = '--:--';
     }
   }
@@ -11168,7 +11341,7 @@ function doPlayNextInChain() {
     if (state.door.activeRowId !== savedRowId) return;
     if (state.door.activeChainIdx !== savedChainIdx) return;
     if (next === null) { doEndRow(); return; }
-    if (next.type === 'a') _chainPlayA(next.idx);
+    if (next.type === 'a') _chainPlayA(next.idx, next.sampleId);
     else _chainPlayV(next.idx);
   };
 
@@ -11177,8 +11350,21 @@ function doPlayNextInChain() {
 }
 
 // A 音声を実際に再生（チェーン内部用）
-function _chainPlayA(libIdx) {
-  const item = state.door.library[libIdx];
+// v12.9.26: sampleId 優先で素材を解決。番号(idx)だけだと枠の入替/削除で「違うナレーション」を
+//   鳴らす事故になるため。sampleId が指す素材が見つからない時は、別素材を誤爆させずスキップ＆警告。
+//   sampleId 未設定（旧データ）は従来どおり idx で解決（後方互換）。
+function _chainPlayA(libIdx, sampleId) {
+  let item;
+  if (sampleId != null) {
+    item = (state.door.library || []).find(l => l && l.sampleId === sampleId) || null;
+    if (!item) {
+      showToast('⚠️ 影アナ素材が見つかりません（削除/差替の可能性）— 安全のためスキップしました');
+      setTimeout(doPlayNextInChain, 0);
+      return;
+    }
+  } else {
+    item = state.door.library[libIdx];
+  }
   if (!item || !item.audioBuffer) { setTimeout(doPlayNextInChain, 0); return; }
   if (ctx.state === 'suspended') ctx.resume();
   const src = ctx.createBufferSource();
@@ -11413,6 +11599,13 @@ function doSave() {
       duck: { ...state.door.duck },
     }));
   } catch (e) { console.warn('doSave failed', e); }
+  // v12.9.26: DOOR 編集（予定の追加/削除/再アーム・ライブラリ削除 等）を
+  //   フォルダ保管の project.json / project.sampler にも同期する。
+  //   これが無いと doSave は localStorage しか更新せず、フォルダ/.sampler から
+  //   再オープンした時に古い project.json の予定スナップショットで上書きされ、
+  //   「削除したはずの予定が別公演で復活して鳴る」split-brain 事故が起きていた。
+  //   （従来は MULTI-TRACK の mtSave だけがフォルダ保存をトリガしていた）
+  try { if (typeof scheduleSaveProjectJSON === 'function') scheduleSaveProjectJSON(); } catch(_) {}
 }
 
 function doLoad() {
@@ -11493,7 +11686,8 @@ function doLoad() {
         // chain アイテムの正規化（旧形式: 数値 → audio として {type:'a', idx} へ）
         const chain = (Array.isArray(r.chain) ? r.chain : []).map(c => {
           if (typeof c === 'number') return { type: 'a', idx: c };
-          if (c && typeof c === 'object' && (c.type === 'a' || c.type === 'v')) return { type: c.type, idx: c.idx };
+          // v12.9.26: sampleId（A素材の安定ID）を保持。再読込で落とすと ID 解決ができず idx 頼みに戻ってしまう。
+          if (c && typeof c === 'object' && (c.type === 'a' || c.type === 'v')) return { type: c.type, idx: c.idx, sampleId: (c.sampleId != null ? c.sampleId : null) };
           return null;
         }).filter(Boolean);
         // 起動時点で当日すでに過ぎている予定（5秒超過去）は済み扱い＝起動誤発火を防止。
@@ -13785,7 +13979,7 @@ function _ltcRxUpdateStatus() {
   }
   // OK: 追従中 (緑背景、500ms ごとに blink)
   const blink = (Math.floor(now / 500) % 2) === 0;
-  _ltcRxApplyStatus(el, '●', '追従中', blink ? '#3DB5A6' : '#1F7068', 'rgba(61,181,166,0.20)');
+  _ltcRxApplyStatus(el, '●', '追従中', blink ? '#FF9550' : '#8B4000', 'rgba(255,149,80,0.20)');
   el.title = 'LTC chase OK';
   // v12.8.2 L8: グロー強調 (CSS .tc-ok-glow)
   try { el.classList.add('tc-ok-glow'); } catch(_) {}
@@ -17922,7 +18116,7 @@ function mtRenderSetlist() {
   });
   if (state.multitrack.songs.length === 0) {
     const empty = document.createElement('div');
-    empty.style.cssText = 'padding:24px; text-align:center; color:#5A5A60; font-size:11px; letter-spacing:1px;';
+    empty.style.cssText = 'padding:24px; text-align:center; color:#7C7C84; font-size:11px; letter-spacing:1px;';
     empty.textContent = '＋ 曲を追加 or STEM ファイル群をドロップ';
     list.appendChild(empty);
   }
