@@ -1515,11 +1515,30 @@
   }
   .do-out-btn:hover { background: rgba(79,209,197,0.12); }
   .do-out-btn.open { background: #4FD1C5; color: #093B36; border-color: #4FD1C5; }
+  .do-out-btn.warn { border-color: rgba(255,138,15,0.55); color: #FF8A0F; }
   /* ヘッダー内 OUTPUT 状態ピル — 影アナ件数表示と同じ控えめスタイル */
   .out-status-pill {
     font-size: 9px; color: #7C7C84; letter-spacing: 0.5px;
   }
   .out-status-pill.open { color: #4FD1C5; }
+  .out-status-pill.warn { color: #FF8A0F; }
+  .op-video-monitor {
+    display: grid; grid-template-columns: 78px 1fr; gap: 8px; align-items: center;
+    margin-top: 7px; padding: 6px; border: 0.5px solid rgba(79,209,197,0.28);
+    border-radius: 5px; background: rgba(79,209,197,0.045);
+  }
+  .op-video-screen {
+    width: 78px; aspect-ratio: 16 / 9; border-radius: 3px; overflow: hidden;
+    background: #000; border: 0.5px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center;
+    color: #4FD1C5; font-size: 9px; letter-spacing: 0.5px;
+  }
+  .op-video-screen video { width: 100%; height: 100%; object-fit: contain; display: none; background:#000; }
+  .op-video-monitor.playing .op-video-screen video { display: block; }
+  .op-video-monitor.playing .op-video-empty { display: none; }
+  .op-video-label { font-size: 8px; color:#4FD1C5; letter-spacing:1px; margin-bottom:2px; }
+  .op-video-name { font-size: 10px; color:#E6E6EA; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .op-video-hint { font-size: 9px; color:#6A6A70; margin-top:2px; line-height:1.25; }
   /* チェーン内 V チップ */
   .do-chip-badge.color-vid { background: #4FD1C5; color: #093B36; }
   /* ====================================================================== */
@@ -3945,8 +3964,13 @@
     <!-- 内部要素（観客には見せない、運用者向けの状態は main で確認） -->
     <div id="outputIdle" style="display:none;"></div>
     <div id="outputStatus" style="display:none;"></div>
-    <!-- 透明クリックキャッチャー（autoplay 解除用）。クリックで消える -->
-    <div id="outputEnableOverlay" style="position:absolute; inset:0; cursor:pointer; z-index:10000; background:transparent;"></div>
+    <!-- 初回クリックで autoplay 解除 + フルスクリーン。観客に見せる前にここをクリックする運用で固定。 -->
+    <div id="outputEnableOverlay" style="position:absolute; inset:0; cursor:pointer; z-index:10000; background:rgba(0,0,0,0.55); display:flex; align-items:center; justify-content:center; font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif; color:#4FD1C5; letter-spacing:0.08em; text-align:center;">
+      <div style="border:1px solid rgba(79,209,197,0.45); border-radius:8px; padding:18px 22px; background:rgba(0,0,0,0.65);">
+        <div style="font-size:13px; font-weight:700;">CLICK OUTPUT</div>
+        <div style="font-size:10px; color:#C8D8D0; margin-top:8px; line-height:1.6;">autoplay を有効化してフルスクリーンにします<br>または F / ダブルクリック</div>
+      </div>
+    </div>
   </div>
   <!-- ====================================================================== -->
 
@@ -4274,8 +4298,17 @@
           <div class="do-sched-head">
             <span class="do-card-head" style="margin:0;">VIDEO LIBRARY — 映像素材</span>
             <div style="display:flex; align-items:center; gap:10px;">
-              <button class="do-out-btn" id="doOutOpenBtn" onclick="doOutOpen()" title="サブモニター用ウィンドウを開く（2画面目に配置してフルスクリーン化）">OPEN OUTPUT</button>
+              <button class="do-out-btn" id="doOutOpenBtn" onclick="doOutOpenSecondary()" title="サブモニター用ウィンドウを開く（可能なら2画面目へ配置）">OPEN OUTPUT</button>
+              <button class="do-out-btn warn" id="doOutFsBtn" onclick="doOutFullscreen()" title="OUTPUTウィンドウをフルスクリーン化。失敗したらOUTPUT画面をクリック/ダブルクリックまたはFキー">FULLSCREEN</button>
               <span class="out-status-pill" id="doOutStatusPill">○ closed</span>
+            </div>
+          </div>
+          <div class="op-video-monitor" id="opVideoMonitor">
+            <div class="op-video-screen"><span class="op-video-empty">NO VIDEO</span><video id="opVideoEl" muted playsinline></video></div>
+            <div style="min-width:0;">
+              <div class="op-video-label">OUTPUT MONITOR</div>
+              <div class="op-video-name" id="opVideoName">— 再生なし —</div>
+              <div class="op-video-hint" id="opVideoHint">セカンダリが見えない時もここで確認</div>
             </div>
           </div>
           <div class="do-vid-grid" id="doVidGrid"></div>
@@ -4638,7 +4671,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.24';
+const APP_VERSION = 'v12.9.25';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -9750,7 +9783,7 @@ async function doVidLoadFile(slotIdx, f) {
     state.door.videoLibrary[slotIdx] = {
       sampleName: f.name,
       duration: meta.duration,
-      thumbDataUrl: meta.thumb,
+      thumbDataUrl: meta.thumb || _videoFallbackThumbDataUrl(f.name),
       file: f, // ← in-memory File 参照（永続化されない）
       size: f.size,
     };
@@ -9763,34 +9796,77 @@ async function doVidLoadFile(slotIdx, f) {
     showToast('❌ 映像登録失敗: ' + (err.message || err));
   }
 }
+function _videoFallbackThumbDataUrl(name) {
+  const label = (name || 'VIDEO').split('.').pop().slice(0, 5).toUpperCase() || 'VIDEO';
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+    <rect width="320" height="180" fill="#071816"/>
+    <rect x="1" y="1" width="318" height="178" fill="none" stroke="#4FD1C5" stroke-opacity="0.55"/>
+    <polygon points="132,58 132,122 192,90" fill="#4FD1C5"/>
+    <text x="160" y="150" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif" font-size="22" font-weight="700" fill="#C8D8D0">${escapeHtml(label)}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
 // blob URL を渡すと duration とサムネ data URL を返す
 function _videoExtractMeta(url, name) {
   return new Promise(resolve => {
     const v = document.createElement('video');
-    v.preload = 'metadata';
+    v.preload = 'auto';
     v.muted = true;
     v.playsInline = true;
+    v.crossOrigin = 'anonymous';
     v.src = url;
     let done = false;
-    const finish = (data) => { if (!done) { done = true; resolve(data); } };
-    v.addEventListener('loadeddata', () => {
+    let seekTried = false;
+    const finish = (data) => {
+      if (done) return;
+      done = true;
+      try { v.pause(); } catch(_) {}
+      v.removeAttribute('src');
+      try { v.load(); } catch(_) {}
+      resolve(data || { duration: NaN, thumb: null });
+    };
+    const capture = () => {
+      if (done) return;
       try {
-        v.currentTime = Math.min(0.5, v.duration / 4 || 0);
-      } catch(_) {}
-    });
-    v.addEventListener('seeked', () => {
-      try {
+        if (!v.videoWidth || !v.videoHeight) throw new Error('video dimension not ready');
+        const w = 320;
+        const h = Math.max(1, Math.round(w * (v.videoHeight / v.videoWidth)));
         const c = document.createElement('canvas');
-        c.width = 320; c.height = Math.round(320 * (v.videoHeight / v.videoWidth) || 180);
-        c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-        finish({ duration: v.duration, thumb: c.toDataURL('image/jpeg', 0.6) });
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(v, 0, 0, w, h);
+        finish({ duration: v.duration, thumb: c.toDataURL('image/jpeg', 0.72) });
       } catch(e) {
-        finish({ duration: v.duration, thumb: null });
+        finish({ duration: v.duration || NaN, thumb: null });
       }
+    };
+    const seekForThumb = () => {
+      if (done || seekTried) return;
+      seekTried = true;
+      try {
+        const dur = isFinite(v.duration) ? v.duration : 0;
+        // 0秒 seek では seeked が発火しない動画があるので、少しだけ進める
+        const target = dur > 1 ? Math.min(0.75, dur * 0.12) : 0.05;
+        v.currentTime = Math.max(0, target);
+      } catch(_) {
+        capture();
+      }
+    };
+    v.addEventListener('loadedmetadata', seekForThumb, { once: true });
+    v.addEventListener('loadeddata', () => {
+      // seeked が来ない形式でも first frame は取れる場合がある
+      setTimeout(() => { if (!done && !seekTried) capture(); }, 120);
     });
-    v.addEventListener('error', () => finish({ duration: NaN, thumb: null }));
-    // タイムアウト保険
-    setTimeout(() => finish({ duration: v.duration || NaN, thumb: null }), 5000);
+    v.addEventListener('canplay', () => {
+      setTimeout(() => { if (!done && !seekTried) capture(); }, 180);
+    });
+    v.addEventListener('seeked', capture, { once: true });
+    v.addEventListener('error', () => finish({ duration: NaN, thumb: null }), { once: true });
+    // Safari/Chrome の一部で src 設定だけでは読み出しが始まらないことがある
+    try { v.load(); } catch(_) {}
+    // タイムアウト保険: まず 2 秒、最終 6 秒
+    setTimeout(() => { if (!done && !seekTried) seekForThumb(); }, 2000);
+    setTimeout(() => { if (!done) capture(); }, 6000);
   });
 }
 function doVidClear(slotIdx) {
@@ -9809,27 +9885,80 @@ function doVidPreview(slotIdx) {
     showToast('⚠️ V' + (slotIdx+1) + ' のファイル参照がありません。📁ボタンで再リンクしてください');
     return;
   }
-  // OUTPUT が開いていなければ自動で開いて、開いた後で再生
+  // OUTPUT が開いていなければ自動で開く。ポップアップブロック時もメイン側モニターでは再生する。
   if (!_outWindow || _outWindow.closed) {
     showToast('🖥 OUTPUT を自動起動中...');
     doOutOpen();
-    // ready 受信を 4 秒まで待ってから再生開始
-    _vidPendingPlay = { slotIdx, file: it.file, name: it.sampleName, deadline: Date.now() + 4000 };
+    if (_outWindow && !_outWindow.closed) {
+      // ready 受信を 4 秒まで待ってからセカンダリ再生開始
+      _vidPendingPlay = { slotIdx, file: it.file, name: it.sampleName, deadline: Date.now() + 4000 };
+      // 操作側モニターだけは即時表示（セカンダリが見えない時の確認用）
+      const monitorUrl = URL.createObjectURL(it.file);
+      _opMonitorSet(monitorUrl, it.sampleName);
+      _outActiveVideoSlot = slotIdx;
+      doRenderVideoLibrary();
+      return;
+    }
+    // OUTPUT が開けない場合でも、押して無反応に見えないようメイン側モニターで再生
+    _vidLaunchPlay(slotIdx, it.file, it.sampleName);
     return;
   }
   _vidLaunchPlay(slotIdx, it.file, it.sampleName);
 }
 let _outCurrentBlobUrl = null;
 let _vidPendingPlay = null;
+let _opMonitorUrl = null;
+function _opMonitorSet(url, name) {
+  const wrap = document.getElementById('opVideoMonitor');
+  const v = document.getElementById('opVideoEl');
+  const nameEl = document.getElementById('opVideoName');
+  const hintEl = document.getElementById('opVideoHint');
+  if (!wrap || !v) return;
+  if (_opMonitorUrl && _opMonitorUrl !== url) { try { URL.revokeObjectURL(_opMonitorUrl); } catch(_) {} }
+  _opMonitorUrl = url;
+  v.src = url;
+  v.muted = true;
+  v.loop = false;
+  v.playsInline = true;
+  v.onended = () => {
+    // OUTPUT が無い/再生できていない時でも、メインモニターの終了で状態を戻す
+    if (!_outWindow || _outWindow.closed || !_outReadyReceived) doOutOnVideoEnded();
+  };
+  v.play().catch(() => {});
+  wrap.classList.add('playing');
+  if (nameEl) nameEl.textContent = name || '— video —';
+  if (hintEl) hintEl.textContent = 'メイン画面側プレビュー（無音）';
+}
+function _opMonitorClear() {
+  const wrap = document.getElementById('opVideoMonitor');
+  const v = document.getElementById('opVideoEl');
+  const nameEl = document.getElementById('opVideoName');
+  const hintEl = document.getElementById('opVideoHint');
+  if (v) {
+    try { v.pause(); } catch(_) {}
+    v.removeAttribute('src');
+    try { v.load(); } catch(_) {}
+  }
+  if (_opMonitorUrl) { try { URL.revokeObjectURL(_opMonitorUrl); } catch(_) {} _opMonitorUrl = null; }
+  if (wrap) wrap.classList.remove('playing');
+  if (nameEl) nameEl.textContent = '— 再生なし —';
+  if (hintEl) hintEl.textContent = 'セカンダリが見えない時もここで確認';
+}
 function _vidLaunchPlay(slotIdx, file, name) {
   _vidFadeBgm(true);
   _outActiveVideoSlot = slotIdx;
-  // v12.9.0: 前の Blob URL を必ず revoke (差し替え時のメモリリーク防止)。
-  // 受信側 _outBC が新 URL に切り替わるまで少し余裕を持たせる。
+  // OUTPUT 用とメインモニター用で Blob URL を分ける。
+  // 片方の revoke がもう片方の再生を巻き込まないようにする。
   const prevUrl = _outCurrentBlobUrl;
-  const url = URL.createObjectURL(file);
-  _outCurrentBlobUrl = url;
-  _outBC.postMessage({ cmd: 'play', blobUrl: url, name });
+  const outUrl = URL.createObjectURL(file);
+  const monitorUrl = URL.createObjectURL(file);
+  _outCurrentBlobUrl = outUrl;
+  _opMonitorSet(monitorUrl, name);
+  if (_outBC && _outWindow && !_outWindow.closed) {
+    _outBC.postMessage({ cmd: 'play', blobUrl: outUrl, name });
+  } else {
+    showToast('ℹ️ OUTPUT 未接続 — メイン画面モニターで再生中。OPEN OUTPUT でセカンダリへ出せます');
+  }
   if (prevUrl) {
     setTimeout(() => { try { URL.revokeObjectURL(prevUrl); } catch(_) {} }, 500);
   }
@@ -9899,7 +10028,7 @@ function doRenderVideoLibrary() {
             <button class="do-vid-act del" data-action="del" title="削除">×</button>
           </div>
         </div>
-        <div class="do-vid-thumb" style="${needsRelink ? 'opacity:0.5;' : ''}">${it.thumbDataUrl ? `<img src="${it.thumbDataUrl}" alt="">` : '▶'}</div>
+        <div class="do-vid-thumb" style="${needsRelink ? 'opacity:0.5;' : ''}"><img src="${it.thumbDataUrl || _videoFallbackThumbDataUrl(it.sampleName)}" alt=""></div>
         <div class="do-vid-name">${escapeHtml(it.sampleName || '')}</div>
         <div class="do-vid-meta">${durStr}${needsRelink ? ' &nbsp;<span style="color:#FF8A0F;">⚠ 再リンクが必要</span>' : ''}</div>
       `;
@@ -10393,26 +10522,26 @@ let _outWindow = null;
 let _outBC = null;
 let _outActiveVideoSlot = -1;
 let _outChainContext = null; // { rowId, chainIdx } when video is being played from a chain
-function doOutOpen() {
+function _doOutOpenWithFeatures(features) {
   if (_outWindow && !_outWindow.closed) {
     _outWindow.focus();
-    return;
+    return true;
   }
+  _outReadyReceived = false;
   // BC は OPEN 前に初期化しておく（output 側の ready を取りこぼさないため）
   if (!_outBC) _outBC = doOutInitBC();
   const url = location.origin + location.pathname + '?mode=output&cv=' + Date.now();
-  _outWindow = window.open(url, 'samplerStudioOutput', 'width=1280,height=720,menubar=no,toolbar=no');
+  _outWindow = window.open(url, 'samplerStudioOutput', features || 'width=1280,height=720,menubar=no,toolbar=no');
   if (!_outWindow) {
     if (confirm(
       '⚠️ サブモニターウィンドウを開けませんでした。\n\n' +
       'ブラウザのポップアップブロックが原因の可能性があります。\n' +
-      '・Chrome: アドレスバー右端の「ポップアップ」アイコンから「常に許可」\n' +
-      '・Safari: 環境設定 > Web サイト > ポップアップ > このサイトで許可\n\n' +
+      'Chrome: アドレスバー右端のポップアップアイコンから「常に許可」してください。\n\n' +
       '設定方法を確認しますか？'
     )) {
       window.open('https://support.google.com/chrome/answer/95472?hl=ja', '_blank');
     }
-    return;
+    return false;
   }
   doOutUpdateStatus();
   // ready 応答チェック：1秒後に応答無ければ ping を送って再確認
@@ -10424,10 +10553,63 @@ function doOutOpen() {
   // 5秒後にまだ ready 来なければ警告
   setTimeout(() => {
     if (_outWindow && !_outWindow.closed && !_outReadyReceived) {
-      showToast('⚠️ サブモニターと通信できていません。ウィンドウを閉じて再度 OPEN OUTPUT を試してください');
+      showToast('⚠️ OUTPUT と通信できていません。閉じて再度 OPEN OUTPUT を試してください');
     }
   }, 5000);
+  return true;
 }
+function doOutOpen() {
+  // 自動発火・スケジュール発火でもポップアップしやすい同期版。
+  // 右側にセカンダリがある一般的な配置を優先する。
+  const left = (screen.availLeft || 0) + (screen.availWidth || 1280);
+  const top = screen.availTop || 0;
+  const features = `left=${left},top=${top},width=1280,height=720,menubar=no,toolbar=no,location=no,status=no`;
+  return _doOutOpenWithFeatures(features);
+}
+async function doOutOpenSecondary() {
+  const opened = doOutOpen();
+  if (!opened || !_outWindow || _outWindow.closed) return;
+  // Chrome の Window Placement API が使える場合は、実際のセカンダリ座標へ移動する。
+  // 使えない/拒否された場合は、OPEN した窓を手動でセカンダリへ移動 → FULLSCREEN の運用。
+  try {
+    if ('getScreenDetails' in window) {
+      const details = await window.getScreenDetails();
+      const screens = Array.from(details.screens || []);
+      const cur = details.currentScreen;
+      const target = screens.find(sc => sc !== cur) || screens.find(sc => sc.isPrimary === false) || null;
+      if (target) {
+        try { _outWindow.moveTo(target.availLeft, target.availTop); } catch(_) {}
+        try { _outWindow.resizeTo(target.availWidth, target.availHeight); } catch(_) {}
+        try { _outWindow.focus(); } catch(_) {}
+        showToast('🖥 OUTPUT をセカンダリ側へ配置しました。FULLSCREEN を押すか、OUTPUT画面をクリックしてください');
+        return;
+      }
+    }
+  } catch(e) {
+    console.warn('screen placement failed', e);
+  }
+  showToast('🖥 OUTPUT を開きました。セカンダリへ移動して FULLSCREEN、またはOUTPUT画面をクリック/Fキー');
+}
+async function doOutFullscreen() {
+  if (!_outWindow || _outWindow.closed) {
+    const ok = doOutOpen();
+    if (!ok) return;
+  }
+  try { _outWindow.focus(); } catch(_) {}
+  try {
+    if (_outWindow.document && _outWindow.document.documentElement && !_outWindow.document.fullscreenElement) {
+      await _outWindow.document.documentElement.requestFullscreen();
+      showToast('✅ OUTPUT フルスクリーン');
+      return;
+    }
+  } catch(e) {
+    console.warn('remote fullscreen failed', e);
+  }
+  // ブラウザ制約で親ウィンドウから拒否される場合の固定運用
+  try { _outBC && _outBC.postMessage({ cmd: 'fullscreen' }); } catch(_) {}
+  showToast('⚠️ フルスクリーンが拒否された場合は、OUTPUT画面をクリック / ダブルクリック / Fキーで全画面化してください');
+}
+
 let _outReadyReceived = false;
 function doOutInitBC() {
   const bc = new BroadcastChannel('sampler-studio-output');
@@ -10462,6 +10644,7 @@ function doOutInitBC() {
       _outReadyReceived = false;
       doOutUpdateStatus();
       _outActiveVideoSlot = -1;
+      _opMonitorClear();
       doRenderVideoLibrary();
     }
     else if (m.event === 'ended') doOutOnVideoEnded();
@@ -10471,10 +10654,15 @@ function doOutInitBC() {
       console.warn('[output] codec unsupported:', m.message);
     }
     else if (m.event === 'pending-unlock') {
-      showToast('⚠️ OUTPUT ウィンドウをクリックして autoplay を有効にしてください（' + (m.name || '映像') + ' 待機中）');
+      const pill = document.getElementById('doOutStatusPill');
+      if (pill) { pill.textContent = '● click output'; pill.classList.add('warn'); }
+      showToast('⚠️ OUTPUT 画面をクリックしてください（autoplay + fullscreen 有効化）: ' + (m.name || '映像'));
     }
     else if (m.event === 'unlocked') {
-      showToast('✅ OUTPUT autoplay 有効化');
+      const pill = document.getElementById('doOutStatusPill');
+      if (pill) pill.classList.remove('warn');
+      doOutUpdateStatus();
+      showToast(m.fullscreen ? '✅ OUTPUT autoplay + fullscreen 有効化' : '✅ OUTPUT autoplay 有効化');
     }
   };
   return bc;
@@ -10486,12 +10674,14 @@ function doOutStop() {
   if (_outCurrentBlobUrl) { try { URL.revokeObjectURL(_outCurrentBlobUrl); } catch(_) {} _outCurrentBlobUrl = null; }
   _outActiveVideoSlot = -1;
   _outChainContext = null;
+  _opMonitorClear();
   _vidFadeBgm(false);
   doRenderVideoLibrary();
 }
 function doOutOnVideoEnded() {
   if (_outCurrentBlobUrl) { try { URL.revokeObjectURL(_outCurrentBlobUrl); } catch(_) {} _outCurrentBlobUrl = null; }
   _outActiveVideoSlot = -1;
+  _opMonitorClear();
   doRenderVideoLibrary();
 
   if (_outChainContext) {
@@ -10508,8 +10698,9 @@ function doOutUpdateStatus() {
   const btn = document.getElementById('doOutOpenBtn');
   const open = _outWindow && !_outWindow.closed;
   if (pill) {
-    pill.textContent = open ? '● open' : '○ closed';
+    pill.textContent = open ? (_outReadyReceived ? '● ready' : '● opening') : '○ closed';
     pill.classList.toggle('open', !!open);
+    if (!open || _outReadyReceived) pill.classList.remove('warn');
   }
   if (btn) {
     btn.textContent = open ? 'FOCUS OUTPUT' : 'OPEN OUTPUT';
@@ -11436,8 +11627,14 @@ function _doChainPlayV(vidIdx, v) {
   _outActiveVideoSlot = vidIdx;
   _outChainContext = { rowId: state.door.activeRowId, chainIdx: state.door.activeChainIdx };
   const url = URL.createObjectURL(v.file);
+  const monitorUrl = URL.createObjectURL(v.file);
   _outCurrentBlobUrl = url;
-  _outBC.postMessage({ cmd: 'play', blobUrl: url, name: v.sampleName });
+  _opMonitorSet(monitorUrl, v.sampleName);
+  if (_outBC && _outWindow && !_outWindow.closed) {
+    _outBC.postMessage({ cmd: 'play', blobUrl: url, name: v.sampleName });
+  } else {
+    showToast('⚠️ OUTPUT 未接続 — V' + (vidIdx+1) + ' はメイン画面モニターのみで再生');
+  }
   doRenderVideoLibrary();
 }
 
@@ -12061,7 +12258,8 @@ function initOutputMode() {
       playFromUrl(m.blobUrl, m.name);
     }
     else if (m.cmd === 'stop') { _pendingPlay = null; stopVideo(); }
-    else if (m.cmd === 'ping') bc.postMessage({ event: 'pong', unlocked: autoplayUnlocked });
+    else if (m.cmd === 'fullscreen') { toggleFullscreen(); }
+    else if (m.cmd === 'ping') bc.postMessage({ event: 'pong', unlocked: autoplayUnlocked, fullscreen: !!document.fullscreenElement });
     else if (m.cmd === 'logo' && m.url) setLogo(m.kind, m.url, m.name, m.scale, m.posX, m.posY);
     else if (m.cmd === 'logo-clear') clearLogo();
     else if (m.cmd === 'logo-scale') setLogoScale(m.value);
@@ -12109,8 +12307,13 @@ function initOutputMode() {
       video.muted = false;
     } catch(_) {}
     autoplayUnlocked = true;
+    try {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch(e) { console.warn('output fullscreen unlock failed', e); }
     if (enableOverlay) enableOverlay.style.display = 'none';
-    bc.postMessage({ event: 'unlocked' });
+    bc.postMessage({ event: 'unlocked', fullscreen: !!document.fullscreenElement });
     // autoplay 失敗で停止していた LOGO video を再開
     try { if (logoVideo.src && logoVideo.paused) logoVideo.play().catch(()=>{}); } catch(_) {}
     // 保留中の play があれば実行
