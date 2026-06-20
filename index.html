@@ -8,7 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
-<meta name="theme-color" content="#FF9550">
+<meta name="theme-color" content="#F2A23C">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SAMPLER STUDIO">
@@ -60,7 +60,7 @@
   .preset-name { font-size: 11px; color: #E6E6EA; background: transparent; border: none; outline: none; color: inherit; font: inherit; width: 160px; }
   .header-right { display: flex; align-items: center; gap: 6px; }
   .btn-small {
-    background: transparent; border: 0.5px solid #25252A; color: #E6E6EA;
+    background: transparent; border: 0.5px solid #252525; color: #E6E6EA;
     padding: 5px 12px; border-radius: 4px; font-size: 10px; letter-spacing: 1px;
     cursor: pointer; transition: all 0.15s;
   }
@@ -78,11 +78,11 @@
     white-space: nowrap;
   }
   .show-mode-toggle-big:hover {
-    border-color: #6C6C76; background: #1B1B22; color: #E6E6EA;
+    border-color: #6C6C76; background: #1B1B1B; color: #E6E6EA;
   }
   .show-mode-toggle-big .lamp {
     width: 9px; height: 9px; border-radius: 50%;
-    background: #3A3A42; transition: all 0.18s;
+    background: #3A3A3A; transition: all 0.18s;
     flex: 0 0 9px;
   }
   .show-mode-toggle-big.on {
@@ -110,8 +110,8 @@
   .mt-ch-add-btn {
     flex-shrink: 0;
     min-width: 56px;
-    background: rgba(255,149,80,0.06);
-    border: 1px dashed rgba(255,149,80,0.35);
+    background: rgba(242,162,60,0.06);
+    border: 1px dashed rgba(242,162,60,0.35);
     color: rgba(91,196,176,0.85);
     font-family: inherit;
     font-size: 11px;
@@ -126,8 +126,8 @@
     line-height: 1.2;
   }
   .mt-ch-add-btn:hover {
-    background: rgba(255,149,80,0.15);
-    border-color: #FF9550;
+    background: rgba(242,162,60,0.15);
+    border-color: #F2A23C;
     border-style: solid;
     color: #FFFFFF;
   }
@@ -166,7 +166,7 @@
   }
   .status { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #88888E; }
   .midi-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #7C7C84; }
-  .midi-led.on { background: #FF9550; box-shadow: none; }
+  .midi-led.on { background: #F2A23C; box-shadow: none; }
 
   /* BANKS */
   .banks {
@@ -181,7 +181,7 @@
     border: none; font-family: inherit;
   }
   .bank-btn:hover { background: #3E3E3E; color: #E6E6EA; }
-  .bank-btn.active { background: #FF9550; color: #252525; font-weight: 500; }
+  .bank-btn.active { background: #F2A23C; color: #252525; font-weight: 500; }
   .bank-btn.has-content { color: #E6E6EA; }
   .bank-btn.active.has-content { color: #252525; }
   /* v12.3.0: BANK 切替ショートカット (← / →) のバッジ群 */
@@ -197,7 +197,7 @@
     font-family: inherit; padding: 0;
   }
   .bank-nav-arrow:hover { background: #3E3E3E; color: #E6E6EA; }
-  .bank-nav-arrow:active { background: #FF9550; color: #252525; }
+  .bank-nav-arrow:active { background: #F2A23C; color: #252525; }
   .bank-nav .badge-row { display: flex; gap: 2px; }
 
   /* MAIN */
@@ -225,7 +225,7 @@
     font-size: 9px; color: #88888E; letter-spacing: 1px;
   }
   .section-head .badge-mini { display: flex; gap: 3px; }
-  .divider { height: 0.5px; background: #1F1F22; margin: 2px 0; }
+  .divider { height: 0.5px; background: #1F1F1F; margin: 2px 0; }
 
   /* PLAY MODE (SAMPLER モード時のみ) */
   .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
@@ -234,7 +234,7 @@
     font-size: 9px; color: #88888E; cursor: pointer; border: none; font-family: inherit;
   }
   .mode-btn:hover { background: #3E3E3E; color: #E6E6EA; }
-  .mode-btn.active { background: #FF9550; color: #252525; font-weight: 500; }
+  .mode-btn.active { background: #F2A23C; color: #252525; font-weight: 500; }
   /* モード別表示制御: SAMPLER モード以外では sampler-only クラスを隠す */
   body.mode-door .sampler-only,
   body.mode-multi .sampler-only { display: none !important; }
@@ -252,7 +252,7 @@
   .fader-track {
     position: relative; width: 14px; background: #323232; border-radius: 4px;
     cursor: ns-resize;
-    border: 1px solid #25252A;
+    border: 1px solid #252525;
   }
   .fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
@@ -273,7 +273,7 @@
   .meters { display: flex; gap: 2px; align-items: stretch; flex-shrink: 0; }
   .meter {
     width: 5px;
-    background: linear-gradient(180deg, #08080A, #14141A);
+    background: linear-gradient(180deg, #080808, #141414);
     border-radius: 2px;
     position: relative; overflow: hidden;
     border: 1px solid #1E1E1E;
@@ -296,29 +296,29 @@
     flex: 1; display: flex; flex-direction: column; gap: 4px;
     min-width: 0; min-height: 0;
     border: 1px solid #1E1E1E; border-radius: 2px; padding: 6px;
-    background: #0D0D10;
+    background: #0D0D0D;
   }
   .deck-col.active-deck { border-color: #2D7A5E; }
   .deck-col-header {
     display: flex; align-items: center; gap: 6px; flex-shrink: 0;
     padding: 3px 4px; border-radius: 5px; cursor: pointer;
   }
-  .deck-col-header:hover { background: rgba(255,149,80,0.05); }
+  .deck-col-header:hover { background: rgba(242,162,60,0.05); }
   .deck-col-label {
-    font-size: 9px; color: #FF9550; letter-spacing: 2px; font-weight: 600;
+    font-size: 9px; color: #F2A23C; letter-spacing: 2px; font-weight: 600;
     flex-shrink: 0; min-width: 36px;
   }
-  .deck-col.active-deck .deck-col-label { color: #FF8A3A; }
+  .deck-col.active-deck .deck-col-label { color: #E89236; }
   .deck-mini-banks-row {
     display: flex; gap: 2px; flex: 1; overflow: hidden;
   }
   .deck-mbank-btn {
     flex: 1; font-size: 8px; padding: 3px 0; text-align: center; border-radius: 2px;
-    background: #1A1A20; border: none; color: #7C7C84; cursor: pointer; font-family: inherit;
+    background: #1A1A1A; border: none; color: #7C7C84; cursor: pointer; font-family: inherit;
     min-width: 0;
   }
   .deck-mbank-btn:hover { background: #3E3E3E; color: #C0C0C8; }
-  .deck-mbank-btn.active { background: #FF9550; color: #252525; font-weight: 600; }
+  .deck-mbank-btn.active { background: #F2A23C; color: #252525; font-weight: 600; }
   .deck-mbank-btn.has-content { color: #C0C0C8; }
   .deck-mbank-btn.active.has-content { color: #252525; }
   .deck-col-body {
@@ -364,7 +364,7 @@
   .deck-cofader-badges { display: flex; gap: 2px; }
   .deck-cofader-track {
     flex: 1; position: relative; width: 10px; background: #323232;
-    border-radius: 4px; border: 1px solid #25252A; cursor: ns-resize; min-height: 80px;
+    border-radius: 4px; border: 1px solid #252525; cursor: ns-resize; min-height: 80px;
     touch-action: none;
   }
   .deck-cofader-fill {
@@ -394,18 +394,18 @@
     font-size: 9px; color: #88888E; cursor: pointer; border: none; font-family: inherit;
   }
   .fade-btn:hover { background: #3E3E3E; color: #E6E6EA; }
-  .fade-btn.active { background: #FF9550; color: #252525; font-weight: 500; }
+  .fade-btn.active { background: #F2A23C; color: #252525; font-weight: 500; }
 
   /* CUSTOM FADE TIME INPUT */
   .fade-time-custom { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
   .fade-time-custom input {
-    flex: 1; background: #282828; border: 0.5px solid #25252A; color: #E6E6EA;
+    flex: 1; background: #282828; border: 0.5px solid #252525; color: #E6E6EA;
     padding: 6px 8px; border-radius: 4px; font-family: inherit; font-size: 12px;
     text-align: right; min-width: 0; -moz-appearance: textfield;
   }
   .fade-time-custom input::-webkit-outer-spin-button,
   .fade-time-custom input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  .fade-time-custom input:focus { outline: none; border-color: #FF9550; background: #2E2E2E; }
+  .fade-time-custom input:focus { outline: none; border-color: #F2A23C; background: #2E2E2E; }
   .fade-time-custom .unit { font-size: 10px; color: #88888E; padding-right: 4px; }
 
   /* CURVE PICKER */
@@ -417,7 +417,7 @@
   }
   .curve-btn svg { width: 100%; height: 100%; }
   .curve-btn:hover { background: #3E3E3E; color: #E6E6EA; }
-  .curve-btn.active { background: #FF9550; color: #252525; }
+  .curve-btn.active { background: #F2A23C; color: #252525; }
 
   /* CURVE EDITOR (manual bezier) */
   .curve-editor {
@@ -428,7 +428,7 @@
   .curve-editor canvas { display: block; width: 100%; height: 100%; }
   .curve-handle {
     position: absolute; width: 12px; height: 12px; border-radius: 50%;
-    background: #FF9550; border: 2px solid #0E0E10;
+    background: #F2A23C; border: 2px solid #0E0E0E;
     transform: translate(-50%, -50%); cursor: grab;
     box-shadow: none;
     z-index: 2; touch-action: none;
@@ -446,7 +446,7 @@
 
   /* PRIMARY BUTTONS */
   .btn-primary {
-    width: 100%; background: #FF9550; border: none; color: #252525;
+    width: 100%; background: #F2A23C; border: none; color: #252525;
     padding: 9px; border-radius: 2px; font-size: 11px; font-weight: 500;
     letter-spacing: 1px; cursor: pointer; display: flex;
     align-items: center; justify-content: center; gap: 5px; font-family: inherit;
@@ -479,7 +479,7 @@
   .btn-primary.big-fade.huge-fade {
     padding: 22px 12px; font-size: 16px; font-weight: 500;
     letter-spacing: 3px; gap: 10px;
-    background: #FF9550; color: #252525;
+    background: #F2A23C; color: #252525;
     box-shadow: none;
   }
   .btn-primary.big-fade.huge-fade:hover { background: #E06510; }
@@ -491,11 +491,11 @@
     background: #323232; color: #88888E; cursor: pointer; border: none;
     font-family: inherit; letter-spacing: 0.5px;
   }
-  .badge.midi { color: #FF9550; }
+  .badge.midi { color: #F2A23C; }
   .badge.key { color: #E6E6EA; }
   .badge:hover { background: #3E3E3E; }
   .badge.learning {
-    background: #FF9550; color: #252525; animation: pulse 1s infinite;
+    background: #F2A23C; color: #252525; animation: pulse 1s infinite;
   }
   @keyframes pulse {
     0%, 100% { opacity: 1; }
@@ -517,23 +517,23 @@
     display: flex; gap: 4px; min-width: 0; min-height: 0; position: relative;
   }
   .pad-body {
-    flex: 1; background: #323232; border: 0.5px solid #25252A; border-radius: 10px;
+    flex: 1; background: #323232; border: 0.5px solid #252525; border-radius: 10px;
     padding: 8px; display: flex; flex-direction: column;
     justify-content: space-between; cursor: pointer; position: relative;
     transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
     min-width: 0; overflow: hidden;
   }
-  .pad-body:hover { background: #25252D; border-color: #6C6C76; }
+  .pad-body:hover { background: #252525; border-color: #6C6C76; }
 
   /* Separate fader card (channel strip) */
   .pad-fader-card {
-    width: 22px; background: #2E2E2E; border: 0.5px solid #25252A;
+    width: 22px; background: #2E2E2E; border: 0.5px solid #252525;
     border-radius: 2px; padding: 6px 3px;
     display: flex; flex-direction: column; align-items: center;
     justify-content: space-between; cursor: ns-resize; touch-action: none;
     flex-shrink: 0;
   }
-  .pad-fader-card:hover { border-color: #FF9550; background: #1A1F1D; }
+  .pad-fader-card:hover { border-color: #F2A23C; background: #1A1F1D; }
   .pad-fader-card .vol-label { font-size: 7px; color: #7C7C84; letter-spacing: 0.5px; }
   .pad-fader-track {
     width: 6px; flex: 1; background: #323232; border-radius: 3px;
@@ -547,10 +547,10 @@
   }
   .pad-fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #FF9550; border-radius: 3px;
+    background: #F2A23C; border-radius: 3px;
   }
   .pad-fader-db {
-    font-size: 8px; color: #FF9550; font-weight: 500; min-height: 10px;
+    font-size: 8px; color: #F2A23C; font-weight: 500; min-height: 10px;
     text-align: center;
   }
   .pad.empty .pad-fader-card { display: none; }
@@ -567,8 +567,8 @@
     transition: background 0.1s, color 0.1s;
     -webkit-user-drag: element;
   }
-  .pad-grip:hover { background: rgba(255,149,80,0.15); color: #FF9550; }
-  .pad-grip:active { cursor: grabbing; background: rgba(255,149,80,0.3); color: #FF9550; }
+  .pad-grip:hover { background: rgba(242,162,60,0.15); color: #F2A23C; }
+  .pad-grip:active { cursor: grabbing; background: rgba(242,162,60,0.3); color: #F2A23C; }
   .pad.empty .pad-grip { display: none; }
 
   /* v12.4.4: パッド色 — pad-body + fader-card を一つの枠で囲う (B 案) */
@@ -592,19 +592,19 @@
   .pad.has-color .pad-fader-db { color: var(--pad-c); }
   /* v12.5.9: 色付きパッドの再生中ハイライト — 内側 1px 枠を撤去、3要素を同じ色値で完全統一 */
   .pad.has-color .pad-body.playing {
-    background: color-mix(in srgb, var(--pad-c) 18%, #14141A) !important;
+    background: color-mix(in srgb, var(--pad-c) 18%, #141414) !important;
     border-color: transparent !important;
     box-shadow: none !important; /* 内側 1px の「もう一個のレイヤー」を撤去 */
   }
   .pad.has-color:has(.pad-body.playing) {
-    background: color-mix(in srgb, var(--pad-c) 18%, #14141A);
+    background: color-mix(in srgb, var(--pad-c) 18%, #141414);
   }
   .pad.has-color:has(.pad-body.playing) .pad-fader-card {
-    background: color-mix(in srgb, var(--pad-c) 18%, #14141A);
+    background: color-mix(in srgb, var(--pad-c) 18%, #141414);
   }
   /* フェーダーカード hover の元の緑チントを撤去 (色付きパッドのみ) */
   .pad.has-color .pad-fader-card:hover {
-    background: color-mix(in srgb, var(--pad-c) 20%, #131316);
+    background: color-mix(in srgb, var(--pad-c) 20%, #131313);
   }
   /* MIDI/キーで叩いた瞬間の 180ms ドカン (パッドの色でフラッシュ) */
   .pad.has-color .pad-body.flash {
@@ -641,7 +641,7 @@
   }
   .pad-color-dot:hover {
     transform: scale(1.25); opacity: 1;
-    border-color: #FF9550; border-style: solid;
+    border-color: #F2A23C; border-style: solid;
   }
   /* 色付きパッドではドットは隠す (外枠で色は分かるので冗長) */
   .pad.has-color .pad-color-dot { display: none; }
@@ -675,13 +675,13 @@
     border: none; font-family: inherit;
     transition: background 0.1s, color 0.1s;
   }
-  .pad-edit-btn:hover { background: rgba(255,149,80,0.15); color: #FF9550; }
-  .pad-edit-btn:active { background: rgba(255,149,80,0.3); color: #FF9550; }
+  .pad-edit-btn:hover { background: rgba(242,162,60,0.15); color: #F2A23C; }
+  .pad-edit-btn:active { background: rgba(242,162,60,0.3); color: #F2A23C; }
   .pad-body.empty .pad-edit-btn { display: none; }
 
   /* Flash effect when assigned key/MIDI is pressed */
   .pad-body.flash {
-    background: #FF9550 !important;
+    background: #F2A23C !important;
     border-color: #E06510 !important;
     box-shadow: none !important;
     transition: none !important;
@@ -690,20 +690,20 @@
   .pad-body.flash .pad-name,
   .pad-body.flash .pad-time,
   .pad-body.flash .pad-shortcuts .badge { color: #252525 !important; }
-  .pad-body.flash + .pad-fader-card { border-color: #FF9550; }
+  .pad-body.flash + .pad-fader-card { border-color: #F2A23C; }
   .pad-body.empty {
-    border-style: dashed; border-color: #3D3D45; color: #7C7C84;
+    border-style: dashed; border-color: #3D3D3D; color: #7C7C84;
     align-items: center; justify-content: center; gap: 4px;
   }
   .pad-body.empty .pad-name-empty { font-size: 9px; color: #7C7C84; }
   .pad-body.empty .upload-icon { font-size: 18px; color: #7C7C84; }
   .pad-body.playing {
-    background: #1F2A26; border-color: #FF9550;
+    background: #1F2A26; border-color: #F2A23C;
     box-shadow: none;
   }
-  .pad-body.drag-over { background: #2A3A35; border-color: #FF9550; border-style: dashed; }
+  .pad-body.drag-over { background: #2A3A35; border-color: #F2A23C; border-style: dashed; }
   .pad-body.drag-target-pad {
-    background: #2A3A35 !important; border-color: #FF9550 !important; border-width: 2px !important;
+    background: #2A3A35 !important; border-color: #F2A23C !important; border-width: 2px !important;
     box-shadow: none !important;
   }
   /* v12.3.0: grip が top-left に移ったので padding-left に変更、右側は EDIT 用に確保 */
@@ -716,14 +716,14 @@
     user-select: none;
   }
   .pad-num:hover { background: rgba(255,255,255,0.08); }
-  .pad.playing .pad-num { color: #FF9550; }
+  .pad.playing .pad-num { color: #F2A23C; }
   .pad-name { font-size: 14px; font-weight: 500; color: #E6E6EA; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .pad-footer { display: flex; flex-direction: column; gap: 2px; }
   .pad-time {
-    display: flex; justify-content: space-between; font-size: 8px; color: #FF9550;
+    display: flex; justify-content: space-between; font-size: 8px; color: #F2A23C;
   }
   .pad-progress { height: 2px; background: #282828; border-radius: 1px; overflow: hidden; }
-  .pad-progress-fill { height: 100%; background: #FF9550; border-radius: 1px; width: 0%; }
+  .pad-progress-fill { height: 100%; background: #F2A23C; border-radius: 1px; width: 0%; }
   /* v11.3.4: pad 下の MIDI/KEY ショートカット表示を拡大 (7→10px) — 可読性確保 */
   .pad-shortcuts {
     display: flex; justify-content: space-between; font-size: 10px;
@@ -733,7 +733,7 @@
      LEARN 中のバッジ (.learning) は親ルールが pulse 色を当てるので影響なし。 */
   .pad-shortcuts .badge.midi,
   .pad-shortcuts .badge.key { color: #7C7C84; }
-  .pad-body:hover .pad-shortcuts .badge.midi { color: #FF9550; }
+  .pad-body:hover .pad-shortcuts .badge.midi { color: #F2A23C; }
   .pad-body:hover .pad-shortcuts .badge.key  { color: #E6E6EA; }
 
   /* LEVELS TAB */
@@ -742,18 +742,18 @@
     gap: 8px; flex: 1;
   }
   .level-card {
-    background: #323232; border: 0.5px solid #25252A; border-radius: 10px;
+    background: #323232; border: 0.5px solid #252525; border-radius: 10px;
     padding: 10px; display: flex; gap: 10px; align-items: stretch;
     cursor: pointer; transition: all 0.05s; overflow: hidden;
   }
-  .level-card:hover { background: #25252D; border-color: #6C6C76; }
+  .level-card:hover { background: #252525; border-color: #6C6C76; }
   .level-card.empty { opacity: 0.35; border-style: dashed; cursor: default; }
   .level-card.empty:hover { background: #323232; }
-  .level-card.playing { background: #1F2A26; border-color: #FF9550; box-shadow: none; }
+  .level-card.playing { background: #1F2A26; border-color: #F2A23C; box-shadow: none; }
   .level-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .level-info-name { font-size: 12px; color: #E6E6EA; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
   .level-info-num { font-size: 9px; color: #7C7C84; letter-spacing: 0.5px; }
-  .level-info-db { font-size: 14px; font-weight: 500; color: #FF9550; margin-top: auto; }
+  .level-info-db { font-size: 14px; font-weight: 500; color: #F2A23C; margin-top: auto; }
   .level-fader-wrap {
     width: 18px; display: flex; flex-direction: column; align-items: center; gap: 4px;
   }
@@ -764,7 +764,7 @@
   }
   .level-fader-fill {
     position: absolute; bottom: 0; left: 0; right: 0;
-    background: #FF9550; border-radius: 2px;
+    background: #F2A23C; border-radius: 2px;
     pointer-events: none;
   }
   .level-fader-thumb {
@@ -790,14 +790,14 @@
     transition: background 0.1s, border-color 0.1s;
   }
   .hold-slot.empty {
-    background: transparent; border: 1px dashed #3D3D45;
+    background: transparent; border: 1px dashed #3D3D3D;
     align-items: center; justify-content: center;
     color: #7C7C84; font-size: 10px;
   }
   .hold-slot.filled {
-    background: #323232; border: 0.5px solid #25252A; cursor: grab;
+    background: #323232; border: 0.5px solid #252525; cursor: grab;
   }
-  .hold-slot.filled:hover { background: #2A2A33; border-color: #FF9550; }
+  .hold-slot.filled:hover { background: #2A2A2A; border-color: #F2A23C; }
   .hold-slot.filled:active { cursor: grabbing; }
   .hold-slot.filled .slot-head {
     font-size: 7px; color: #7C7C84; letter-spacing: 0.5px;
@@ -807,14 +807,14 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .hold-slot.drag-target {
-    background: rgba(255,149,80,0.15) !important;
-    border: 2px dashed #FF9550 !important;
+    background: rgba(242,162,60,0.15) !important;
+    border: 2px dashed #F2A23C !important;
   }
 
   /* BANK row drop-target during drag */
-  .banks.drop-mode { border-color: #FF9550; background: #1A1F1D; }
+  .banks.drop-mode { border-color: #F2A23C; background: #1A1F1D; }
   .bank-btn.drop-target {
-    border: 2px solid #FF9550 !important;
+    border: 2px solid #F2A23C !important;
     box-shadow: none !important;
   }
 
@@ -834,13 +834,13 @@
   .trim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; }
   .trim-title { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
   .pad-rename-input {
-    background: transparent; border: 0.5px solid #25252A; color: #E6E6EA;
+    background: transparent; border: 0.5px solid #252525; color: #E6E6EA;
     font-family: inherit; font-size: 14px; font-weight: 500;
     padding: 4px 8px; border-radius: 4px;
     flex: 1; min-width: 0; max-width: 480px;
   }
-  .pad-rename-input:hover { border-color: #3A3A42; background: rgba(0,0,0,0.3); }
-  .pad-rename-input:focus { outline: none; border-color: #FF9550; background: rgba(0,0,0,0.4); color: #FFFFFF; }
+  .pad-rename-input:hover { border-color: #3A3A3A; background: rgba(0,0,0,0.3); }
+  .pad-rename-input:focus { outline: none; border-color: #F2A23C; background: rgba(0,0,0,0.4); color: #FFFFFF; }
   .trim-subtitle { font-size: 11px; color: #88888E; margin-top: 2px; }
   .zoom-bar {
     display: flex; gap: 10px; margin-bottom: 8px; align-items: center;
@@ -857,31 +857,31 @@
   .zoom-slider {
     width: 100%; -webkit-appearance: none; appearance: none;
     height: 4px; border-radius: 2px;
-    background: linear-gradient(to right, #FF9550 var(--fill, 0%), #14141A var(--fill, 0%));
+    background: linear-gradient(to right, #F2A23C var(--fill, 0%), #141414 var(--fill, 0%));
     outline: none; cursor: pointer;
   }
   .zoom-slider::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 16px; height: 16px; border-radius: 50%;
-    background: #FF9550; border: 2px solid #0E0E10;
+    background: #F2A23C; border: 2px solid #0E0E0E;
     cursor: grab; box-shadow: none;
   }
   .zoom-slider::-webkit-slider-thumb:active { cursor: grabbing; }
   .zoom-slider::-moz-range-thumb {
     width: 16px; height: 16px; border-radius: 50%;
-    background: #FF9550; border: 2px solid #0E0E10; cursor: grab;
+    background: #F2A23C; border: 2px solid #0E0E0E; cursor: grab;
   }
   .zoom-value {
-    font-size: 13px; color: #FF9550; font-weight: 500;
+    font-size: 13px; color: #F2A23C; font-weight: 500;
     min-width: 60px; text-align: right;
     font-family: var(--font-mono, monospace);
   }
   .zoom-reset-btn {
-    background: transparent; border: 0.5px solid #25252A; color: #88888E;
+    background: transparent; border: 0.5px solid #252525; color: #88888E;
     padding: 4px 10px; border-radius: 4px; font-size: 10px;
     cursor: pointer; font-family: inherit; letter-spacing: 1px;
   }
-  .zoom-reset-btn:hover { border-color: #FF9550; color: #FF9550; }
+  .zoom-reset-btn:hover { border-color: #F2A23C; color: #F2A23C; }
   .zoom-hint { font-size: 9px; color: #7C7C84; flex-shrink: 0; }
   .waveform-wrap {
     position: relative; background: #282828; border: 1px solid #1E1E1E;
@@ -907,10 +907,10 @@
   }
   .trim-handle::before {
     content: ''; position: absolute; top: 0; bottom: 0;
-    left: 50%; width: 2px; background: #FF9550; transform: translateX(-50%);
+    left: 50%; width: 2px; background: #F2A23C; transform: translateX(-50%);
   }
   .trim-handle::after {
-    content: ''; width: 10px; height: 30px; background: #FF9550; border-radius: 2px;
+    content: ''; width: 10px; height: 30px; background: #F2A23C; border-radius: 2px;
     box-shadow: none;
   }
   .trim-handle.end::before, .trim-handle.end::after { background: #FF8A0F; box-shadow: none; }
@@ -926,7 +926,7 @@
   .trim-field-label { font-size: 9px; color: #88888E; letter-spacing: 1px; }
   .trim-field-value { font-size: 14px; font-weight: 500; color: #E6E6EA; }
   .trim-field input[type="number"] {
-    background: #282828; border: 0.5px solid #25252A; color: #E6E6EA;
+    background: #282828; border: 0.5px solid #252525; color: #E6E6EA;
     padding: 4px 6px; border-radius: 3px; font-family: inherit; font-size: 12px;
     width: 100%;
   }
@@ -938,14 +938,14 @@
     color: #E6E6EA; font-size: 12px; border: 0.5px solid rgba(255,255,255,0.1);
   }
   .pad:hover .pad-edit-icon { opacity: 0.85; }
-  .pad-edit-icon:hover { background: #FF9550; color: #252525; opacity: 1 !important; }
+  .pad-edit-icon:hover { background: #F2A23C; color: #252525; opacity: 1 !important; }
   /* Inline trim indicator placed next to time display, no overlap with shortcuts */
   .trim-icon {
     display: inline-flex; align-items: center; gap: 2px;
-    font-size: 9px; color: #FF9550;
+    font-size: 9px; color: #F2A23C;
     padding: 0 3px; margin-right: 3px;
-    background: rgba(255,149,80,0.12); border-radius: 2px;
-    border: 0.5px solid rgba(255,149,80,0.25);
+    background: rgba(242,162,60,0.12); border-radius: 2px;
+    border: 0.5px solid rgba(242,162,60,0.25);
   }
   .modal h3 { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
   .modal p { font-size: 12px; color: #88888E; margin-bottom: 12px; }
@@ -954,7 +954,7 @@
   /* LEARN OVERLAY */
   .learn-banner {
     display: none; position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-    background: #FF9550; color: #252525; padding: 10px 22px; border-radius: 2px;
+    background: #F2A23C; color: #252525; padding: 10px 22px; border-radius: 2px;
     font-size: 13px; font-weight: 500; z-index: 999; box-shadow: none;
     cursor: pointer;
   }
@@ -997,8 +997,8 @@
     border-radius: 4px; cursor: pointer; font-family: inherit;
   }
   .mode-tab:hover { background: #3E3E3E; color: #E6E6EA; }
-  .mode-tab.active { background: #FF9550; color: #252525; font-weight: 500; }
-  .mode-tab.door-active { background: #FF9550; color: #252525; font-weight: 500; }
+  .mode-tab.active { background: #F2A23C; color: #252525; font-weight: 500; }
+  .mode-tab.door-active { background: #F2A23C; color: #252525; font-weight: 500; }
   .app-mode-tabs .status { margin-left: auto; padding-right: 6px; }
   /* Left panel (MASTER / STOP / PAUSE / FADE TIME / FADE CURVE / FADE OUT) is shared across modes.
      Previously we hid PLAY MODE/FADE系 in DOOR mode, but the user wants them visible too. */
@@ -1098,7 +1098,7 @@
   }
   .do-logo-size-slider::before {
     content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
-    height: 3px; background: #1F1F22; border-radius: 2px;
+    height: 3px; background: #1F1F1F; border-radius: 2px;
   }
   .do-logo-size-fill {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
@@ -1118,22 +1118,22 @@
   .do-bgm-tag {
     padding: 3px 10px; font-size: 10px; letter-spacing: 1.5px; font-weight: 500; border-radius: 4px;
   }
-  .do-bgm-tag.tag-door { background: rgba(255,149,80,0.2); color: #FF9550; }
+  .do-bgm-tag.tag-door { background: rgba(242,162,60,0.2); color: #F2A23C; }
   .do-bgm-tag.tag-workout { background: rgba(46,122,255,0.2); color: #2E7AFF; }
   .do-bgm-sub { font-size: 10px; color: #88888E; }
   .do-bgm-name-row { font-size: 12px; font-weight: 500; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* WORKOUT 用色違いボタン／フィル */
-  .do-bgm-btn.primary.door { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .do-bgm-btn.primary.door { background: #F2A23C; color: #252525; border-color: #F2A23C; }
   .do-bgm-btn.primary.door:hover { background: #E06510; }
   .do-bgm-btn.primary.workout { background: #2E7AFF; color: #042C53; border-color: #2E7AFF; }
   .do-bgm-btn.primary.workout:hover { background: #B5D4F4; }
-  .do-bgm-btn.active.door { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .do-bgm-btn.active.door { background: #F2A23C; color: #252525; border-color: #F2A23C; }
   .do-bgm-btn.active.workout { background: #2E7AFF; color: #042C53; border-color: #2E7AFF; }
-  .do-bgm-bar-fill.door { background: #FF9550; }
+  .do-bgm-bar-fill.door { background: #F2A23C; }
   .do-bgm-bar-fill.workout { background: #2E7AFF; }
-  .do-bgm-vol-fill.door { background: #FF9550; }
+  .do-bgm-vol-fill.door { background: #F2A23C; }
   .do-bgm-vol-fill.workout { background: #2E7AFF; }
-  .do-bgm-vol-thumb.door { background: #FF9550; }
+  .do-bgm-vol-thumb.door { background: #F2A23C; }
   .do-bgm-vol-thumb.workout { background: #2E7AFF; }
   /* BGMカード共通 (v11.2.5: 内部スペース拡張で文字とボタンの息継ぎ確保) */
   .do-bgm-card { padding: 14px 14px 16px; }
@@ -1141,25 +1141,25 @@
     background: #2E2E2E; border: 1px solid #1E1E1E; border-radius: 2px; padding: 10px;
     transition: border-color 0.15s, background 0.15s;
   }
-  .do-card.drop-over { border-color: #FF9550; background: #1F1B0F; }
+  .do-card.drop-over { border-color: #F2A23C; background: #1F1B0F; }
   .do-card-head {
     font-size: 9px; color: #88888E; letter-spacing: 2px; margin-bottom: 6px;
   }
   /* NOW / NEXT — 黄色テーマで大きく */
   #doNowCard {
-    border-color: rgba(255,149,80,0.35);
+    border-color: rgba(242,162,60,0.35);
     padding: 10px 18px;
     display: flex; align-items: center; gap: 18px;
   }
   .now-block { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .now-block.next-block { flex: 1; border-left: 0.5px solid #1F1F22; padding-left: 18px; }
+  .now-block.next-block { flex: 1; border-left: 0.5px solid #1F1F1F; padding-left: 18px; }
   .do-clock-now {
     font-family: 'SF Mono', 'Menlo', 'JetBrains Mono', monospace;
     font-size: 60px; font-weight: 300;
     color: #F8F8F8; letter-spacing: 1px; line-height: 1;
   }
   .do-clock-divider { display: none; } /* 横並びでは不要 */
-  .do-clock-divider { height: 0.5px; background: #1F1F22; margin: 10px 0; }
+  .do-clock-divider { height: 0.5px; background: #1F1F1F; margin: 10px 0; }
   .do-clock-next-label { font-size: 9px; color: #88888E; letter-spacing: 1.5px; margin-bottom: 2px; }
   .do-clock-next-name { font-size: 12px; color: #E6E6EA; min-height: 14px; display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
   .do-clock-next-eta {
@@ -1168,7 +1168,7 @@
     color: #C8C8CE; margin-top: 2px; letter-spacing: 0.5px;
   }
   .do-status-badge {
-    display: inline-block; background: rgba(255,149,80,0.15); color: #FF9550;
+    display: inline-block; background: rgba(242,162,60,0.15); color: #F2A23C;
     padding: 2px 10px; border-radius: 4px; font-size: 11px; letter-spacing: 0.5px;
     align-self: flex-start;
   }
@@ -1182,7 +1182,7 @@
   .do-bgm-load:hover { background: #3E3E3E; color: #E6E6EA; }
   .do-bgm-controls { display: flex; gap: 6px; margin-bottom: 12px; align-items: center; }
   .do-bgm-btn {
-    width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #25252A;
+    width: 46px; height: 46px; border-radius: 50%; border: 0.5px solid #252525;
     background: #323232; color: #E6E6EA; cursor: pointer; display: flex;
     align-items: center; justify-content: center; font-size: 22px; font-family: inherit;
     transition: all 0.15s; flex-shrink: 0;
@@ -1190,15 +1190,15 @@
   /* ループのくるっと矢印は他より一回り大きく */
   #doBgmLoopBtn { font-size: 30px; }
   .do-bgm-btn:hover { background: #3E3E3E; }
-  .do-bgm-btn.primary { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .do-bgm-btn.primary { background: #F2A23C; color: #252525; border-color: #F2A23C; }
   .do-bgm-btn.primary:hover { background: #E06510; }
-  .do-bgm-btn.active { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .do-bgm-btn.active { background: #F2A23C; color: #252525; border-color: #F2A23C; }
   .do-bgm-progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
   .do-bgm-time { font-family: inherit; font-size: 10px; color: #88888E; margin-bottom: 8px; }
   /* v12.9.18: クリック／ドラッグでシークできるよう高さを 4→8px に、カーソルと hover を追加 */
   .do-bgm-bar { height: 8px; background: #323232; border-radius: 4px; overflow: hidden; margin-bottom: 6px; cursor: pointer; position: relative; transition: background 120ms; touch-action: none; }
-  .do-bgm-bar:hover { background: #1E1E26; }
-  .do-bgm-bar-fill { height: 100%; background: #FF9550; width: 0%; pointer-events: none; }
+  .do-bgm-bar:hover { background: #1E1E1E; }
+  .do-bgm-bar-fill { height: 100%; background: #F2A23C; width: 0%; pointer-events: none; }
   .do-bgm-vol { display: flex; align-items: center; gap: 8px; }
   .do-bgm-vol-label { font-size: 9px; color: #88888E; letter-spacing: 1.5px; width: 30px; }
   .do-bgm-vol-slider {
@@ -1220,11 +1220,11 @@
   }
   .do-bgm-vol-fill {
     position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-    height: 6px; background: #FF9550; border-radius: 3px; pointer-events: none;
+    height: 6px; background: #F2A23C; border-radius: 3px; pointer-events: none;
   }
   .do-bgm-vol-thumb {
     position: absolute; top: 50%; transform: translate(-50%, -50%);
-    width: 20px; height: 20px; background: #FF9550; border-radius: 50%;
+    width: 20px; height: 20px; background: #F2A23C; border-radius: 50%;
     pointer-events: none;
   }
   .do-bgm-vol-db { font-family: inherit; font-size: 11px; min-width: 42px; text-align: right; color: #E6E6EA; }
@@ -1244,13 +1244,13 @@
     transition: border-color 120ms, background 120ms;
   }
   .db-input:hover { border-color: rgba(255,255,255,0.20); }
-  .db-input:focus { border-color: #FF9550; color: #FFFFFF; outline: none; background: rgba(0,0,0,0.35); }
+  .db-input:focus { border-color: #F2A23C; color: #FFFFFF; outline: none; background: rgba(0,0,0,0.35); }
   .db-input::-webkit-inner-spin-button, .db-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
   /* DUCK */
   .do-duck-row { display: flex; align-items: center; justify-content: space-between; }
   .do-duck-label { font-size: 11px; color: #C8C8CE; }
-  .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #FF9550; }
+  .do-duck-value { font-family: inherit; font-size: 13px; font-weight: 500; color: #F2A23C; }
   .do-duck-bar { height: 4px; background: #323232; border-radius: 2px; margin: 6px 0 12px; cursor: pointer; position: relative; }
   .do-duck-bar-fill { position: absolute; top: 0; left: 0; height: 100%; background: #FF8A0F; border-radius: 2px; pointer-events: none; }
   .do-duck-bar-thumb {
@@ -1261,11 +1261,11 @@
   .do-duck-bar.gray .do-duck-bar-fill { background: #7C7C84; }
   .do-duck-bar.gray .do-duck-bar-thumb { background: #7C7C84; }
   .do-duck-fade-input {
-    background: #323232; border: 0.5px solid #25252A; border-radius: 4px;
+    background: #323232; border: 0.5px solid #252525; border-radius: 4px;
     color: #E6E6EA; font-family: inherit; font-size: 12px; font-weight: 500;
     padding: 4px 6px; width: 60px; text-align: right; outline: none;
   }
-  .do-duck-fade-input:focus { border-color: #FF9550; background: #2E2E2E; }
+  .do-duck-fade-input:focus { border-color: #F2A23C; background: #2E2E2E; }
   .do-duck-fade-input::-webkit-outer-spin-button,
   .do-duck-fade-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
@@ -1276,14 +1276,14 @@
   .do-lib-vol-card { margin-top: 8px; padding-top: 8px; border-top: 0.5px solid rgba(255,255,255,0.06); cursor: default; }
   /* ＋ 枠を追加 */
   .do-lib-slot-add {
-    border: 0.5px dashed rgba(255,149,80,0.5);
-    background: rgba(255,149,80,0.04);
+    border: 0.5px dashed rgba(242,162,60,0.5);
+    background: rgba(242,162,60,0.04);
     border-radius: 2px; padding: 14px 10px; cursor: pointer;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 100px; transition: all 0.15s;
   }
   .do-lib-slot-add:hover {
-    background: rgba(255,149,80,0.12); border-color: #FF9550;
+    background: rgba(242,162,60,0.12); border-color: #F2A23C;
   }
   .do-lib-slot {
     border: 1px solid #1E1E1E; border-radius: 2px; padding: 10px;
@@ -1323,7 +1323,7 @@
   .do-lib-badge.color-3 { background: rgba(255,138,15,0.2); color: #FF8A0F; }
   .do-lib-actions { display: flex; gap: 4px; align-items: center; }
   .do-lib-act { background: none; border: none; color: #7C7C84; cursor: pointer; padding: 1px 4px; font-size: 11px; font-family: inherit; border-radius: 3px; }
-  .do-lib-act:hover { color: #FF9550; }
+  .do-lib-act:hover { color: #F2A23C; }
   .do-lib-act.del:hover { color: #E24B4A; }
   .do-lib-act.play { font-size: 14px; }
   .do-lib-act.play.playing-btn.color-0 { background: #FF4A8F; color: #4B1528; font-weight: 500; padding: 2px 8px; }
@@ -1390,7 +1390,7 @@
     box-shadow: none;
   }
   .tp-app-name { font-size: 22px; font-weight: 500; letter-spacing: 6px; color: #E6E6EA; }
-  .tp-app-sub  { font-size: 10px; letter-spacing: 4px; color: #FF9550; margin-top: 4px; font-weight: 500; }
+  .tp-app-sub  { font-size: 10px; letter-spacing: 4px; color: #F2A23C; margin-top: 4px; font-weight: 500; }
   .tp-ws-label { font-size: 10px; letter-spacing: 5px; color: #7C7C84; font-weight: 500; margin-bottom: 16px; }
   .tp-ws-row { display: flex; align-items: baseline; gap: 24px; margin-bottom: 32px; }
   .tp-ws-title { font-size: 56px; font-weight: 800; color: #E6E6EA; letter-spacing: -1px; }
@@ -1414,7 +1414,7 @@
   .tp-card-name { font-size: 22px; font-weight: 500; color: #E6E6EA; margin-bottom: 14px; letter-spacing: -0.5px; word-break: break-all; padding-right: 32px; }
   .tp-card-stats { display: flex; gap: 18px; margin-bottom: auto; }
   .tp-card-stat { display: flex; flex-direction: column; gap: 2px; }
-  .tp-card-stat-num { font-size: 17px; font-weight: 500; color: #FF9550; letter-spacing: -0.5px; }
+  .tp-card-stat-num { font-size: 17px; font-weight: 500; color: #F2A23C; letter-spacing: -0.5px; }
   .tp-card-stat-label { font-size: 8.5px; letter-spacing: 1.5px; color: #7C7C84; font-weight: 500; }
   .tp-card-meta { margin-top: 16px; font-size: 10px; color: #7C7C84; letter-spacing: 1.5px; }
   .tp-card-menu, .tp-card-rename {
@@ -1423,7 +1423,7 @@
     display: flex; align-items: center; justify-content: center;
     color: #7C7C84; font-size: 18px;
     background: #323232;
-    border: 0.5px solid #25252A;
+    border: 0.5px solid #252525;
     opacity: 0.6; transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
     cursor: pointer;
   }
@@ -1431,31 +1431,31 @@
   .tp-card-menu { right: 14px; font-size: 20px; }
   .tp-card:hover .tp-card-menu,
   .tp-card:hover .tp-card-rename { opacity: 1; color: #C8C8CE; }
-  .tp-card-rename:hover { background: rgba(255,149,80,0.12); border-color: #FF9550; color: #FF9550; }
+  .tp-card-rename:hover { background: rgba(242,162,60,0.12); border-color: #F2A23C; color: #F2A23C; }
   .tp-card-menu:hover { background: rgba(226,75,74,0.12); border-color: #E24B4A; color: #E24B4A; }
   .tp-new {
-    background: transparent; border: 0.5px dashed #2A2A30; border-radius: 8px;
+    background: transparent; border: 0.5px dashed #2A2A2A; border-radius: 8px;
     min-height: 180px;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
     cursor: pointer; transition: all 0.15s;
   }
-  .tp-new:hover { border-color: #FF9550; background: rgba(255,149,80,0.04); }
+  .tp-new:hover { border-color: #F2A23C; background: rgba(242,162,60,0.04); }
   .tp-new-icon { font-size: 22px; color: #7C7C84; transition: color 0.15s; }
-  .tp-new:hover .tp-new-icon { color: #FF9550; }
+  .tp-new:hover .tp-new-icon { color: #F2A23C; }
   .tp-new-label { font-size: 11px; letter-spacing: 3px; color: #7C7C84; font-weight: 500; transition: color 0.15s; }
-  .tp-new:hover .tp-new-label { color: #FF9550; }
+  .tp-new:hover .tp-new-label { color: #F2A23C; }
   .tp-foot {
-    margin-top: 56px; font-size: 10px; letter-spacing: 1.5px; color: #3A3A48; text-align: center;
+    margin-top: 56px; font-size: 10px; letter-spacing: 1.5px; color: #3A3A3A; text-align: center;
   }
   .tp-foot a { color: #7C7C84; cursor: pointer; }
-  .tp-foot a:hover { color: #FF9550; }
+  .tp-foot a:hover { color: #F2A23C; }
   /* Back-to-projects 小ボタン（メインアプリ側のヘッダー左に追加） */
   .back-to-top-btn {
     background: transparent; border: 1px solid #252525; color: #88888E;
     border-radius: 4px; padding: 5px 10px; font-family: inherit; font-size: 9px;
     letter-spacing: 2px; cursor: pointer; transition: all 0.15s;
   }
-  .back-to-top-btn:hover { border-color: #FF9550; color: #FF9550; }
+  .back-to-top-btn:hover { border-color: #F2A23C; color: #F2A23C; }
   /* メインアプリページ — body 直下時と同じ flex 振る舞いに */
   #appPage {
     display: flex; flex-direction: column;
@@ -1492,7 +1492,7 @@
   }
   /* サムネは 56px 固定の薄い帯（LIBRARY の枠と同じリズム維持） */
   .do-vid-thumb {
-    width: 100%; height: 56px; background: #0A0A0C;
+    width: 100%; height: 56px; background: #0A0A0A;
     border-radius: 3px; margin-top: 4px;
     display: flex; align-items: center; justify-content: center;
     color: #4FD1C5; font-size: 14px; overflow: hidden;
@@ -1549,7 +1549,7 @@
   .kb-view-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
   .kb-toggle { display: inline-flex; border: 1px solid #252525; border-radius: 2px; overflow: hidden; }
   .kb-toggle button { padding: 5px 14px; font-size: 10px; letter-spacing: 1px; background: transparent; color: #8A8A90; border: none; cursor: pointer; font-family: inherit; }
-  .kb-toggle button.active { background: #FF9550; color: #04342C; font-weight: 700; }
+  .kb-toggle button.active { background: #F2A23C; color: #04342C; font-weight: 700; }
   .kb-bank-label { font-size: 10px; color: #88888E; letter-spacing: 1px; }
   .kb-hint { font-size: 9px; color: #7C7C84; margin-left: auto; }
 
@@ -1560,18 +1560,18 @@
     display: flex; flex-direction: column; align-items: stretch; padding: 5px 6px; cursor: pointer;
     position: relative; transition: background 80ms, border-color 80ms; box-sizing: border-box;
   }
-  .kb-key:hover { border-color: #FF9550; }
+  .kb-key:hover { border-color: #F2A23C; }
   .kb-key .kb-cap { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8A8A90; line-height: 1; }
   .kb-key .kb-name {
     font-size: 9px; color: #E6E6EA; margin-top: auto; width: 100%; text-align: center;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25;
   }
-  .kb-key.empty .kb-name { color: #44444A; }
-  .kb-key.assigned { background: #18221F; border-color: rgba(255,149,80,0.55); }
-  .kb-key.assigned .kb-cap { color: #FF8A3A; }
-  .kb-key.playing { background: #FF9550; }
+  .kb-key.empty .kb-name { color: #444444; }
+  .kb-key.assigned { background: #18221F; border-color: rgba(242,162,60,0.55); }
+  .kb-key.assigned .kb-cap { color: #E89236; }
+  .kb-key.playing { background: #F2A23C; }
   .kb-key.playing .kb-cap, .kb-key.playing .kb-name { color: #04342C; }
-  .kb-key.kb-drop-over { border-color: #FF8A3A; background: #23332F; box-shadow: none; }
+  .kb-key.kb-drop-over { border-color: #E89236; background: #23332F; box-shadow: none; }
   /* 機能キー（FADE OUT 等）は赤系で区別 */
   .kb-key.func { background: #221718; border-color: rgba(226,75,74,0.4); }
   .kb-key.func .kb-cap { color: #E8A0A0; }
@@ -1593,7 +1593,7 @@
 
   /* --- 共通 --- */
   .mt-card {
-    background: linear-gradient(180deg, #131316, #101013);
+    background: linear-gradient(180deg, #131313, #101010);
     border: 1px solid #1E1E1E; border-radius: 10px; padding: 14px 16px;
     box-shadow: 0 2px 20px rgba(0,0,0,0.3);
   }
@@ -1601,8 +1601,8 @@
   .mt-section-head.compact { margin-bottom: 8px; }
   .mt-section-head-l { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .mt-section-num {
-    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 10px; color: #3A3A42;
-    background: #0B0B0D; padding: 2px 6px; border-radius: 3px; letter-spacing: 1px;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 10px; color: #3A3A3A;
+    background: #0B0B0B; padding: 2px 6px; border-radius: 3px; letter-spacing: 1px;
     border: 1px solid #252525;
   }
   .mt-section-title { font-size: 11px; letter-spacing: 3px; color: #E6E6EA; font-weight: 500; text-transform: uppercase; }
@@ -1610,16 +1610,16 @@
   .mt-section-actions { display: flex; gap: 6px; }
 
   .mt-btn {
-    background: transparent; border: 0.5px solid #25252A; color: #C8C8CE;
+    background: transparent; border: 0.5px solid #252525; color: #C8C8CE;
     padding: 6px 14px; border-radius: 4px; font-family: inherit; font-size: 10px;
     letter-spacing: 1.5px; font-weight: 500; cursor: pointer;
     transition: all 0.15s;
   }
-  .mt-btn:hover { border-color: #FF9550; color: #FF9550; background: rgba(255,149,80,0.04); }
+  .mt-btn:hover { border-color: #F2A23C; color: #F2A23C; background: rgba(242,162,60,0.04); }
   .mt-btn.ghost { background: rgba(255,255,255,0.02); }
-  .mt-btn.ghost.subtle { color: #7C7C84; border-color: #1F1F22; }
+  .mt-btn.ghost.subtle { color: #7C7C84; border-color: #1F1F1F; }
   .mt-btn.ghost.subtle:hover { color: #E24B4A; border-color: rgba(226,75,74,0.4); background: rgba(226,75,74,0.05); }
-  .mt-btn.primary { background: #FF9550; color: #252525; border: none; }
+  .mt-btn.primary { background: #F2A23C; color: #252525; border: none; }
   .mt-btn.primary:hover { background: #E06510; }
   .mt-btn.danger { color: #E24B4A; border-color: rgba(226,75,74,0.4); }
   .mt-btn.danger:hover { background: rgba(226,75,74,0.1); }
@@ -1639,22 +1639,22 @@
     flex: 0 1 auto;
     width: 280px;
     max-width: 100%;
-    background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
-    border: 1px solid #25252A;
+    background: linear-gradient(180deg, #141414 0%, #0B0B0B 100%);
+    border: 1px solid #252525;
     color: #E6E6EA;
     padding: 5px 12px; border-radius: 2px;
     font-family: inherit; font-size: 12px; cursor: pointer;
     letter-spacing: 0.3px;
     transition: border-color 0.15s, background 0.15s;
   }
-  .mt-row > .mt-select:hover { border-color: #3A3A42; }
-  .mt-row > .mt-select:focus { outline: none; border-color: #FF9550; }
+  .mt-row > .mt-select:hover { border-color: #3A3A3A; }
+  .mt-row > .mt-select:focus { outline: none; border-color: #F2A23C; }
   /* DEVICE 行の ⟳ ボタンを正方形に + select と高さ揃え */
   .mt-row > .mt-btn.ghost.subtle {
     width: 26px; height: 26px; padding: 0 !important;
     display: inline-flex; align-items: center; justify-content: center;
-    background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
-    border: 1px solid #25252A;
+    background: linear-gradient(180deg, #141414 0%, #0B0B0B 100%);
+    border: 1px solid #252525;
     border-radius: 2px;
     font-size: 13px !important;
     color: #888890;
@@ -1662,15 +1662,15 @@
     margin-left: 0 !important;
   }
   .mt-row > .mt-btn.ghost.subtle:hover {
-    border-color: #FF9550;
-    color: #FF9550;
-    background: linear-gradient(180deg, #1A1A22 0%, #14141A 100%);
+    border-color: #F2A23C;
+    color: #F2A23C;
+    background: linear-gradient(180deg, #1A1A1A 0%, #141414 100%);
   }
   /* CHANNELS 行: 数値バッジ + 状態テキストを 1 つの pill にまとめる */
   .mt-num-readout {
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 13px; font-weight: 500; color: #E06510;
-    background: linear-gradient(180deg, #14141A 0%, #0B0B0F 100%);
+    background: linear-gradient(180deg, #141414 0%, #0B0B0B 100%);
     padding: 4px 12px; border-radius: 2px;
     border: 1px solid rgba(91,196,176,0.3);
     text-shadow: 0 0 8px rgba(91,196,176,0.4);
@@ -1686,27 +1686,27 @@
   }
   .mt-row-note.warn { color: #FFCB5A; }
   .mt-input-num {
-    width: 60px; background: #282828; border: 0.5px solid #25252A; color: #E6E6EA;
+    width: 60px; background: #282828; border: 0.5px solid #252525; color: #E6E6EA;
     padding: 5px 8px; border-radius: 3px; font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 11px; text-align: right;
   }
-  .mt-input-num:focus { outline: none; border-color: #FF9550; }
+  .mt-input-num:focus { outline: none; border-color: #F2A23C; }
 
   /* iOS風 toggle switch */
   .mt-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; }
   .mt-switch input { display: none; }
   .mt-switch-track {
-    width: 32px; height: 18px; background: #1F1F22; border-radius: 9px;
+    width: 32px; height: 18px; background: #1F1F1F; border-radius: 9px;
     position: relative; transition: background 0.18s;
-    border: 0.5px solid #25252A;
+    border: 0.5px solid #252525;
   }
   .mt-switch-thumb {
     position: absolute; top: 1px; left: 1px;
     width: 14px; height: 14px; background: #88888E; border-radius: 50%;
     transition: all 0.18s;
   }
-  .mt-switch input:checked + .mt-switch-track { background: rgba(255,149,80,0.3); border-color: #FF9550; }
-  .mt-switch input:checked + .mt-switch-track .mt-switch-thumb { left: 15px; background: #FF9550; box-shadow: none; }
+  .mt-switch input:checked + .mt-switch-track { background: rgba(242,162,60,0.3); border-color: #F2A23C; }
+  .mt-switch input:checked + .mt-switch-track .mt-switch-thumb { left: 15px; background: #F2A23C; box-shadow: none; }
   .mt-switch-text { font-size: 10px; color: #C8C8CE; letter-spacing: 0.5px; }
 
   /* ============= 1. NOW PLAYING HERO (compact) ============= */
@@ -1714,16 +1714,16 @@
     position: relative; overflow: hidden;
     border-radius: 10px;
     border: 1px solid #1E1E1E;
-    background: #0A0A0C;
+    background: #0A0A0A;
     flex-shrink: 0;
   }
   /* 背景にうっすらグラデーション。playing時は色が動く */
   .mt-hero-bg {
     position: absolute; inset: 0;
     background:
-      radial-gradient(700px 160px at 8% 30%, rgba(255,149,80,0.10), transparent 60%),
+      radial-gradient(700px 160px at 8% 30%, rgba(242,162,60,0.10), transparent 60%),
       radial-gradient(500px 140px at 85% 70%, rgba(46,122,255,0.06), transparent 60%),
-      linear-gradient(180deg, #16161B 0%, #0C0C0F 100%);
+      linear-gradient(180deg, #161616 0%, #0C0C0C 100%);
     transition: opacity 0.3s;
   }
   /* 再生中の背景色変化は廃止（ダサいとの指摘）— 常に同じ落ち着いた背景に */
@@ -1756,9 +1756,9 @@
   .mt-hero-trackchip {
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 22px; font-weight: 800;
-    color: #FF9550;
-    background: rgba(255,149,80,0.06);
-    border: 1px solid rgba(255,149,80,0.7);
+    color: #F2A23C;
+    background: rgba(242,162,60,0.06);
+    border: 1px solid rgba(242,162,60,0.7);
     padding: 8px 18px; border-radius: 8px;
     letter-spacing: 2px;
     flex-shrink: 0;
@@ -1826,8 +1826,8 @@
     outline: none;
     cursor: text;
   }
-  .mt-hero-title:hover:not(:disabled) { border-color: #25252A; background: rgba(0,0,0,0.2); }
-  .mt-hero-title:focus { border-color: #FF9550; background: rgba(0,0,0,0.35); color: #FFFFFF; }
+  .mt-hero-title:hover:not(:disabled) { border-color: #252525; background: rgba(0,0,0,0.2); }
+  .mt-hero-title:focus { border-color: #F2A23C; background: rgba(0,0,0,0.35); color: #FFFFFF; }
   .mt-hero-title:disabled { cursor: default; color: #7C7C84; }
   /* 再生中のタイトル色変化も廃止 */
   /* 下段: progress bar + meta */
@@ -1962,7 +1962,7 @@
   }
   .mt-hero-timeline-fill {
     position: absolute; top: 0; bottom: 0; left: 0; width: 0%;
-    background: #FF9550;
+    background: #F2A23C;
     border-radius: 3px;
     transition: width 0.08s linear;
     pointer-events: none;
@@ -1985,10 +1985,10 @@
     position: fixed; z-index: 99998;
     transform: translate(-50%, -100%);
     padding: 6px 14px;
-    background: linear-gradient(180deg, #0F1115, #07080A);
-    border: 1px solid #FF9550;
+    background: linear-gradient(180deg, #111111, #080808);
+    border: 1px solid #F2A23C;
     border-radius: 2px;
-    color: #FF8A3A;
+    color: #E89236;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     font-size: 22px;
     font-weight: 500;
@@ -2010,7 +2010,7 @@
     width: 0; height: 0;
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-top: 6px solid #FF9550;
+    border-top: 6px solid #F2A23C;
   }
   /* ロケートドロップ中にタイムラインがハイライト */
   .mt-hero-timeline.locate-target .mt-hero-timeline-track {
@@ -2029,17 +2029,17 @@
   .mt-hero-transport { display: flex; gap: 6px; flex-shrink: 0; }
   .mt-tbtn {
     width: 34px; height: 34px; border-radius: 50%;
-    background: rgba(255,255,255,0.04); border: 0.5px solid #25252A;
+    background: rgba(255,255,255,0.04); border: 0.5px solid #252525;
     color: #E6E6EA; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-family: inherit; letter-spacing: 0;
     transition: all 0.15s;
   }
-  .mt-tbtn:hover { background: rgba(255,255,255,0.08); border-color: #3A3A42; }
+  .mt-tbtn:hover { background: rgba(255,255,255,0.08); border-color: #3A3A3A; }
   .mt-tbtn.play {
-    background: linear-gradient(180deg, #FF9550, #5DA084);
+    background: linear-gradient(180deg, #F2A23C, #5DA084);
     color: #0A1410; border: none; width: 40px; height: 40px; font-size: 13px;
-    box-shadow: 0 3px 14px rgba(255,149,80,0.25);
+    box-shadow: 0 3px 14px rgba(242,162,60,0.25);
   }
   .mt-tbtn.play:hover { background: linear-gradient(180deg, #E06510, #6CB096); }
   /* 再生中の PLAY ボタン金色化は廃止（常に緑のまま） */
@@ -2057,7 +2057,7 @@
   .mt-legend {
     display: flex; align-items: center; gap: 4px;
     margin-left: 12px; padding-left: 12px;
-    border-left: 0.5px solid #1F1F22;
+    border-left: 0.5px solid #1F1F1F;
   }
   .mt-legend-dot {
     width: 7px; height: 7px; border-radius: 50%;
@@ -2126,7 +2126,7 @@
     color: #88888E; background: rgba(255,255,255,0.04);
   }
   .mt-song-loadcount.has-files {
-    background: rgba(255,149,80,0.18);
+    background: rgba(242,162,60,0.18);
     color: #88D6C2;
     box-shadow: none;
   }
@@ -2137,11 +2137,11 @@
   }
   .mt-song-row:hover { border-color: #252525; background: rgba(255,255,255,0.025); }
   .mt-song-row.playing {
-    border-color: #FF9550;
-    background: linear-gradient(90deg, rgba(255,149,80,0.10), rgba(255,149,80,0.02) 60%);
-    box-shadow: inset 3px 0 0 #FF9550;
+    border-color: #F2A23C;
+    background: linear-gradient(90deg, rgba(242,162,60,0.10), rgba(242,162,60,0.02) 60%);
+    box-shadow: inset 3px 0 0 #F2A23C;
   }
-  .mt-song-row.queued  { border-color: rgba(255,149,80,0.4); }
+  .mt-song-row.queued  { border-color: rgba(242,162,60,0.4); }
   /* selected (= NEXT UP): playing と区別して "金色で強く"。SPACE で重ねて再生される曲 */
   .mt-song-row.selected:not(.playing) {
     border-color: #FFB81C;
@@ -2178,7 +2178,7 @@
   .mt-song-playingbadge { display: none; }
   .mt-song-row.playing .mt-song-playingbadge {
     display: inline-block;
-    background: linear-gradient(180deg, #FF9550, #5DA084);
+    background: linear-gradient(180deg, #F2A23C, #5DA084);
     color: #0A1410;
     font-size: 9px; font-weight: 500; letter-spacing: 1.2px;
     padding: 1px 7px;
@@ -2190,21 +2190,21 @@
     user-select: none;
   }
   .mt-song-row.drop-target {
-    border-color: #FF9550; background: rgba(255,149,80,0.12); border-style: dashed;
-    box-shadow: 0 0 0 1px rgba(255,149,80,0.2);
+    border-color: #F2A23C; background: rgba(242,162,60,0.12); border-style: dashed;
+    box-shadow: 0 0 0 1px rgba(242,162,60,0.2);
   }
   .mt-song-num { font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace; font-size: 11px; color: #7C7C84; text-align: right; font-weight: 500; letter-spacing: 0.3px; }
-  .mt-song-row.playing .mt-song-num { color: #FF9550; }
+  .mt-song-row.playing .mt-song-num { color: #F2A23C; }
   .mt-song-play {
     width: 26px; height: 26px; border-radius: 50%;
-    background: rgba(255,255,255,0.04); color: #C8C8CE; border: 0.5px solid #25252A;
+    background: rgba(255,255,255,0.04); color: #C8C8CE; border: 0.5px solid #252525;
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; cursor: pointer; transition: all 0.15s;
     padding: 0;
   }
-  .mt-song-play:hover { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .mt-song-play:hover { background: #F2A23C; color: #252525; border-color: #F2A23C; }
   .mt-song-row.playing .mt-song-play {
-    background: #FF9550; color: #252525; border-color: #FF9550;
+    background: #F2A23C; color: #252525; border-color: #F2A23C;
     box-shadow: none;
   }
   /* 曲名テキスト (リネーム不可。リネームは NOW PLAYING タイトル input で) — 本番視認サイズ */
@@ -2219,8 +2219,8 @@
   /* 並べ替えドラッグの視覚化（行全体ではなく grip ハンドル経由でのみ） */
   .mt-song-row { cursor: default; }
   .mt-song-row.reorder-dragging { opacity: 0.4; }
-  .mt-song-row.reorder-above { box-shadow: inset 0 2px 0 #FF9550; }
-  .mt-song-row.reorder-below { box-shadow: inset 0 -2px 0 #FF9550; }
+  .mt-song-row.reorder-above { box-shadow: inset 0 2px 0 #F2A23C; }
+  .mt-song-row.reorder-below { box-shadow: inset 0 -2px 0 #F2A23C; }
   /* 行の左端の grip ハンドル（点々マーク、これを掴んだときだけ並べ替え可能） */
   .mt-song-grip {
     width: 12px; height: 22px;
@@ -2234,11 +2234,11 @@
     transition: color 0.12s;
   }
   .mt-song-grip:hover { color: #B8B8C0; }
-  .mt-song-grip:active { cursor: grabbing; color: #FF9550; }
+  .mt-song-grip:active { cursor: grabbing; color: #F2A23C; }
   /* インライン rename input */
   .mt-song-name-input {
-    background: rgba(255,149,80,0.10);
-    border: 1px solid #FF9550;
+    background: rgba(242,162,60,0.10);
+    border: 1px solid #F2A23C;
     border-radius: 3px;
     color: #FFFFFF;
     font-family: inherit;
@@ -2253,10 +2253,10 @@
   /* STEM スロット — グループ色の左ボーダーで識別、ヘッダー不要 */
   .mt-track-slot {
     width: 100%; height: 24px; border-radius: 3px;
-    border: 0.5px dashed #2A2A30;
+    border: 0.5px dashed #2A2A2A;
     border-left-width: 2px;
     background: rgba(255,255,255,0.015);
-    color: #5A5A65; font-size: 8px; letter-spacing: 0.3px;
+    color: #5A5A5A; font-size: 8px; letter-spacing: 0.3px;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 3px;
     transition: all 0.12s;
@@ -2279,7 +2279,7 @@
   .mt-track-slot.has-content:hover { color: #FFFFFF; filter: brightness(1.15); }
 
   .mt-track-slot.drop-over {
-    border-color: #FF9550; background: rgba(255,149,80,0.28); color: #FFFFFF;
+    border-color: #F2A23C; background: rgba(242,162,60,0.28); color: #FFFFFF;
     border-style: solid; box-shadow: none;
   }
   .mt-track-slot.loading { color: #FF8A0F; border-color: #FF8A0F; background: rgba(255,138,15,0.08); }
@@ -2293,9 +2293,9 @@
   /* AUTO/STOP トグル — 本番視認サイズに */
   .mt-song-autotoggle {
     width: 32px; height: 28px; border-radius: 4px;
-    border: 0.5px solid rgba(255,149,80,0.35);
-    background: rgba(255,149,80,0.08);
-    color: #FF9550;
+    border: 0.5px solid rgba(242,162,60,0.35);
+    background: rgba(242,162,60,0.08);
+    color: #F2A23C;
     font-size: 10px; font-family: inherit; font-weight: 500;
     cursor: pointer; padding: 0;
     line-height: 1; letter-spacing: 0;
@@ -2319,7 +2319,7 @@
     text-align: center; font-weight: 500;
     box-shadow: inset 0 1px 1px rgba(0,0,0,0.4);
   }
-  .mt-song-delay:focus { outline: none; border-color: #FF9550; color: #FFFFFF; }
+  .mt-song-delay:focus { outline: none; border-color: #F2A23C; color: #FFFFFF; }
   .mt-song-delay:disabled { opacity: 0.25; }
   .mt-song-delay::-webkit-inner-spin-button { display: none; }
   .mt-song-delay::-webkit-outer-spin-button { display: none; }
@@ -2428,7 +2428,7 @@
   /* 再生開始から 10 秒間、ダブルタップ防止＆「鳴ってます」アピール */
   .mt-playback-overlay {
     position: fixed; inset: 0;
-    background: radial-gradient(ellipse at center, rgba(255,149,80,0.18) 0%, rgba(0,0,0,0.88) 60%);
+    background: radial-gradient(ellipse at center, rgba(242,162,60,0.18) 0%, rgba(0,0,0,0.88) 60%);
     z-index: 10000;
     display: none;
     flex-direction: column;
@@ -2445,9 +2445,9 @@
   }
   .mt-pb-icon {
     font-size: 100px;
-    color: #FF9550;
+    color: #F2A23C;
     line-height: 1;
-    text-shadow: 0 0 30px rgba(255,149,80,0.8), 0 0 60px rgba(255,149,80,0.4);
+    text-shadow: 0 0 30px rgba(242,162,60,0.8), 0 0 60px rgba(242,162,60,0.4);
     animation: mt-pb-pulse 1.5s ease-in-out infinite;
   }
   @keyframes mt-pb-pulse {
@@ -2461,7 +2461,7 @@
     font-weight: 800;
     color: #88D6C2;
     margin-top: 24px;
-    text-shadow: 0 0 18px rgba(255,149,80,0.5);
+    text-shadow: 0 0 18px rgba(242,162,60,0.5);
   }
   .mt-pb-song {
     font-size: 22px;
@@ -2486,7 +2486,7 @@
     font-size: 56px; font-weight: 800;
     color: #FFFFFF;
     width: 90px; height: 90px;
-    border: 2px solid #FF9550;
+    border: 2px solid #F2A23C;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     box-shadow: none;
@@ -2495,7 +2495,7 @@
   /* ========== ファイル状態バナー（ミニマル・本番卓風） ========== */
   .mt-preload-banner {
     display: flex; flex-direction: column; gap: 9px;
-    background: linear-gradient(180deg, #14141A 0%, #0B0B10 100%);
+    background: linear-gradient(180deg, #141414 0%, #0B0B0B 100%);
     border: none;
     border-radius: 2px;
     padding: 13px 18px 12px;
@@ -2590,20 +2590,20 @@
   .mt-preload-banner.mt-preload-ready {
     background: linear-gradient(180deg, #0E1815 0%, #0B1310 100%);
     box-shadow:
-      inset 0 1px 0 rgba(255,149,80,0.6),
-      inset 0 -1px 0 rgba(255,149,80,0.3),
+      inset 0 1px 0 rgba(242,162,60,0.6),
+      inset 0 -1px 0 rgba(242,162,60,0.3),
       0 1px 0 rgba(0,0,0,0.4);
   }
   .mt-preload-banner.mt-preload-ready::before { display: none; }
   .mt-preload-banner.mt-preload-ready .mt-preload-icon {
-    background: #FF9550;
+    background: #F2A23C;
     box-shadow: none;
     animation: none;
   }
   .mt-preload-banner.mt-preload-ready .mt-preload-label { color: #88D6C2; }
   .mt-preload-banner.mt-preload-ready .mt-preload-hint { color: rgba(184,224,204,0.7); }
   .mt-preload-banner.mt-preload-ready .mt-preload-bar-fill {
-    background: linear-gradient(90deg, #FF9550, #88D6C2);
+    background: linear-gradient(90deg, #F2A23C, #88D6C2);
     animation: none;
   }
 
@@ -2688,7 +2688,7 @@
   /* MIXER (console-style strips, more compact) */
   .mt-mixer-card {
     position: relative;
-    background: linear-gradient(180deg, #131316, #0E0E12);
+    background: linear-gradient(180deg, #131313, #0E0E0E);
     border: 1px solid #1E1E1E; border-radius: 10px; padding: 10px 12px 12px;
     box-shadow: 0 2px 24px rgba(0,0,0,0.4);
     min-width: 0;
@@ -2729,7 +2729,7 @@
     position: relative;
     display: flex; flex-direction: column; align-items: stretch; gap: 3px;
     padding: 11px 4px 6px 4px;
-    background: #0E0E12;
+    background: #0E0E0E;
     border: 1px solid #252525;
     border-radius: 8px;
     min-width: 0;
@@ -2799,7 +2799,7 @@
   /* v12.2 (Phase C): ラベル編集中の入力フィールド (ストリップ内インライン) */
   .mt-strip-label-edit {
     font-family: inherit; font-size: 10px; letter-spacing: 1.2px; font-weight: 500;
-    background: #1E1E1E; border: 0.5px solid #FF9550; color: #E6E6EA;
+    background: #1E1E1E; border: 0.5px solid #F2A23C; color: #E6E6EA;
     padding: 1px 4px; border-radius: 3px;
     width: 100%; min-width: 0;
     outline: none;
@@ -2873,7 +2873,7 @@
     border-radius: 3px;
     cursor: ns-resize;
     flex-shrink: 0;
-    border: 1px solid #25252A;
+    border: 1px solid #252525;
   }
   /* dB tick marks — JS で fader 内に注入 */
   .mt-strip-fader-tick {
@@ -2931,7 +2931,7 @@
     position: absolute; bottom: 0; left: 0; right: 0;
     background: linear-gradient(to top,
       #2E7A5B 0%,
-      #FF9550 55%,
+      #F2A23C 55%,
       #FF8A0F 78%,
       #E24B4A 93%);
     height: 0%;
@@ -2964,22 +2964,22 @@
     outline: none;
     cursor: text;
   }
-  .mt-strip-db:focus { border-color: #FF9550; color: #FFFFFF; }
+  .mt-strip-db:focus { border-color: #F2A23C; color: #FFFFFF; }
   .mt-strip-db[readonly] { cursor: default; }
   .mt-strip.muted .mt-strip-db { color: #E24B4A; text-shadow: 0 0 4px rgba(226,75,74,0.5); }
 
   /* MUTE / SOLO buttons (横並びで2分割) */
   .mt-strip-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
   .mt-stripbtn {
-    background: linear-gradient(180deg, #1A1A1E, #131316);
-    color: #88888E; border: 0.5px solid #25252A;
+    background: linear-gradient(180deg, #1A1A1A, #131313);
+    color: #88888E; border: 0.5px solid #252525;
     padding: 4px 0; border-radius: 3px; font-size: 8px; letter-spacing: 1px;
     cursor: pointer; font-family: inherit; font-weight: 500;
     transition: all 0.12s;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
     text-align: center;
   }
-  .mt-stripbtn:hover { color: #E6E6EA; border-color: #3A3A40; }
+  .mt-stripbtn:hover { color: #E6E6EA; border-color: #3A3A3A; }
   /* MUTE active */
   .mt-stripbtn.mute.active {
     background: linear-gradient(180deg, #E24B4A, #B83C3B);
@@ -3010,7 +3010,7 @@
   .mt-routing-inline-label {
     font-size: 8px; letter-spacing: 1.5px; color: #6A6A72; font-weight: 500;
     margin: 10px 0 5px; padding-top: 8px;
-    border-top: 0.5px solid #1F1F22;
+    border-top: 0.5px solid #1F1F1F;
   }
 
   /* SELECTED SONG カード — ヘッダー無し、ファイル一覧最大化 */
@@ -3036,7 +3036,7 @@
   .mt-songinfo-counthead {
     display: flex; align-items: center; justify-content: space-between; gap: 8px;
     padding: 4px 2px 6px;
-    border-bottom: 0.5px solid #1F1F22;
+    border-bottom: 0.5px solid #1F1F1F;
     margin-bottom: 4px;
   }
   .mt-songinfo-songref {
@@ -3094,7 +3094,7 @@
   /* mixer strip: drop target highlight */
   .mt-strip.drop-target {
     border-color: #FFB81C !important;
-    background: linear-gradient(180deg, rgba(255,184,28,0.18) 0%, #101013 80%) !important;
+    background: linear-gradient(180deg, rgba(255,184,28,0.18) 0%, #101010 80%) !important;
     box-shadow: none;
   }
   /* ready-for-file: 空フェーダーの "ふわっとパルス" は廃止 (気が散るため)
@@ -3111,14 +3111,14 @@
   }
   /* layer 数チップ */
   .mt-strip-layer-badge {
-    display: inline-block; color: #FF9550; font-size: 7px; letter-spacing: 0;
+    display: inline-block; color: #F2A23C; font-size: 7px; letter-spacing: 0;
     margin-right: 3px; vertical-align: middle;
   }
   .mt-strip-layer-badge.pending { color: #FF8A0F; }
   /* 行も drop target ハイライト */
   .mt-song-row.drop-target {
-    border-color: #FF9550 !important;
-    background: rgba(255,149,80,0.08) !important;
+    border-color: #F2A23C !important;
+    background: rgba(242,162,60,0.08) !important;
   }
 
   /* CHANNEL ROUTING - フェーダーストリップと同じカードデザイン */
@@ -3182,7 +3182,7 @@
   }
   .mt-ch-input:focus {
     outline: none; color: #FFFFFF;
-    background: rgba(255,149,80,0.12); border-color: #FF9550;
+    background: rgba(242,162,60,0.12); border-color: #F2A23C;
   }
   .mt-ch-input::-webkit-inner-spin-button { display: none; }
   .mt-ch-input { -moz-appearance: textfield; }
@@ -3202,7 +3202,7 @@
   }
   .mt-ch-select:focus {
     outline: none; color: #FFFFFF;
-    background: rgba(255,149,80,0.12); border-color: #FF9550;
+    background: rgba(242,162,60,0.12); border-color: #F2A23C;
   }
   .mt-ch-select option { background: #1E1E1E; color: #FFFFFF; padding: 2px; }
   .mt-ch-select option:disabled { color: #FF6464; }
@@ -3241,7 +3241,7 @@
   }
   .mt-tc-toggle input[type="checkbox"] {
     width: 14px; height: 14px; margin: 0;
-    accent-color: #FF9550;
+    accent-color: #F2A23C;
     cursor: pointer;
   }
   .mt-tc-label {
@@ -3258,7 +3258,7 @@
   }
   .mt-tc-input:focus {
     outline: none; color: #FFFFFF;
-    background: rgba(255,149,80,0.12); border-color: #FF9550;
+    background: rgba(242,162,60,0.12); border-color: #F2A23C;
   }
   .mt-tc-input::-webkit-inner-spin-button,
   .mt-tc-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -3269,11 +3269,11 @@
     font-size: 9px; color: #7C7C84; line-height: 1.4;
     letter-spacing: 0.3px;
     padding-top: 4px;
-    border-top: 0.5px solid #1F1F25;
+    border-top: 0.5px solid #1F1F1F;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
   }
   /* v12.8.2 M7: OUT/IN を amber/teal で視覚区別 (left-border 2px) */
-  #mtTimecodeSection { border-left: 2px solid #FF9550; }
+  #mtTimecodeSection { border-left: 2px solid #F2A23C; }
   #mtTimecodeInSection { border-left: 2px solid #FFB81C; }
   /* v12.9.1: LTC IN 行を強制改行させない (曲名表示エリアを圧迫しない) */
   #mtTcInTime {
@@ -3287,7 +3287,7 @@
     min-width: 56px !important;
   }
   #mtTcInStatus.tc-ok-glow {
-    text-shadow: 0 0 8px rgba(255,149,80,0.8);
+    text-shadow: 0 0 8px rgba(242,162,60,0.8);
   }
   /* v12.9.1: ヒント常時表示は廃止 — 曲名表示を優先 */
   .mt-tc-hint { display: none; }
@@ -3313,8 +3313,8 @@
     transition: all 0.12s;
   }
   .mt-ch-mode:hover {
-    background: rgba(255,149,80,0.18);
-    border-color: #FF9550;
+    background: rgba(242,162,60,0.18);
+    border-color: #F2A23C;
     color: #FFFFFF;
   }
   .mt-ch-mode.mono {
@@ -3352,25 +3352,25 @@
   .do-sched-row {
     display: grid; grid-template-columns: 78px 96px 1fr;
     gap: 10px; align-items: center; padding: 5px 8px;
-    border-top: 0.5px solid #1F1F22;
+    border-top: 0.5px solid #1F1F1F;
   }
   /* 左に大きめのアクションボタン */
   .do-sched-leftactions { display: flex; gap: 5px; align-items: center; }
   .do-sched-bigact {
     width: 30px; height: 30px; border-radius: 50%;
-    border: 0.5px solid #25252A; background: #323232; color: #E6E6EA;
+    border: 0.5px solid #252525; background: #323232; color: #E6E6EA;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     font-size: 13px; font-family: inherit; transition: all 0.15s; flex-shrink: 0;
   }
-  .do-sched-bigact:hover { border-color: #FF9550; color: #FF9550; }
-  .do-sched-bigact.play.next { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .do-sched-bigact:hover { border-color: #F2A23C; color: #F2A23C; }
+  .do-sched-bigact.play.next { background: #F2A23C; color: #252525; border-color: #F2A23C; }
   .do-sched-bigact.play.next:hover { background: #E06510; color: #252525; }
-  .do-sched-bigact.play.playing { background: #FF9550; color: #252525; border-color: #FF9550; }
+  .do-sched-bigact.play.playing { background: #F2A23C; color: #252525; border-color: #F2A23C; }
   .do-sched-bigact.play.playing:hover { background: #E06510; }
   .do-sched-bigact.del:hover { border-color: #E24B4A; color: #E24B4A; }
   .do-sched-row:first-child { border-top: none; }
   .do-sched-row.next {
-    background: rgba(255,149,80,0.04); border-top-color: #1F1F22; border-radius: 4px;
+    background: rgba(242,162,60,0.04); border-top-color: #1F1F1F; border-radius: 4px;
   }
   .do-sched-row.done { opacity: 0.4; }
   /* 取り消し線は廃止。代わりに opacity と「✓ 済」チップで表現 */
@@ -3379,39 +3379,39 @@
     padding: 3px 8px; border-radius: 3px; font-size: 10px; cursor: pointer;
     margin-right: 4px; transition: all 0.15s;
   }
-  .do-sched-done-chip:hover { background: rgba(255,149,80,0.15); color: #FF9550; }
+  .do-sched-done-chip:hover { background: rgba(242,162,60,0.15); color: #F2A23C; }
   .do-sched-next-chip {
-    display: inline-block; background: rgba(255,149,80,0.15); color: #FF9550;
+    display: inline-block; background: rgba(242,162,60,0.15); color: #F2A23C;
     padding: 3px 8px; border-radius: 3px; font-size: 10px; margin-right: 4px;
   }
   .do-sched-playing-chip {
-    display: inline-block; background: rgba(255,149,80,0.15); color: #FF9550;
+    display: inline-block; background: rgba(242,162,60,0.15); color: #F2A23C;
     padding: 3px 8px; border-radius: 3px; font-size: 10px; margin-right: 4px;
   }
-  .do-sched-row.playing { background: rgba(255,149,80,0.08); border-top-color: #1F1F22; }
+  .do-sched-row.playing { background: rgba(242,162,60,0.08); border-top-color: #1F1F1F; }
   .do-sched-time {
     font-family: inherit; font-size: 16px; font-weight: 500; color: #E6E6EA;
     background: transparent; border: 0.5px solid transparent; border-radius: 4px;
     padding: 3px 6px; width: 82px;
   }
-  .do-sched-time:hover { border-color: #25252A; background: #282828; }
-  .do-sched-time:focus { border-color: #FF9550; background: #282828; outline: none; }
+  .do-sched-time:hover { border-color: #252525; background: #282828; }
+  .do-sched-time:focus { border-color: #F2A23C; background: #282828; outline: none; }
   .do-sched-row.next .do-sched-time, .do-sched-row.playing .do-sched-time {
-    border-color: #FF9550; color: #FF9550; background: #282828;
+    border-color: #F2A23C; color: #F2A23C; background: #282828;
   }
   .do-chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 28px; padding: 2px; border-radius: 4px; transition: background 0.15s; }
-  .do-chain.drop-over { background: rgba(255,149,80,0.06); outline: 0.5px dashed #FF9550; }
+  .do-chain.drop-over { background: rgba(242,162,60,0.06); outline: 0.5px dashed #F2A23C; }
   /* 白基調のピル＋色バッジ — v12.5.10: ドラッグ可能を見た目で示す */
   .do-chip {
     display: inline-flex; align-items: center; gap: 6px;
-    background: #323232; border: 0.5px solid #25252A; border-radius: 4px;
+    background: #323232; border: 0.5px solid #252525; border-radius: 4px;
     padding: 5px 10px; font-size: 11px; color: #E6E6EA; cursor: grab;
     transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
     user-select: none;
   }
   .do-chip:hover {
-    border-color: rgba(255,149,80,0.6);
-    background: #1A1A20;
+    border-color: rgba(242,162,60,0.6);
+    background: #1A1A1A;
     transform: translateY(-1px);
     box-shadow: 0 2px 6px rgba(0,0,0,0.4);
   }
@@ -3421,7 +3421,7 @@
   .do-chip * { pointer-events: none; }
   .do-chip .do-chip-x { pointer-events: auto; } /* × ボタンだけはクリック可能 */
   /* 再生中：囲み線なしで背景の濃さだけで示す（パステル緑塗り） */
-  .do-chip.playing { background: rgba(255,149,80,0.22); border-color: transparent; }
+  .do-chip.playing { background: rgba(242,162,60,0.22); border-color: transparent; }
   .do-chip.playing .do-chip-label { font-weight: 500; }
   .do-chip.played { opacity: 0.4; }
   /* チップ内の色バッジ（A1〜A4） */
@@ -3440,7 +3440,7 @@
   .do-chip-x:hover { color: #E24B4A; }
   .do-arrow { color: #7C7C84; font-size: 11px; }
   .do-chain-drop-hint {
-    border: 0.5px dashed #25252A; border-radius: 4px;
+    border: 0.5px dashed #252525; border-radius: 4px;
     padding: 5px 10px; font-size: 10px; color: #7C7C84;
   }
   .do-sched-actions { display: flex; gap: 4px; justify-content: flex-end; }
@@ -3448,18 +3448,18 @@
   .do-sched-act:hover { color: #E6E6EA; background: #323232; }
   .do-sched-act.del:hover { color: #E24B4A; }
   .do-sched-add {
-    border: 0.5px dashed #FF9550; padding: 9px;
-    text-align: center; color: #FF9550; font-size: 12px; cursor: pointer; letter-spacing: 1.5px;
-    background: rgba(255,149,80,0.05); border-radius: 2px;
+    border: 0.5px dashed #F2A23C; padding: 9px;
+    text-align: center; color: #F2A23C; font-size: 12px; cursor: pointer; letter-spacing: 1.5px;
+    background: rgba(242,162,60,0.05); border-radius: 2px;
     width: 100%; font-family: inherit; margin-top: 6px; font-weight: 500;
     transition: all 0.15s;
   }
-  .do-sched-add:hover { background: rgba(255,149,80,0.15); border-style: solid; }
+  .do-sched-add:hover { background: rgba(242,162,60,0.15); border-style: solid; }
   .do-sched-total { font-size: 10px; color: #88888E; margin: 4px 0 0 108px; font-family: inherit; }
 
   /* =============================================
      ABLETON FLAT DARK UI v2 — オレンジテーマ全モード
-     テーマ色 #FF9550 / Deck A #FFD21A / Deck B #38ADAA
+     テーマ色 #F2A23C / Deck A #FFD21A / Deck B #38ADAA
      !important で元CSSに確実に勝つ
      ============================================= */
 
@@ -3483,7 +3483,7 @@
   .app-mode-tabs { background: #212121 !important; border: none !important; border-radius: 0 !important; }
   .mode-btn { background: #303030 !important; border-radius: 2px !important; color: #585858 !important; border: none !important; box-shadow: none !important; }
   .mode-btn:hover { background: #3B3B3B !important; color: #999 !important; }
-  .mode-btn.active { background: #FF9550 !important; color: #252525 !important; font-weight: 700 !important; box-shadow: none !important; }
+  .mode-btn.active { background: #F2A23C !important; color: #252525 !important; font-weight: 700 !important; box-shadow: none !important; }
 
   /* --- LEFT PANEL --- */
   .left-panel, .left-panel-wrap {
@@ -3558,24 +3558,24 @@
     border-radius: 2px !important; color: #585858 !important; box-shadow: none !important;
   }
   .fade-btn:hover { background: #3B3B3B !important; color: #999 !important; }
-  .fade-btn.active { background: #FF9550 !important; color: #252525 !important; box-shadow: none !important; }
+  .fade-btn.active { background: #F2A23C !important; color: #252525 !important; box-shadow: none !important; }
   .fade-time-custom input {
     background: #303030 !important; border: 1px solid #2E2E2E !important;
     border-radius: 2px !important; color: #CDCDCD !important;
   }
-  .fade-time-custom input:focus { border-color: #FF9550 !important; }
+  .fade-time-custom input:focus { border-color: #F2A23C !important; }
   .curve-btn { background: #303030 !important; border-radius: 2px !important; color: #585858 !important; }
   .curve-btn:hover { background: #3B3B3B !important; color: #999 !important; }
-  .curve-btn.active { background: #FF9550 !important; color: #252525 !important; }
-  .curve-handle { background: #FF9550 !important; border-color: #282828 !important; box-shadow: none !important; }
+  .curve-btn.active { background: #F2A23C !important; color: #252525 !important; }
+  .curve-handle { background: #F2A23C !important; border-color: #282828 !important; box-shadow: none !important; }
   .curve-handle.h2 { background: #887700 !important; box-shadow: none !important; }
 
   /* --- BTN PRIMARY --- */
   .btn-primary {
-    background: #FF9550 !important; color: #252525 !important;
+    background: #F2A23C !important; color: #252525 !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
-  .btn-primary:hover { background: #FFA565 !important; box-shadow: none !important; }
+  .btn-primary:hover { background: #F5AE55 !important; box-shadow: none !important; }
 
   /* --- BANKS --- */
   .banks {
@@ -3586,10 +3586,10 @@
     border-radius: 2px !important; color: #585858 !important;
   }
   .bank-btn:hover { background: #3B3B3B !important; color: #999 !important; }
-  .bank-btn.active { background: #FF9550 !important; color: #252525 !important; font-weight: 600 !important; }
+  .bank-btn.active { background: #F2A23C !important; color: #252525 !important; font-weight: 600 !important; }
   .bank-nav-arrow { color: #585858 !important; background: #303030 !important; border-radius: 2px !important; }
-  .bank-nav-arrow:active { background: #FF9550 !important; color: #252525 !important; }
-  .midi-led.on { background: #FF9550 !important; box-shadow: none !important; }
+  .bank-nav-arrow:active { background: #F2A23C !important; color: #252525 !important; }
+  .midi-led.on { background: #F2A23C !important; box-shadow: none !important; }
 
   /* --- SAMPLER DECK COLUMNS --- */
   .deck-col {
@@ -3618,7 +3618,7 @@
   /* --- DECK BANK BUTTONS --- */
   .deck-mbank-btn { background: #303030 !important; border-radius: 2px !important; color: #585858 !important; border: none !important; }
   .deck-mbank-btn:hover { background: #3B3B3B !important; color: #999 !important; }
-  .deck-mbank-btn.active { background: #FF9550 !important; color: #252525 !important; font-weight: 600 !important; }
+  .deck-mbank-btn.active { background: #F2A23C !important; color: #252525 !important; font-weight: 600 !important; }
   /* アクティブバンクのハイライトはデッキ識別色に合わせる（A=黄 / B=シアン） */
   #deckCol0 .deck-mbank-btn.active { background: #FFD21A !important; color: #252525 !important; }
   #deckCol1 .deck-mbank-btn.active { background: #38ADAA !important; color: #252525 !important; }
@@ -3663,17 +3663,17 @@
   .pad-body:hover { background: #3C3C3C !important; border-color: #323232 !important; }
   .pad-body.empty { background: #282828 !important; border: 1px dashed #323232 !important; }
   .pad-body.playing {
-    background: #393939 !important; border-color: #FF9550 !important;
+    background: #393939 !important; border-color: #F2A23C !important;
     box-shadow: none !important; border-width: 1px !important;
   }
-  .pad-body.flash { background: #FF9550 !important; box-shadow: none !important; }
-  .pad-body.drag-over { background: #3E3E3E !important; border-color: #FF9550 !important; border-style: dashed !important; }
+  .pad-body.flash { background: #F2A23C !important; box-shadow: none !important; }
+  .pad-body.drag-over { background: #3E3E3E !important; border-color: #F2A23C !important; border-style: dashed !important; }
   .pad-body.drop-target {
-    background: #3E3E3E !important; border-color: #FF9550 !important;
+    background: #3E3E3E !important; border-color: #F2A23C !important;
     border-width: 2px !important; box-shadow: none !important;
   }
   .pad-num { color: #5C5C5C !important; }
-  .pad.playing .pad-num { color: #FF9550 !important; }
+  .pad.playing .pad-num { color: #F2A23C !important; }
 
   /* --- PAD FADER CARD --- */
   .pad-fader-card {
@@ -3683,10 +3683,10 @@
   .pad-fader-card:hover { border-color: #3E3E3E !important; background: #323232 !important; }
   .pad-fader-fill { background: #4C4C4C !important; border-radius: 2px !important; }
   .pad.has-color .pad-fader-fill { background: var(--pad-c) !important; }
-  .pad-body.flash + .pad-fader-card { border-color: #FF9550 !important; }
-  .pad-grip:hover { background: rgba(255,149,80,0.12) !important; color: #FF9550 !important; }
-  .pad-grip:active { background: rgba(255,149,80,0.25) !important; color: #FF9550 !important; }
-  .pad-progress-fill { background: #FF9550 !important; border-radius: 1px !important; }
+  .pad-body.flash + .pad-fader-card { border-color: #F2A23C !important; }
+  .pad-grip:hover { background: rgba(242,162,60,0.12) !important; color: #F2A23C !important; }
+  .pad-grip:active { background: rgba(242,162,60,0.25) !important; color: #F2A23C !important; }
+  .pad-progress-fill { background: #F2A23C !important; border-radius: 1px !important; }
   .pad-progress-bar-row { color: #555 !important; }
 
   /* --- PAD EDIT POPUP --- */
@@ -3695,36 +3695,36 @@
     border-radius: 2px !important; box-shadow: 0 4px 24px rgba(0,0,0,0.95) !important;
   }
   .pad-edit-btn { background: #363636 !important; border-radius: 2px !important; }
-  .pad-edit-btn:hover { background: #FF9550 !important; color: #252525 !important; }
-  .pad-edit-icon:hover { background: #FF9550 !important; color: #252525 !important; opacity: 1 !important; }
+  .pad-edit-btn:hover { background: #F2A23C !important; color: #252525 !important; }
+  .pad-edit-icon:hover { background: #F2A23C !important; color: #252525 !important; opacity: 1 !important; }
   .pad-edit-color-btn { border-radius: 2px !important; }
-  .pad-rename-input:focus { border-color: #FF9550 !important; background: rgba(0,0,0,0.5) !important; }
+  .pad-rename-input:focus { border-color: #F2A23C !important; background: rgba(0,0,0,0.5) !important; }
 
   /* --- LEVEL CARDS --- */
   .level-card {
     background: #2C2C2C !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
-  .level-card.playing { background: #323232 !important; border-color: #FF9550 !important; box-shadow: none !important; }
-  .level-info-db { color: #FF9550 !important; }
+  .level-card.playing { background: #323232 !important; border-color: #F2A23C !important; box-shadow: none !important; }
+  .level-info-db { color: #F2A23C !important; }
   .level-fader-fill { background: #4C4C4C !important; border-radius: 4px !important; }
   .level-fader-thumb { background: #606060 !important; border-radius: 2px !important; }
 
   /* --- HOLD STRIP --- */
   .hold-strip { background: #252525 !important; border: 1px solid #1E1E1E !important; border-radius: 2px !important; }
   .hold-slot { border-radius: 2px !important; }
-  .hold-slot.filled:hover { background: #383838 !important; border-color: #FF9550 !important; }
-  .banks.drop-mode { border-color: #FF9550 !important; background: #2C2C2C !important; }
-  .hold-slot.drop-target { border: 2px solid #FF9550 !important; box-shadow: none !important; }
+  .hold-slot.filled:hover { background: #383838 !important; border-color: #F2A23C !important; }
+  .banks.drop-mode { border-color: #F2A23C !important; background: #2C2C2C !important; }
+  .hold-slot.drop-target { border: 2px solid #F2A23C !important; box-shadow: none !important; }
 
   /* --- TRIM EDITOR --- */
-  .trim-handle.start::before, .trim-handle.start::after { background: #FF9550 !important; box-shadow: none !important; }
+  .trim-handle.start::before, .trim-handle.start::after { background: #F2A23C !important; box-shadow: none !important; }
   .trim-handle.end::before, .trim-handle.end::after { background: #887700 !important; box-shadow: none !important; }
 
   /* --- BADGE / TOAST / MIDI --- */
-  .badge.midi { color: #FF9550 !important; }
-  .badge.playing { background: #FF9550 !important; color: #252525 !important; animation: none !important; box-shadow: none !important; }
-  .db-input:focus { border-color: #FF9550 !important; }
+  .badge.midi { color: #F2A23C !important; }
+  .badge.playing { background: #F2A23C !important; color: #252525 !important; animation: none !important; box-shadow: none !important; }
+  .db-input:focus { border-color: #F2A23C !important; }
 
   /* ===== DOOR OPEN MODE ===== */
 
@@ -3733,7 +3733,7 @@
     background: #2E2E2E !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; box-shadow: none !important;
   }
-  .do-card.drop-over { border-color: #FF9550 !important; background: #323232 !important; }
+  .do-card.drop-over { border-color: #F2A23C !important; background: #323232 !important; }
   .do-card-head { color: #484848 !important; letter-spacing: 2px !important; }
 
   /* NOW / NEXT */
@@ -3753,7 +3753,7 @@
 
   /* BGM tags */
   .do-bgm-tag { border-radius: 2px !important; }
-  .do-bgm-tag.tag-door { background: rgba(255,149,80,0.18) !important; color: #FF9550 !important; }
+  .do-bgm-tag.tag-door { background: rgba(242,162,60,0.18) !important; color: #F2A23C !important; }
   .do-bgm-tag.tag-workout { background: rgba(50,100,200,0.18) !important; color: #4A78CC !important; }
 
   /* BGM buttons (円形→四角フラット) */
@@ -3767,8 +3767,8 @@
   .do-bgm-btn.primary,
   .do-bgm-btn.active { background: #555 !important; color: #CDCDCD !important; border-color: #555 !important; }
   .do-bgm-btn.primary.door,
-  .do-bgm-btn.active.door { background: #FF9550 !important; color: #252525 !important; border-color: #FF9550 !important; }
-  .do-bgm-btn.primary.door:hover { background: #FFA565 !important; }
+  .do-bgm-btn.active.door { background: #F2A23C !important; color: #252525 !important; border-color: #F2A23C !important; }
+  .do-bgm-btn.primary.door:hover { background: #F5AE55 !important; }
   .do-bgm-btn.primary.workout,
   .do-bgm-btn.active.workout { background: #3A6ACC !important; color: #252525 !important; border-color: #3A6ACC !important; }
   .do-bgm-btn.primary.workout:hover { background: #4A7ADB !important; }
@@ -3780,7 +3780,7 @@
   }
   .do-bgm-bar:hover { background: #2E2E2E !important; }
   .do-bgm-bar-fill { border-radius: 0 !important; }
-  .do-bgm-bar-fill.door { background: #FF9550 !important; }
+  .do-bgm-bar-fill.door { background: #F2A23C !important; }
   .do-bgm-bar-fill.workout { background: #3A6ACC !important; }
 
   /* BGM vol slider (フラット細め) */
@@ -3789,10 +3789,10 @@
   }
   .do-bgm-vol-slider::after { background: rgba(255,255,255,0.2) !important; width: 1px !important; }
   .do-bgm-vol-fill { border-radius: 0 !important; height: 3px !important; }
-  .do-bgm-vol-fill.door { background: #FF9550 !important; }
+  .do-bgm-vol-fill.door { background: #F2A23C !important; }
   .do-bgm-vol-fill.workout { background: #3A6ACC !important; }
   .do-bgm-vol-thumb { width: 8px !important; height: 8px !important; border-radius: 1px !important; }
-  .do-bgm-vol-thumb.door { background: #FF9550 !important; }
+  .do-bgm-vol-thumb.door { background: #F2A23C !important; }
   .do-bgm-vol-thumb.workout { background: #3A6ACC !important; }
 
   .do-bgm-load {
@@ -3802,7 +3802,7 @@
   .do-bgm-load:hover { background: #3B3B3B !important; color: #CDCDCD !important; }
 
   /* DUCK */
-  .do-duck-value { color: #FF9550 !important; }
+  .do-duck-value { color: #F2A23C !important; }
   .do-duck-bar { background: #1E1E1E !important; border-radius: 0 !important; }
   .do-duck-bar-fill { background: #887700 !important; border-radius: 0 !important; }
   .do-duck-bar-thumb {
@@ -3815,7 +3815,7 @@
     background: #303030 !important; border: 1px solid #2E2E2E !important;
     border-radius: 2px !important; color: #CDCDCD !important;
   }
-  .do-duck-fade-input:focus { border-color: #FF9550 !important; }
+  .do-duck-fade-input:focus { border-color: #F2A23C !important; }
 
   /* LIBRARY slots */
   .do-lib-slot {
@@ -3838,8 +3838,8 @@
   .do-lib-slot-add {
     border: 1px dashed #393939 !important; background: transparent !important; border-radius: 2px !important;
   }
-  .do-lib-slot-add:hover { border-color: #FF9550 !important; background: rgba(255,149,80,0.05) !important; }
-  .do-lib-act:hover { color: #FF9550 !important; }
+  .do-lib-slot-add:hover { border-color: #F2A23C !important; background: rgba(242,162,60,0.05) !important; }
+  .do-lib-act:hover { color: #F2A23C !important; }
   .do-lib-act.del:hover { color: #CC3333 !important; }
   .do-lib-act.play.playing-btn.color-0 { background: rgba(185,40,80,0.85) !important; color: #FFF !important; }
   .do-lib-act.play.playing-btn.color-1 { background: rgba(35,90,195,0.85) !important; color: #FFF !important; }
@@ -3874,9 +3874,9 @@
     border: 1px dashed #393939 !important; background: transparent !important;
     border-radius: 2px !important; color: #484848 !important;
   }
-  .do-sched-add:hover { background: rgba(255,149,80,0.05) !important; border-color: #FF9550 !important; color: #FF9550 !important; border-style: dashed !important; }
+  .do-sched-add:hover { background: rgba(242,162,60,0.05) !important; border-color: #F2A23C !important; color: #F2A23C !important; border-style: dashed !important; }
   .do-chip { background: #353535 !important; border: 1px solid #2C2C2C !important; border-radius: 2px !important; }
-  .do-chip.playing { background: rgba(255,149,80,0.18) !important; border-color: #FF9550 !important; }
+  .do-chip.playing { background: rgba(242,162,60,0.18) !important; border-color: #F2A23C !important; }
   .do-chain-drop-hint { border-color: #2E2E2E !important; border-radius: 2px !important; color: #4C4C4C !important; }
   .do-arrow { color: #3E3E3E !important; }
   .do-sched-act:hover { color: #CDCDCD !important; background: #303030 !important; }
@@ -3902,14 +3902,14 @@
   .mt-ch-input:focus,
   .mt-ch-select:focus,
   .mt-tc-input:focus {
-    background: rgba(255,149,80,0.08) !important; border-color: #FF9550 !important;
+    background: rgba(242,162,60,0.08) !important; border-color: #F2A23C !important;
   }
-  .mt-tc-toggle input[type="checkbox"] { accent-color: #FF9550 !important; }
+  .mt-tc-toggle input[type="checkbox"] { accent-color: #F2A23C !important; }
   .mt-ch-add-btn {
     background: #2E2E2E !important; border: 1px solid #1E1E1E !important;
     border-radius: 2px !important; color: #484848 !important;
   }
-  .mt-ch-add-btn:hover { border-color: #FF9550 !important; color: #FF9550 !important; }
+  .mt-ch-add-btn:hover { border-color: #F2A23C !important; color: #F2A23C !important; }
   .mt-ch-add-btn .mt-ch-add-plus { color: inherit !important; }
   .mt-ch-close { color: #484848 !important; }
   .mt-ch-close:hover { color: #CC3333 !important; }
@@ -3940,15 +3940,154 @@
   /* ===== TOP PAGE ===== */
   .tp-icon {
     background: #323232 !important; box-shadow: none !important;
-    border-radius: 2px !important; color: #FF9550 !important;
+    border-radius: 2px !important; color: #F2A23C !important;
   }
   .tp-app-sub { color: #5C5C5C !important; }
-  .tp-card-stat-num { color: #FF9550 !important; }
+  .tp-card-stat-num { color: #F2A23C !important; }
   .tp-card {
     background: #2E2E2E !important; border: 1px solid #1E1E1E !important; border-radius: 2px !important;
   }
-  .tp-card:hover { border-color: #FF9550 !important; background: #323232 !important; }
+  .tp-card:hover { border-color: #F2A23C !important; background: #323232 !important; }
   .tp-card-menu, .tp-card-rename { background: #2E2E2E !important; border-radius: 2px !important; }
+
+  /* ============================================================
+     ABLETON LIVE 12 REFINEMENT v3 — 実機トーンに寄せる
+     ニュートラルなミディアムグレー / 平たい inset ドロップダウン(▼) /
+     読める淡グレーのセクションラベル / 琥珀アンバー #F2A23C
+     ============================================================ */
+
+  /* --- ニュートラル ミディアムグレー（少し持ち上げて中立化） --- */
+  html, body { background: #2A2A2A !important; color: #C8C8C8 !important; }
+  .header, .app-mode-tabs { background: #232323 !important; }
+  .left-panel, .left-panel-wrap { background: #2C2C2C !important; }
+  .deck-col, .banks, .mt-tc-section, .mt-config-card { background: #2C2C2C !important; }
+  .mt-card, .do-card, .tp-card, .mt-ch-pill, .level-card, .pad-fader-card { background: #343434 !important; }
+  .pad-body { background: #383838 !important; }
+  .pad-body:hover { background: #424242 !important; }
+
+  /* --- Ableton ドロップダウン（平たい inset + 細枠 + ▼ シェブロン） --- */
+  .mt-row > .mt-select, .mt-tc-select, select.do-routing-select, .do-bgm-device-select, select {
+    background-color: #232323 !important;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M2 3.6 L5 6.6 L8 3.6' fill='none' stroke='%23999999' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/></svg>") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 7px center !important;
+    border: 1px solid #181818 !important;
+    color: #CFCFCF !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important; appearance: none !important;
+    padding-right: 20px !important;
+  }
+  .mt-row > .mt-select:hover, select:hover { border-color: #4A4A4A !important; background-color: #2A2A2A !important; }
+  .mt-row > .mt-select:focus, select:focus { outline: none !important; border-color: #F2A23C !important; }
+  /* 小さいチャンネル番号セレクトは ▼ を出さず inset 色だけ揃える（幅が狭いため） */
+  .mt-ch-select {
+    background: #232323 !important; border: 1px solid #181818 !important;
+    color: #CFCFCF !important; box-shadow: none !important; border-radius: 2px !important;
+  }
+  .mt-ch-select:focus { border-color: #F2A23C !important; }
+  .mt-ch-select option, select option { background: #232323 !important; color: #DADADA !important; }
+
+  /* --- セクションラベルを Ableton の読める淡グレーに --- */
+  .mt-label, .mt-routing-inline-label, .mt-section-title, .mt-section-count,
+  .do-card-head, .mt-ch-glabel, .deck-cofader-lbl, .level-info-label {
+    color: #A8A8A8 !important;
+  }
+
+  /* ===== ABLETON MULTI-TRACK ミキサー忠実化 ===== */
+  /* 各チャンネル下端の色帯（参照画像のボトムカラーストリップ） */
+  .mt-strip { overflow: visible !important; }
+  .mt-strip::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0;
+    height: 3px; background: currentColor; opacity: 0.92;
+    border-radius: 0 0 1px 1px; pointer-events: none;
+  }
+  /* メーター/メーターバー/dB読みをフラット化（Ableton は inset 影なし） */
+  .mt-strip-meter-bar {
+    box-shadow: none !important; border: 1px solid #181818 !important; background: #151515 !important;
+  }
+  .meter, .deck-cofader-meter {
+    box-shadow: none !important;
+  }
+  .mt-strip-db {
+    box-shadow: none !important; background: #232323 !important; border: 1px solid #181818 !important;
+  }
+  /* MUTE / SOLO / MONO-STEREO を Ableton のフラット segmented トグルに（グラデ廃止） */
+  .mt-stripbtn, .mt-ch-mode {
+    background: #2C2C2C !important; border: 1px solid #1A1A1A !important;
+    box-shadow: none !important; border-radius: 2px !important; color: #9A9AA0 !important;
+  }
+  .mt-stripbtn:hover, .mt-ch-mode:hover { background: #353535 !important; color: #DADADA !important; }
+  .mt-stripbtn.mute.active {
+    background: #E24B4A !important; color: #1A1010 !important; border-color: #E24B4A !important; box-shadow: none !important;
+  }
+  .mt-stripbtn.solo.active {
+    background: #FFB81C !important; color: #2A1F08 !important; border-color: #FFB81C !important; box-shadow: none !important;
+  }
+  /* MONO/STEREO アクティブ（mono=M をアンバーで強調） */
+  .mt-ch-mode.mono-on, .mt-ch-mode.active {
+    background: #F2A23C !important; color: #1A1A1A !important; border-color: #F2A23C !important;
+  }
+
+  /* ===== ABLETON ミディアムグレー＆ヴィヴィッド緑メーター（最重要） ===== */
+  /* MULTI-TRACK チャンネルストリップを near-black から Ableton のミディアムグレーへ */
+  .mt-strip {
+    background: #353535 !important;
+    border: 1px solid #1F1F1F !important;
+  }
+  .mt-strip.active { border-color: currentColor !important; box-shadow: none !important; }
+  .mt-strip.has-layers { border-color: currentColor !important; }
+  /* フェーダーの溝はストリップより一段暗く（Ableton のフェーダーレール） */
+  .mt-strip-fader { background: #262626 !important; }
+  .mt-strip-fader-fill { background: #444444 !important; }
+  .mt-strip-faderwrap { background: transparent !important; }
+  /* ミキサー帯・設定カードもミディアムグレーに引き上げ */
+  .mt-config-card, .mt-tc-section, .mt-card { background: #2E2E2E !important; }
+  .mt-ch-pill { background: #383838 !important; }
+
+  /* ヴィヴィッドな Ableton 緑メーター（全メーター統一・緑優勢、上端だけ黄→赤） */
+  .mt-strip-meter-fill, .meter-fill, .deck-cofader-meter-fill {
+    background: linear-gradient(to top,
+      #2FA84F 0%, #46CC55 58%, #62E262 80%, #E6D24A 91%, #E24B4A 98%) !important;
+  }
+  /* メーターの溝（空き）を Ableton の暗いグレーに */
+  .mt-strip-meter-bar, .meter, .deck-cofader-meter { background: #1A1A1A !important; }
+
+  /* ===== 各デッキ専用トランスポート（STOP / FADE OUT + 秒・カーブ） ===== */
+  .deck-transport {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 4px; flex-shrink: 0;
+    border-bottom: 1px solid #1F1F1F; background: #2A2A2A;
+  }
+  .deck-tbtn {
+    font-size: 8px; letter-spacing: 0.5px; font-weight: 600;
+    padding: 3px 6px; border-radius: 2px; cursor: pointer;
+    background: #2C2C2C; border: 1px solid #1A1A1A; color: #B0B0B0;
+    font-family: inherit; white-space: nowrap;
+  }
+  .deck-tbtn:hover { background: #353535; color: #E6E6EA; }
+  .deck-tbtn.stop { color: #E08585; }
+  .deck-tbtn.stop:hover { background: #3A1A1A; border-color: #E24B4A; color: #FF8A8A; }
+  .deck-tbtn.fade { color: #F2A23C; }
+  .deck-tbtn.fade:hover { background: rgba(242,162,60,0.12); border-color: #F2A23C; }
+  .deck-tbtn.fade:active { background: #F2A23C; color: #1A1A1A; }
+  .deck-ftime {
+    width: 26px; font-size: 9px; text-align: center;
+    background: #232323; border: 1px solid #1A1A1A; color: #DADADA;
+    border-radius: 2px; padding: 2px 0; font-family: 'JetBrains Mono', monospace;
+    -webkit-appearance: none; appearance: none; outline: none;
+  }
+  .deck-ftime:focus { border-color: #F2A23C; }
+  .deck-ftime-unit { font-size: 8px; color: #88888E; margin-left: -2px; }
+  .deck-curves { display: flex; gap: 2px; margin-left: auto; }
+  .deck-curvebtn {
+    width: 18px; height: 18px; font-size: 11px; line-height: 1;
+    background: #2C2C2C; border: 1px solid #1A1A1A; color: #88888E;
+    border-radius: 2px; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .deck-curvebtn:hover { background: #353535; color: #DADADA; }
+  .deck-curvebtn.active { background: #F2A23C; color: #1A1A1A; border-color: #F2A23C; }
 </style>
 </head>
 <body>
@@ -4014,12 +4153,12 @@
       </div>
     </div>
     <div class="header-right">
-      <span id="version-badge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3A3A42;letter-spacing:0.05em;user-select:none;"></span>
-      <span style="width:1px;height:14px;background:#1F1F22;margin:0 4px;"></span>
+      <span id="version-badge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#3A3A3A;letter-spacing:0.05em;user-select:none;"></span>
+      <span style="width:1px;height:14px;background:#1F1F1F;margin:0 4px;"></span>
       <button class="btn-small" onclick="savePreset()">SAVE</button>
       <button class="btn-small" onclick="openLoadModal()">LOAD</button>
       <button class="btn-small" onclick="newPreset()">NEW</button>
-      <span style="width:1px;height:18px;background:#1F1F22;margin:0 4px;"></span>
+      <span style="width:1px;height:18px;background:#1F1F1F;margin:0 4px;"></span>
       <button class="btn-small" onclick="exportProject()" title="プロジェクト全体（音源＋設定）をZIPに書き出し" style="border-color:#2A3D38;color:#A8C9B6;">EXPORT</button>
       <button class="btn-small" onclick="openImportDialog()" title=".ssproj.zipを読み込んで完全復元" style="border-color:#2A3D38;color:#A8C9B6;">IMPORT</button>
     </div>
@@ -4373,7 +4512,7 @@
           <span class="do-card-head" style="margin:0;">SCHEDULE — 時刻ごとに左→右へ連続再生<span style="color:#7C7C84; font-weight:400; margin-left:8px;">［キー: Enter=次を発火 / 1〜4=A1〜A4］</span></span>
           <div style="display:flex; align-items:center; gap:10px;">
             <!-- v12.9.22: リハで「済」になった全予定を一括で未済に戻す（本番前の戻し忘れ防止） -->
-            <button class="do-bgm-load" id="doSchedReArmAllBtn" onclick="doSchedReArmAll()" style="color:#FF9550; border:0.5px solid rgba(255,149,80,0.4);" title="リハで「済」になった予定を全部「未済」に戻して、本番でまた発火するようにする">↺ 全部リハ前に戻す</button>
+            <button class="do-bgm-load" id="doSchedReArmAllBtn" onclick="doSchedReArmAll()" style="color:#F2A23C; border:0.5px solid rgba(242,162,60,0.4);" title="リハで「済」になった予定を全部「未済」に戻して、本番でまた発火するようにする">↺ 全部リハ前に戻す</button>
             <button class="do-bgm-load" id="doAnnStopBtn" onclick="doAnnStopAll()" style="color:#E24B4A; border:0.5px solid rgba(226,75,74,0.4);" title="再生中の影アナを止めて DUCK 解除">■ 影アナ停止</button>
             <span style="font-size:9px; color:#88888E;" id="doSchedStatus">0 件</span>
           </div>
@@ -4467,7 +4606,7 @@
           <span class="mt-section-count" id="mtSetlistCount">0 SONGS</span>
           <!-- 使い方ヒント -->
           <div class="mt-legend" title="① ＋ ADD SONG で曲枠を作成 ② 空いたフェーダー（パルス中）に音声ファイルを直接ドロップ">
-            <span class="mt-legend-lbl" style="color:#FF9550;">＋ ADD SONG → パルス中のフェーダーへ直接 drop</span>
+            <span class="mt-legend-lbl" style="color:#F2A23C;">＋ ADD SONG → パルス中のフェーダーへ直接 drop</span>
           </div>
         </div>
         <div class="mt-section-actions">
@@ -4938,7 +5077,7 @@ function _projShowFolderDialog(projectName) {
     ].join(';');
     const dialog = document.createElement('div');
     dialog.style.cssText = [
-      'background:linear-gradient(180deg, #15181F, #0E1115)',
+      'background:linear-gradient(180deg, #181818, #111111)',
       'border:0.5px solid rgba(61,181,166,0.5)','border-radius:10px',
       'color:#C8D8D0',"font-family:'JetBrains Mono', 'SF Mono', 'Menlo', monospace",
       'padding:24px 28px','max-width:520px','line-height:1.6',
@@ -5529,11 +5668,25 @@ function renderDeckColumn(deckIdx, container) {
   const caKey = 'deckVol' + deckIdx;
   const ca = state.controlAssign[caKey];
   const ccLabel = ca && ca.midiCC != null ? 'CC' + ca.midiCC : 'N-';
+  // v12.9.26: デッキ固有のフェード秒数・カーブ。未設定はグローバル既定にフォールバック
+  //   （deckFadeOut も同じく deck.fadeBezier||state.fadeBezier を使うので「表示＝実際」になる）
+  const dkFadeT = (deck.fadeTime != null) ? deck.fadeTime : (state.fadeTime != null ? state.fadeTime : 2);
+  const dkCurve = deck.fadeCurve || state.fadeCurve || 'linear';
+  const _curveGlyph = { linear: '╱', exp: '⌐', log: '◞', scurve: 'ʃ' };
+  const curveBtns = ['linear','exp','log','scurve'].map(cv =>
+    `<button class="deck-curvebtn${dkCurve===cv?' active':''}" title="フェードカーブ: ${cv}" onclick="event.stopPropagation();deckSetCurve(${deckIdx},'${cv}')">${_curveGlyph[cv]}</button>`
+  ).join('');
 
   container.innerHTML = `
     <div class="deck-col-header" onclick="setActiveDeck(${deckIdx})" title="クリックでMIDI/キーボードのルーティング先にする">
       <span class="deck-col-label">${escapeHtml(deck.label)}</span>
       <div class="deck-mini-banks-row">${bankHtml}</div>
+    </div>
+    <div class="deck-transport" onclick="event.stopPropagation()" title="このデッキだけを操作（裏デッキ・全体は触らない）">
+      <button class="deck-tbtn stop" onclick="deckStop(${deckIdx})" title="このデッキを即停止">■ STOP</button>
+      <button class="deck-tbtn fade" onclick="deckFadeOut(${deckIdx})" title="このデッキをフェードアウト">⤓ FADE</button>
+      <input class="deck-ftime" id="deckFadeTime${deckIdx}" type="text" inputmode="decimal" maxlength="4" value="${dkFadeT}" title="フェード秒数" onchange="deckSetFadeTime(${deckIdx},this.value)" onkeydown="if(event.key==='Enter')this.blur()" onfocus="try{this.select()}catch(_){}"><span class="deck-ftime-unit">s</span>
+      <div class="deck-curves">${curveBtns}</div>
     </div>
     <div class="deck-col-body">
       <div class="deck-cofader-area" id="cofaderArea${deckIdx}">
@@ -6026,14 +6179,14 @@ function stopPad(pad) {
   pad.isPlaying = false;
 }
 
-function fadeOutPad(pad, sec) {
+function fadeOutPad(pad, sec, bezier) {
   const now = ctx.currentTime;
   pad.activeSources.forEach(ref => {
     try {
       const startG = ref.gain.gain.value;
       ref.gain.gain.cancelScheduledValues(now);
       ref.gain.gain.setValueAtTime(startG, now);
-      const curve = computeFadeCurve(state.fadeCurve, startG, 0.0001, 96);
+      const curve = computeFadeCurve(state.fadeCurve, startG, 0.0001, 96, bezier);
       ref.gain.gain.setValueCurveAtTime(curve, now, Math.max(0.01, sec));
       setTimeout(() => { try { ref.source.stop(); } catch(e){} }, sec * 1000 + 60);
     } catch(e) {}
@@ -6043,8 +6196,8 @@ function fadeOutPad(pad, sec) {
 // Compute a Float32Array of gain values from `from` to `to` using current bezier control points.
 // The bezier goes from (0,1) to (1,0) with control points c1,c2; we sample uniformly in t
 // and use the y component as the gain factor (1 = full, 0 = silent).
-function computeFadeCurve(_type, from, to, points = 96) {
-  const b = state.fadeBezier || PRESET_BEZIER.linear;
+function computeFadeCurve(_type, from, to, points = 96, bezier) {
+  const b = bezier || state.fadeBezier || PRESET_BEZIER.linear;
   const arr = new Float32Array(points);
   for (let i = 0; i < points; i++) {
     const t = i / (points - 1);
@@ -6057,8 +6210,56 @@ function computeFadeCurve(_type, from, to, points = 96) {
   return arr;
 }
 
+// ─── v12.9.26: 各デッキ専用トランスポート（STOP / FADE OUT + 秒数・カーブ） ───
+function _deckOf(deckIdx) {
+  return (state.samplerDecks && state.samplerDecks[deckIdx]) || null;
+}
+// このデッキだけ即停止（裏デッキ・グローバルは触らない）
+function deckStop(deckIdx) {
+  const deck = _deckOf(deckIdx);
+  if (!deck) return;
+  (deck.banks || []).forEach(b => (b.pads || []).forEach(p => stopPad(p)));
+  render();
+}
+// このデッキだけフェードアウト（デッキ固有の秒数・カーブを使用）
+function deckFadeOut(deckIdx) {
+  initAudio();
+  const deck = _deckOf(deckIdx);
+  if (!deck) return;
+  const sec = Math.max(0.05, (deck.fadeTime != null) ? deck.fadeTime : (state.fadeTime || 2.0));
+  const bez = deck.fadeBezier || state.fadeBezier || PRESET_BEZIER.linear;
+  (deck.banks || []).forEach(b => (b.pads || []).forEach(p => { if (p.isPlaying) fadeOutPad(p, sec, bez); }));
+}
+function deckSetFadeTime(deckIdx, val) {
+  const deck = _deckOf(deckIdx);
+  if (!deck) return;
+  const n = parseFloat(val);
+  if (!isNaN(n) && n >= 0) deck.fadeTime = Math.min(60, n);
+  const el = document.getElementById('deckFadeTime' + deckIdx);
+  if (el) el.value = (deck.fadeTime != null ? deck.fadeTime : 2);
+  try { saveStateLocal(); } catch(_) {}
+}
+function deckSetCurve(deckIdx, curve) {
+  const deck = _deckOf(deckIdx);
+  if (!deck) return;
+  deck.fadeCurve = curve;
+  deck.fadeBezier = { ...(PRESET_BEZIER[curve] || PRESET_BEZIER.linear) };
+  try { saveStateLocal(); } catch(_) {}
+  renderDeckColumn(deckIdx, document.getElementById('deckCol' + deckIdx));
+}
+
+// v12.9.26: 2デッキ化で state.banks は「アクティブデッキ」しか指さないため、
+//   全パッド走査は必ず全デッキを回す。これが無いと裏デッキで鳴っている音が
+//   STOP / FADE OUT / Escape で止まらない（本番の重大事故）。
+function _forEachPad(fn) {
+  const decks = (state.samplerDecks && state.samplerDecks.length)
+    ? state.samplerDecks
+    : [{ banks: state.banks }];
+  decks.forEach(d => (d.banks || []).forEach(b => (b.pads || []).forEach(fn)));
+}
+
 function stopAll() {
-  state.banks.forEach(b => b.pads.forEach(p => stopPad(p)));
+  _forEachPad(p => stopPad(p));
   // MULTI-TRACK も即停止（fadeOutAll と違って瞬時に切る、ESC=パニックストップ的）
   if (typeof mtStop === 'function' && state.multitrack && state.multitrack.isPlaying) {
     try { mtStop(); } catch(e) { console.warn('mtStop failed', e); }
@@ -6089,10 +6290,8 @@ function fadeOutAll() {
   if (typeof mtFadeOut === 'function' && state.multitrack && state.multitrack.isPlaying) {
     try { mtFadeOut(); } catch(e) { console.warn('mtFadeOut failed', e); }
   }
-  // 1) SAMPLER pads
-  state.banks.forEach(b => b.pads.forEach(p => {
-    if (p.isPlaying) fadeOutPad(p, sec);
-  }));
+  // 1) SAMPLER pads（全デッキ。state.banks はアクティブデッキのみなので _forEachPad で全走査）
+  _forEachPad(p => { if (p.isPlaying) fadeOutPad(p, sec); });
   // 2) DOOR OPEN: BGM（DOOR / WORKOUT 両方）
   BGM_SLOTS.forEach(slot => {
     const b = _bgmObj(slot);
@@ -6404,6 +6603,13 @@ function scheduleSaveProjectJSON() {
     _saveProjectJSONTimer = null;
     const pid = (typeof projGetActiveId === 'function') ? projGetActiveId() : null;
     if (!pid) return;
+    // v12.9.26: フォルダ運用していないプロジェクト（localStorage のみ）では同期先が
+    //   無いので静かにスキップ。これが無いと doSave 経由(DOOR編集)の度に
+    //   「自動保存に失敗」の誤警告トーストが本番中に出てしまう（フォルダ無し＝正常）。
+    try {
+      const _fh = await getProjectFolderHandle(pid);
+      if (!_fh || !_fh.handle) return;
+    } catch(_) { return; }
     try {
       const ok = await saveProjectJSONToFolder(pid);
       if (ok) {
@@ -7310,6 +7516,8 @@ function saveStateLocal() {
       currentDeckIdx: state.currentDeckIdx,
       samplerDecks: state.samplerDecks.map(d => ({
         id: d.id, label: d.label, currentBank: d.currentBank, deckVol: d.deckVol ?? 0.71,
+        // v12.9.26: 各デッキ専用フェードの秒数・カーブを保存（リロードで消えないように）
+        fadeTime: d.fadeTime ?? null, fadeCurve: d.fadeCurve ?? null, fadeBezier: d.fadeBezier ?? null,
         banks: d.banks.map(b => ({
           name: b.name,
           pads: b.pads.map(p => ({
@@ -7393,6 +7601,10 @@ function loadStateLocal() {
         label: d.label || 'DECK',
         currentBank: d.currentBank || 0,
         deckVol: d.deckVol ?? 0.71,
+        // v12.9.26: 各デッキ専用フェードの復元（未設定はグローバルにフォールバック）
+        fadeTime: (d.fadeTime != null) ? d.fadeTime : undefined,
+        fadeCurve: d.fadeCurve || undefined,
+        fadeBezier: d.fadeBezier || undefined,
         banks: (() => {
           if (!d.banks) return _makeDeckBanks();
           const banks = d.banks.map((bd, bi) => ({
@@ -7641,11 +7853,18 @@ function renderRight() {
       <div class="deck-col" id="deckCol0"></div>
       <div class="deck-col" id="deckCol1"></div>
     </div>
+    <div class="hold-strip" title="両デッキ共通の一時置き場。パッドをここへドラッグして避難 → 別デッキの空きパッドへドラッグで移動">
+      <div class="hold-strip-label">HOLD<br><span style="font-size:7px;opacity:0.7;">STOCK</span></div>
+      <div class="hold-slots" id="holdSlots"></div>
+    </div>
   `;
 
   state.samplerDecks.forEach((_, i) => {
     renderDeckColumn(i, document.getElementById('deckCol' + i));
   });
+  // v12.9.26: 2デッキ化のレイアウト変更で画面から外れていた HOLD（ストック）を復活。
+  //   両デッキの下に常時表示。パッド→HOLD→別デッキの空きパッド でデッキ間移動できる。
+  renderHold();
 }
 
 // Phase A: 見た目だけ（音・ドロップは Phase B で配線）
@@ -7700,7 +7919,7 @@ function renderDeckPads(deckIdx, bankIdx) {
       cell.classList.add('has-color');
       cell.style.setProperty('--pad-c', colorHex);
     }
-    const playArrowColor = colorHex || '#FF9550';
+    const playArrowColor = colorHex || '#F2A23C';
 
     if (pad.audioBuffer) {
       const hasTrim = (pad.trimStart||0) > 0 || (pad.trimEnd != null && pad.trimEnd < pad.audioBuffer.duration);
@@ -8057,7 +8276,7 @@ function openTrimEditor(bankIdx, padIdx) {
         <button class="btn-small" onclick="resetTrim()" style="margin-right:auto;">RESET</button>
         <button class="btn-small" onclick="previewTrim()">▶ PREVIEW</button>
         <button class="btn-small" onclick="closeTrimEditor()">CANCEL</button>
-        <button class="btn-small" style="background:#FF9550; color:#252525; border-color:#FF9550; font-weight:500;" onclick="applyTrim()">APPLY</button>
+        <button class="btn-small" style="background:#F2A23C; color:#252525; border-color:#F2A23C; font-weight:500;" onclick="applyTrim()">APPLY</button>
       </div>
     </div>
   `;
@@ -8299,9 +8518,9 @@ function drawWaveform() {
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.scale(dpr, dpr);
   const W = rect.width, H = rect.height;
-  c.fillStyle = '#0E0E10';
+  c.fillStyle = '#0E0E0E';
   c.fillRect(0, 0, W, H);
-  c.strokeStyle = '#1F1F22';
+  c.strokeStyle = '#1F1F1F';
   c.beginPath(); c.moveTo(0, H/2); c.lineTo(W, H/2); c.stroke();
   const view = getTrimView();
   const { viewStart, viewEnd } = view;
@@ -8311,7 +8530,7 @@ function drawWaveform() {
   const endSample = Math.min(ch.length, Math.floor(viewEnd * sampleRate));
   const totalSamples = endSample - startSample;
   const samplesPerPixel = totalSamples / W;
-  c.strokeStyle = '#FF9550';
+  c.strokeStyle = '#F2A23C';
   c.lineWidth = 1;
   c.beginPath();
   if (samplesPerPixel >= 1) {
@@ -8601,8 +8820,9 @@ function renderHold() {
     const item = state.hold[i];
     if (item) {
       slot.className = 'hold-slot filled';
+      const _dk = (item.deckIdx === 1) ? 'B' : 'A';
       slot.innerHTML = `
-        <span class="slot-head">H${i+1} ← Bank ${(item.bankIdx ?? 0)+1} PAD ${(item.padIdx ?? 0)+1}</span>
+        <span class="slot-head">H${i+1} ← ${_dk} BANK${(item.bankIdx ?? 0)+1}·PAD${(item.padIdx ?? 0)+1}</span>
         <span class="slot-name">${escapeHtml(item.sampleName || (item.padData && item.padData.sampleName) || '—')}</span>
       `;
       slot.draggable = true;
@@ -8628,30 +8848,43 @@ function renderHold() {
   }
 }
 
+// v12.9.26: 2デッキ対応。pad 参照は必ず deckIdx を見て該当デッキの banks から取る。
+//   旧コードは state.banks（＝アクティブデッキ）固定だったため、デッキをまたぐ移動が
+//   別デッキの枠を読み書きして壊れていた（ドラッグ payload には deckIdx が入っている）。
+function _padFromRef(ref) {
+  const di = (ref && ref.deckIdx != null) ? ref.deckIdx : state.currentDeckIdx;
+  const deck = (state.samplerDecks && state.samplerDecks[di]) || { banks: state.banks };
+  const bank = deck.banks && deck.banks[ref.bankIdx];
+  return bank ? (bank.pads[ref.padIdx] || null) : null;
+}
+
 function handleMoveDrop(from, to) {
   // Move/swap pad content
   if (from.kind === 'pad' && to.kind === 'hold') {
     // Move pad to hold (the pad becomes empty in MOVE-mode-only visual sense; we keep the content in HOLD)
     if (state.hold[to.holdIdx]) return showToast('そのHOLDは埋まっています');
-    const pad = state.banks[from.bankIdx].pads[from.padIdx];
-    state.hold[to.holdIdx] = { bankIdx: from.bankIdx, padIdx: from.padIdx, sampleName: pad.sampleName, padData: clonePadData(pad) };
+    const pad = _padFromRef(from);
+    if (!pad) return;
+    state.hold[to.holdIdx] = { deckIdx: from.deckIdx ?? state.currentDeckIdx, bankIdx: from.bankIdx, padIdx: from.padIdx, sampleName: pad.sampleName, padData: clonePadData(pad) };
     clearPadData(pad);
   } else if (from.kind === 'hold' && to.kind === 'pad') {
     const item = state.hold[from.holdIdx];
-    const targetPad = state.banks[to.bankIdx].pads[to.padIdx];
+    const targetPad = _padFromRef(to);
+    if (!targetPad || !item) return;
     if (targetPad.sampleName) {
       // swap: put target into hold slot, item into target
       const oldContent = clonePadData(targetPad);
       assignPadData(targetPad, item.padData);
-      state.hold[from.holdIdx] = { bankIdx: to.bankIdx, padIdx: to.padIdx, sampleName: oldContent.sampleName, padData: oldContent };
+      state.hold[from.holdIdx] = { deckIdx: to.deckIdx ?? state.currentDeckIdx, bankIdx: to.bankIdx, padIdx: to.padIdx, sampleName: oldContent.sampleName, padData: oldContent };
     } else {
       assignPadData(targetPad, item.padData);
       state.hold[from.holdIdx] = null;
     }
   } else if (from.kind === 'pad' && to.kind === 'pad') {
-    // direct swap
-    const a = state.banks[from.bankIdx].pads[from.padIdx];
-    const b = state.banks[to.bankIdx].pads[to.padIdx];
+    // direct swap（デッキをまたいでも正しく入れ替わる）
+    const a = _padFromRef(from);
+    const b = _padFromRef(to);
+    if (!a || !b) return;
     const tmp = clonePadData(a);
     assignPadData(a, clonePadData(b));
     assignPadData(b, tmp);
@@ -8807,7 +9040,7 @@ function drawCurveEditor() {
   c.clearRect(0, 0, W, H);
 
   // grid
-  c.strokeStyle = '#1F1F22';
+  c.strokeStyle = '#1F1F1F';
   c.lineWidth = 0.5;
   for (let i = 1; i < 4; i++) {
     c.beginPath();
@@ -8819,7 +9052,7 @@ function drawCurveEditor() {
   const b = state.fadeBezier;
 
   // dotted handle lines
-  c.strokeStyle = '#3D3D45';
+  c.strokeStyle = '#3D3D3D';
   c.setLineDash([3, 3]);
   c.lineWidth = 1;
   c.beginPath();
@@ -8831,7 +9064,7 @@ function drawCurveEditor() {
   c.setLineDash([]);
 
   // curve
-  c.strokeStyle = '#FF9550';
+  c.strokeStyle = '#F2A23C';
   c.lineWidth = 2;
   c.beginPath();
   for (let i = 0; i <= 64; i++) {
@@ -14182,7 +14415,7 @@ function _ltcRxUpdateStatus() {
   }
   // OK: 追従中 (緑背景、500ms ごとに blink)
   const blink = (Math.floor(now / 500) % 2) === 0;
-  _ltcRxApplyStatus(el, '●', '追従中', blink ? '#FF9550' : '#8B4000', 'rgba(255,149,80,0.20)');
+  _ltcRxApplyStatus(el, '●', '追従中', blink ? '#F2A23C' : '#8B4000', 'rgba(242,162,60,0.20)');
   el.title = 'LTC chase OK';
   // v12.8.2 L8: グロー強調 (CSS .tc-ok-glow)
   try { el.classList.add('tc-ok-glow'); } catch(_) {}
@@ -18511,7 +18744,7 @@ function mtRenderSongInfo() {
     const optNull = document.createElement('option');
     optNull.value = ''; optNull.textContent = '— UNASSIGNED';
     optNull.style.color = '#888892';
-    optNull.style.backgroundColor = '#0B0B0E';
+    optNull.style.backgroundColor = '#0B0B0B';
     sel.appendChild(optNull);
     for (const g of MT_GROUPS) {
       const o = document.createElement('option');
@@ -18520,7 +18753,7 @@ function mtRenderSongInfo() {
       o.textContent = mtGetGroupLabel(g);
       // ネイティブ select の option を色付け（Chrome/Safari は反映する）
       o.style.color = MT_GROUP_COLORS[g];
-      o.style.backgroundColor = '#0F0F14';
+      o.style.backgroundColor = '#0F0F0F';
       o.style.fontWeight = '700';
       sel.appendChild(o);
     }
@@ -19238,7 +19471,7 @@ function _showInstallBanner() {
   bar.id = 'pwaInstallBanner';
   bar.style.cssText = [
     'position:fixed','bottom:80px','left:50%','transform:translateX(-50%)',
-    'background:linear-gradient(180deg, #15181F, #0E1115)',
+    'background:linear-gradient(180deg, #181818, #111111)',
     'border:0.5px solid rgba(61,181,166,0.5)','border-radius:8px',
     'padding:10px 16px','z-index:9000',
     "font-family:'JetBrains Mono', 'SF Mono', 'Menlo', monospace",'font-size:11px',
