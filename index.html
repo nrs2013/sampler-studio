@@ -167,6 +167,13 @@
   .status { display: flex; align-items: center; gap: 10px; font-size: 10px; color: #88888E; }
   .midi-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #7C7C84; }
   .midi-led.on { background: #F2A23C; box-shadow: none; }
+  .led-out-toggle {
+    font-size: 8px; letter-spacing: 0.5px; font-weight: 600;
+    padding: 2px 6px; margin: 0 4px; border-radius: 2px; cursor: pointer;
+    background: #2C2C2C; border: 1px solid #1A1A1A; color: #88888E; font-family: inherit;
+  }
+  .led-out-toggle:hover { background: #353535; color: #DADADA; }
+  .led-out-toggle.on { background: #F2A23C; color: #1A1A1A; border-color: #F2A23C; }
 
   /* BANKS */
   .banks {
@@ -4175,6 +4182,7 @@
     </button>
     <div class="status">
       <span><span class="midi-led" id="midiLed"></span> <span id="midiName">MIDI: 未接続</span></span>
+      <button id="ledOutToggle" class="led-out-toggle" onclick="ledToggle()" title="Grid のボタンLEDにパッド色を送る">LED</button>
       <span id="bankInfo">BANK 01 / 16</span>
     </div>
   </div>
@@ -7085,14 +7093,91 @@ async function initMIDI() {
 
 function updateMidiInputs() {
   const inputs = [...midiAccess.inputs.values()];
+  try { ledRefreshOutputs(); } catch(_) {}
   if (inputs.length === 0) {
     document.getElementById('midiName').textContent = 'MIDI: 未接続';
     document.getElementById('midiLed').classList.remove('on');
+    try { ledSyncToggleUI(); } catch(_) {}
     return;
   }
   document.getElementById('midiName').textContent = 'MIDI: ' + inputs[0].name;
   document.getElementById('midiLed').classList.add('on');
   inputs.forEach(inp => { inp.onmidimessage = handleMIDI; });
+  try { ledSyncToggleUI(); ledScheduleSend(); } catch(_) {}
+}
+
+// ============================================================
+// v12.9.28: Grid LED フィードバック（MIDI 出力）— 隔離・堅牢・トグル可能
+//   パッドの色を Intech Grid のボタンLEDへ送る。Grid 出力が無ければ完全に無音動作。
+//   送信内容: Note On [ch=LED_OUT.channel, note=pad.midiNote, velocity=色番号(1..8)/空=0]。
+//   ※ どんな失敗も try/catch で握りつぶし、本体の音/入力には一切影響させない。
+//   ※ Grid 側で「このMIDIを受けたらLEDをこの色に」という Lua 設定が別途必要（仕様書は別途提供）。
+// ============================================================
+const LED_OUT = {
+  enabled: (() => { try { return (localStorage.getItem('samplerLedOut') ?? '1') === '1'; } catch(_) { return true; } })(),
+  channel: 13,   // LED 送信チャンネル（コントローラーのパッドと同じ ch13）
+  outputs: [],
+  _t: null,
+};
+function ledRefreshOutputs() {
+  LED_OUT.outputs = [];
+  if (!midiAccess) return;
+  try {
+    for (const o of midiAccess.outputs.values()) {
+      if (/grid/i.test(o.name || '')) LED_OUT.outputs.push(o);
+    }
+  } catch(_) {}
+}
+function _ledVel(pad) {
+  if (!pad || !(pad.audioBuffer || pad.sampleName)) return 0; // 空パッド = 消灯
+  const id = pad.color || 'default';
+  const i = PAD_COLOR_PALETTE.findIndex(c => c.id === id);
+  return ((i < 0 ? 0 : i) + 1) & 0x7F; // 1..8
+}
+function ledSend() {
+  if (!LED_OUT.enabled || !LED_OUT.outputs.length || !midiAccess) return;
+  if (state.appMode !== 'sampler') return;
+  try {
+    const status = 0x90 | ((LED_OUT.channel - 1) & 0x0F);
+    const bank = state.banks && state.banks[state.currentBank];
+    if (!bank) return;
+    bank.pads.forEach(p => {
+      if (p.midiNote == null) return;
+      const msg = [status, p.midiNote & 0x7F, _ledVel(p)];
+      LED_OUT.outputs.forEach(o => { try { o.send(msg); } catch(_) {} });
+    });
+  } catch(_) {}
+}
+function ledScheduleSend() {
+  if (!LED_OUT.enabled || !LED_OUT.outputs.length) return;
+  if (LED_OUT._t) return;
+  LED_OUT._t = setTimeout(() => { LED_OUT._t = null; ledSend(); }, 45);
+}
+function ledClearAll() {
+  if (!LED_OUT.outputs.length) return;
+  try {
+    const status = 0x90 | ((LED_OUT.channel - 1) & 0x0F);
+    for (let n = 0; n < 128; n++) {
+      LED_OUT.outputs.forEach(o => { try { o.send([status, n, 0]); } catch(_) {} });
+    }
+  } catch(_) {}
+}
+function ledSyncToggleUI() {
+  const btn = document.getElementById('ledOutToggle');
+  if (!btn) return;
+  const has = LED_OUT.outputs.length > 0;
+  btn.classList.toggle('on', LED_OUT.enabled && has);
+  btn.textContent = 'LED ' + (LED_OUT.enabled ? 'ON' : 'OFF');
+  btn.style.opacity = has ? '1' : '0.45';
+  btn.title = has
+    ? ('Grid LED 出力（' + LED_OUT.outputs.map(o => o.name).join(', ') + '）— クリックで ON/OFF')
+    : 'Grid 出力が見つかりません（コントローラー接続を確認）— クリックで ON/OFF';
+}
+function ledToggle() {
+  LED_OUT.enabled = !LED_OUT.enabled;
+  try { localStorage.setItem('samplerLedOut', LED_OUT.enabled ? '1' : '0'); } catch(_) {}
+  if (LED_OUT.enabled) ledSend(); else ledClearAll();
+  ledSyncToggleUI();
 }
 
 function handleMIDI(e) {
@@ -7692,6 +7777,8 @@ function render() {
   renderRight();
   renderLearnBadges();
   document.getElementById('bankInfo').textContent = `BANK ${String(state.currentBank+1).padStart(2,'0')} / 16`;
+  // v12.9.28: 表示が変わるたびに Grid のLEDをパッド色に追従（スロットル・Grid無ければ無音）
+  try { ledScheduleSend(); } catch(_) {}
 }
 
 // v12.4.0: パッド色選択ポップオーバー
