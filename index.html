@@ -4818,7 +4818,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.33';
+const APP_VERSION = 'v12.9.34';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -7192,9 +7192,40 @@ function ledToggle() {
 const MIDI_RETRIG_MS = 90;
 const _lastMidiTrig = Object.create(null);
 
+// v12.9.34: 診断用 MIDI モニタ。URL に ?midimon=1 を付けた時だけ右下に出る。
+//   handleMIDI の最初で全受信を記録し、押下/離上で実機が何を送っているか
+//   (ON / OFF / vel0 / CC ＋ チャンネル ＋ ノート ＋ ベロシティ ＋ 入力ポート名) を可視化する。
+//   本番(?なし)では一切表示・動作しない。原因切り分け用。
+const _MIDI_MON = (() => { try { return new URLSearchParams(location.search).get('midimon') === '1'; } catch(_) { return false; } })();
+let _midiMonEl = null;
+function _midiMonLog(e) {
+  if (!_MIDI_MON) return;
+  try {
+    if (!_midiMonEl) {
+      _midiMonEl = document.createElement('div');
+      _midiMonEl.id = 'midiMon';
+      _midiMonEl.style.cssText = 'position:fixed;right:8px;bottom:8px;z-index:99999;width:360px;max-height:55vh;overflow:auto;background:rgba(0,0,0,0.88);color:#9FE7C8;border:1px solid #2A2A30;border-radius:8px;font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;padding:8px;white-space:pre;pointer-events:none;';
+      document.body.appendChild(_midiMonEl);
+    }
+    const st = e.data[0], d1 = e.data[1], d2 = e.data[2];
+    const type = st & 0xF0, ch = (st & 0x0F) + 1;
+    let tag;
+    if (type === 0x90 && d2 > 0) tag = '🟢ON ';
+    else if (type === 0x80) tag = '🔴OFF';
+    else if (type === 0x90 && d2 === 0) tag = '🟠v0 ';
+    else if (type === 0xB0) tag = '🎚CC ';
+    else tag = '·?? ';
+    const port = (e.target && e.target.name) ? e.target.name : '?';
+    const line = `${tag} ch${ch} n${d1} v${d2}  [${port}]`;
+    const prev = _midiMonEl.textContent ? _midiMonEl.textContent.split('\n') : [];
+    _midiMonEl.textContent = [line, ...prev].slice(0, 26).join('\n');
+  } catch(_) {}
+}
+
 function handleMIDI(e) {
   const [status, data1, data2] = e.data;
   const type = status & 0xF0;
+  _midiMonLog(e); // v12.9.34: 診断（?midimon=1 時のみ）。学習/デバウンス/モード判定より前に全受信を記録
   // v12.9.31: 学習中はあらゆる入力をここで飲み込む。
   //   旧コードは「MIDI 学習中の MIDI」しか拾わず、キー学習中に来た MIDI が
   //   そのまま STOP/FADE OUT/パッドを暴発させていた（本番事故）。
