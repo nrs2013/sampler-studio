@@ -4818,7 +4818,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.25';
+const APP_VERSION = 'v12.9.31';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -7183,33 +7183,40 @@ function ledToggle() {
 function handleMIDI(e) {
   const [status, data1, data2] = e.data;
   const type = status & 0xF0;
+  // v12.9.31: 学習中はあらゆる入力をここで飲み込む。
+  //   旧コードは「MIDI 学習中の MIDI」しか拾わず、キー学習中に来た MIDI が
+  //   そのまま STOP/FADE OUT/パッドを暴発させていた（本番事故）。
+  if (state.isLearning) {
+    if (state.isLearning.type === 'midi') {
+      if (type === 0x90 && data2 > 0) assignLearn({ kind: 'note', value: data1 });
+      else if (type === 0xB0) assignLearn({ kind: 'cc', value: data1 });
+    }
+    return; // 学習中は live 動作を一切させない
+  }
   // Note On (0x90) with velocity > 0
   if (type === 0x90 && data2 > 0) {
-    if (state.isLearning && state.isLearning.type === 'midi') {
-      assignLearn({ kind: 'note', value: data1 });
-      return;
+    // v12.9.31: パッド/バンク切替は SAMPLER モードのみ。
+    //   DOOR/MULTI 中に Grid が出すノートでサンプラーが鳴る事故を防ぐ。
+    if (state.appMode === 'sampler') {
+      const padIdx = state.banks[state.currentBank].pads.findIndex(p => p.midiNote === data1);
+      if (padIdx >= 0) {
+        flashPad(state.currentBank, padIdx);
+        playPad(state.currentBank, padIdx); // 決め事③: MIDI は常にフル音量
+        return;
+      }
     }
-    // Find pad with this MIDI note in current bank — flash visually for assignment verification
-    const padIdx = state.banks[state.currentBank].pads.findIndex(p => p.midiNote === data1);
-    if (padIdx >= 0) {
-      flashPad(state.currentBank, padIdx);
-      playPad(state.currentBank, padIdx, (data2 / 127));
-      return;
+    // パニック系（FADE OUT / STOP / PAUSE）は全モードで有効（キーボードと挙動を揃える）
+    if (state.controlAssign.fadeout.midiNote === data1) { fadeOutAll(); return; }
+    if (state.controlAssign.stop.midiNote === data1) { stopAll(); return; }
+    if (state.controlAssign.pause.midiNote === data1) { pauseAll(); return; }
+    // v12.3.0: BANK 切替 MIDI（SAMPLER モードのみ）
+    if (state.appMode === 'sampler') {
+      if (state.controlAssign.bankPrev.midiNote === data1) switchBankRel(-1);
+      if (state.controlAssign.bankNext.midiNote === data1) switchBankRel(+1);
     }
-    // Check control assignments
-    if (state.controlAssign.fadeout.midiNote === data1) fadeOutAll();
-    if (state.controlAssign.stop.midiNote === data1) stopAll();
-    if (state.controlAssign.pause.midiNote === data1) pauseAll();
-    // v12.3.0: BANK 切替 MIDI
-    if (state.controlAssign.bankPrev.midiNote === data1) switchBankRel(-1);
-    if (state.controlAssign.bankNext.midiNote === data1) switchBankRel(+1);
   }
   // CC
   if (type === 0xB0) {
-    if (state.isLearning && state.isLearning.type === 'midi') {
-      assignLearn({ kind: 'cc', value: data1 });
-      return;
-    }
     if (state.controlAssign.master.midiCC === data1) {
       const pct = data2 / 127;
       const db = masterPctToDb(pct);
@@ -7264,6 +7271,9 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     return;
   }
+  // v12.9.31: MIDI 学習中にキーが押されても live 動作させない（飲み込む）。
+  //   キー学習中の MIDI を handleMIDI 側で塞いだのと対の対策。
+  if (state.isLearning) { e.preventDefault(); return; }
 
   // MULTI-TRACK: 矢印/Enter/Space で SETLIST を操作（既存のグローバルバインドより優先）
   if (state.appMode === 'multi') {
@@ -7342,11 +7352,14 @@ document.addEventListener('keydown', e => {
   }
 
   // Pads — flash visually so user can verify assignment even on empty pads
-  const padIdx = state.banks[state.currentBank].pads.findIndex(p => p.key === e.code);
-  if (padIdx >= 0) {
-    flashPad(state.currentBank, padIdx);
-    playPad(state.currentBank, padIdx);
-    e.preventDefault();
+  // v12.9.31: パッドは SAMPLER モードのみ（DOOR/MULTI ではキーでパッドを鳴らさない）
+  if (state.appMode === 'sampler') {
+    const padIdx = state.banks[state.currentBank].pads.findIndex(p => p.key === e.code);
+    if (padIdx >= 0) {
+      flashPad(state.currentBank, padIdx);
+      playPad(state.currentBank, padIdx);
+      e.preventDefault();
+    }
   }
 });
 
@@ -11734,7 +11747,10 @@ function doTick() {
   //         「先」= 実際は前日深夜の過去）だけ過去側へ補正する。
   //         さらに発火窓を 3秒→60秒（FIRE_GRACE）に拡大し、長い再生中に時刻を
   //         通過した行 / タブ throttle で遅れた行も再生終了後に確実に拾う。
-  if (state.door.activeRowId == null) {
+  // v12.9.31: SCHEDULE 自動発火は DOOR モードのみ。
+  //   旧コードはモード無関係に走り、本番演奏(SAMPLER/MULTI)中でも予定時刻が
+  //   来ると影アナを鳴らしていた（焦点バグ #22）。pre-DUCK もここで止める。
+  if (state.appMode === 'door' && state.door.activeRowId == null) {
     const dNow = new Date();
     const now = dNow.getHours()*3600 + dNow.getMinutes()*60 + dNow.getSeconds() + dNow.getMilliseconds()/1000;
     const fadeSec = state.door.duck.fadeSec || 0.8;
