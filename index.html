@@ -9000,8 +9000,7 @@ function assignPadData(target, src) {
   target.audioBuffer = src.audioBuffer;
   target.sampleId = src.sampleId;
   target.level = src.level;
-  target.key = src.key;
-  target.midiNote = src.midiNote;
+  // v12.9.29: keep target's own MIDI note and key (do not copy from src) so Grid LED follows the new position
   target.color = src.color || null;
   target.trimStart = src.trimStart || 0;
   target.trimEnd = src.trimEnd ?? null;
