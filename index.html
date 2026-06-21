@@ -7410,10 +7410,19 @@ function assignLearn(input) {
   } else {
     const ca = state.controlAssign[target];
     if (!ca) return;
-    if (type === 'key' && input.kind === 'key') ca.key = input.value;
+    // v12.9.30: dedup MIDI/key across controls so two controls cannot share one CC (prevents both reacting)
+    if (type === 'key' && input.kind === 'key') {
+      for (const k in state.controlAssign) { if (k !== target && state.controlAssign[k].key === input.value) state.controlAssign[k].key = null; }
+      ca.key = input.value;
+    }
     if (type === 'midi') {
-      if ((target === 'master' || target.startsWith('deckVol')) && input.kind === 'cc') ca.midiCC = input.value;
-      else if (input.kind === 'note') ca.midiNote = input.value;
+      if (input.kind === 'cc') {
+        for (const k in state.controlAssign) { if (k !== target && state.controlAssign[k].midiCC === input.value) state.controlAssign[k].midiCC = null; }
+        if (target === 'master' || target.startsWith('deckVol')) ca.midiCC = input.value;
+      } else if (input.kind === 'note') {
+        for (const k in state.controlAssign) { if (k !== target && state.controlAssign[k].midiNote === input.value) state.controlAssign[k].midiNote = null; }
+        ca.midiNote = input.value;
+      }
     }
   }
   state.isLearning = null;
