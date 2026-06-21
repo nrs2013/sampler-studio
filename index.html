@@ -4818,7 +4818,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.32';
+const APP_VERSION = 'v12.9.33';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -7180,11 +7180,15 @@ function ledToggle() {
   ledSyncToggleUI();
 }
 
-// v12.9.32: Grid LED は ch13 でパッド入力と同居しているため、自分が送った LED Note-On が
-//   Grid 経由で入力に回り込み「頭が2回」鳴るエコーループが起きる（handleMIDI はチャンネルを
-//   見ないので ch13 のLED音でも発火＝バグ #2/#26）。同一ノートの極短時間の再発火を無視して断つ。
-//   90ms 未満の同一ノート再トリガ＝エコー/二重ポートと見なす（本番の一発ネタで 90ms 以内の
-//   意図的連打はまず無いので安全）。本筋はチャンネル分離（③）で根治する。
+// v12.9.32/33: Grid のパッドを叩くと音の頭が2回鳴る（ダブルトリガー）対策。
+//   原因は「同じ物理ヒットが極短時間に2つの Note-On として届く」こと。具体的には
+//   (a) Grid の二重送出/二重入力ポート、または (b) LED 出力 ch13 が Grid 経由で入力へ
+//   回り込むエコー（handleMIDI はチャンネルを見ない＝#2 ので ch13 のLED音でも発火する）。
+//   → 同一パッドの極短時間（<MIDI_RETRIG_MS）の再発火を無視して2発目を捨てる。原因が
+//      どれでもこの抑制で吸収できる（playPad 前に return するので連鎖も断つ）。
+//   v12.9.33: キーは「デッキ:バンク:ノート」。全バンク/デッキが同じ既定ノート(36-51)を使うため、
+//             ノート番号だけだとバンク跨ぎの速い演奏で別パッドの頭まで誤って消える事故になる。
+//   根治（LEDを別ch / 入力をチャンネル判別）は ③LED根本 で対応する。
 const MIDI_RETRIG_MS = 90;
 const _lastMidiTrig = Object.create(null);
 
@@ -7208,11 +7212,12 @@ function handleMIDI(e) {
     if (state.appMode === 'sampler') {
       const padIdx = state.banks[state.currentBank].pads.findIndex(p => p.midiNote === data1);
       if (padIdx >= 0) {
-        // v12.9.32: LEDエコー/二重ポートによる「頭が2回」を抑制（同一ノートの極短再発火を無視）。
-        //   ここで return すれば render→再 ledSend→再エコーの連鎖も断てる。
+        // v12.9.32/33: ダブルトリガー（エコー/二重ポート）抑制。キーは「デッキ:バンク:ノート」で、
+        //   バンク跨ぎの別パッド（同一ノート）を巻き添えにしない。playPad より前に弾く。
         const _nowT = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-        if (_lastMidiTrig[data1] != null && (_nowT - _lastMidiTrig[data1]) < MIDI_RETRIG_MS) return;
-        _lastMidiTrig[data1] = _nowT;
+        const _trigKey = state.currentDeckIdx + ':' + state.currentBank + ':' + data1;
+        if (_lastMidiTrig[_trigKey] != null && (_nowT - _lastMidiTrig[_trigKey]) < MIDI_RETRIG_MS) return;
+        _lastMidiTrig[_trigKey] = _nowT;
         flashPad(state.currentBank, padIdx);
         playPad(state.currentBank, padIdx); // 決め事③: MIDI は常にフル音量
         return;
