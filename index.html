@@ -4820,7 +4820,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.38';
+const APP_VERSION = 'v12.9.39';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -7166,11 +7166,13 @@ function ledSend() {
     const status = 0x90 | ((LED_OUT.channel - 1) & 0x0F);
     const bank = state.banks && state.banks[state.currentBank];
     if (!bank) return;
-    // v12.9.37: LEDは「パッドの位置」で送る（pad index i → BU16ボタン i ＝ LED note 36+i）。
-    //   pad.midiNote(入力割当)に依存しないので、入力が空でも色は必ずリンクする（色リンクの根治）。
-    //   空パッドは _ledVel=0 で消灯。BU16 LED は実機で note 36..51 受信＝位置点灯。
+    // v12.9.39: LEDは「パッドの位置」で送る（pad index i → BU16ボタン i ＝ LED note 32+i）。
+    //   実機ファームの確定版Lua(btn = note - 32／gridmon 112回echo検証済・v1.5.4にStore)に合わせる。
+    //   旧v12.9.37は誤った「note-36」前提で 36+i を送り+4ズレ＝色がリンクしなかった
+    //   （正＝SAMPLER-STUDIO-GridLED-引き継ぎ-2026-06-21.md の確定版Lua）。
+    //   pad.midiNote(入力割当)に依存しない＝入力が空でも色は必ずリンク。空パッドは _ledVel=0 で消灯。
     bank.pads.forEach((p, i) => {
-      const ledNote = (36 + i) & 0x7F;
+      const ledNote = (32 + i) & 0x7F; // BU16実機: btn = note - 32 → pad0=note32=btn0（pad12-15も32-47で範囲内）
       const msg = [status, ledNote, _ledVel(p)];
       LED_OUT.outputs.forEach(o => { try { o.send(msg); } catch(_) {} });
     });
