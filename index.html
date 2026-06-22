@@ -4818,7 +4818,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.34';
+const APP_VERSION = 'v12.9.35';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -5778,7 +5778,7 @@ function initAudio() {
   });
 
   masterGain = ctx.createGain();
-  masterGain.gain.value = (state.appMode === 'sampler') ? 1.0 : state.masterVol;
+  masterGain.gain.value = state.masterVol; // v12.9.35: 全モードで全体マスターとして反映（旧: SAMPLER は1.0固定で二重絞り #25）
 
   splitter = ctx.createChannelSplitter(2);
   analyserL = ctx.createAnalyser();
@@ -7270,8 +7270,11 @@ function handleMIDI(e) {
       const pct = data2 / 127;
       const db = masterPctToDb(pct);
       const lin = isFinite(db) ? dbToLin(db) : 0;
-      if (state.appMode === 'sampler') setDeckVol(state.currentDeckIdx, lin);
-      else setMasterVol(lin);
+      // v12.9.35: マスターCCは全モードで「全体マスター」を動かす（旧: SAMPLER 時は
+      //   今のデッキを動かしていた＝#25/#34 の混乱の元）。さらに return で「1CC=1操作」を
+      //   保証し、同じCCがデッキフェーダーにも割り当たっていた時の二重発火を防ぐ（#34）。
+      setMasterVol(lin);
+      return;
     }
     // デッキコフェーダー MIDI CC
     if (state.appMode === 'sampler') {
@@ -9393,14 +9396,11 @@ function setAppMode(m) {
   }
   const _prevAppMode = state.appMode;
   state.appMode = m;
-  // SAMPLERモードではmasterGainを1.0に保つ（deckGainsが音量を担う）
-  // DOORモードではstate.masterVolを復元
-  if (m === 'sampler' && ctx && masterGain) {
-    masterGain.gain.cancelScheduledValues(ctx.currentTime);
-    masterGain.gain.setValueAtTime(1.0, ctx.currentTime);
-  } else if (_prevAppMode === 'sampler' && m !== 'sampler' && ctx && masterGain) {
-    safeRamp(masterGain.gain, state.masterVol);
-  }
+  // v12.9.35: マスターフェーダーを全モードで「本物の全体マスター」に統一。
+  //   旧仕様は SAMPLER 時だけ masterGain=1.0 に固定していたため、マスターフェーダー/CC を
+  //   動かすと全体が二重に絞られる(#25)・マスターCCが今のデッキを動かす(#34) 不具合になっていた。
+  //   masterGain は常に state.masterVol を反映し、pad × deckGain × masterGain で素直に効かせる。
+  if (ctx && masterGain) safeRamp(masterGain.gain, state.masterVol);
   // SAMPLER 専用要素：BANK バー＋パッド一覧
   document.getElementById('banksRow').style.display = (m === 'sampler') ? 'flex' : 'none';
   document.getElementById('rightContent').style.display = (m === 'sampler') ? 'flex' : 'none';
