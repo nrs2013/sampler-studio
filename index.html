@@ -4820,7 +4820,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.39';
+const APP_VERSION = 'v12.9.40';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -5327,7 +5327,7 @@ const NUM_BANKS = 16;
 const PADS_PER_BANK = 16;
 const DEFAULT_KEYS = ['KeyQ','KeyW','KeyE','KeyR','KeyA','KeyS','KeyD','KeyF','KeyZ','KeyX','KeyC','KeyV','Digit1','Digit2','Digit3','Digit4'];
 const KEY_LABELS = ['Q','W','E','R','A','S','D','F','Z','X','C','V','1','2','3','4'];
-const DEFAULT_NOTES = [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47]; // v12.9.37: BU16ボタンの送信値(32-47)と一致＝押したボタン=正しいパッド。LEDは位置ベース(36+i)で別途リンク。
+const DEFAULT_NOTES = [32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47]; // BU16ボタンの送信値(32-47)＝LEARN時の参考。v12.9.40で既定割当には使わない(既定は空)。LEDは位置ベース(32+i)で別途リンク。
 // v12.4.0: パッド色プリセット (8色)。id='default' は色なし扱い
 const PAD_COLOR_PALETTE = [
   { id: 'default', name: 'デフォルト', hex: '#3DB5A6' },
@@ -5509,7 +5509,7 @@ function makePad(idx) {
     trimStart: 0,   // seconds
     trimEnd: null,  // seconds (null = end of sample)
     key: DEFAULT_KEYS[idx],
-    midiNote: DEFAULT_NOTES[idx], // v12.9.37: BU16ボタン(32-47)と一致した既定。GRID INフィルタで他機材の誤爆は防ぐので既定割当で安全。
+    midiNote: null, // v12.9.40: 既定は未割当(空)。Gridを使う時だけLEARN→一度学習すれば保存され次回以降も残る。色リンクは位置ベースLEDなので空でも生きる。(参考:BU16物理ノート=DEFAULT_NOTES 32+i)
     color: null,    // v12.4.0: ユーザー任意の色 (id from PAD_COLOR_PALETTE、null=デフォルト)
     isPlaying: false,
     activeSources: [], // [{source, gain, startedAt, trimStart, trimDuration}]
@@ -7091,6 +7091,9 @@ async function initMIDI() {
     midiAccess = await navigator.requestMIDIAccess({ sysex: false });
     updateMidiInputs();
     midiAccess.onstatechange = updateMidiInputs;
+    // v12.9.40: Grid の機器認識が一瞬遅れても確実にリンク＆LED点灯するよう、数回だけ繋ぎ直す。
+    setTimeout(() => { try { if (midiAccess) updateMidiInputs(); } catch(_) {} }, 500);
+    setTimeout(() => { try { if (midiAccess) updateMidiInputs(); } catch(_) {} }, 1500);
   } catch (e) {
     document.getElementById('midiName').textContent = 'MIDI: 許可なし';
   }
@@ -7850,13 +7853,13 @@ function loadStateLocal() {
       state.currentDeckIdx = Math.min(s.currentDeckIdx || 0, state.samplerDecks.length - 1);
       _applyDeckToState(state.currentDeckIdx);
     }
-    // v12.9.37: パッドのMIDIノートを物理ボタン(32+位置)に揃え直す。旧既定(36+位置)や
-    //   MIDI⌫で空(null)になったパッドだけ対象＝学習済みの独自割当は保持。冪等(毎ロードOK)。
-    //   これで「押したボタン=正しいパッド」が成立。色は位置ベースLED(36+i)で別途必ずリンク。
+    // v12.9.40: 旧既定(36+位置)の遺物だけ 32+位置 に直す。空(null)は空のまま＝
+    //   「既定は未割当」を尊重し、リロードで割当を復活させない（MIDI⌫が永続するように）。
+    //   学習済みの独自割当(32+i含む)はそのまま保持。色は位置ベースLED(32+i)で別途必ずリンク。
     try {
       (state.samplerDecks || []).forEach(d => (d.banks || []).forEach(b => {
         (b.pads || []).forEach((p, i) => {
-          if (p && (p.midiNote == null || p.midiNote === 36 + i)) p.midiNote = 32 + i;
+          if (p && p.midiNote === 36 + i) p.midiNote = 32 + i;
         });
       }));
     } catch(_) {}
@@ -19495,9 +19498,9 @@ async function init() {
   initBanks();        // state.banks の初期化（initSamplerDecksが参照する）
   initSamplerDecks(); // 2デッキ作成、deck0にstate.banksをマウント
   loadStateLocal();   // 保存済みデッキ状態を復元（あれば上書き）
+  initMIDI();         // v12.9.40: MIDIを即開始（DB読み込みの後ろに回さない＝リンク高速化）
   await openDB();
   initAudio();        // masterGain + deckGains を作成
-  initMIDI();
   // サンプラーモードでは masterGain を 1.0 に保つ（デッキフェーダーが主役）
   if (state.appMode === 'sampler') {
     setMasterVol(state.masterVol); // UI更新のみ（initAudio内でgainは1.0設定済み）
