@@ -4183,6 +4183,8 @@
     <div class="status">
       <span><span class="midi-led" id="midiLed"></span> <span id="midiName">MIDI: 未接続</span></span>
       <button id="ledOutToggle" class="led-out-toggle" onclick="ledToggle()" title="Grid のボタンLEDにパッド色を送る">LED</button>
+      <button id="clearMidiBtn" class="led-out-toggle" onclick="clearAllMidi()" title="全パッド・全コントロールのMIDI割当を消去して『まっさら』に（学習するまで何も鳴らない／キーは残す）">MIDI⌫</button>
+      <button id="gridInToggle" class="led-out-toggle on" onclick="toggleMidiInGrid()" title="ON=Grid のMIDIだけ聴く（MPC/鍵盤など他機材は無視）。学習中は全機材を聴く。OFF=全機材を聴く">GRID IN</button>
       <span id="bankInfo">BANK 01 / 16</span>
     </div>
   </div>
@@ -4818,7 +4820,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.35';
+const APP_VERSION = 'v12.9.36';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -5372,10 +5374,11 @@ const state = {
   isLearning: null,
   trimEditor: null,
   controlAssign: {
-    master: { midiCC: 7, key: null },
-    fadeout: { midiNote: 60, key: 'KeyF' },
-    stop:    { midiNote: 62, key: 'Escape' },
-    pause:   { midiNote: 63, key: 'Space' },
+    // v12.9.36: MIDIは事前割当しない（学習するまで空）。キーボードのキー割当は残す。
+    master: { midiCC: null, key: null },
+    fadeout: { midiNote: null, key: 'KeyF' },
+    stop:    { midiNote: null, key: 'Escape' },
+    pause:   { midiNote: null, key: 'Space' },
     bankPrev: { midiNote: null, key: 'BracketLeft' },
     bankNext: { midiNote: null, key: 'BracketRight' },
     // デッキコフェーダー MIDI CC ラーン
@@ -5506,7 +5509,7 @@ function makePad(idx) {
     trimStart: 0,   // seconds
     trimEnd: null,  // seconds (null = end of sample)
     key: DEFAULT_KEYS[idx],
-    midiNote: DEFAULT_NOTES[idx],
+    midiNote: null, // v12.9.36: MIDIは事前割当しない。ユーザーが学習した時だけ入る（キーボードのキーは残す）
     color: null,    // v12.4.0: ユーザー任意の色 (id from PAD_COLOR_PALETTE、null=デフォルト)
     isPlaying: false,
     activeSources: [], // [{source, gain, startedAt, trimStart, trimDuration}]
@@ -5572,6 +5575,7 @@ function setActiveDeck(deckIdx) {
   const bankInfo = document.getElementById('bankInfo');
   if (bankInfo) bankInfo.textContent = `BANK ${String(state.currentBank + 1).padStart(2, '0')} / 16`;
   saveStateLocal();
+  try { ledScheduleSend(); } catch(_) {} // v12.9.36: デッキ切替で Grid LED を新デッキに追従（残光防止）
 }
 
 // ─── デッキ内バンク切替 ───
@@ -5586,6 +5590,7 @@ function switchDeckBank(deckIdx, bankIdx) {
   }
   renderDeckColumn(deckIdx, document.getElementById('deckCol' + deckIdx));
   saveStateLocal();
+  if (deckIdx === state.currentDeckIdx) { try { ledScheduleSend(); } catch(_) {} } // v12.9.36: バンク切替で Grid LED 追従
 }
 
 // ─── デッキボリューム（縦コフェーダー用・deckIdx 明示版） ───
@@ -7091,6 +7096,22 @@ async function initMIDI() {
   }
 }
 
+// v12.9.36: 通常運用は Grid のポートだけ聴く（MPC/MIDI Keys 等の誤爆をゼロに）。既定ON。
+let MIDI_IN_GRID_ONLY = (() => { try { return (localStorage.getItem('samplerMidiInGrid') ?? '1') === '1'; } catch(_) { return true; } })();
+function _syncGridInToggleUI() {
+  const b = document.getElementById('gridInToggle');
+  if (!b) return;
+  b.classList.toggle('on', MIDI_IN_GRID_ONLY);
+  b.textContent = MIDI_IN_GRID_ONLY ? 'GRID IN' : 'ALL IN';
+}
+function toggleMidiInGrid() {
+  MIDI_IN_GRID_ONLY = !MIDI_IN_GRID_ONLY;
+  try { localStorage.setItem('samplerMidiInGrid', MIDI_IN_GRID_ONLY ? '1' : '0'); } catch(_) {}
+  try { if (typeof midiAccess !== 'undefined' && midiAccess) updateMidiInputs(); } catch(_) {}
+  _syncGridInToggleUI();
+  showToast(MIDI_IN_GRID_ONLY ? 'MIDI入力: Grid のみ（他機材は無視）' : 'MIDI入力: 全機材を聴く');
+}
+
 function updateMidiInputs() {
   const inputs = [...midiAccess.inputs.values()];
   try { ledRefreshOutputs(); } catch(_) {}
@@ -7102,8 +7123,12 @@ function updateMidiInputs() {
   }
   document.getElementById('midiName').textContent = 'MIDI: ' + inputs[0].name;
   document.getElementById('midiLed').classList.add('on');
-  inputs.forEach(inp => { inp.onmidimessage = handleMIDI; });
-  try { ledSyncToggleUI(); ledScheduleSend(); } catch(_) {}
+  inputs.forEach(inp => {
+    // v12.9.36: 通常は Grid のポートだけ結線（他機材の誤爆ゼロ）。学習中は全入力を許可して他機材も LEARN 可能に。
+    const listen = state.isLearning || !MIDI_IN_GRID_ONLY || /grid/i.test(inp.name || '');
+    inp.onmidimessage = listen ? handleMIDI : null;
+  });
+  try { ledSyncToggleUI(); _syncGridInToggleUI(); ledScheduleSend(); } catch(_) {}
 }
 
 // ============================================================
@@ -7143,7 +7168,10 @@ function ledSend() {
     if (!bank) return;
     bank.pads.forEach(p => {
       if (p.midiNote == null) return;
-      const msg = [status, p.midiNote & 0x7F, _ledVel(p)];
+      // v12.9.36: BU16は「入力32-47 / LED36-51」で+4ズレている実機仕様。LED送信時だけ+4して
+      //   物理ボタンに合わせる（学習したボタン＝鳴るマス＝光るマスを一致させる）。32-47以外は素通し。
+      const ledNote = (p.midiNote >= 32 && p.midiNote <= 47) ? (p.midiNote + 4) : p.midiNote;
+      const msg = [status, ledNote & 0x7F, _ledVel(p)];
       LED_OUT.outputs.forEach(o => { try { o.send(msg); } catch(_) {} });
     });
   } catch(_) {}
@@ -7178,6 +7206,30 @@ function ledToggle() {
   try { localStorage.setItem('samplerLedOut', LED_OUT.enabled ? '1' : '0'); } catch(_) {}
   if (LED_OUT.enabled) ledSend(); else ledClearAll();
   ledSyncToggleUI();
+}
+
+// v12.9.36: MIDI割当を全消去（まっさら）。パッド/コントロールの MIDI ノート・CC を全て null に。
+//   キーボードのキー割当は残す。これで「学習するまで何も鳴らない（他機材の誤爆ゼロ）」状態にできる。
+//   既存の本番ファイル（パッド36-51・マスターCC7 等の自動割当が残ったもの）の掃除用。
+function clearAllMidi() {
+  if (!confirm('全パッド・全コントロールの MIDI 割当を消去して「まっさら」にします。\n（キーボードのキー割当は残ります）\nGrid/MPC を叩いても、これから学習し直すまで何も鳴らなくなります。よろしいですか？')) return;
+  // 全デッキ・全バンクのパッド
+  try { _forEachPad(p => { if (p) p.midiNote = null; }); } catch(_){}
+  // HOLD スロットの padData
+  try { (state.hold || []).forEach(h => { if (h && h.padData) h.padData.midiNote = null; }); } catch(_){}
+  // コントロール割当（MIDI のみ。key は残す）
+  const ca = state.controlAssign || {};
+  ['master','fadeout','stop','pause','bankPrev','bankNext','deckVol0','deckVol1'].forEach(k => {
+    if (ca[k]) {
+      if ('midiCC' in ca[k]) ca[k].midiCC = null;
+      if ('midiNote' in ca[k]) ca[k].midiNote = null;
+    }
+  });
+  try { if (typeof _saveDeckFromState === 'function') _saveDeckFromState(); } catch(_){}
+  try { saveStateLocal(); } catch(_){}
+  try { ledClearAll(); } catch(_){}  // Grid の LED も一旦全消し（残光クリア）
+  try { render(); } catch(_){}
+  showToast('MIDI 割当を全消去しました（キーは保持）。必要なボタンだけ学習し直してください');
 }
 
 // v12.9.32/33: Grid のパッドを叩くと音の頭が2回鳴る（ダブルトリガー）対策。
@@ -7226,6 +7278,9 @@ function handleMIDI(e) {
   const [status, data1, data2] = e.data;
   const type = status & 0xF0;
   _midiMonLog(e); // v12.9.34: 診断（?midimon=1 時のみ）。学習/デバウンス/モード判定より前に全受信を記録
+  // v12.9.36: EF44 Lua が出す ch16 のエコー（ボタン1押下で出る2発目＝二度鳴りの大元）を
+  //   構造的に破棄。診断ログ(_midiMonLog)には残してから捨てるので原因確認はできる。
+  if (((status & 0x0F) + 1) === 16) return;
   // v12.9.31: 学習中はあらゆる入力をここで飲み込む。
   //   旧コードは「MIDI 学習中の MIDI」しか拾わず、キー学習中に来た MIDI が
   //   そのまま STOP/FADE OUT/パッドを暴発させていた（本番事故）。
