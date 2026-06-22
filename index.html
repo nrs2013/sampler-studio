@@ -4820,7 +4820,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.37';
+const APP_VERSION = 'v12.9.38';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -9491,6 +9491,12 @@ function setAppMode(m) {
   try { if (typeof _mtDiagPanelUpdate === 'function') _mtDiagPanelUpdate(); } catch(_) {}
   // Pad grid の再計算
   if (typeof resizePads === 'function') setTimeout(resizePads, 30);
+  // v12.9.38: モード切替で Grid LED を能動再リンク/消灯（残光防止）。
+  //   SAMPLER 復帰→現バンクの色を再送、SAMPLER 離脱→Grid LED を消す。LED OFF/Grid未接続は先頭ガードで無音。
+  try {
+    if (m === 'sampler') ledScheduleSend();
+    else if (_prevAppMode === 'sampler') ledClearAll();
+  } catch(_) {}
 }
 
 // ---- BGM ---- (MediaElementSource方式：大容量ファイルでも軽量)
