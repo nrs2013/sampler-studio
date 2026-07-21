@@ -4820,7 +4820,7 @@
 // ===========================
 // CONSTANTS / DEFAULTS
 // ===========================
-const APP_VERSION = 'v12.9.40';
+const APP_VERSION = 'v12.9.41';
 // v12.6.0: MULTI-TRACK LTC タイムコード出力 (Digital Performer 同期用) —
 //          30fps non-drop / biphase mark / SMPTE 80-bit フレーム。各曲開始時に
 //          baseTime = songIdx × spacingSec (デフォルト 15 分) を加算して連続出力。
@@ -5070,6 +5070,9 @@ async function projOpenFromFolder() {
     }
     if (data.state && data.state.door) {
       localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
+      // v12.9.41: フォルダから意図的に復元する時は墓標をクリア
+      //  （旧バックアップの予定を「削除済み」として黙って封じないため）
+      try { localStorage.removeItem(id + ':samplerSchedTombstones'); } catch(_) {}
     }
   } catch(e) { console.warn('[projOpen] state restore failed', e); }
   // プロジェクトを開く
@@ -11514,8 +11517,58 @@ function doSchedAdd() {
   }
 }
 
+// =====================================================
+// v12.9.41: SCHEDULE 削除の墓標（tombstone）
+// 本番事故「削除した時刻にまたナレが流れた」の根治。
+// 原因: 同アプリを 2 枚のタブで開いていると、(a) 古いタブが自前の doTick で
+//   メモリ内の削除済み行を直接発火する、(b) 古いタブの doSave（36箇所、
+//   特に beforeunload）が削除行を localStorage に書き戻す、等の復活経路がある。
+// 対策: 削除した行の id を localStorage の別キー（墓標）に記録し、
+//   「どのタブ・どの経路で行が復活しても、発火直前に墓標を見て絶対に鳴らさない」。
+//   localStorage はタブ間で共有されるため、削除タブが墓標を書いた瞬間から
+//   他タブでも発火不能になる。
+// =====================================================
+const SCHED_TOMB_MAX = 50;
+const SCHED_TOMB_TTL = 24 * 3600 * 1000; // 24h で失効（意図的な復元を永久に封じない）
+function _schedTombs() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(projKey('samplerSchedTombstones')) || '[]');
+    const cut = Date.now() - SCHED_TOMB_TTL;
+    return Array.isArray(arr) ? arr.filter(t => t && t.deletedAt > cut) : [];
+  } catch(_) { return []; }
+}
+function _schedAddTombstone(rowId) {
+  try {
+    const arr = _schedTombs();
+    arr.unshift({ id: rowId, deletedAt: Date.now() });
+    localStorage.setItem(projKey('samplerSchedTombstones'), JSON.stringify(arr.slice(0, SCHED_TOMB_MAX)));
+  } catch(_) {}
+}
+// 墓標に載っている行をメモリからも掃除する（pre-DUCK 済みなら DUCK を解除して
+// BGM が下がりっぱなしになるのを防ぐ）。戻り値=掃除した行数。
+function _schedSweepTombstoned(tombs) {
+  if (!tombs || tombs.length === 0) return 0;
+  const ids = new Set(tombs.map(t => t.id));
+  let swept = 0;
+  state.door.schedule = state.door.schedule.filter(r => {
+    if (!ids.has(r.id)) return true;
+    if (state.door.activeRowId === r.id) return true; // 再生中は doAnnStopAll 経由でしか触らない
+    if (r.preDuckStarted) { try { doDuckRelease(); } catch(_) {} }
+    swept++;
+    return false;
+  });
+  if (swept > 0) { doRenderSchedule(); }
+  return swept;
+}
+
 function doSchedDel(rowId) {
+  // 墓標を doSave より先に書く（保存が quota 等で失敗しても「削除の意思」は必ず残る）
+  _schedAddTombstone(rowId);
+  const row = state.door.schedule.find(r => r.id === rowId);
   if (state.door.activeRowId === rowId) doAnnStopAll();
+  // v12.9.41: pre-DUCK 済み（時刻 0.8 秒前に DUCK が掛かった直後）の行を削除すると、
+  //   DUCK 解除経路が無く BGM が下がりっぱなしになっていた。ここで解除する。
+  else if (row && row.preDuckStarted) { try { doDuckRelease(); } catch(_) {} }
   state.door.schedule = state.door.schedule.filter(r => r.id !== rowId);
   doRenderSchedule();
   doSave();
@@ -11532,6 +11585,26 @@ function doSchedDelConfirm(rowId) {
   if (window.confirm(msg)) {
     doSchedDel(rowId);
     showToast('予定を削除しました');
+  } else {
+    // v12.9.41: ダイアログ表示中は doTick が止まる。表示中に予定時刻をまたいだ状態で
+    //   Cancel/Esc すると、直後の doTick が即発火して「削除したのに鳴った」と誤認される
+    //   事故があった。消そうとした行が時刻超過していたら「済」にして鳴らさない
+    //  （鳴らしたければ ReArm → ▶ で明示的に）。
+    try {
+      const d = new Date();
+      const now = d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds();
+      const m = String(row.time).match(/^(\d{1,2}):(\d{1,2})/);
+      const rs = m ? (parseInt(m[1])*3600 + parseInt(m[2])*60) : 0;
+      let elapsed = now - rs;
+      if (elapsed < -12 * 3600) elapsed += 24 * 3600;
+      if (elapsed >= 0 && !row.played) {
+        row.played = true;
+        row.preDuckStarted = false;
+        doRenderSchedule();
+        doSave();
+        showToast(`${row.time} は時刻を過ぎたため「済」にしました（鳴らす場合は ✓ を押して戻す）`);
+      }
+    } catch(_) {}
   }
 }
 
@@ -11875,7 +11948,13 @@ function doTick() {
   // v12.9.31: SCHEDULE 自動発火は DOOR モードのみ。
   //   旧コードはモード無関係に走り、本番演奏(SAMPLER/MULTI)中でも予定時刻が
   //   来ると影アナを鳴らしていた（焦点バグ #22）。pre-DUCK もここで止める。
-  if (state.appMode === 'door' && state.door.activeRowId == null) {
+  // v12.9.41: 2 枚目のタブでは自動発火を止める（既存の Web Locks 二重タブ検知を
+  //   SCHEDULE にも適用）。古いタブが削除済み行を勝手に鳴らす事故の根元対策。
+  if (state.appMode === 'door' && state.door.activeRowId == null &&
+      !(typeof mtIsOtherTabActive === 'function' && mtIsOtherTabActive())) {
+    // v12.9.41: 発火判定の前に毎 tick 墓標を確認し、他タブ/復活経路で
+    //   紛れ込んだ削除済み行をメモリから掃除する（コストは ~3.5KB の同期読取のみ）。
+    try { _schedSweepTombstoned(_schedTombs()); } catch(_) {}
     const dNow = new Date();
     const now = dNow.getHours()*3600 + dNow.getMinutes()*60 + dNow.getSeconds() + dNow.getMilliseconds()/1000;
     const fadeSec = state.door.duck.fadeSec || 0.8;
@@ -11922,6 +12001,14 @@ function doTick() {
 function doStartRow(rowId) {
   const row = state.door.schedule.find(r => r.id === rowId);
   if (!row || row.chain.length === 0) return;
+  // v12.9.41: 別タブで削除済み（墓標あり）の行は手動でも発火させない
+  try {
+    if (_schedTombs().some(t => t.id === rowId)) {
+      _schedSweepTombstoned(_schedTombs());
+      showToast('この予定は別のタブで削除されています');
+      return;
+    }
+  } catch(_) {}
   if (state.door.activeRowId) {
     showToast('別の予定を再生中です');
     return;
@@ -12080,11 +12167,14 @@ function _chainPlayV(vidIdx) {
       chainIdx: state.door.activeChainIdx,
     };
     // 5 秒経っても ready 来なければスキップ
+    // v12.9.41: rowId も照合。行削除→5秒以内に別の行が発火した場合、古いタイマーが
+    //   新しい行のチェーンを 1 項目余分に進めてしまうレースを防ぐ。
     setTimeout(() => {
       if (_vidPendingChainPlay && _vidPendingChainPlay.vidIdx === vidIdx) {
+        const p = _vidPendingChainPlay;
         _vidPendingChainPlay = null;
         showToast('⚠️ サブモニター応答無し。V' + (vidIdx+1) + ' をスキップ');
-        if (state.door.activeRowId) doPlayNextInChain();
+        if (state.door.activeRowId && state.door.activeRowId === p.rowId) doPlayNextInChain();
       }
     }, 5000);
     return;
@@ -12344,7 +12434,10 @@ function doLoad() {
       const _loadNow = (() => { const d = new Date(); return d.getHours()*3600 + d.getMinutes()*60 + d.getSeconds(); })();
       const LOAD_GRACE = 5; // 起動時刻の 5 秒前までに来た予定は鳴らさない
       const _timeStrSec = (str) => { const m = String(str).match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/); return m ? (parseInt(m[1])*3600 + parseInt(m[2])*60 + parseInt(m[3]||'0')) : 0; };
-      state.door.schedule = s.schedule.map(r => {
+      // v12.9.41: 墓標（削除済み行）は復元しない。古いタブの doSave や古い
+      //   project.json スナップショットで localStorage に復活していても、ここで除外。
+      const _tombIds = (() => { try { return new Set(_schedTombs().map(t => t.id)); } catch(_) { return new Set(); } })();
+      state.door.schedule = s.schedule.filter(r => !_tombIds.has(r.id)).map(r => {
         // Normalize legacy "HH:MM:SS" → "HH:MM"
         let t = r.time || '00:00';
         const mm = String(t).match(/^(\d{1,2}):(\d{1,2})/);
@@ -19692,7 +19785,11 @@ async function _projOpenFromSamplerFile(data, fileName) {
         appMode: data.state.appMode || 'sampler',
       }));
     }
-    if (data.state && data.state.door) localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
+    if (data.state && data.state.door) {
+      localStorage.setItem(id + ':samplerStudioDoor', JSON.stringify(data.state.door));
+      // v12.9.41: 意図的な復元では墓標をクリア（projOpenFromFolder と同じ）
+      try { localStorage.removeItem(id + ':samplerSchedTombstones'); } catch(_) {}
+    }
     projSwitchTo(id);
   } catch(e) {
     if (e && e.name === 'AbortError') return;
