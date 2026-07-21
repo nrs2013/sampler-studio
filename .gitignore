@@ -3,3 +3,8 @@
 # v11.2.8: バックアップファイルを Git に入れない
 # (index.html.backup-vX.X.X-* / service-worker.js.backup-* 等)
 *.backup-*
+
+# 引き継ぎ書 (ローカル専用、push しない)
+*引き継ぎ*.md
+*HANDOVER*.md
+*handoff*.md
